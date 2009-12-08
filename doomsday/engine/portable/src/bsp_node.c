@@ -127,7 +127,7 @@ void BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge)
         // doesn't already exist, and loop back to add the seg.
         if(!block->subs[child])
         {
-            block->subs[child] = sub = BSP_SuperBlockCreate();
+            block->subs[child] = sub = BSP_CreateSuperBlock();
             sub->parent = block;
 
             if(block->bbox[BOXRIGHT] - block->bbox[BOXLEFT] >=
@@ -327,7 +327,7 @@ static void takeHEdgesFromSuperblock(face_t* face, superblock_t* block)
             if(a->realNum + a->miniNum > 0)
                 Con_Error("createSubSectorWorker: child %d not empty!", num);
 
-            BSP_SuperBlockDestroy(a);
+            BSP_DestroySuperBlock(a);
             block->subs[num] = NULL;
         }
     }
@@ -347,85 +347,67 @@ static face_t* createBSPLeaf(superblock_t* hEdgeList)
     return face;
 }
 
+node_t* P_CreateNode(float x, float y, float dX, float dY, float rightAABB[4],
+                     float leftAABB[4])
+{
+    node_t* node = Z_Calloc(sizeof(*node), PU_STATIC, 0);
+
+    node->partition.x = x;
+    node->partition.y = y;
+    node->partition.dX = dX;
+    node->partition.dY = dY;
+    memcpy(node->bBox[RIGHT], rightAABB, sizeof(node->bBox[RIGHT]));
+    memcpy(node->bBox[LEFT], leftAABB, sizeof(node->bBox[LEFT]));
+    return node;
+}
+
 /**
  * Takes the half-edge list and determines if it is convex, possibly
  * converting it into a subsector. Otherwise, the list is divided into two
  * halves and recursion will continue on the new sub list.
  *
  * @param hEdgeList     Ptr to the list of half edges at the current node.
- * @param parent        Ptr to write back the address of any newly created
- *                      subtree.
- * @param depth         Current tree depth.
  * @param cutList       Ptr to the cutlist to use for storing new segment
  *                      intersections (cuts).
- * @return              @c true, if successfull.
+ * @return              Ptr to the newly created subtree ELSE @c NULL.
  */
-boolean BuildNodes(superblock_t* hEdgeList, binarytree_t** parent,
-                   size_t depth, cutlist_t* cutList)
+binarytree_t* BuildNodes(superblock_t* hEdgeList, cutlist_t* cutList)
 {
-    binarytree_t* subTree;
-    superblock_t* hEdgeSet[2];
-    boolean builtOK = false;
-    bspartition_t partition;
-    node_t* node;
+    superblock_t* rightHEdges, *leftHEdges;
+    float rightAABB[4], leftAABB[4];
+    binarytree_t* tree;
+    hedge_t* partHEdge;
+    double x, y, dX, dY;
 
-    *parent = NULL;
-
-/*#if _DEBUG
-Con_Message("Build: Begun @ %lu\n", (unsigned long) depth);
-BSP_PrintSuperblockHEdges(hEdgeList);
-#endif*/
-
-    // Pick the next partition to use.
-    if(!SuperBlock_PickPartition(hEdgeList, depth, &partition))
+    // Pick half-edge with which to derive the next partition.
+    if(!(partHEdge = SuperBlock_PickPartition(hEdgeList)))
     {   // No partition required, already convex.
-/*#if _DEBUG
-Con_Message("BuildNodes: Convex.\n");
-#endif*/
-        *parent = BinaryTree_Create(createBSPLeaf(hEdgeList));
-        return true;
+        return BinaryTree_Create(createBSPLeaf(hEdgeList));
     }
 
+    x  = partHEdge->vertex->pos[VX];
+    y  = partHEdge->vertex->pos[VY];
+    dX = partHEdge->twin->vertex->pos[VX] - partHEdge->vertex->pos[VX];
+    dY = partHEdge->twin->vertex->pos[VY] - partHEdge->vertex->pos[VY];
+
 /*#if _DEBUG
-Con_Message("BuildNodes: Partition %p (%1.0f,%1.0f) -> (%1.0f,%1.0f).\n",
-            best, best->v[0]->V_pos[VX], best->v[0]->V_pos[VY],
-            best->v[1]->V_pos[VX], best->v[1]->V_pos[VY]);
+Con_Message("BuildNodes: Partition xy{%1.0f, %1.0f} delta{%1.0f, %1.0f}.\n",
+            x, y, dX, dY);
 #endif*/
 
-    // Create left and right super blocks.
-    hEdgeSet[RIGHT] = (superblock_t *) BSP_SuperBlockCreate();
-    hEdgeSet[LEFT]  = (superblock_t *) BSP_SuperBlockCreate();
+    BSP_PartitionHEdges(hEdgeList, x, y, dX, dY, partHEdge, &rightHEdges, &leftHEdges, cutList);
+    BSP_FindAABBForHEdges(rightHEdges, rightAABB);
+    BSP_FindAABBForHEdges(leftHEdges, leftAABB);
 
-    // Copy the bounding box of the edge list to the superblocks.
-    M_CopyBox(hEdgeSet[LEFT]->bbox, hEdgeList->bbox);
-    M_CopyBox(hEdgeSet[RIGHT]->bbox, hEdgeList->bbox);
+    tree = BinaryTree_Create(P_CreateNode(x, y, dX, dY, rightAABB, leftAABB));
 
-    // Divide the half-edges into two lists: left & right.
-    BSP_PartitionHEdges(hEdgeList, &partition, hEdgeSet[RIGHT],
-                        hEdgeSet[LEFT], cutList);
-    BSP_CutListEmpty(cutList);
+    // Recurse on right half-edge list.
+    BinaryTree_SetChild(tree, RIGHT, BuildNodes(rightHEdges, cutList));
+    BSP_DestroySuperBlock(rightHEdges);
 
-    node = Z_Calloc(sizeof(*node), PU_STATIC, 0);
-    *parent = BinaryTree_Create(node);
+    // Recurse on left half-edge list.
+    BinaryTree_SetChild(tree, LEFT, BuildNodes(leftHEdges, cutList));
+    BSP_DestroySuperBlock(leftHEdges);
 
-    BSP_FindNodeBounds(node, hEdgeSet[RIGHT], hEdgeSet[LEFT]);
-
-    node->partition.x = partition.x;
-    node->partition.y = partition.y;
-    node->partition.dX = partition.dX;
-    node->partition.dY = partition.dY;
-
-    builtOK = BuildNodes(hEdgeSet[RIGHT], &subTree, depth + 1, cutList);
-    BinaryTree_SetChild(*parent, RIGHT, subTree);
-    BSP_SuperBlockDestroy(hEdgeSet[RIGHT]);
-
-    if(builtOK)
-    {
-        builtOK = BuildNodes(hEdgeSet[LEFT], &subTree, depth + 1, cutList);
-        BinaryTree_SetChild(*parent, LEFT, subTree);
-    }
-
-    BSP_SuperBlockDestroy(hEdgeSet[LEFT]);
-
-    return builtOK;
+    return tree;
 }

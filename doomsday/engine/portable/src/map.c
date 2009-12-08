@@ -2787,7 +2787,7 @@ static superblock_t* createSuperblockAndAddHEdges(map_t* map)
 
     findMapLimits(map, mapBounds);
 
-    block = BSP_SuperBlockCreate();
+    block = BSP_CreateSuperBlock();
 
     block->bbox[BOXLEFT]   = mapBounds[BOXLEFT]   - (mapBounds[BOXLEFT]   & 0x7);
     block->bbox[BOXBOTTOM] = mapBounds[BOXBOTTOM] - (mapBounds[BOXBOTTOM] & 0x7);
@@ -2811,14 +2811,11 @@ static boolean buildBSP(map_t* map)
 {
     uint startTime = Sys_GetRealTime();
 
-    boolean builtOK;
     superblock_t* hEdgeList;
 
     if(verbose >= 1)
-    {
         Con_Message("Map_BuildBSP: Processing map using tunable "
                     "factor of %d...\n", bspFactor);
-    }
 
     createInitialHEdges(map);
 
@@ -2834,8 +2831,7 @@ static boolean buildBSP(map_t* map)
     cutList = BSP_CutListCreate();
 
     // Recursively create nodes.
-    map->_rootNode = NULL;
-    builtOK = BuildNodes(hEdgeList, &map->_rootNode, 0, cutList);
+    map->_rootNode = BuildNodes(hEdgeList, cutList);
 
     // The cutlist data is no longer needed.
     BSP_CutListDestroy(cutList);
@@ -2846,9 +2842,9 @@ static boolean buildBSP(map_t* map)
              (Sys_GetRealTime() - buildStartTime) / 1000.0f));
     }
 
-    BSP_SuperBlockDestroy(hEdgeList);
+    BSP_DestroySuperBlock(hEdgeList);
 
-    if(builtOK)
+    if(map->_rootNode)
     {   // Success!
         // Wind the BSP tree and save to the map.
         ClockwiseBspTree(map->_rootNode);
@@ -2858,7 +2854,7 @@ static boolean buildBSP(map_t* map)
         Con_Message("Map_BuildBSP: Built %d Nodes, %d Subsectors, %d Segs.\n",
                     map->numNodes, map->numSubsectors, map->numSegs);
 
-        if(map->_rootNode && !BinaryTree_IsLeaf(map->_rootNode))
+        if(!BinaryTree_IsLeaf(map->_rootNode))
         {
             long rHeight, lHeight;
 
@@ -2880,7 +2876,7 @@ static boolean buildBSP(map_t* map)
     VERBOSE(Con_Message("  Done in %.2f seconds.\n",
                         (Sys_GetRealTime() - startTime) / 1000.0f));
 
-    return builtOK;
+    return map->_rootNode != NULL;
 }
 
 #if 0 /* Currently unused. */

@@ -38,24 +38,10 @@
 #include "bsp_intersection.h"
 #include "m_binarytree.h"
 
-typedef struct bspartition_s {
-    double              x, y;
-    double              dX, dY;
-    double              length;
-    linedef_t*          lineDef; // Not NULL if partition originated from a linedef.
-    linedef_t*          sourceLine;
+binarytree_t*   BuildNodes(struct superblock_s* hEdgeList, cutlist_t* cutList);
+void            BSP_AddHEdgeToSuperBlock(struct superblock_s* block, hedge_t* hEdge);
 
-    double              pSX, pSY;
-    double              pDX, pDY;
-    double              pPara, pPerp;
-} bspartition_t;
+void            ClockwiseBspTree(binarytree_t* rootNode);
 
-boolean     BuildNodes(struct superblock_s* hEdgeList, binarytree_t** parent,
-                       size_t depth, cutlist_t* cutList);
-void        BSP_AddHEdgeToSuperBlock(struct superblock_s* block,
-                                     hedge_t* hEdge);
-
-void        ClockwiseBspTree(binarytree_t* rootNode);
-
-void        SaveMap(map_t* map, void* rootNode);
+void            SaveMap(map_t* map, void* rootNode);
 #endif

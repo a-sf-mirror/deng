@@ -222,13 +222,14 @@ void BSP_ShutdownIntersectionAllocator(void)
 /**
  * Create a new intersection.
  */
-intersection_t* BSP_IntersectionCreate(vertex_t* vert, const struct bspartition_s* part)
+intersection_t* BSP_IntersectionCreate(vertex_t* vert, double x, double y,
+                                       double dX, double dY)
 {
     intersection_t* cut = quickAllocIntersection();
 
+    cut->alongDist = (vert->pos[VX] - x) * dX +
+                     (vert->pos[VY] - y) * dY;
     cut->vertex = vert;
-    cut->alongDist = M_ParallelDist(part->pDX, part->pDY, part->pPara, part->length,
-                                    vert->pos[VX], vert->pos[VY]);
 
     return cut;
 }
@@ -476,7 +477,8 @@ static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle, byte antiClockw
     }
 }
 
-static void connectGaps(const bspartition_t* part, superblock_t* rightList,
+static void connectGaps(double x, double y, double dX, double dY,
+                        const hedge_t* partHEdge, superblock_t* rightList,
                         superblock_t* leftList, cnode_t* firstNode)
 {
     cnode_t* node;
@@ -495,7 +497,7 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
         hedge_t* hEdge;
         angle_g angle;
 
-        angle = M_SlopeToAngle(-part->pDX, -part->pDY);
+        angle = M_SlopeToAngle(-dX, -dY);
         hEdge = next->vertex->hEdge;
         do
         {
@@ -510,8 +512,8 @@ static void connectGaps(const bspartition_t* part, superblock_t* rightList,
 
         if(!alongPartition)
         {
-            farHEdge = vertexCheckOpen(next->vertex, M_SlopeToAngle(-part->pDX, -part->pDY), false);
-            nearHEdge = vertexCheckOpen(cur->vertex, M_SlopeToAngle(part->pDX, part->pDY), true);
+            farHEdge = vertexCheckOpen(next->vertex, M_SlopeToAngle(-dX, -dY), false);
+            nearHEdge = vertexCheckOpen(cur->vertex, M_SlopeToAngle(dX, dY), true);
 
             nearSector = nearHEdge ? ((bsp_hedgeinfo_t*) nearHEdge->data)->sector : NULL;
             farSector = farHEdge? ((bsp_hedgeinfo_t*) farHEdge->data)->sector : NULL;
@@ -589,10 +591,10 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 {
                 hedge_t* right, *left;
 
-                right = BSP_CreateHEdge(NULL, part->lineDef, cur->vertex, ((bsp_hedgeinfo_t*) nearHEdge->data)->sector, ((bsp_hedgeinfo_t*) nearHEdge->data)->side);
+                right = BSP_CreateHEdge(NULL, ((bsp_hedgeinfo_t*) partHEdge->data)->lineDef, cur->vertex, ((bsp_hedgeinfo_t*) nearHEdge->data)->sector, ((bsp_hedgeinfo_t*) nearHEdge->data)->side);
                 right->face = nearHEdge->face;
 
-                left = BSP_CreateHEdge(NULL, part->lineDef, next->vertex, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->sector, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->side);
+                left = BSP_CreateHEdge(NULL, ((bsp_hedgeinfo_t*) partHEdge->data)->lineDef, next->vertex, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->sector, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->side);
                 left->face = farHEdge->prev->face;
 
                 // Twin the half-edges together.
@@ -661,7 +663,8 @@ Con_Message("  %p LEFT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
  *
  * @todo Does not belong in here.
  */
-void BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList,
+void BSP_AddMiniHEdges(double x, double y, double dX, double dY,
+                       const hedge_t* partHEdge, superblock_t* rightList,
                        superblock_t* leftList, cutlist_t* cutList)
 {
     clist_t* list;
@@ -672,5 +675,5 @@ void BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList,
     list = (clist_t*) cutList;
 
     mergeOverlappingIntersections(list->headPtr);
-    connectGaps(part, rightList, leftList, list->headPtr);
+    connectGaps(x, y, dX, dY, partHEdge, rightList, leftList, list->headPtr);
 }

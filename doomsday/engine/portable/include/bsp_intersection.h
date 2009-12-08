@@ -38,8 +38,6 @@
 
 typedef void* cutlist_t;
 
-struct bspartition_s;
-
 /**
  * An "intersection" remembers the vertex that touches a space partition.
  */
@@ -56,8 +54,8 @@ typedef struct intersection_s {
 void            BSP_InitIntersectionAllocator(void);
 void            BSP_ShutdownIntersectionAllocator(void);
 
-intersection_t* BSP_IntersectionCreate(vertex_t* vert,
-                                       const struct bspartition_s* part);
+intersection_t* BSP_IntersectionCreate(vertex_t* vert, double x, double y,
+                                       double dX, double dY);
 void            BSP_IntersectionDestroy(intersection_t* cut);
 
 cutlist_t*      BSP_CutListCreate(void);

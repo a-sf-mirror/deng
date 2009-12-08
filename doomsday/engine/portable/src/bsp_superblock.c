@@ -70,9 +70,9 @@ typedef struct evalinfo_s {
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 static __inline void calcIntersection(const hedge_t* cur,
-                                      const bspartition_t* part,
+                                      double x, double y, double dX, double dY,
                                       double perpC, double perpD,
-                                      double* x, double* y);
+                                      double* ix, double* iy);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -164,12 +164,12 @@ Con_Error("FreeSuper: Superblock contains half-edges!");
     quickAllocSupers = superblock;
 }
 
-superblock_t* BSP_SuperBlockCreate(void)
+superblock_t* BSP_CreateSuperBlock(void)
 {
     return allocSuperBlock();
 }
 
-void BSP_SuperBlockDestroy(superblock_t* block)
+void BSP_DestroySuperBlock(superblock_t* block)
 {
     assert(block);
     freeSuperBlock(block);
@@ -238,13 +238,13 @@ void SuperBlock_IncHEdgeCounts(superblock_t* superblock, boolean lineLinked)
 }
 
 static void makeIntersection(cutlist_t* cutList, vertex_t* vert,
-                             const bspartition_t* part)
+                             double x, double y, double dX, double dY)
 {
     intersection_t* cut = BSP_CutListFindIntersection(cutList, vert);
 
     if(!cut)
     {
-        cut = BSP_IntersectionCreate(vert, part);
+        cut = BSP_IntersectionCreate(vert, x, y, dX, dY);
         BSP_CutListInsertIntersection(cutList, cut);
     }
 }
@@ -265,33 +265,38 @@ static void makeIntersection(cutlist_t* cutList, vertex_t* vert,
  * follow the exact same logic when determining which half-edges should go
  * left, right or be split. - AJA
  */
-void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
+void BSP_DivideOneHEdge(hedge_t* curHEdge, double x, double y, double dX,
+                        double dY, const hedge_t* partHEdge,
                         superblock_t* rightList, superblock_t* leftList,
                         cutlist_t* cutList)
 {
-    hedge_t* newHEdge;
-    double x, y;
-    double a, b;
     bsp_hedgeinfo_t* data = ((bsp_hedgeinfo_t*) curHEdge->data);
+    hedge_t* newHEdge;
+    double a, b;
 
     // Get state of lines' relation to each other.
-    a = M_PerpDist(part->pDX, part->pDY, part->pPerp, part->length,
-                   data->pSX, data->pSY);
-    b = M_PerpDist(part->pDX, part->pDY, part->pPerp, part->length,
-                   data->pEX, data->pEY);
-
-    if(data->sourceLine == part->sourceLine)
+    if(partHEdge && data->sourceLine ==
+        ((bsp_hedgeinfo_t*) partHEdge->data)->sourceLine)
+    {
         a = b = 0;
+    }
+    else
+    {
+        a = (y - curHEdge->vertex->pos[VY]) * dX -
+            (x - curHEdge->vertex->pos[VX]) * dY;
+        b = (y - curHEdge->twin->vertex->pos[VY]) * dX -
+            (x - curHEdge->twin->vertex->pos[VX]) * dY;
+    }
 
     // Check for being on the same line.
     if(fabs(a) <= DIST_EPSILON && fabs(b) <= DIST_EPSILON)
     {
-        makeIntersection(cutList, curHEdge->vertex, part);
-        makeIntersection(cutList, curHEdge->twin->vertex, part);
+        makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY);
+        makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY);
 
         // This seg runs along the same line as the partition. Check
         // whether it goes in the same direction or the opposite.
-        if(data->pDX * part->pDX + data->pDY * part->pDY < 0)
+        if(data->pDX * dX + data->pDY * dY < 0)
         {
             BSP_AddHEdgeToSuperBlock(leftList, curHEdge);
         }
@@ -307,9 +312,9 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
     if(a > -DIST_EPSILON && b > -DIST_EPSILON)
     {
         if(a < DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->vertex, part);
+            makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY);
         else if(b < DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->twin->vertex, part);
+            makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY);
 
         BSP_AddHEdgeToSuperBlock(rightList, curHEdge);
         return;
@@ -319,9 +324,9 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
     if(a < DIST_EPSILON && b < DIST_EPSILON)
     {
         if(a > -DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->vertex, part);
+            makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY);
         else if(b > -DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->twin->vertex, part);
+            makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY);
 
         BSP_AddHEdgeToSuperBlock(leftList, curHEdge);
         return;
@@ -329,10 +334,12 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
 
     // When we reach here, we have a and b non-zero and opposite sign,
     // hence this edge will be split by the partition line.
-
-    calcIntersection(curHEdge, part, a, b, &x, &y);
-    newHEdge = BSP_SplitHEdge(curHEdge, x, y);
-    makeIntersection(cutList, newHEdge->vertex, part);
+    {
+    double iX, iY;
+    calcIntersection(curHEdge, x, y, dX, dY, a, b, &iX, &iY);
+    newHEdge = BSP_SplitHEdge(curHEdge, iX, iY);
+    makeIntersection(cutList, newHEdge->vertex, x, y, dX, dY);
+    }
 
     if(a < 0)
     {
@@ -347,7 +354,7 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, const bspartition_t* part,
 }
 
 static void partitionHEdges(superblock_t* hEdgeList,
-                            const bspartition_t* part,
+                            double x, double y, double dX, double dY, const hedge_t* partHEdge,
                             superblock_t* rights, superblock_t* lefts,
                             cutlist_t* cutList)
 {
@@ -357,7 +364,7 @@ static void partitionHEdges(superblock_t* hEdgeList,
     while((hEdge = SuperBlock_PopHEdge(hEdgeList)))
     {
         ((bsp_hedgeinfo_t*) hEdge->data)->block = NULL;
-        BSP_DivideOneHEdge(hEdge, part, rights, lefts, cutList);
+        BSP_DivideOneHEdge(hEdge, x, y, dX, dY, partHEdge, rights, lefts, cutList);
     }
 
     // Recursively handle sub-blocks.
@@ -367,12 +374,12 @@ static void partitionHEdges(superblock_t* hEdgeList,
 
         if(a)
         {
-            partitionHEdges(a, part, rights, lefts, cutList);
+            partitionHEdges(a, x, y, dX, dY, partHEdge, rights, lefts, cutList);
 
             if(a->realNum + a->miniNum > 0)
                 Con_Error("BSP_SeparateHEdges: child %d not empty!", num);
 
-            BSP_SuperBlockDestroy(a);
+            BSP_DestroySuperBlock(a);
             hEdgeList->subs[num] = NULL;
         }
     }
@@ -385,20 +392,31 @@ static void partitionHEdges(superblock_t* hEdgeList,
  * or right lists based on the given partition line. Adds any intersections
  * onto the intersection list as it goes.
  */
-void BSP_PartitionHEdges(superblock_t* hEdgeList, const bspartition_t* part,
-                         superblock_t* rights, superblock_t* lefts,
+void BSP_PartitionHEdges(superblock_t* hEdgeList, double x, double y,
+                         double dX, double dY, const hedge_t* partHEdge,
+                         superblock_t** right, superblock_t** left,
                          cutlist_t* cutList)
 {
-    partitionHEdges(hEdgeList, part, rights, lefts, cutList);
+    superblock_t* bRight = BSP_CreateSuperBlock();
+    superblock_t* bLeft = BSP_CreateSuperBlock();
+
+    M_CopyBox(bRight->bbox, hEdgeList->bbox);
+    M_CopyBox(bLeft->bbox, hEdgeList->bbox);
+
+    partitionHEdges(hEdgeList, x, y, dX, dY, partHEdge, bRight, bLeft, cutList);
 
     // Sanity checks...
-    if(rights->realNum + rights->miniNum == 0)
+    if(bRight->realNum + bRight->miniNum == 0)
         Con_Error("BuildNodes: Separated halfedge-list has no right side.");
 
-    if(lefts->realNum + lefts->miniNum == 0)
+    if(bLeft->realNum + bLeft->miniNum == 0)
         Con_Error("BuildNodes: Separated halfedge-list has no left side.");
 
-    BSP_AddMiniHEdges(part, rights, lefts, cutList);
+    BSP_AddMiniHEdges(x, y, dX, dY, partHEdge, bRight, bLeft, cutList);
+    BSP_CutListEmpty(cutList);
+
+    *right = bRight;
+    *left = bLeft;
 }
 
 /**
@@ -719,66 +737,36 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
  * Find the best half-edge in the list to use as a partition.
  *
  * @param hEdgeList     List of half-edges to choose from.
- * @param depth         Current node depth.
- * @param partition     Ptr to partition to be updated with the results.
  *
- * @return              @c true, iff a suitable partition was found.
+ * @return              hedge_t to use as a partition iff one suitable was found.
  */
-boolean SuperBlock_PickPartition(const superblock_t* hEdgeList,
-                                 size_t depth, bspartition_t* partition)
+hedge_t* SuperBlock_PickPartition(const superblock_t* hEdgeList)
 {
     int bestCost = INT_MAX;
     hedge_t* best = NULL;
-
-/*#if _DEBUG
-Con_Message("BSP_PickPartition: Begun (depth %lu)\n", (unsigned long) depth);
-#endif*/
 
     validCount++;
     if(false == pickHEdgeWorker(hEdgeList, hEdgeList, &best, &bestCost))
     {
         // \hack BuildNodes will detect the cancellation.
-        return false;
+        return NULL;
     }
-
-    // Finished, return the best partition.
-    if(best)
-    {
-        bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) best->data;
 
 /*if _DEBUG
-Con_Message("BSP_PickPartition: Best has score %d.%02d  (%1.1f,%1.1f) -> "
-            "(%1.1f,%1.1f)\n", bestCost / 100, bestCost % 100,
-            best->v[0]->V_pos[VX], best->v[0]->V_pos[VY],
-            best->v[1]->V_pos[VX], best->v[1]->V_pos[VY]);
-#endif*/
-        assert(data->lineDef);
-
-        partition->x  = data->lineDef->buildData.v[data->side]->pos[VX];
-        partition->y  = data->lineDef->buildData.v[data->side]->pos[VY];
-        partition->dX = data->lineDef->buildData.v[data->side^1]->pos[VX] - partition->x;
-        partition->dY = data->lineDef->buildData.v[data->side^1]->pos[VY] - partition->y;
-        partition->lineDef = data->lineDef;
-        partition->sourceLine = data->sourceLine;
-
-        partition->pDX = data->pDX;
-        partition->pDY = data->pDY;
-        partition->pSX = data->pSX;
-        partition->pSY = data->pSY;
-        partition->pPara = data->pPara;
-        partition->pPerp = data->pPerp;
-        partition->length = data->pLength;
-        return true;
-    }
-
-/*#if _DEBUG
-Con_Message("BSP_PickPartition: No best found!\n");
+if(best)
+    Con_Message("BSP_PickPartition: Best has score %d.%02d  (%1.1f,%1.1f) -> "
+                "(%1.1f,%1.1f)\n", bestCost / 100, bestCost % 100,
+                best->v[0]->V_pos[VX], best->v[0]->V_pos[VY],
+                best->v[1]->V_pos[VX], best->v[1]->V_pos[VY]);
+else
+    Con_Message("BSP_PickPartition: No best found!\n");
 #endif*/
 
-    return false;
+    // Finished, return the best partition if found.
+    return best;
 }
 
-static void findLimitWorker(superblock_t* block, float* bbox)
+static void findLimitWorker(const superblock_t* block, float* bbox)
 {
     uint num;
     superblock_listnode_t* n;
@@ -822,21 +810,14 @@ static void findLimitWorker(superblock_t* block, float* bbox)
     }
 }
 
-static void findLimits(superblock_t* hEdgeList, float* bbox)
+/**
+ * Find the extremes of an axis aligned box containing all half-edges.
+ */
+void BSP_FindAABBForHEdges(const superblock_t* hEdgeList, float* bbox)
 {
     bbox[BOXTOP] = bbox[BOXRIGHT] = DDMINFLOAT;
     bbox[BOXBOTTOM] = bbox[BOXLEFT] = DDMAXFLOAT;
     findLimitWorker(hEdgeList, bbox);
-}
-
-/**
- * Find the extremes of a box containing all half-edges.
- */
-void BSP_FindNodeBounds(node_t* node, superblock_t* hEdgesRightList,
-                        superblock_t* hEdgesLeftList)
-{
-    findLimits(hEdgesLeftList, &node->bBox[LEFT][0]);
-    findLimits(hEdgesRightList, &node->bBox[RIGHT][0]);
 }
 
 /**
@@ -845,26 +826,26 @@ void BSP_FindNodeBounds(node_t* node, superblock_t* hEdgesRightList,
  * vertical lines to choose a 'nicer' intersection point.
  */
 static __inline void calcIntersection(const hedge_t* cur,
-                                      const bspartition_t* part,
+                                      double x, double y, double dX, double dY,
                                       double perpC, double perpD,
-                                      double* x, double* y)
+                                      double* iX, double* iY)
 {
-    double ds;
     bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) cur->data;
+    double ds;
 
     // Horizontal partition against vertical half-edge.
-    if(part->pDY == 0 && data->pDX == 0)
+    if(dY == 0 && data->pDX == 0)
     {
-        *x = data->pSX;
-        *y = part->pSY;
+        *iX = data->pSX;
+        *iY = y;
         return;
     }
 
     // Vertical partition against horizontal half-edge.
-    if(part->pDX == 0 && data->pDY == 0)
+    if(dX == 0 && data->pDY == 0)
     {
-        *x = part->pSX;
-        *y = data->pSY;
+        *iX = x;
+        *iY = data->pSY;
         return;
     }
 
@@ -872,14 +853,14 @@ static __inline void calcIntersection(const hedge_t* cur,
     ds = perpC / (perpC - perpD);
 
     if(data->pDX == 0)
-        *x = data->pSX;
+        *iX = data->pSX;
     else
-        *x = data->pSX + (data->pDX * ds);
+        *iX = data->pSX + (data->pDX * ds);
 
     if(data->pDY == 0)
-        *y = data->pSY;
+        *iY = data->pSY;
     else
-        *y = data->pSY + (data->pDY * ds);
+        *iY = data->pSY + (data->pDY * ds);
 }
 
 /**

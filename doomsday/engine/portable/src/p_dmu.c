@@ -910,7 +910,7 @@ void* P_GetVariable(int value)
         map_t* map = P_CurrentMap();
         if(map)
             count = map->numSubsectors;
-        return NULL;
+        return &count;
         }
     case DMU_NODE_COUNT:
         {
