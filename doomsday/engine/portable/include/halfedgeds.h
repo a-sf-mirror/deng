@@ -71,5 +71,6 @@ int                 HalfEdgeDS_IterateFaces(halfedgeds_t* halfEdgeDS, int (*call
 
 void                Face_LinkHEdge(face_t* face, hedge_t* hEdge);
 void                Face_UnlinkHEdge(face_t* face, hedge_t* hEdge);
+void                Face_ClockwiseOrder(face_t* face);
 
 #endif /* DOOMSDAY_HALFEDGEDS_H */

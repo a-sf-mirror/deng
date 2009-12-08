@@ -1522,7 +1522,7 @@ static void pruneVertices(halfedgeds_t* halfEdgeDS)
             if(((mvertex_t*) v->data)->equiv == NULL)
                 unused++;
 
-            Z_Free(v);
+            free(v);
             continue;
         }
 

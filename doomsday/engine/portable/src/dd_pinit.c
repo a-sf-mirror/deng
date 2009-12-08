@@ -250,6 +250,8 @@ void DD_ShutdownAll(void)
 {
     int                 i;
 
+    if(P_CurrentMap())
+        P_DestroyMap(P_CurrentMap());
     P_ShutdownMapUpdate();
     Con_Shutdown();
     DD_ShutdownHelp();
