@@ -38,6 +38,11 @@
 #include "bsp_intersection.h"
 #include "m_binarytree.h"
 
+typedef struct hedge_node_s {
+    hedge_t*        hEdge;
+    struct hedge_node_s* next;
+} hedge_node_t;
+
 typedef struct bspartition_s {
     double              x, y;
     double              dX, dY;

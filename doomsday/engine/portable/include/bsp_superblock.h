@@ -36,62 +36,54 @@
 
 #include "bsp_intersection.h"
 
-typedef struct hedge_node_s {
-    hedge_t*    hEdge;
-    struct hedge_node_s* next, *prev;
-} hedge_node_t;
-
 typedef struct superblock_s {
     // Parent of this block, or NULL for a top-level block.
     struct superblock_s* parent;
-
-    // Coordinates on map for this block, from lower-left corner to
-    // upper-right corner. Pseudo-inclusive, i.e (x,y) is inside block
-    // if and only if BOXLEFT <= x < BOXRIGHT and BOXBOTTOM <= y < BOXTOP.
-    int         bbox[4];
-
     // Sub-blocks. NULL when empty. [0] has the lower coordinates, and
     // [1] has the higher coordinates. Division of a square always
     // occurs horizontally (e.g. 512x512 -> 256x512 -> 256x256).
     struct superblock_s* subs[2];
 
+    // Coordinates on map for this block, from lower-left corner to
+    // upper-right corner. Pseudo-inclusive, i.e (x,y) is inside block
+    // if and only if BOXLEFT <= x < BOXRIGHT and BOXBOTTOM <= y < BOXTOP.
+    int             bbox[4];
+
     // Number of real half-edges and minihedges contained by this block
     // (including all sub-blocks below it).
-    int         realNum;
-    int         miniNum;
+    uint            realNum;
+    uint            miniNum;
 
-    // Head of the list of half-edges completely contained by this block.
-    hedge_node_t* hEdges;
+    // LIFO stack of half-edges completely contained by this block.
+    struct superblock_listnode_s* _hEdges;
 } superblock_t;
 
-void        BSP_InitSuperBlockAllocator(void);
-void        BSP_ShutdownSuperBlockAllocator(void);
+void            BSP_InitSuperBlockAllocator(void);
+void            BSP_ShutdownSuperBlockAllocator(void);
 
-superblock_t* BSP_SuperBlockCreate(void);
-void        BSP_SuperBlockDestroy(superblock_t* block);
+superblock_t*   BSP_SuperBlockCreate(void);
+void            BSP_SuperBlockDestroy(superblock_t* block);
 
+void            SuperBlock_PushHEdge(superblock_t* superblock, hedge_t* hEdge);
+hedge_t*        SuperBlock_PopHEdge(superblock_t* block);
 #if _DEBUG
-void        SuperBlock_PrintHEdges(superblock_t* superblock);
+void            SuperBlock_PrintHEdges(superblock_t* superblock);
 #endif
 
-void        SuperBlock_LinkHEdge(superblock_t* superblock, hedge_t* hEdge);
-void        SuperBlock_UnLinkHEdge(superblock_t* superblock, hedge_t* hEdge);
+void            SuperBlock_IncHEdgeCounts(superblock_t* superblock, boolean lineLinked);
 
-void        SuperBlock_IncHEdgeCounts(superblock_t* superblock,
-                                      boolean lineLinked);
+boolean         SuperBlock_PickPartition(const superblock_t* superblock,
+                                         size_t depth, bspartition_t* partition);
 
-boolean     SuperBlock_PickPartition(const superblock_t* superblock,
-                                     size_t depth, bspartition_t* partition);
-
-void        BSP_FindNodeBounds(node_t* node, superblock_t* hEdgeListRight,
-                               superblock_t* hEdgeListLeft);
-void        BSP_DivideOneHEdge(hedge_t* hEdge, const bspartition_t* part,
-                               superblock_t* rightList, superblock_t* leftList,
-                               cutlist_t* cutList);
-void        BSP_PartitionHEdges(superblock_t* hEdgeList,
-                                const bspartition_t* part,
-                                superblock_t* rightList, superblock_t* leftList,
-                                cutlist_t* cutList);
-void        BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList,
-                              superblock_t* leftList, cutlist_t* cutList);
+void            BSP_FindNodeBounds(node_t* node, superblock_t* hEdgeListRight,
+                                   superblock_t* hEdgeListLeft);
+void            BSP_DivideOneHEdge(hedge_t* hEdge, const bspartition_t* part,
+                                   superblock_t* rightList, superblock_t* leftList,
+                                   cutlist_t* cutList);
+void            BSP_PartitionHEdges(superblock_t* hEdgeList,
+                                    const bspartition_t* part,
+                                    superblock_t* rightList, superblock_t* leftList,
+                                    cutlist_t* cutList);
+void            BSP_AddMiniHEdges(const bspartition_t* part, superblock_t* rightList,
+                                  superblock_t* leftList, cutlist_t* cutList);
 #endif /* BSP_SUPERBLOCK_H */

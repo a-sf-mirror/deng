@@ -47,6 +47,11 @@
 
 // TYPES -------------------------------------------------------------------
 
+typedef struct superblock_listnode_s {
+    hedge_t*        hEdge;
+    struct superblock_listnode_s* next;
+} superblock_listnode_t;
+
 typedef struct evalinfo_s {
     int         cost;
     int         splits;
@@ -101,12 +106,12 @@ void BSP_ShutdownSuperBlockAllocator(void)
     }
 }
 
-static hedge_node_t* allocHEdgeNode(void)
+static superblock_listnode_t* allocListNode(void)
 {
-    return M_Malloc(sizeof(hedge_node_t));
+    return M_Malloc(sizeof(superblock_listnode_t));
 }
 
-static void freeHEdgeNode(hedge_node_t* node)
+static void freeListNode(superblock_listnode_t* node)
 {
     M_Free(node);
 }
@@ -137,13 +142,13 @@ static void freeSuperBlock(superblock_t* superblock)
 {
     uint num;
 
-    if(superblock->hEdges)
+    if(superblock->_hEdges)
     {
         // This can happen, but only under abnormal circumstances.
 #if _DEBUG
 Con_Error("FreeSuper: Superblock contains half-edges!");
 #endif
-        superblock->hEdges = NULL;
+        superblock->_hEdges = NULL;
     }
 
     // Recursively handle sub-blocks.
@@ -164,71 +169,55 @@ superblock_t* BSP_SuperBlockCreate(void)
     return allocSuperBlock();
 }
 
-void BSP_SuperBlockDestroy(superblock_t* superblock)
+void BSP_SuperBlockDestroy(superblock_t* block)
 {
-    freeSuperBlock(superblock);
+    assert(block);
+    freeSuperBlock(block);
 }
 
 /**
  * Link the given half-edge into the given superblock.
  */
-void SuperBlock_LinkHEdge(superblock_t* superblock, hedge_t* hEdge)
+void SuperBlock_PushHEdge(superblock_t* block, hedge_t* hEdge)
 {
-    hedge_node_t* node;
+    superblock_listnode_t* node;
 
-    if(!hEdge || !superblock)
-        return;
+    assert(block);
+    assert(hEdge);
 
 #if _DEBUG
 // Ensure hedge is not already in this superblock.
-if((node = superblock->hEdges))
+if((node = block->_hEdges))
 {
     do
     {
         if(node->hEdge == hEdge)
-            Con_Error("SuperBlock_LinkHEdge: HEdge %p already linked to "
-                      "superblock %p!", hEdge, superblock);
+            Con_Error("SuperBlock_PushHEdge: HEdge %p already linked to "
+                      "superblock %p!", hEdge, block);
     } while((node = node->next));
 }
 #endif
 
-    node = allocHEdgeNode();
-
+    {
+    node = allocListNode();
     node->hEdge = hEdge;
-    ((bsp_hedgeinfo_t*) hEdge->data)->block = superblock;
-
-    node->next = superblock->hEdges;
-    superblock->hEdges = node;
+    node->next = block->_hEdges;
+    block->_hEdges = node;
+    }
 }
 
-void SuperBlock_UnLinkHEdge(superblock_t* superblock, hedge_t* hEdge)
+hedge_t* SuperBlock_PopHEdge(superblock_t* block)
 {
-    hedge_node_t* node;
-
-    if(!hEdge || !superblock || !superblock->hEdges)
-        return;
-
-    if(superblock->hEdges->hEdge == hEdge)
+    assert(block);
+    if(block->_hEdges)
     {
-        node = superblock->hEdges;
-
-        superblock->hEdges = superblock->hEdges->next;
-
-        freeHEdgeNode(node);
-        return;
+        superblock_listnode_t* node = block->_hEdges;
+        hedge_t* hEdge = node->hEdge;
+        block->_hEdges = node->next;
+        freeListNode(node);
+        return hEdge;
     }
-
-    node = superblock->hEdges;
-    do
-    {
-        if(node->next && node->next->hEdge == hEdge)
-        {
-            hedge_node_t* p = node->next;
-            node->next = node->next->next;
-            freeHEdgeNode(p);
-            break;
-        }
-    } while((node = node->next));
+    return NULL;
 }
 
 /**
@@ -362,15 +351,12 @@ static void partitionHEdges(superblock_t* hEdgeList,
                             superblock_t* rights, superblock_t* lefts,
                             cutlist_t* cutList)
 {
+    hedge_t* hEdge;
     uint num;
 
-    while(hEdgeList->hEdges)
+    while((hEdge = SuperBlock_PopHEdge(hEdgeList)))
     {
-        hedge_t* hEdge = hEdgeList->hEdges->hEdge;
-
-        SuperBlock_UnLinkHEdge(hEdgeList, hEdge);
         ((bsp_hedgeinfo_t*) hEdge->data)->block = NULL;
-
         BSP_DivideOneHEdge(hEdge, part, rights, lefts, cutList);
     }
 
@@ -440,7 +426,7 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
       } while (0)
 
     int num, factor = bspFactor;
-    hedge_node_t* n;
+    superblock_listnode_t* n;
     double qnty, a, b, fa, fb;
     bsp_hedgeinfo_t* part = (bsp_hedgeinfo_t*) partHEdge->data;
 
@@ -469,7 +455,7 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
     }
 
     // Check partition against all half-edges.
-    for(n = hEdgeList->hEdges; n; n = n->next)
+    for(n = hEdgeList->_hEdges; n; n = n->next)
     {
         hedge_t* otherHEdge = n->hEdge;
         bsp_hedgeinfo_t* other = (bsp_hedgeinfo_t*) otherHEdge->data;
@@ -677,10 +663,10 @@ static boolean pickHEdgeWorker(const superblock_t* partList,
                                hedge_t** best, int* bestCost)
 {
     int num, cost;
-    hedge_node_t* n;
+    superblock_listnode_t* n;
 
     // Test each half-edge as a potential partition.
-    for(n = partList->hEdges; n; n = n->next)
+    for(n = partList->_hEdges; n; n = n->next)
     {
         hedge_t* hEdge = n->hEdge;
         bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
@@ -795,9 +781,9 @@ Con_Message("BSP_PickPartition: No best found!\n");
 static void findLimitWorker(superblock_t* block, float* bbox)
 {
     uint num;
-    hedge_node_t* n;
+    superblock_listnode_t* n;
 
-    for(n = block->hEdges; n; n = n->next)
+    for(n = block->_hEdges; n; n = n->next)
     {
         hedge_t* cur = n->hEdge;
         double x1 = cur->vertex->pos[VX];
@@ -903,9 +889,9 @@ static __inline void calcIntersection(const hedge_t* cur,
 void SuperBlock_PrintHEdges(superblock_t* superblock)
 {
     int num;
-    const hedge_node_t* n;
+    const superblock_listnode_t* n;
 
-    for(n = superblock->hEdges; n; n = n->next)
+    for(n = superblock->_hEdges; n; n = n->next)
     {
         const hedge_t* hEdge = n->hEdge;
         const bsp_hedgeinfo_t* data = hEdge->data;
@@ -924,12 +910,12 @@ void SuperBlock_PrintHEdges(superblock_t* superblock)
     }
 }
 
-static void testSuperWorker(superblock_t* block, int* real, int* mini)
+static void testSuperWorker(superblock_t* block, uint* real, uint* mini)
 {
-    int num;
-    const hedge_node_t* n;
+    uint num;
+    const superblock_listnode_t* n;
 
-    for(n = block->hEdges; n; n = n->next)
+    for(n = block->_hEdges; n; n = n->next)
     {
         const hedge_t* cur = n->hEdge;
 
@@ -951,13 +937,12 @@ static void testSuperWorker(superblock_t* block, int* real, int* mini)
  */
 void testSuper(superblock_t* block)
 {
-    int realNum = 0;
-    int miniNum = 0;
+    uint realNum = 0, miniNum = 0;
 
     testSuperWorker(block, &realNum, &miniNum);
 
     if(realNum != block->realNum || miniNum != block->miniNum)
-        Con_Error("testSuper: Failed, block=%p %d/%d != %d/%d",
+        Con_Error("testSuper: Failed, block=%p %u/%u != %u/%u",
                   block, block->realNum, block->miniNum, realNum,
                   miniNum);
 }

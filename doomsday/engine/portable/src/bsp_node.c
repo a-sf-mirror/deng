@@ -95,7 +95,8 @@ void BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge)
 
         if(SUPER_IS_LEAF(block))
         {   // Block is a leaf -- no subdivision possible.
-            SuperBlock_LinkHEdge(block, hEdge);
+            SuperBlock_PushHEdge(block, hEdge);
+            ((bsp_hedgeinfo_t*) hEdge->data)->block = block;
             return;
         }
 
@@ -117,7 +118,8 @@ void BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge)
             child = 0;
         else
         {   // Line crosses midpoint -- link it in and return.
-            SuperBlock_LinkHEdge(block, hEdge);
+            SuperBlock_PushHEdge(block, hEdge);
+            ((bsp_hedgeinfo_t*) hEdge->data)->block = block;
             return;
         }
 
@@ -437,25 +439,19 @@ static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
  */
 void ClockwiseBspTree(binarytree_t* rootNode)
 {
-    uint curIndex;
-
-    curIndex = 0;
+    uint curIndex = 0;
     BinaryTree_PostOrder(rootNode, clockwiseLeaf, &curIndex);
 }
 
 static void takeHEdgesFromSuperblock(face_t* face, superblock_t* block)
 {
     uint num;
+    hedge_t* hEdge;
 
-    while(block->hEdges)
+    while((hEdge = SuperBlock_PopHEdge(block)))
     {
-        hedge_node_t* node = block->hEdges;
-        hedge_t* hEdge = node->hEdge;
-
-        SuperBlock_UnLinkHEdge(block, hEdge);
         ((bsp_hedgeinfo_t*) hEdge->data)->block = NULL;
-
-        // Link it into head of the BSP leaf's list.
+        // Link it into head of the leaf's list.
         Face_LinkHEdge(face, hEdge);
         ((bsp_hedgeinfo_t*) hEdge->data)->face = face;
     }

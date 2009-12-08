@@ -274,7 +274,8 @@ testVertexHEdgeRings(newHEdge->twin->vertex);
         if(oldInfo->block)
         {
             SuperBlock_IncHEdgeCounts(oldInfo->block, oldInfo->lineDef != NULL);
-            SuperBlock_LinkHEdge(oldInfo->block, newHEdge->twin);
+            SuperBlock_PushHEdge(oldInfo->block, newHEdge->twin);
+            ((bsp_hedgeinfo_t*) newHEdge->twin->data)->block = oldInfo->block;
         }
         else if(oldInfo->face)
         {
