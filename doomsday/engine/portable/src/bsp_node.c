@@ -313,7 +313,6 @@ static void takeHEdgesFromSuperblock(face_t* face, superblock_t* block)
         ((bsp_hedgeinfo_t*) hEdge->data)->block = NULL;
         // Link it into head of the leaf's list.
         Face_LinkHEdge(face, hEdge);
-        ((bsp_hedgeinfo_t*) hEdge->data)->face = face;
     }
 
     // Recursively handle sub-blocks.

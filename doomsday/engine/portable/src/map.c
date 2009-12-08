@@ -1514,9 +1514,6 @@ static void pruneVertices(halfedgeds_t* halfEdgeDS)
     {
         vertex_t* v = halfEdgeDS->vertices[i];
 
-        if(((mvertex_t*) v->data)->refCount < 0)
-            Con_Error("Vertex %d ref_count is %d", i, ((mvertex_t*) v->data)->refCount);
-
         if(((mvertex_t*) v->data)->refCount == 0)
         {
             if(((mvertex_t*) v->data)->equiv == NULL)

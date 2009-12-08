@@ -26,17 +26,15 @@ typedef struct mvertex_s {
 
     // Vertex index. Always valid after loading and pruning of unused
     // vertices has occurred.
-    int             index;
+    uint            index;
 
     // Reference count. When building normal node info, unused vertices
     // will be pruned.
-    int             refCount;
+    uint            refCount;
 
     // Usually NULL, unless this vertex occupies the same location as a
     // previous vertex. Only used during the pruning phase.
     struct vertex_s* equiv;
-
-    struct edgetip_s* tipSet; // Set of wall_tips.
 } mvertex_t;
 
 // Helper macros for accessing seg data elements.

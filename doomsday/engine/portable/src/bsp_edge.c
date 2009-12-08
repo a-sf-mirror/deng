@@ -277,10 +277,10 @@ testVertexHEdgeRings(newHEdge->twin->vertex);
             SuperBlock_PushHEdge(oldInfo->block, newHEdge->twin);
             ((bsp_hedgeinfo_t*) newHEdge->twin->data)->block = oldInfo->block;
         }
-        else if(oldInfo->face)
+        else if(oldHEdge->twin->face)
         {
             // Link it into list for the face.
-            Face_LinkHEdge(oldInfo->face, newHEdge->twin);
+            Face_LinkHEdge(oldHEdge->twin->face, newHEdge->twin);
         }
     }
 
