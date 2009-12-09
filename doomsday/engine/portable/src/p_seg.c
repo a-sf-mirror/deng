@@ -50,6 +50,17 @@
 
 // CODE --------------------------------------------------------------------
 
+seg_t* P_CreateSeg(void)
+{
+    return Z_Calloc(sizeof(seg_t), PU_STATIC, 0);
+}
+
+void P_DestroySeg(seg_t* seg)
+{
+    assert(seg);
+    Z_Free(seg);
+}
+
 /**
  * Update the seg, property is selected by DMU_* name.
  */

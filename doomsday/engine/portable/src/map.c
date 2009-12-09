@@ -69,18 +69,6 @@ typedef struct {
     lineowner_t*    lineOwners; // Head of the lineowner list.
 } vertexinfo_t;
 
-typedef struct lineowner2_s {
-    struct linedef_s* lineDef;
-    struct lineowner2_s* next;
-
-    /**
-     * Half-edge on the front side of the LineDef relative to this vertex
-     * (i.e., if vertex is linked to the LineDef as vertex1, this half-edge
-     * is that on the LineDef's front side, else, that on the back side).
-     */
-    struct hedge_s* hEdge;
-} lineowner2_t;
-
 typedef struct {
     map_t*          map;
     void*           obj;
@@ -250,24 +238,6 @@ void P_DestroyVertexInfo(mvertex_t* vinfo)
     Z_Free(vinfo);
 }
 
-void P_DestroySeg(seg_t* seg)
-{
-    assert(seg);
-    Z_Free(seg);
-}
-
-void P_DestroySubsector(subsector_t* subsector)
-{
-    assert(subsector);
-    /*shadowlink_t* slink;
-    while((slink = subsector->shadows))
-    {
-        subsector->shadows = slink->next;
-        Z_Free(slink);
-    }*/
-    Z_Free(subsector);
-}
-
 static int destroyLinkedSubsector(face_t* face, void* context)
 {
     subsector_t* subsector = (subsector_t*) face->data;
@@ -306,11 +276,11 @@ static void destroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
 
 static boolean C_DECL freeNode(binarytree_t* tree, void* data)
 {
-    void* node = BinaryTree_GetData(tree);
+    node_t* node;
 
-    if(node && !BinaryTree_IsLeaf(tree))
+    if(!BinaryTree_IsLeaf(tree) && (node = BinaryTree_GetData(tree)))
     {
-        Z_Free(node);
+        P_DestroyNode(node);
     }
 
     BinaryTree_SetData(tree, NULL);
@@ -2266,542 +2236,6 @@ static void finishPolyobjs(map_t* map)
 }
 
 /**
- * @algorithm Cast a line horizontally or vertically and see what we hit.
- * @todo The blockmap has already been constructed by this point; so use it!
- */
-static void testForWindowEffect(map_t* map, linedef_t* l)
-{
-// Smallest distance between two points before being considered equal.
-#define DIST_EPSILON        (1.0 / 128.0)
-
-    uint i;
-    double mX, mY, dX, dY;
-    boolean castHoriz;
-    double backDist = DDMAXFLOAT;
-    sector_t* backOpen = NULL;
-    double frontDist = DDMAXFLOAT;
-    sector_t* frontOpen = NULL;
-    linedef_t* frontLine = NULL, *backLine = NULL;
-
-    mX = (l->buildData.v[0]->pos[VX] + l->buildData.v[1]->pos[VX]) / 2.0;
-    mY = (l->buildData.v[0]->pos[VY] + l->buildData.v[1]->pos[VY]) / 2.0;
-
-    dX = l->buildData.v[1]->pos[VX] - l->buildData.v[0]->pos[VX];
-    dY = l->buildData.v[1]->pos[VY] - l->buildData.v[0]->pos[VY];
-
-    castHoriz = (fabs(dX) < fabs(dY)? true : false);
-
-    for(i = 0; i < map->numLineDefs; ++i)
-    {
-        linedef_t* n = map->lineDefs[i];
-        double dist;
-        boolean isFront;
-        sidedef_t* hitSide;
-        double dX2, dY2;
-
-        if(n == l || (n->buildData.sideDefs[FRONT] && n->buildData.sideDefs[BACK] &&
-            n->buildData.sideDefs[FRONT]->sector == n->buildData.sideDefs[BACK]->sector) /*|| n->buildData.overlap */)
-            continue;
-
-        dX2 = n->buildData.v[1]->pos[VX] - n->buildData.v[0]->pos[VX];
-        dY2 = n->buildData.v[1]->pos[VY] - n->buildData.v[0]->pos[VY];
-
-        if(castHoriz)
-        {   // Horizontal.
-            if(fabs(dY2) < DIST_EPSILON)
-                continue;
-
-            if((MAX_OF(n->buildData.v[0]->pos[VY], n->buildData.v[1]->pos[VY]) < mY - DIST_EPSILON) ||
-               (MIN_OF(n->buildData.v[0]->pos[VY], n->buildData.v[1]->pos[VY]) > mY + DIST_EPSILON))
-                continue;
-
-            dist = (n->buildData.v[0]->pos[VX] + (mY - n->buildData.v[0]->pos[VY]) * dX2 / dY2) - mX;
-
-            isFront = (((dY > 0) != (dist > 0)) ? true : false);
-
-            dist = fabs(dist);
-            if(dist < DIST_EPSILON)
-                continue; // Too close (overlapping lines ?)
-
-            hitSide = n->buildData.sideDefs[(dY > 0) ^ (dY2 > 0) ^ !isFront];
-        }
-        else
-        {   // Vertical.
-            if(fabs(dX2) < DIST_EPSILON)
-                continue;
-
-            if((MAX_OF(n->buildData.v[0]->pos[VX], n->buildData.v[1]->pos[VX]) < mX - DIST_EPSILON) ||
-               (MIN_OF(n->buildData.v[0]->pos[VX], n->buildData.v[1]->pos[VX]) > mX + DIST_EPSILON))
-                continue;
-
-            dist = (n->buildData.v[0]->pos[VY] + (mX - n->buildData.v[0]->pos[VX]) * dY2 / dX2) - mY;
-
-            isFront = (((dX > 0) == (dist > 0)) ? true : false);
-
-            dist = fabs(dist);
-
-            hitSide = n->buildData.sideDefs[(dX > 0) ^ (dX2 > 0) ^ !isFront];
-        }
-
-        if(dist < DIST_EPSILON) // Too close (overlapping lines ?)
-            continue;
-
-        if(isFront)
-        {
-            if(dist < frontDist)
-            {
-                frontDist = dist;
-                if(hitSide)
-                    frontOpen = hitSide->sector;
-                else
-                    frontOpen = NULL;
-
-                frontLine = n;
-            }
-        }
-        else
-        {
-            if(dist < backDist)
-            {
-                backDist = dist;
-                if(hitSide)
-                    backOpen = hitSide->sector;
-                else
-                    backOpen = NULL;
-
-                backLine = n;
-            }
-        }
-    }
-
-/*#if _DEBUG
-Con_Message("back line: %d  back dist: %1.1f  back_open: %s\n",
-            (backLine? backLine->buildData.index : -1), backDist,
-            (backOpen? "OPEN" : "CLOSED"));
-Con_Message("front line: %d  front dist: %1.1f  front_open: %s\n",
-            (frontLine? frontLine->buildData.index : -1), frontDist,
-            (frontOpen? "OPEN" : "CLOSED"));
-#endif*/
-
-    if(backOpen && frontOpen && l->buildData.sideDefs[FRONT]->sector == backOpen)
-    {
-        Con_Message("LineDef #%d seems to be a One-Sided Window "
-                    "(back faces sector #%d).\n", l->buildData.index - 1,
-                    backOpen->buildData.index - 1);
-
-        l->buildData.windowEffect = frontOpen;
-    }
-
-#undef DIST_EPSILON
-}
-
-static void countVertexLineOwners(lineowner2_t* lineOwners, uint* oneSided, uint* twoSided)
-{
-    if(lineOwners)
-    {
-        lineowner2_t* owner;
-
-        owner = lineOwners;
-        do
-        {
-            if(!owner->lineDef->buildData.sideDefs[FRONT] ||
-               !owner->lineDef->buildData.sideDefs[BACK])
-                (*oneSided)++;
-            else
-                (*twoSided)++;
-        } while((owner = owner->next) != NULL);
-    }
-}
-
-static void findMapLimits(map_t* src, int* bbox)
-{
-    uint i;
-
-    M_ClearBox(bbox);
-
-    for(i = 0; i < src->numLineDefs; ++i)
-    {
-        linedef_t* l = src->lineDefs[i];
-        double x1 = l->buildData.v[0]->pos[VX];
-        double y1 = l->buildData.v[0]->pos[VY];
-        double x2 = l->buildData.v[1]->pos[VX];
-        double y2 = l->buildData.v[1]->pos[VY];
-        int lX = (int) floor(MIN_OF(x1, x2));
-        int lY = (int) floor(MIN_OF(y1, y2));
-        int hX = (int) ceil(MAX_OF(x1, x2));
-        int hY = (int) ceil(MAX_OF(y1, y2));
-
-        M_AddToBox(bbox, lX, lY);
-        M_AddToBox(bbox, hX, hY);
-    }
-}
-
-/**
- * Compares the angles of two lines that share a common vertex.
- *
- * pre: rootVtx must point to the vertex common between a and b
- *      which are (lineowner_t*) ptrs.
- */
-static int C_DECL lineAngleSorter2(const void* a, const void* b)
-{
-    uint i;
-    fixed_t dx, dy;
-    binangle_t angles[2];
-    lineowner2_t* own[2];
-    linedef_t* line;
-
-    own[0] = (lineowner2_t*) a;
-    own[1] = (lineowner2_t*) b;
-    for(i = 0; i < 2; ++i)
-    {
-        vertex_t* otherVtx;
-
-        line = own[i]->lineDef;
-        otherVtx = line->buildData.v[line->buildData.v[0] == rootVtx? 1:0];
-
-        dx = otherVtx->pos[VX] - rootVtx->pos[VX];
-        dy = otherVtx->pos[VY] - rootVtx->pos[VY];
-
-        angles[i] = bamsAtan2(-100 *dx, 100 * dy);
-    }
-
-    return (angles[0] - angles[1]);
-}
-
-/**
- * Merge left and right line owner lists into a new list.
- *
- * @return              Ptr to the newly merged list.
- */
-static lineowner2_t* mergeLineOwners2(lineowner2_t* left, lineowner2_t* right,
-                                     int (C_DECL *compare) (const void* a, const void* b))
-{
-    lineowner2_t tmp, *np;
-
-    np = &tmp;
-    tmp.next = np;
-    while(left != NULL && right != NULL)
-    {
-        if(compare(left, right) <= 0)
-        {
-            np->next = left;
-            np = left;
-
-            left = left->next;
-        }
-        else
-        {
-            np->next = right;
-            np = right;
-
-            right = right->next;
-        }
-    }
-
-    // At least one of these lists is now empty.
-    if(left)
-        np->next = left;
-    if(right)
-        np->next = right;
-
-    // Is the list empty?
-    if(tmp.next == &tmp)
-        return NULL;
-
-    return tmp.next;
-}
-
-static lineowner2_t* splitLineOwners2(lineowner2_t* list)
-{
-    lineowner2_t* lista, *listb, *listc;
-
-    if(!list)
-        return NULL;
-
-    lista = listb = listc = list;
-    do
-    {
-        listc = listb;
-        listb = listb->next;
-        lista = lista->next;
-        if(lista != NULL)
-            lista = lista->next;
-    } while(lista);
-
-    listc->next = NULL;
-    return listb;
-}
-
-/**
- * This routine uses a recursive mergesort algorithm; O(NlogN)
- */
-static lineowner2_t* sortLineOwners2(lineowner2_t* list,
-                                     int (C_DECL *compare) (const void* a, const void* b))
-{
-    lineowner2_t* p;
-
-    if(list && list->next)
-    {
-        p = splitLineOwners2(list);
-
-        // Sort both halves and merge them back.
-        list = mergeLineOwners2(sortLineOwners2(list, compare),
-                                sortLineOwners2(p, compare), compare);
-    }
-    return list;
-}
-
-static void setVertexLineOwner2(lineowner2_t** lineOwners, uint* numLineOwners,
-                                linedef_t* lineDef, byte vertex,
-                                lineowner2_t** storage)
-{
-    lineowner2_t* newOwner;
-
-    // Has this line already been registered with this vertex?
-    if((*numLineOwners) != 0)
-    {
-        lineowner2_t* owner = (*lineOwners);
-
-        do
-        {
-            if(owner->lineDef == lineDef)
-                return; // Yes, we can exit.
-
-            owner = owner->next;
-        } while(owner);
-    }
-
-    // Add a new owner.
-    (*numLineOwners)++;
-
-    newOwner = (*storage)++;
-    newOwner->lineDef = lineDef;
-
-    // Link it in.
-    // NOTE: We don't bother linking everything at this stage since we'll
-    // be sorting the lists anyway. After which we'll finish the job by
-    // setting the prev and circular links.
-    // So, for now this is only linked singlely, forward.
-    newOwner->next = (*lineOwners);
-    (*lineOwners) = newOwner;
-
-    // Link the line to its respective owner node.
-    lineDef->L_vo(vertex) = (lineowner_t*) newOwner;
-}
-
-/**
- * Initially create all half-edges, one for each side of a linedef.
- */
-static void createInitialHEdges(map_t* map)
-{
-typedef struct {
-    uint            numLineOwners;
-    lineowner2_t*   lineOwners; // Head of the lineowner list.
-} ownerinfo_t;
-
-    uint startTime = Sys_GetRealTime();
-
-    lineowner2_t* lineOwners, *storage;
-    ownerinfo_t* vertexInfo;
-    uint i, numVertices;
-
-    numVertices = HalfEdgeDS_NumVertices(map->_halfEdgeDS);
-    vertexInfo = M_Calloc(sizeof(*vertexInfo) * numVertices);
-
-    // We know how many lineowners are needed: number of lineDefs * 2.
-    lineOwners = storage = M_Calloc(sizeof(*lineOwners) * map->numLineDefs * 2);
-
-    for(i = 0; i < map->numLineDefs; ++i)
-    {
-        linedef_t* lineDef = map->lineDefs[i];
-        vertex_t* from = lineDef->buildData.v[0];
-        vertex_t* to = lineDef->buildData.v[1];
-
-        setVertexLineOwner2(&vertexInfo[((mvertex_t*) from->data)->index - 1].lineOwners,
-                            &vertexInfo[((mvertex_t*) from->data)->index - 1].numLineOwners,
-                            lineDef, 0, &storage);
-        setVertexLineOwner2(&vertexInfo[((mvertex_t*) to->data)->index - 1].lineOwners,
-                            &vertexInfo[((mvertex_t*) to->data)->index - 1].numLineOwners,
-                            lineDef, 1, &storage);
-    }
-
-    /**
-     * Detect "one-sided window" mapping tricks.
-     *
-     * @todo Does not belong in the engine; move this logic to dpWADMapConverter.
-     *
-     * @note Algorithm:
-     * Scan the linedef list looking for possible candidates, checking for an
-     * odd number of one-sided linedefs connected to a single vertex.
-     * This idea courtesy of Graham Jackson.
-     */
-    {
-    uint i, oneSiders, twoSiders;
-
-    for(i = 0; i < map->numLineDefs; ++i)
-    {
-        linedef_t* lineDef = map->lineDefs[i];
-        vertex_t* from = lineDef->buildData.v[0];
-        vertex_t* to = lineDef->buildData.v[1];
-
-        if((lineDef->buildData.sideDefs[FRONT] && lineDef->buildData.sideDefs[BACK]) ||
-           !lineDef->buildData.sideDefs[FRONT] /* ||
-           lineDef->buildData.overlap*/)
-            continue;
-
-        oneSiders = twoSiders = 0;
-        countVertexLineOwners(vertexInfo[((mvertex_t*) from->data)->index - 1].lineOwners,
-                              &oneSiders, &twoSiders);
-
-        if((oneSiders % 2) == 1 && (oneSiders + twoSiders) > 1)
-        {
-/*#if _DEBUG
-Con_Message("FUNNY LINE %d : start vertex %d has odd number of one-siders\n",
-        i, lineDef->buildData.v[0]->index);
-#endif*/
-            testForWindowEffect(map, lineDef);
-            continue;
-        }
-
-        oneSiders = twoSiders = 0;
-        countVertexLineOwners(vertexInfo[((mvertex_t*) to->data)->index - 1].lineOwners,
-                              &oneSiders, &twoSiders);
-
-        if((oneSiders % 2) == 1 && (oneSiders + twoSiders) > 1)
-        {
-/*#if _DEBUG
-Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
-        i, lineDef->buildData.v[1]->index));
-#endif*/
-            testForWindowEffect(map, lineDef);
-        }
-    }
-    }
-
-    for(i = 0; i < map->numLineDefs; ++i)
-    {
-        linedef_t* lineDef = map->lineDefs[i];
-        vertex_t* from = lineDef->buildData.v[0];
-        vertex_t* to = lineDef->buildData.v[1];
-        hedge_t* back, *front;
-
-        front = BSP_CreateHEdge(lineDef, lineDef, from,
-                                lineDef->buildData.sideDefs[FRONT]->sector, false);
-
-        // Handle the 'One-Sided Window' trick.
-        if(!lineDef->buildData.sideDefs[BACK] && lineDef->buildData.windowEffect)
-        {
-            back = BSP_CreateHEdge(((bsp_hedgeinfo_t*) front->data)->lineDef,
-                                 lineDef, to,
-                                 lineDef->buildData.windowEffect, true);
-        }
-        else
-        {
-            back = BSP_CreateHEdge(lineDef, lineDef, to,
-                lineDef->buildData.sideDefs[BACK]? lineDef->buildData.sideDefs[BACK]->sector : NULL, true);
-        }
-
-        back->twin = front;
-        front->twin = back;
-
-        BSP_UpdateHEdgeInfo(front);
-        BSP_UpdateHEdgeInfo(back);
-
-        lineDef->hEdges[0] = lineDef->hEdges[1] = front;
-        ((lineowner2_t*) lineDef->vo[0])->hEdge = front;
-        ((lineowner2_t*) lineDef->vo[1])->hEdge = back;
-    }
-
-    // Sort vertex owners, clockwise by angle (i.e., ascending).
-    for(i = 0; i < numVertices; ++i)
-    {
-        ownerinfo_t* info = &vertexInfo[i];
-
-        if(info->numLineOwners == 0)
-            continue;
-
-        rootVtx = map->_halfEdgeDS->vertices[i];
-        info->lineOwners = sortLineOwners2(info->lineOwners, lineAngleSorter2);
-    }
-
-    // Link half-edges around vertex.
-    for(i = 0; i < numVertices; ++i)
-    {
-        ownerinfo_t* info = &vertexInfo[i];
-        lineowner2_t* owner, *prev;
-
-        if(info->numLineOwners == 0)
-            continue;
-
-        prev = info->lineOwners;
-        while(prev->next)
-            prev = prev->next;
-
-        owner = info->lineOwners;
-        do
-        {
-            hedge_t* hEdge = owner->hEdge;
-
-            hEdge->prev = owner->next ? owner->next->hEdge->twin : info->lineOwners->hEdge->twin;
-            hEdge->prev->next = hEdge;
-
-            hEdge->twin->next = prev->hEdge;
-            hEdge->twin->next->prev = hEdge->twin;
-
-            prev = owner;
-        } while((owner = owner->next) != NULL);
-    }
-
-    // Release temporary storage.
-    M_Free(lineOwners);
-    M_Free(vertexInfo);
-
-    // How much time did we spend?
-    VERBOSE(Con_Message("createInitialHEdges: Done in %.2f seconds.\n",
-                        (Sys_GetRealTime() - startTime) / 1000.0f));
-}
-
-static int addHEdgeToSuperblock(hedge_t* hEdge, void* context)
-{
-    superblock_t* block = (superblock_t*) context;
-
-    if(!(((bsp_hedgeinfo_t*) hEdge->data)->lineDef))
-        return true; // Continue iteration.
-
-    if(((bsp_hedgeinfo_t*) hEdge->data)->side == BACK &&
-       !((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.sideDefs[BACK])
-        return true; // Continue iteration.
-
-    if(((bsp_hedgeinfo_t*) hEdge->data)->side == BACK &&
-       ((bsp_hedgeinfo_t*) hEdge->data)->lineDef->buildData.windowEffect)
-        return true; // Continue iteration.
-
-    BSP_AddHEdgeToSuperBlock(block, hEdge);
-    return true; // Continue iteration.
-}
-
-static superblock_t* createSuperblockAndAddHEdges(map_t* map)
-{
-    int mapBounds[4], bw, bh;
-    superblock_t* block;
-
-    findMapLimits(map, mapBounds);
-
-    block = BSP_CreateSuperBlock();
-
-    block->bbox[BOXLEFT]   = mapBounds[BOXLEFT]   - (mapBounds[BOXLEFT]   & 0x7);
-    block->bbox[BOXBOTTOM] = mapBounds[BOXBOTTOM] - (mapBounds[BOXBOTTOM] & 0x7);
-    bw = ((mapBounds[BOXRIGHT] - block->bbox[BOXLEFT])   / 128) + 1;
-    bh = ((mapBounds[BOXTOP]   - block->bbox[BOXBOTTOM]) / 128) + 1;
-
-    block->bbox[BOXRIGHT] = block->bbox[BOXLEFT]   + 128 * M_CeilPow2(bw);
-    block->bbox[BOXTOP]   = block->bbox[BOXBOTTOM] + 128 * M_CeilPow2(bh);
-
-    HalfEdgeDS_IterateHEdges(map->_halfEdgeDS, addHEdgeToSuperblock, block);
-    return block;
-}
-
-/**
  * Build the BSP for the given map.
  *
  * @param map           The map to build the BSP for.
@@ -2810,67 +2244,31 @@ static superblock_t* createSuperblockAndAddHEdges(map_t* map)
 static boolean buildBSP(map_t* map)
 {
     uint startTime = Sys_GetRealTime();
-
-    superblock_t* hEdgeList;
+    nodebuilder_t* nb;
 
     if(verbose >= 1)
         Con_Message("Map_BuildBSP: Processing map using tunable "
                     "factor of %d...\n", bspFactor);
 
-    createInitialHEdges(map);
+    nb = P_CreateNodeBuilder(map, bspFactor);
+    NodeBuilder_Build(nb);
+    map->_rootNode = nb->rootNode;
 
-    BSP_InitSuperBlockAllocator();
-    hEdgeList = createSuperblockAndAddHEdges(map);
+    Con_Message("Map_BuildBSP: Built %d Nodes, %d Subsectors, %d Segs.\n",
+                map->numNodes, map->numSubsectors, map->numSegs);
 
-    // Build the BSP.
+    if(!BinaryTree_IsLeaf(map->_rootNode))
     {
-    uint buildStartTime = Sys_GetRealTime();
-    cutlist_t* cutList;
+        long rHeight, lHeight;
 
-    BSP_InitIntersectionAllocator();
-    cutList = BSP_CutListCreate();
+        rHeight = (long) BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, RIGHT));
+        lHeight = (long) BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, LEFT));
 
-    // Recursively create nodes.
-    map->_rootNode = BuildNodes(hEdgeList, cutList);
-
-    // The cutlist data is no longer needed.
-    BSP_CutListDestroy(cutList);
-
-    // How much time did we spend?
-    VERBOSE(Con_Message
-            ("BuildNodes: Done in %.2f seconds.\n",
-             (Sys_GetRealTime() - buildStartTime) / 1000.0f));
+        Con_Message("  Balance %+ld (l%ld - r%ld).\n", lHeight - rHeight,
+                    lHeight, rHeight);
     }
 
-    BSP_DestroySuperBlock(hEdgeList);
-
-    if(map->_rootNode)
-    {   // Success!
-        // Wind the BSP tree and save to the map.
-        ClockwiseBspTree(map->_rootNode);
-
-        SaveMap(map, map->_rootNode);
-
-        Con_Message("Map_BuildBSP: Built %d Nodes, %d Subsectors, %d Segs.\n",
-                    map->numNodes, map->numSubsectors, map->numSegs);
-
-        if(!BinaryTree_IsLeaf(map->_rootNode))
-        {
-            long rHeight, lHeight;
-
-            rHeight = (long)
-                BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, RIGHT));
-            lHeight = (long)
-                BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, LEFT));
-
-            Con_Message("  Balance %+ld (l%ld - r%ld).\n", lHeight - rHeight,
-                        lHeight, rHeight);
-        }
-    }
-
-    // Free temporary storage.
-    BSP_ShutdownIntersectionAllocator();
-    BSP_ShutdownSuperBlockAllocator();
+    P_DestroyNodeBuilder(nb);
 
     // How much time did we spend?
     VERBOSE(Con_Message("  Done in %.2f seconds.\n",
@@ -3211,6 +2609,151 @@ lumobjblockmap_t* Map_LumobjBlockmap(map_t* map)
 {
     assert(map);
     return map->_lumobjBlockmap;
+}
+
+seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge)
+{
+    assert(map);
+    assert(hEdge);
+    {
+    seg_t* seg = P_CreateSeg();
+
+    seg->hEdge = hEdge;
+    seg->side = side;
+    seg->sideDef = NULL;
+    if(lineDef && lineDef->buildData.sideDefs[seg->side])
+        seg->sideDef = map->sideDefs[lineDef->buildData.sideDefs[seg->side]->buildData.index - 1];
+
+    if(seg->sideDef)
+    {
+        linedef_t* ldef = seg->sideDef->lineDef;
+        vertex_t* vtx = ldef->buildData.v[seg->side];
+
+        seg->offset = P_AccurateDistance(hEdge->HE_v1->pos[VX] - vtx->pos[VX],
+                                         hEdge->HE_v1->pos[VY] - vtx->pos[VY]);
+    }
+
+    seg->angle =
+        bamsAtan2((int) (hEdge->twin->vertex->pos[VY] - hEdge->vertex->pos[VY]),
+                  (int) (hEdge->twin->vertex->pos[VX] - hEdge->vertex->pos[VX])) << FRACBITS;
+
+    // Calculate the length of the segment. We need this for
+    // the texture coordinates. -jk
+    seg->length = P_AccurateDistance(hEdge->HE_v2->pos[VX] - hEdge->HE_v1->pos[VX],
+                                     hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]);
+
+    if(seg->length == 0)
+        seg->length = 0.01f; // Hmm...
+
+    // Calculate the surface normals
+    // Front first
+    if(seg->sideDef)
+    {
+        surface_t* surface = &seg->sideDef->SW_topsurface;
+
+        surface->normal[VY] = (hEdge->HE_v1->pos[VX] - hEdge->HE_v2->pos[VX]) / seg->length;
+        surface->normal[VX] = (hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]) / seg->length;
+        surface->normal[VZ] = 0;
+
+        // All surfaces of a sidedef have the same normal.
+        memcpy(seg->sideDef->SW_middlenormal, surface->normal, sizeof(surface->normal));
+        memcpy(seg->sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
+    }
+
+    hEdge->data = seg;
+
+    P_CreateObjectRecord(DMU_SEG, seg);
+    map->segs = Z_Realloc(map->segs, ++map->numSegs * sizeof(seg_t*), PU_STATIC);
+    map->segs[map->numSegs-1] = seg;
+    return seg;
+    }
+}
+
+static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSelfRef)
+{
+    const hedge_t* hEdge;
+    sector_t* sector = NULL;
+
+    hEdge = firstHEdge;
+    do
+    {
+        if(!allowSelfRef && hEdge->twin &&
+           ((bsp_hedgeinfo_t*) hEdge->data)->sector ==
+           ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
+            continue;
+
+        if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
+           ((bsp_hedgeinfo_t*) hEdge->data)->sector)
+        {
+            linedef_t* lineDef = ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
+
+            if(lineDef->buildData.windowEffect && ((bsp_hedgeinfo_t*) hEdge->data)->side == 1)
+                sector = lineDef->buildData.windowEffect;
+            else
+                sector = lineDef->buildData.sideDefs[
+                    ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
+        }
+    } while(!sector && (hEdge = hEdge->next) != firstHEdge);
+
+    return sector;
+}
+
+subsector_t* Map_CreateSubsector(map_t* map, face_t* face)
+{
+    assert(map);
+    assert(face);
+    {
+    subsector_t* subsector = P_CreateSubsector();
+    size_t hEdgeCount;
+    hedge_t* hEdge;
+
+    hEdgeCount = 0;
+    hEdge = face->hEdge;
+    do
+    {
+        hEdgeCount++;
+    } while((hEdge = hEdge->next) != face->hEdge);
+
+    subsector->face = face;
+    subsector->hEdgeCount = (uint) hEdgeCount;
+
+    /**
+     * Determine which sector this subsector belongs to.
+     * On the first pass, we are picky; do not consider half-edges from
+     * self-referencing linedefs. If that fails, take whatever we can find.
+     */
+    subsector->sector = pickSectorFromHEdges(face->hEdge, false);
+    if(!subsector->sector)
+        subsector->sector = pickSectorFromHEdges(face->hEdge, true);
+
+    if(!subsector->sector)
+    {
+        Con_Message("hardenLeaf: Warning orphan subsector %p (%i half-edges).\n",
+                    subsector, subsector->hEdgeCount);
+    }
+
+    face->data = (void*) subsector;
+
+    P_CreateObjectRecord(DMU_SUBSECTOR, subsector);
+    map->subsectors = Z_Realloc(map->subsectors, ++map->numSubsectors * sizeof(subsector_t*), PU_STATIC);
+    map->subsectors[map->numSubsectors-1] = subsector;
+
+    return subsector;
+    }
+}
+
+node_t* Map_CreateNode(map_t* map, float x, float y, float dX, float dY,
+                       float rightAABB[4], float leftAABB[4])
+{
+    assert(map);
+    {
+    node_t* node = P_CreateNode(x, y, dX, dY, rightAABB, leftAABB);
+
+    P_CreateObjectRecord(DMU_NODE, node);
+    map->nodes = Z_Realloc(map->nodes, ++map->numNodes * sizeof(node_t*), PU_STATIC);
+    map->nodes[map->numNodes-1] = node;
+    return node;
+    }
 }
 
 void Map_InitLinks(map_t* map)

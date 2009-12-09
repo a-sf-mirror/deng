@@ -43,8 +43,8 @@
 #define ANG_EPSILON         (1.0 / 1024.0)
 
 typedef struct {
-    // The superblock that contains this half-edge, or NULL if the half-edge
-    // is no longer in any superblock (e.g., now in a leaf).
+    // The SuperBlock that contains this half-edge, or NULL if the half-edge
+    // is no longer in any SuperBlock (e.g., now in a leaf).
     struct superblock_s* block;
 
     // Precomputed data for faster calculations.

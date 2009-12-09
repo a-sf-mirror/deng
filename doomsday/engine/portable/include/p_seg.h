@@ -32,6 +32,9 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
+seg_t*          P_CreateSeg(void);
+void            P_DestroySeg(seg_t* seg);
+
 boolean         Seg_GetProperty(const seg_t* seg, setargs_t* args);
 boolean         Seg_SetProperty(seg_t* seg, const setargs_t* args);
 

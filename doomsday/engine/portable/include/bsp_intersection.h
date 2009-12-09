@@ -36,33 +36,17 @@
 
 #include "bsp_edge.h"
 
-typedef void* cutlist_t;
-
-/**
- * An "intersection" remembers the vertex that touches a space partition.
- */
-typedef struct intersection_s {
-    vertex_t*   vertex;
-
-    // How far along the partition line the vertex is. Zero is at the
-    // partition half-edge's start point, positive values move in the same
-    // direction as the partition's direction, and negative values move
-    // in the opposite direction.
-    double      alongDist;
-} intersection_t;
-
-void            BSP_InitIntersectionAllocator(void);
-void            BSP_ShutdownIntersectionAllocator(void);
-
-intersection_t* BSP_IntersectionCreate(vertex_t* vert, double x, double y,
-                                       double dX, double dY);
-void            BSP_IntersectionDestroy(intersection_t* cut);
+// The intersection list is kept sorted by along_dist, in ascending order.
+typedef struct cutlist_s {
+    struct cnode_s* head;
+    struct cnode_s* unused;
+} cutlist_t;
 
 cutlist_t*      BSP_CutListCreate(void);
 void            BSP_CutListDestroy(cutlist_t* cutList);
 
-void            BSP_CutListEmpty(cutlist_t* cutList);
+void            CutList_Intersect(cutlist_t* list, vertex_t* vertex, double distance);
+boolean         CutList_Find(cutlist_t* cutList, vertex_t* v);
+void            CutList_Reset(cutlist_t* cutList);
 
-boolean         BSP_CutListInsertIntersection(cutlist_t* cutList, intersection_t* cut);
-intersection_t* BSP_CutListFindIntersection(cutlist_t* cutList, vertex_t* v);
 #endif /* BSP_INTERSECTION_H */

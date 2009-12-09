@@ -340,6 +340,23 @@ static void spreadParticles(const subsector_t* subsector)
     ParticleBlockmap_BoxIterate(bmap, blockBox, PTR_SpreadContacts, &type);
 }
 
+subsector_t* P_CreateSubsector(void)
+{
+    return (subsector_t*) Z_Calloc(sizeof(subsector_t), PU_STATIC, 0);
+}
+
+void P_DestroySubsector(subsector_t* subsector)
+{
+    assert(subsector);
+    /*shadowlink_t* slink;
+    while((slink = subsector->shadows))
+    {
+        subsector->shadows = slink->next;
+        Z_Free(slink);
+    }*/
+    Z_Free(subsector);
+}
+
 /**
  * Perform any processing needed before we can draw surfaces within the
  * specified subsector with dynamic lights.

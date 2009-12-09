@@ -58,30 +58,23 @@ typedef struct superblock_s {
     struct superblock_listnode_s* _hEdges;
 } superblock_t;
 
-void            BSP_InitSuperBlockAllocator(void);
-void            BSP_ShutdownSuperBlockAllocator(void);
-
 superblock_t*   BSP_CreateSuperBlock(void);
 void            BSP_DestroySuperBlock(superblock_t* block);
 
-void            SuperBlock_PushHEdge(superblock_t* superblock, hedge_t* hEdge);
+void            SuperBlock_PushHEdge(superblock_t* SuperBlock, hedge_t* hEdge);
 hedge_t*        SuperBlock_PopHEdge(superblock_t* block);
 #if _DEBUG
-void            SuperBlock_PrintHEdges(superblock_t* superblock);
+void            SuperBlock_PrintHEdges(superblock_t* SuperBlock);
 #endif
 
-void            SuperBlock_IncHEdgeCounts(superblock_t* superblock, boolean lineLinked);
+void            SuperBlock_IncHEdgeCounts(superblock_t* SuperBlock, boolean lineLinked);
 
-hedge_t*        SuperBlock_PickPartition(const superblock_t* superblock);
+hedge_t*        SuperBlock_PickPartition(const superblock_t* SuperBlock, int factor);
 
 void            BSP_FindAABBForHEdges(const superblock_t* hEdgeList, float* bbox);
 void            BSP_DivideOneHEdge(hedge_t* hEdge, double x, double y, double dX, double dY, const hedge_t* partHEdge,
                                    superblock_t* rightList, superblock_t* leftList,
                                    cutlist_t* cutList);
-void            BSP_PartitionHEdges(superblock_t* hEdgeList,
-                                    double x, double y, double dX, double dY, const hedge_t* partHEdge,
-                                    superblock_t** rightList, superblock_t** leftList,
-                                    cutlist_t* cutList);
 void            BSP_AddMiniHEdges(double x, double y, double dX, double dY, const hedge_t* partHEdge, superblock_t* rightList,
                                   superblock_t* leftList, cutlist_t* cutList);
 #endif /* BSP_SUPERBLOCK_H */

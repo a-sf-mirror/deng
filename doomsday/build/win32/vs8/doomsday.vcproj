@@ -889,10 +889,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\bsp_map.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\bsp_node.c"
 				>
 			</File>
@@ -1214,6 +1210,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\net_ping.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\src\node.c"
 				>
 			</File>
 			<File
@@ -2951,6 +2951,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\net_msg.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\engine\portable\include\node.h"
 				>
 			</File>
 			<File

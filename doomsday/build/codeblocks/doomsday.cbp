@@ -270,6 +270,7 @@
 		<Unit filename="..\..\engine\portable\include\net_event.h" />
 		<Unit filename="..\..\engine\portable\include\net_main.h" />
 		<Unit filename="..\..\engine\portable\include\net_msg.h" />
+		<Unit filename="..\..\engine\portable\include\node.h" />
 		<Unit filename="..\..\engine\portable\include\mobjblockmap.h" />
 		<Unit filename="..\..\engine\portable\include\particleblockmap.h" />
 		<Unit filename="..\..\engine\portable\include\p_cmd.h" />
@@ -584,9 +585,8 @@
 		<Unit filename="..\..\engine\portable\src\net_msg.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="..\..\engine\portable\src\net_ping.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="..\..\engine\portable\src\net_ping.c" />
+		<Unit filename="..\..\engine\portable\src\node.c" />
 		<Unit filename="..\..\engine\portable\src\mobjblockmap.c" />
 		<Unit filename="..\..\engine\portable\src\particleblockmap.c" />
 		<Unit filename="..\..\engine\portable\src\p_cmd.c">

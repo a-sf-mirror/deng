@@ -28,6 +28,9 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
+subsector_t*    P_CreateSubsector(void);
+void            P_DestroySubsector(subsector_t* subsector);
+
 void            Subsector_SpreadObjs(subsector_t* subsector);
 void            Subsector_UpdateMidPoint(subsector_t* subsector);
 

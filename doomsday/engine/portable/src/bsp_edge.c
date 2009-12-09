@@ -169,7 +169,7 @@ void testVertexHEdgeRings(vertex_t* v)
  * somewhere.
  *
  * \note
- * We must update the count values of any superblock that contains the
+ * We must update the count values of any SuperBlock that contains the
  * half-edge (and/or backseg), so that future processing is not messed up by
  * incorrect counts.
  */
@@ -256,7 +256,7 @@ testVertexHEdgeRings(newHEdge->vertex);
 testVertexHEdgeRings(newHEdge->twin->vertex);
 #endif
 
-    // Update superblock, if needed.
+    // Update SuperBlock, if needed.
     if(((bsp_hedgeinfo_t*) oldHEdge->data)->block)
         SuperBlock_IncHEdgeCounts(((bsp_hedgeinfo_t*) oldHEdge->data)->block,
                                   ((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef != NULL);
@@ -270,7 +270,7 @@ testVertexHEdgeRings(newHEdge->twin->vertex);
         BSP_UpdateHEdgeInfo(oldHEdge->twin);
         BSP_UpdateHEdgeInfo(newHEdge->twin);
 
-        // Update superblock, if needed.
+        // Update SuperBlock, if needed.
         if(oldInfo->block)
         {
             SuperBlock_IncHEdgeCounts(oldInfo->block, oldInfo->lineDef != NULL);

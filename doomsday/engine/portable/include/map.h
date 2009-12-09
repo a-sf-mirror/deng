@@ -304,6 +304,10 @@ subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map);
 particleblockmap_t* Map_ParticleBlockmap(map_t* map);
 lumobjblockmap_t* Map_LumobjBlockmap(map_t* map);
 
+seg_t*          Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge);
+subsector_t*    Map_CreateSubsector(map_t* map, face_t* face);
+node_t*         Map_CreateNode(map_t* map, float x, float y, float dX, float dY, float rightAABB[4], float leftAABB[4]);
+
 void            Map_InitLinks(map_t* map);
 void            Map_InitSkyFix(map_t* map);
 void            Map_InitSoundEnvironment(map_t* map);

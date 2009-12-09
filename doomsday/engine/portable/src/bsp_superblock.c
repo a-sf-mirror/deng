@@ -80,31 +80,7 @@ static __inline void calcIntersection(const hedge_t* cur,
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static superblock_t* quickAllocSupers;
-
 // CODE --------------------------------------------------------------------
-
-/**
- * Init the superblock allocator.
- */
-void BSP_InitSuperBlockAllocator(void)
-{
-    quickAllocSupers = NULL;
-}
-
-/**
- * Free all the superblocks on the quick-alloc list.
- */
-void BSP_ShutdownSuperBlockAllocator(void)
-{
-    while(quickAllocSupers)
-    {
-        superblock_t* block = quickAllocSupers;
-
-        quickAllocSupers = block->subs[0];
-        M_Free(block);
-    }
-}
 
 static superblock_listnode_t* allocListNode(void)
 {
@@ -117,56 +93,25 @@ static void freeListNode(superblock_listnode_t* node)
 }
 
 /**
- * Acquire memory for a new superblock.
- */
-static superblock_t* allocSuperBlock(void)
-{
-    superblock_t* superblock;
-
-    if(quickAllocSupers == NULL)
-        return M_Calloc(sizeof(superblock_t));
-
-    superblock = quickAllocSupers;
-    quickAllocSupers = superblock->subs[0];
-
-    // Clear out any old rubbish.
-    memset(superblock, 0, sizeof(*superblock));
-
-    return superblock;
-}
-
-/**
  * Free all memory allocated for the specified superblock.
  */
-static void freeSuperBlock(superblock_t* superblock)
+static void freeSuperBlock(superblock_t* block)
 {
     uint num;
-
-    if(superblock->_hEdges)
-    {
-        // This can happen, but only under abnormal circumstances.
-#if _DEBUG
-Con_Error("FreeSuper: Superblock contains half-edges!");
-#endif
-        superblock->_hEdges = NULL;
-    }
 
     // Recursively handle sub-blocks.
     for(num = 0; num < 2; ++num)
     {
-        if(superblock->subs[num])
-            freeSuperBlock(superblock->subs[num]);
+        if(block->subs[num])
+            freeSuperBlock(block->subs[num]);
     }
 
-    // Add block to quick-alloc list. Note that subs[0] is used for
-    // linking the blocks together.
-    superblock->subs[0] = quickAllocSupers;
-    quickAllocSupers = superblock;
+    M_Free(block);
 }
 
 superblock_t* BSP_CreateSuperBlock(void)
 {
-    return allocSuperBlock();
+    return M_Calloc(sizeof(superblock_t));
 }
 
 void BSP_DestroySuperBlock(superblock_t* block)
@@ -176,7 +121,7 @@ void BSP_DestroySuperBlock(superblock_t* block)
 }
 
 /**
- * Link the given half-edge into the given superblock.
+ * Link the given half-edge into the given SuperBlock.
  */
 void SuperBlock_PushHEdge(superblock_t* block, hedge_t* hEdge)
 {
@@ -186,14 +131,14 @@ void SuperBlock_PushHEdge(superblock_t* block, hedge_t* hEdge)
     assert(hEdge);
 
 #if _DEBUG
-// Ensure hedge is not already in this superblock.
+// Ensure hedge is not already in this SuperBlock.
 if((node = block->_hEdges))
 {
     do
     {
         if(node->hEdge == hEdge)
             Con_Error("SuperBlock_PushHEdge: HEdge %p already linked to "
-                      "superblock %p!", hEdge, block);
+                      "SuperBlock %p!", hEdge, block);
     } while((node = node->next));
 }
 #endif
@@ -221,32 +166,27 @@ hedge_t* SuperBlock_PopHEdge(superblock_t* block)
 }
 
 /**
- * Increase the counts within the superblock, to account for the given
+ * Increase the counts within the SuperBlock, to account for the given
  * half-edge being split.
  */
-void SuperBlock_IncHEdgeCounts(superblock_t* superblock, boolean lineLinked)
+void SuperBlock_IncHEdgeCounts(superblock_t* block, boolean lineLinked)
 {
     do
     {
         if(lineLinked)
-            superblock->realNum++;
+            block->realNum++;
         else
-            superblock->miniNum++;
-
-        superblock = superblock->parent;
-    } while(superblock != NULL);
+            block->miniNum++;
+        block = block->parent;
+    } while(block != NULL);
 }
 
 static void makeIntersection(cutlist_t* cutList, vertex_t* vert,
                              double x, double y, double dX, double dY)
 {
-    intersection_t* cut = BSP_CutListFindIntersection(cutList, vert);
-
-    if(!cut)
-    {
-        cut = BSP_IntersectionCreate(vert, x, y, dX, dY);
-        BSP_CutListInsertIntersection(cutList, cut);
-    }
+    if(!CutList_Find(cutList, vert))
+        CutList_Intersect(cutList, vert,
+            (vert->pos[VX] - x) * dX + (vert->pos[VY] - y) * dY);
 }
 
 /**
@@ -353,72 +293,6 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, double x, double y, double dX,
     }
 }
 
-static void partitionHEdges(superblock_t* hEdgeList,
-                            double x, double y, double dX, double dY, const hedge_t* partHEdge,
-                            superblock_t* rights, superblock_t* lefts,
-                            cutlist_t* cutList)
-{
-    hedge_t* hEdge;
-    uint num;
-
-    while((hEdge = SuperBlock_PopHEdge(hEdgeList)))
-    {
-        ((bsp_hedgeinfo_t*) hEdge->data)->block = NULL;
-        BSP_DivideOneHEdge(hEdge, x, y, dX, dY, partHEdge, rights, lefts, cutList);
-    }
-
-    // Recursively handle sub-blocks.
-    for(num = 0; num < 2; ++num)
-    {
-        superblock_t* a = hEdgeList->subs[num];
-
-        if(a)
-        {
-            partitionHEdges(a, x, y, dX, dY, partHEdge, rights, lefts, cutList);
-
-            if(a->realNum + a->miniNum > 0)
-                Con_Error("BSP_SeparateHEdges: child %d not empty!", num);
-
-            BSP_DestroySuperBlock(a);
-            hEdgeList->subs[num] = NULL;
-        }
-    }
-
-    hEdgeList->realNum = hEdgeList->miniNum = 0;
-}
-
-/**
- * Remove all the half-edges from the list, partitioning them into the left
- * or right lists based on the given partition line. Adds any intersections
- * onto the intersection list as it goes.
- */
-void BSP_PartitionHEdges(superblock_t* hEdgeList, double x, double y,
-                         double dX, double dY, const hedge_t* partHEdge,
-                         superblock_t** right, superblock_t** left,
-                         cutlist_t* cutList)
-{
-    superblock_t* bRight = BSP_CreateSuperBlock();
-    superblock_t* bLeft = BSP_CreateSuperBlock();
-
-    M_CopyBox(bRight->bbox, hEdgeList->bbox);
-    M_CopyBox(bLeft->bbox, hEdgeList->bbox);
-
-    partitionHEdges(hEdgeList, x, y, dX, dY, partHEdge, bRight, bLeft, cutList);
-
-    // Sanity checks...
-    if(bRight->realNum + bRight->miniNum == 0)
-        Con_Error("BuildNodes: Separated halfedge-list has no right side.");
-
-    if(bLeft->realNum + bLeft->miniNum == 0)
-        Con_Error("BuildNodes: Separated halfedge-list has no left side.");
-
-    BSP_AddMiniHEdges(x, y, dX, dY, partHEdge, bRight, bLeft, cutList);
-    BSP_CutListEmpty(cutList);
-
-    *right = bRight;
-    *left = bLeft;
-}
-
 /**
  * To be able to divide the nodes down, evalPartition must decide which is
  * the best half-edge to use as a nodeline. It does this by selecting the
@@ -428,7 +302,7 @@ void BSP_PartitionHEdges(superblock_t* hEdgeList, double x, double y,
  * @return              @c true, if a "bad half-edge" was found early.
  */
 static int evalPartitionWorker(const superblock_t* hEdgeList,
-                               hedge_t* partHEdge, int bestCost,
+                               hedge_t* partHEdge, int factor, int bestCost,
                                evalinfo_t* info)
 {
 #define ADD_LEFT()  \
@@ -443,13 +317,13 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
         else                info->miniRight += 1;  \
       } while (0)
 
-    int num, factor = bspFactor;
     superblock_listnode_t* n;
     double qnty, a, b, fa, fb;
     bsp_hedgeinfo_t* part = (bsp_hedgeinfo_t*) partHEdge->data;
+    int num;
 
     /**
-     * This is the heart of my superblock idea, it tests the _whole_ block
+     * This is the heart of my SuperBlock idea, it tests the _whole_ block
      * against the partition line to quickly handle all the half-edges
      * within it at once. Only when the partition line intercepts the box do
      * we need to go deeper into it - AJA.
@@ -601,7 +475,7 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
         if(!hEdgeList->subs[num])
             continue;
 
-        if(evalPartitionWorker(hEdgeList->subs[num], partHEdge, bestCost, info))
+        if(evalPartitionWorker(hEdgeList->subs[num], partHEdge, factor, bestCost, info))
             return true;
     }
 
@@ -620,10 +494,10 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
  *                      should be skipped altogether.
  */
 static int evalPartition(const superblock_t* hEdgeList, hedge_t* part,
-                         int bestCost)
+                         int factor, int bestCost)
 {
-    evalinfo_t info;
     bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) part->data;
+    evalinfo_t info;
 
     // Initialize info structure.
     info.cost   = 0;
@@ -636,7 +510,7 @@ static int evalPartition(const superblock_t* hEdgeList, hedge_t* part,
     info.miniLeft  = 0;
     info.miniRight = 0;
 
-    if(evalPartitionWorker(hEdgeList, part, bestCost, &info))
+    if(evalPartitionWorker(hEdgeList, part, factor, bestCost, &info))
         return -1;
 
     // Make sure there is at least one real seg on each side.
@@ -678,7 +552,7 @@ Con_Message("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d "
  */
 static boolean pickHEdgeWorker(const superblock_t* partList,
                                const superblock_t* hEdgeList,
-                               hedge_t** best, int* bestCost)
+                               int factor, hedge_t** best, int* bestCost)
 {
     int num, cost;
     superblock_listnode_t* n;
@@ -710,7 +584,7 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
             continue;
         data->lineDef->validCount = validCount;
 
-        cost = evalPartition(hEdgeList, hEdge, *bestCost);
+        cost = evalPartition(hEdgeList, hEdge, factor, *bestCost);
 
         // half-edge unsuitable or too costly?
         if(cost < 0 || cost >= *bestCost)
@@ -727,7 +601,7 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
     for(num = 0; num < 2; ++num)
     {
         if(partList->subs[num])
-            pickHEdgeWorker(partList->subs[num], hEdgeList, best, bestCost);
+            pickHEdgeWorker(partList->subs[num], hEdgeList, factor, best, bestCost);
     }
 
     return true;
@@ -740,13 +614,13 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
  *
  * @return              hedge_t to use as a partition iff one suitable was found.
  */
-hedge_t* SuperBlock_PickPartition(const superblock_t* hEdgeList)
+hedge_t* SuperBlock_PickPartition(const superblock_t* hEdgeList, int factor)
 {
     int bestCost = INT_MAX;
     hedge_t* best = NULL;
 
     validCount++;
-    if(false == pickHEdgeWorker(hEdgeList, hEdgeList, &best, &bestCost))
+    if(false == pickHEdgeWorker(hEdgeList, hEdgeList, factor, &best, &bestCost))
     {
         // \hack BuildNodes will detect the cancellation.
         return NULL;
@@ -867,12 +741,12 @@ static __inline void calcIntersection(const hedge_t* cur,
  * For debugging.
  */
 #if _DEBUG
-void SuperBlock_PrintHEdges(superblock_t* superblock)
+void SuperBlock_PrintHEdges(superblock_t* block)
 {
-    int num;
     const superblock_listnode_t* n;
+    int num;
 
-    for(n = superblock->_hEdges; n; n = n->next)
+    for(n = block->_hEdges; n; n = n->next)
     {
         const hedge_t* hEdge = n->hEdge;
         const bsp_hedgeinfo_t* data = hEdge->data;
@@ -886,15 +760,15 @@ void SuperBlock_PrintHEdges(superblock_t* superblock)
 
     for(num = 0; num < 2; ++num)
     {
-        if(superblock->subs[num])
-            SuperBlock_PrintHEdges(superblock->subs[num]);
+        if(block->subs[num])
+            SuperBlock_PrintHEdges(block->subs[num]);
     }
 }
 
 static void testSuperWorker(superblock_t* block, uint* real, uint* mini)
 {
-    uint num;
     const superblock_listnode_t* n;
+    uint num;
 
     for(n = block->_hEdges; n; n = n->next)
     {
