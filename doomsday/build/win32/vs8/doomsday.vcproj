@@ -885,10 +885,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\bsp_main.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\bsp_node.c"
 				>
 			</File>
@@ -2575,10 +2571,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\bsp_intersection.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\bsp_main.h"
 				>
 			</File>
 			<File

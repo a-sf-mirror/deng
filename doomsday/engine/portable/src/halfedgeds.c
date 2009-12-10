@@ -319,21 +319,13 @@ void testVertexHEdgeRings(vertex_t* v)
 }
 #endif
 
-static vertex_t* createVertex(halfedgeds_t* halfEdgeDS, double x, double y)
-{
-    vertex_t* vtx = HalfEdgeDS_CreateVertex(halfEdgeDS);
-    vtx->pos[0] = x;
-    vtx->pos[1] = y;
-    return vtx;
-}
-
 /**
  * Splits the given half-edge at the point (x,y). The new half-edge is
  * returned. The old half-edge is shortened (the original start vertex is
  * unchanged), the new half-edge becomes the cut-off tail (keeping the
  * original end vertex).
  */
-hedge_t* HEdge_Split(halfedgeds_t* halfEdgeDS, hedge_t* oldHEdge, double x, double y)
+hedge_t* HEdge_Split(halfedgeds_t* halfEdgeDS, hedge_t* oldHEdge)
 {
     hedge_t* newHEdge;
     vertex_t* newVert;
@@ -343,7 +335,7 @@ testVertexHEdgeRings(oldHEdge->vertex);
 testVertexHEdgeRings(oldHEdge->twin->vertex);
 #endif
 
-    newVert = createVertex(halfEdgeDS, x, y);
+    newVert = HalfEdgeDS_CreateVertex(halfEdgeDS);
 
     newHEdge = HalfEdgeDS_CreateHEdge(halfEdgeDS, newVert);
     newHEdge->twin = HalfEdgeDS_CreateHEdge(halfEdgeDS, oldHEdge->twin->vertex);

@@ -183,7 +183,6 @@
 		<Unit filename="..\..\engine\portable\include\blockmapvisual.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_edge.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_intersection.h" />
-		<Unit filename="..\..\engine\portable\include\bsp_main.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_node.h" />
 		<Unit filename="..\..\engine\portable\include\bsp_superblock.h" />
 		<Unit filename="..\..\engine\portable\include\cl_def.h" />
@@ -380,9 +379,6 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="..\..\engine\portable\src\bsp_map.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="..\..\engine\portable\src\bsp_main.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="..\..\engine\portable\src\bsp_node.c">

@@ -34,8 +34,6 @@
 #ifndef BSP_SUPERBLOCK_H
 #define BSP_SUPERBLOCK_H
 
-#include "bsp_intersection.h"
-
 typedef struct superblock_s {
     // Parent of this block, or NULL for a top-level block.
     struct superblock_s* parent;
@@ -71,10 +69,8 @@ void            SuperBlock_IncHEdgeCounts(superblock_t* SuperBlock, boolean line
 
 hedge_t*        SuperBlock_PickPartition(const superblock_t* SuperBlock, int factor);
 
+// @todo Should be private to nodebuilder_t
+void            BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge);
 void            BSP_FindAABBForHEdges(const superblock_t* hEdgeList, float* bbox);
-void            BSP_DivideOneHEdge(hedge_t* hEdge, double x, double y, double dX, double dY, const hedge_t* partHEdge,
-                                   superblock_t* rightList, superblock_t* leftList,
-                                   cutlist_t* cutList);
-void            BSP_AddMiniHEdges(double x, double y, double dX, double dY, const hedge_t* partHEdge, superblock_t* rightList,
-                                  superblock_t* leftList, cutlist_t* cutList);
+
 #endif /* BSP_SUPERBLOCK_H */

@@ -34,13 +34,7 @@
 #ifndef __BSP_EDGE_H__
 #define __BSP_EDGE_H__
 
-#define IFFY_LEN            4.0
-
-// Smallest distance between two points before being considered equal.
-#define DIST_EPSILON        (1.0 / 128.0)
-
-// Smallest degrees between two angles before being considered equal.
-#define ANG_EPSILON         (1.0 / 1024.0)
+#include "halfedgeds.h"
 
 typedef struct {
     // The SuperBlock that contains this half-edge, or NULL if the half-edge
@@ -58,20 +52,20 @@ typedef struct {
     double              pPerp;
 
     // LineDef that this half-edge goes along, or NULL if miniseg.
-    linedef_t*          lineDef;
+    struct linedef_s*   lineDef;
     hedge_t*            lprev, *lnext; // Previous and next half-edges along linedef side.
 
     // LineDef that this half-edge initially comes from.
     // For "real" half-edges, this is just the same as the 'linedef' field
     // above. For "miniedges", this is the linedef of the partition line.
-    linedef_t*          sourceLine;
+    struct linedef_s*   sourceLine;
 
-    sector_t*           sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
+    struct sector_s*    sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
     byte                side; // 0 for right, 1 for left.
 } bsp_hedgeinfo_t;
 
-hedge_t*        BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
-                                vertex_t* start, sector_t* sec, boolean back);
+hedge_t*        BSP_CreateHEdge(struct linedef_s* line, struct linedef_s* sourceLine,
+                                vertex_t* start, struct sector_s* sec, boolean back);
 hedge_t*        BSP_SplitHEdge(hedge_t* oldHEdge, double x, double y);
 
 // @todo Should be private to this module.

@@ -33,8 +33,13 @@
 #include <math.h>
 
 #include "de_base.h"
-#include "de_bsp.h"
+#include "de_play.h"
 #include "de_misc.h"
+
+#include "bsp_node.h"
+#include "bsp_edge.h"
+#include "bsp_intersection.h"
+#include "bsp_superblock.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -279,38 +284,13 @@ boolean CutList_Find(cutlist_t* list, vertex_t* v)
     }
 }
 
-static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
+void BSP_MergeOverlappingIntersections(cutlist_t* list)
 {
-    /*if(insect->after && ((bsp_hedgeinfo_t*) insect->after->data)->lineDef)
+    assert(list);
     {
-        linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->after->data)->lineDef;
+    cnode_t* firstNode, *node, *np;
 
-        if(lineDef->buildData.sideDefs[FRONT] &&
-           lineDef->buildData.sideDefs[BACK] &&
-           lineDef->buildData.sideDefs[FRONT]->sector ==
-           lineDef->buildData.sideDefs[BACK]->sector)
-            return true;
-    }
-
-    if(insect->before && ((bsp_hedgeinfo_t*) insect->before->data)->lineDef)
-    {
-        linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->before->data)->lineDef;
-
-        if(lineDef->buildData.sideDefs[FRONT] &&
-           lineDef->buildData.sideDefs[BACK] &&
-           lineDef->buildData.sideDefs[FRONT]->sector ==
-           lineDef->buildData.sideDefs[BACK]->sector)
-            return true;
-    }*/
-
-    return false;
-}
-
-static void mergeOverlappingIntersections(cutlist_t* list)
-{
-    cnode_t* firstNode = list->head, *node, *np;
-
-    node = firstNode;
+    node = firstNode = list->head;
     np = node->next;
     while(node && np)
     {
@@ -344,6 +324,7 @@ Con_Message(" Skipping very short half-edge (len=%1.3f) near "
         destroyIntersection(list, next);
 
         np = node->next;
+    }
     }
 }
 
@@ -382,13 +363,40 @@ static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle, byte antiClockw
     }
 }
 
-static void connectGaps(double x, double y, double dX, double dY,
-                        const hedge_t* partHEdge, superblock_t* rightList,
-                        superblock_t* leftList, cnode_t* firstNode)
+static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
 {
-    cnode_t* node;
+    /*if(insect->after && ((bsp_hedgeinfo_t*) insect->after->data)->lineDef)
+    {
+        linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->after->data)->lineDef;
 
-    node = firstNode;
+        if(lineDef->buildData.sideDefs[FRONT] &&
+           lineDef->buildData.sideDefs[BACK] &&
+           lineDef->buildData.sideDefs[FRONT]->sector ==
+           lineDef->buildData.sideDefs[BACK]->sector)
+            return true;
+    }
+
+    if(insect->before && ((bsp_hedgeinfo_t*) insect->before->data)->lineDef)
+    {
+        linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->before->data)->lineDef;
+
+        if(lineDef->buildData.sideDefs[FRONT] &&
+           lineDef->buildData.sideDefs[BACK] &&
+           lineDef->buildData.sideDefs[FRONT]->sector ==
+           lineDef->buildData.sideDefs[BACK]->sector)
+            return true;
+    }*/
+
+    return false;
+}
+
+void BSP_ConnectGaps(double x, double y, double dX, double dY,
+                     const hedge_t* partHEdge, superblock_t* rightList,
+                     superblock_t* leftList, cutlist_t* cutList)
+{
+    cnode_t* node, *firstNode;
+
+    node = firstNode = cutList->head;
     while(node && node->next)
     {
         const intersection_t* cur = node->data;
@@ -557,25 +565,4 @@ Con_Message("  %p LEFT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
 
         node = node->next;
     }
-}
-
-/**
- * Analyze the intersection list, and add any needed minihedges to the given
- * half-edge lists (one minihedge on each side).
- *
- * @note All the intersections in the cutList will be freed back into the
- * quick-alloc list for re-use!
- *
- * @todo Does not belong in here.
- */
-void BSP_AddMiniHEdges(double x, double y, double dX, double dY,
-                       const hedge_t* partHEdge, superblock_t* rightList,
-                       superblock_t* leftList, cutlist_t* list)
-{
-    assert(list);
-    assert(leftList);
-    assert(rightList);
-    assert(partHEdge);
-    mergeOverlappingIntersections(list);
-    connectGaps(x, y, dX, dY, partHEdge, rightList, leftList, list->head);
 }

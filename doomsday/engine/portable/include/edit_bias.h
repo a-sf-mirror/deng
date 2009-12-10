@@ -29,8 +29,6 @@
 #ifndef __DOOMSDAY_BIAS_EDITOR__
 #define __DOOMSDAY_BIAS_EDITOR__
 
-#include "edit_bias.h"
-
 void            SBE_Register(void);
 
 void            SBE_InitForMap(struct map_s* map);

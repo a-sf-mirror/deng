@@ -28,10 +28,6 @@
 #ifndef __DOOMSDAY_BSP__
 #define __DOOMSDAY_BSP__
 
-#include "bsp_main.h"
 #include "bsp_node.h"
-#include "bsp_edge.h"
-#include "bsp_superblock.h"
-#include "bsp_intersection.h"
 
 #endif

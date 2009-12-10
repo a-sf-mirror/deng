@@ -34,7 +34,6 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "de_base.h"
-#include "de_bsp.h"
 #include "de_play.h"
 #include "de_misc.h"
 
@@ -43,7 +42,14 @@
 #include <math.h>
 #include <limits.h>
 
+#include "bsp_node.h"
+#include "bsp_edge.h"
+#include "bsp_superblock.h"
+
 // MACROS ------------------------------------------------------------------
+
+// Smallest distance between two points before being considered equal.
+#define DIST_EPSILON        (1.0 / 128.0)
 
 // TYPES -------------------------------------------------------------------
 
@@ -68,11 +74,6 @@ typedef struct evalinfo_s {
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-static __inline void calcIntersection(const hedge_t* cur,
-                                      double x, double y, double dX, double dY,
-                                      double perpC, double perpD,
-                                      double* ix, double* iy);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -179,118 +180,6 @@ void SuperBlock_IncHEdgeCounts(superblock_t* block, boolean lineLinked)
             block->miniNum++;
         block = block->parent;
     } while(block != NULL);
-}
-
-static void makeIntersection(cutlist_t* cutList, vertex_t* vert,
-                             double x, double y, double dX, double dY)
-{
-    if(!CutList_Find(cutList, vert))
-        CutList_Intersect(cutList, vert,
-            (vert->pos[VX] - x) * dX + (vert->pos[VY] - y) * dY);
-}
-
-/**
- * Partition the given edge and perform any further necessary action (moving
- * it into either the left list, right list, or splitting it).
- *
- * Take the given half-edge 'cur', compare it with the partition line, and
- * determine it's fate: moving it into either the left or right lists
- * (perhaps both, when splitting it in two). Handles the twin as well.
- * Updates the intersection list if the half-edge lies on or crosses the
- * partition line.
- *
- * \note
- * I have rewritten this routine based on evalPartition() (which I've also
- * reworked, heavily). I think it is important that both these routines
- * follow the exact same logic when determining which half-edges should go
- * left, right or be split. - AJA
- */
-void BSP_DivideOneHEdge(hedge_t* curHEdge, double x, double y, double dX,
-                        double dY, const hedge_t* partHEdge,
-                        superblock_t* rightList, superblock_t* leftList,
-                        cutlist_t* cutList)
-{
-    bsp_hedgeinfo_t* data = ((bsp_hedgeinfo_t*) curHEdge->data);
-    hedge_t* newHEdge;
-    double a, b;
-
-    // Get state of lines' relation to each other.
-    if(partHEdge && data->sourceLine ==
-        ((bsp_hedgeinfo_t*) partHEdge->data)->sourceLine)
-    {
-        a = b = 0;
-    }
-    else
-    {
-        a = (y - curHEdge->vertex->pos[VY]) * dX -
-            (x - curHEdge->vertex->pos[VX]) * dY;
-        b = (y - curHEdge->twin->vertex->pos[VY]) * dX -
-            (x - curHEdge->twin->vertex->pos[VX]) * dY;
-    }
-
-    // Check for being on the same line.
-    if(fabs(a) <= DIST_EPSILON && fabs(b) <= DIST_EPSILON)
-    {
-        makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY);
-        makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY);
-
-        // This seg runs along the same line as the partition. Check
-        // whether it goes in the same direction or the opposite.
-        if(data->pDX * dX + data->pDY * dY < 0)
-        {
-            BSP_AddHEdgeToSuperBlock(leftList, curHEdge);
-        }
-        else
-        {
-            BSP_AddHEdgeToSuperBlock(rightList, curHEdge);
-        }
-
-        return;
-    }
-
-    // Check for right side.
-    if(a > -DIST_EPSILON && b > -DIST_EPSILON)
-    {
-        if(a < DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY);
-        else if(b < DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY);
-
-        BSP_AddHEdgeToSuperBlock(rightList, curHEdge);
-        return;
-    }
-
-    // Check for left side.
-    if(a < DIST_EPSILON && b < DIST_EPSILON)
-    {
-        if(a > -DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY);
-        else if(b > -DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY);
-
-        BSP_AddHEdgeToSuperBlock(leftList, curHEdge);
-        return;
-    }
-
-    // When we reach here, we have a and b non-zero and opposite sign,
-    // hence this edge will be split by the partition line.
-    {
-    double iX, iY;
-    calcIntersection(curHEdge, x, y, dX, dY, a, b, &iX, &iY);
-    newHEdge = BSP_SplitHEdge(curHEdge, iX, iY);
-    makeIntersection(cutList, newHEdge->vertex, x, y, dX, dY);
-    }
-
-    if(a < 0)
-    {
-        BSP_AddHEdgeToSuperBlock(leftList,  curHEdge);
-        BSP_AddHEdgeToSuperBlock(rightList, newHEdge);
-    }
-    else
-    {
-        BSP_AddHEdgeToSuperBlock(rightList, curHEdge);
-        BSP_AddHEdgeToSuperBlock(leftList,  newHEdge);
-    }
 }
 
 /**
@@ -692,49 +581,6 @@ void BSP_FindAABBForHEdges(const superblock_t* hEdgeList, float* bbox)
     bbox[BOXTOP] = bbox[BOXRIGHT] = DDMINFLOAT;
     bbox[BOXBOTTOM] = bbox[BOXLEFT] = DDMAXFLOAT;
     findLimitWorker(hEdgeList, bbox);
-}
-
-/**
- * Calculate the intersection location between the current half-edge and the
- * partition. Takes advantage of some common situations like horizontal and
- * vertical lines to choose a 'nicer' intersection point.
- */
-static __inline void calcIntersection(const hedge_t* cur,
-                                      double x, double y, double dX, double dY,
-                                      double perpC, double perpD,
-                                      double* iX, double* iY)
-{
-    bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) cur->data;
-    double ds;
-
-    // Horizontal partition against vertical half-edge.
-    if(dY == 0 && data->pDX == 0)
-    {
-        *iX = data->pSX;
-        *iY = y;
-        return;
-    }
-
-    // Vertical partition against horizontal half-edge.
-    if(dX == 0 && data->pDY == 0)
-    {
-        *iX = x;
-        *iY = data->pSY;
-        return;
-    }
-
-    // 0 = start, 1 = end.
-    ds = perpC / (perpC - perpD);
-
-    if(data->pDX == 0)
-        *iX = data->pSX;
-    else
-        *iX = data->pSX + (data->pDX * ds);
-
-    if(data->pDY == 0)
-        *iY = data->pSY;
-    else
-        *iY = data->pSY + (data->pDY * ds);
 }
 
 /**

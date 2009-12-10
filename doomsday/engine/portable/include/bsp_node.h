@@ -34,28 +34,32 @@
 #ifndef __BSP_NODE_H__
 #define __BSP_NODE_H__
 
-#include "bsp_edge.h"
+/*#include "bsp_edge.h"
 #include "bsp_intersection.h"
 #include "bsp_superblock.h"
-#include "m_binarytree.h"
+#include "m_binarytree.h"*/
+
+#define IFFY_LEN            4.0
+
+// Smallest degrees between two angles before being considered equal.
+#define ANG_EPSILON         (1.0 / 1024.0)
+
+typedef double angle_g;  // Degrees, 0 is E, 90 is N
 
 typedef struct {
     int             bspFactor;
     binarytree_t*   rootNode;
 
-    map_t*          _map;
-    cutlist_t*      _cutList;
-    superblock_t*   _superBlockmap;
+    struct map_s*   _map;
+    struct cutlist_s* _cutList;
+    struct superblock_s* _superBlockmap;
 
-    superblock_t*   _quickAllocSupers;
+    struct superblock_s* _quickAllocSupers;
 } nodebuilder_t;
 
-nodebuilder_t*  P_CreateNodeBuilder(map_t* map, int bspFactor);
+nodebuilder_t*  P_CreateNodeBuilder(struct map_s* map, int bspFactor);
 void            P_DestroyNodeBuilder(nodebuilder_t* nb);
 
 void            NodeBuilder_Build(nodebuilder_t* nb);
-
-// @todo Should be private to nodebuilder_t
-void            BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge);
 
 #endif

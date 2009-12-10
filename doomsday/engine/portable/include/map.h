@@ -27,12 +27,12 @@
 
 #include "dd_share.h"
 #include "m_vector.h"
+#include "halfedgeds.h"
 #include "mobjblockmap.h"
 #include "linedefblockmap.h"
 #include "subsectorblockmap.h"
 #include "particleblockmap.h"
 #include "lumobjblockmap.h"
-#include "halfedgeds.h"
 #include "m_binarytree.h"
 #include "gameobjrecords.h"
 #include "p_maptypes.h"
@@ -210,6 +210,10 @@ typedef struct map_s {
         lgridblock_t*   grid;
     } lg;
 } map_t;
+
+extern int bspFactor;
+
+void            P_MapRegister(void);
 
 map_t*          P_CreateMap(const char* mapID);
 void            P_DestroyMap(map_t* map);

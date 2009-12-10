@@ -38,6 +38,7 @@
 #include "de_bsp.h"
 #include "de_edit.h"
 
+#include "bsp_edge.h"
 #include "s_environ.h"
 
 // MACROS ------------------------------------------------------------------
@@ -85,6 +86,8 @@ typedef struct {
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
+int bspFactor = 7;
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static vertex_t* rootVtx; // Used when sorting vertex line owners.
@@ -93,6 +96,15 @@ static vertex_t* rootVtx; // Used when sorting vertex line owners.
 static objcontact_t* contFirst = NULL, *contCursor = NULL;
 
 // CODE --------------------------------------------------------------------
+
+/**
+ * Register the ccmds and cvars of the BSP builder. Called during engine
+ * startup
+ */
+void P_MapRegister(void)
+{
+    C_VAR_INT("bsp-factor", &bspFactor, CVF_NO_MAX, 0, 0);
+}
 
 static thid_t newMobjID(map_t* map)
 {

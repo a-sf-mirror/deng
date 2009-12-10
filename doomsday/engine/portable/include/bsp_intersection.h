@@ -34,8 +34,6 @@
 #ifndef BSP_INTERSECTION_H
 #define BSP_INTERSECTION_H
 
-#include "bsp_edge.h"
-
 // The intersection list is kept sorted by along_dist, in ascending order.
 typedef struct cutlist_s {
     struct cnode_s* head;
@@ -45,8 +43,13 @@ typedef struct cutlist_s {
 cutlist_t*      BSP_CutListCreate(void);
 void            BSP_CutListDestroy(cutlist_t* cutList);
 
-void            CutList_Intersect(cutlist_t* list, vertex_t* vertex, double distance);
-boolean         CutList_Find(cutlist_t* cutList, vertex_t* v);
+void            CutList_Intersect(cutlist_t* list, struct vertex_s* vertex, double distance);
+boolean         CutList_Find(cutlist_t* cutList, struct vertex_s* v);
 void            CutList_Reset(cutlist_t* cutList);
 
+// @todo Should be private to nodebuilder_t
+void            BSP_MergeOverlappingIntersections(cutlist_t* list);
+void            BSP_ConnectGaps(double x, double y, double dX, double dY,
+                                const hedge_t* partHEdge, struct superblock_s* rightList,
+                                struct superblock_s* leftList, cutlist_t* cutList);
 #endif /* BSP_INTERSECTION_H */

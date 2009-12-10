@@ -54,7 +54,6 @@
 #include "de_audio.h"
 #include "de_ui.h"
 #include "de_misc.h"
-#include "de_bsp.h"
 
 #ifdef TextOut
 // Windows has its own TextOut.
@@ -403,7 +402,7 @@ boolean Con_Init(void)
     Net_Register();
     I_Register();
     H_Register();
-    BSP_Register();
+    P_MapRegister();
     UI_Register();
     Demo_Register();
     P_ControlRegister();

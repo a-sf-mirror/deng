@@ -26,7 +26,7 @@
 
 typedef struct vertex_s {
     struct hedge_s* hEdge;
-    double          pos[2]; // @todo replace with a fixed-precision representation?
+    double          pos[2]; // @todo Move out of the base class.
     void*           data;
 } vertex_t;
 
@@ -69,7 +69,7 @@ int                 HalfEdgeDS_IterateVertices(halfedgeds_t* halfEdgeDS, int (*c
 int                 HalfEdgeDS_IterateHEdges(halfedgeds_t* halfEdgeDS, int (*callback) (hedge_t*, void*), void* context);
 int                 HalfEdgeDS_IterateFaces(halfedgeds_t* halfEdgeDS, int (*callback) (face_t*, void*), void* context);
 
-hedge_t*            HEdge_Split(halfedgeds_t* halfEdgeDS, hedge_t* oldHEdge, double x, double y);
+hedge_t*            HEdge_Split(halfedgeds_t* halfEdgeDS, hedge_t* oldHEdge);
 
 void                Face_LinkHEdge(face_t* face, hedge_t* hEdge);
 void                Face_UnlinkHEdge(face_t* face, hedge_t* hEdge);

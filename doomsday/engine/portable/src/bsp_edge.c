@@ -36,13 +36,16 @@
 // HEADER FILES ------------------------------------------------------------
 
 #include "de_base.h"
-#include "de_bsp.h"
+#include "de_play.h"
 #include "de_misc.h"
 
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
+
+#include "bsp_edge.h"
+#include "bsp_superblock.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -105,6 +108,8 @@ static void attachHEdgeInfo(hedge_t* hEdge, linedef_t* line,
 hedge_t* BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
                          vertex_t* start, sector_t* sec, boolean back)
 {
+extern map_t* editMap;
+
     hedge_t* hEdge = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap), start);
 
     attachHEdgeInfo(hEdge, line, sourceLine, sec, back);
@@ -112,22 +117,26 @@ hedge_t* BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
 }
 
 /**
- * \note
+ * @note
  * If the half-edge has a twin, it is also split and is inserted into the
  * same list as the original (and after it), thus all half-edges (except the
  * one we are currently splitting) must exist on a singly-linked list
  * somewhere.
  *
- * \note
+ * @note
  * We must update the count values of any SuperBlock that contains the
  * half-edge (and/or backseg), so that future processing is not messed up by
  * incorrect counts.
  */
 hedge_t* BSP_SplitHEdge(hedge_t* oldHEdge, double x, double y)
 {
+extern map_t* editMap;
     assert(oldHEdge);
     {
-    hedge_t* newHEdge = HEdge_Split(Map_HalfEdgeDS(editMap), oldHEdge, x, y);
+    hedge_t* newHEdge = HEdge_Split(Map_HalfEdgeDS(editMap), oldHEdge);
+
+    newHEdge->vertex->pos[VX] = x;
+    newHEdge->vertex->pos[VY] = y;
 
     attachHEdgeInfo(newHEdge, ((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef, ((bsp_hedgeinfo_t*) oldHEdge->data)->sourceLine, ((bsp_hedgeinfo_t*) oldHEdge->data)->sector, ((bsp_hedgeinfo_t*) oldHEdge->data)->side);
     attachHEdgeInfo(newHEdge->twin, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lineDef, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sourceLine, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sector, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->side);
@@ -170,12 +179,12 @@ hedge_t* BSP_SplitHEdge(hedge_t* oldHEdge, double x, double y)
     BSP_UpdateHEdgeInfo(newHEdge);
     BSP_UpdateHEdgeInfo(newHEdge->twin);
 
-    if(!oldHEdge->twin->face && ((bsp_hedgeinfo_t*)oldHEdge->twin->data)->block)
+    /*if(!oldHEdge->twin->face && ((bsp_hedgeinfo_t*)oldHEdge->twin->data)->block)
     {
         SuperBlock_IncHEdgeCounts(((bsp_hedgeinfo_t*)oldHEdge->twin->data)->block, ((bsp_hedgeinfo_t*) newHEdge->twin->data)->lineDef != NULL);
         SuperBlock_PushHEdge(((bsp_hedgeinfo_t*)oldHEdge->twin->data)->block, newHEdge->twin);
         ((bsp_hedgeinfo_t*) newHEdge->twin->data)->block = ((bsp_hedgeinfo_t*)oldHEdge->twin->data)->block;
-    }
+    }*/
 
     return newHEdge;
     }
