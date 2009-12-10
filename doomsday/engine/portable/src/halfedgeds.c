@@ -176,11 +176,9 @@ void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
 
 vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS)
 {
-    vertex_t* vtx;
-
     assert(halfEdgeDS);
-
-    vtx = allocVertex();
+    {
+    vertex_t* vtx = allocVertex();
     halfEdgeDS->vertices = realloc(halfEdgeDS->vertices,
         sizeof(vtx) * ++halfEdgeDS->_numVertices);
     halfEdgeDS->vertices[halfEdgeDS->_numVertices-1] = vtx;
@@ -189,34 +187,41 @@ vertex_t* HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS)
     ((mvertex_t*) vtx->data)->index = halfEdgeDS->_numVertices; // 1-based index, 0 = NIL.
 
     return vtx;
+    }
 }
 
-hedge_t* HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS)
+hedge_t* HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS, vertex_t* vertex)
 {
-    hedge_t* hEdge;
-
     assert(halfEdgeDS);
-
-    hEdge = allocHEdge();
+    assert(vertex);
+    {
+    hedge_t* hEdge = allocHEdge();
     halfEdgeDS->_hEdges = realloc(halfEdgeDS->_hEdges,
         sizeof(hedge_t*) * ++halfEdgeDS->_numHEdges);
     halfEdgeDS->_hEdges[halfEdgeDS->_numHEdges - 1] = hEdge;
 
+    hEdge->vertex = vertex;
+    if(!vertex->hEdge)
+        vertex->hEdge = hEdge;
+    hEdge->twin = NULL;
+    hEdge->next = hEdge->prev = hEdge;
+    hEdge->face = NULL;
+
     return hEdge;
+    }
 }
 
 face_t* HalfEdgeDS_CreateFace(halfedgeds_t* halfEdgeDS)
 {
-    face_t* face;
-
     assert(halfEdgeDS);
-
-    face = allocFace();
+    {
+    face_t* face = allocFace();
     halfEdgeDS->_faces = realloc(halfEdgeDS->_faces,
         sizeof(face_t*) * ++halfEdgeDS->_numFaces);
     halfEdgeDS->_faces[halfEdgeDS->_numFaces - 1] = face;
 
     return face;
+    }
 }
 
 uint HalfEdgeDS_NumVertices(halfedgeds_t* halfEdgeDS)
@@ -277,6 +282,111 @@ int HalfEdgeDS_IterateFaces(halfedgeds_t* halfEdgeDS,
           (result = callback(halfEdgeDS->_faces[i++], context)) != 0);
     return result;
     }
+}
+
+#if _DEBUG
+void testVertexHEdgeRings(vertex_t* v)
+{
+    byte i = 0;
+
+    // Two passes. Pass one = counter clockwise, Pass two = clockwise.
+    for(i = 0; i < 2; ++i)
+    {
+        hedge_t* hEdge, *base;
+
+        hEdge = base = v->hEdge;
+        do
+        {
+            if(hEdge->vertex != v)
+                Con_Error("testVertexHEdgeRings: break on hEdge->vertex.");
+
+            {
+            hedge_t* other, *base2;
+            boolean found = false;
+
+            other = base2 = hEdge->vertex->hEdge;
+            do
+            {
+                 if(other == hEdge)
+                     found = true;
+            } while((other = i ? other->prev->twin : other->twin->next) != base2);
+
+            if(!found)
+                Con_Error("testVertexHEdgeRings: break on vertex->hEdge.");
+            }
+        } while((hEdge = i ? hEdge->prev->twin : hEdge->twin->next) != base);
+    }
+}
+#endif
+
+static vertex_t* createVertex(halfedgeds_t* halfEdgeDS, double x, double y)
+{
+    vertex_t* vtx = HalfEdgeDS_CreateVertex(halfEdgeDS);
+    vtx->pos[0] = x;
+    vtx->pos[1] = y;
+    return vtx;
+}
+
+/**
+ * Splits the given half-edge at the point (x,y). The new half-edge is
+ * returned. The old half-edge is shortened (the original start vertex is
+ * unchanged), the new half-edge becomes the cut-off tail (keeping the
+ * original end vertex).
+ */
+hedge_t* HEdge_Split(halfedgeds_t* halfEdgeDS, hedge_t* oldHEdge, double x, double y)
+{
+    hedge_t* newHEdge;
+    vertex_t* newVert;
+
+#if _DEBUG
+testVertexHEdgeRings(oldHEdge->vertex);
+testVertexHEdgeRings(oldHEdge->twin->vertex);
+#endif
+
+    newVert = createVertex(halfEdgeDS, x, y);
+
+    newHEdge = HalfEdgeDS_CreateHEdge(halfEdgeDS, newVert);
+    newHEdge->twin = HalfEdgeDS_CreateHEdge(halfEdgeDS, oldHEdge->twin->vertex);
+    newHEdge->twin->twin = newHEdge;
+
+    // Update right neighbour back links of oldHEdge and its twin.
+    newHEdge->next = oldHEdge->next;
+    oldHEdge->next->prev = newHEdge;
+
+    newHEdge->twin->prev = oldHEdge->twin->prev;
+    newHEdge->twin->prev->next = newHEdge->twin;
+
+    // Update the vertex links.
+    newHEdge->vertex = newVert;
+    newVert->hEdge = newHEdge;
+
+    newHEdge->twin->vertex = oldHEdge->twin->vertex;
+    oldHEdge->twin->vertex = newVert;
+
+    if(newHEdge->twin->vertex->hEdge == oldHEdge->twin)
+        newHEdge->twin->vertex->hEdge = newHEdge->twin;
+
+    // Link oldHEdge with newHEdge and their twins.
+    oldHEdge->next = newHEdge;
+    newHEdge->prev = oldHEdge;
+
+    oldHEdge->twin->prev = newHEdge->twin;
+    newHEdge->twin->next = oldHEdge->twin;
+
+    // Copy face data from oldHEdge to newHEdge and their twins.
+    newHEdge->face = oldHEdge->face;
+    newHEdge->twin->face = oldHEdge->twin->face;
+
+    if(oldHEdge->twin->face)
+        Face_LinkHEdge(oldHEdge->twin->face, newHEdge->twin);
+
+#if _DEBUG
+testVertexHEdgeRings(oldHEdge->vertex);
+testVertexHEdgeRings(newHEdge->vertex);
+testVertexHEdgeRings(newHEdge->twin->vertex);
+#endif
+
+    return newHEdge;
 }
 
 static boolean getAveragedCoords(const hedge_t* firstHEdge, double* x, double* y)

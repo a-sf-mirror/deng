@@ -67,101 +67,51 @@
  */
 void BSP_UpdateHEdgeInfo(const hedge_t* hEdge)
 {
-    bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
+    bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
 
-    data->pSX = hEdge->vertex->pos[VX];
-    data->pSY = hEdge->vertex->pos[VY];
-    data->pEX = hEdge->twin->vertex->pos[VX];
-    data->pEY = hEdge->twin->vertex->pos[VY];
-    data->pDX = data->pEX - data->pSX;
-    data->pDY = data->pEY - data->pSY;
+    info->pSX = hEdge->vertex->pos[VX];
+    info->pSY = hEdge->vertex->pos[VY];
+    info->pEX = hEdge->twin->vertex->pos[VX];
+    info->pEY = hEdge->twin->vertex->pos[VY];
+    info->pDX = info->pEX - info->pSX;
+    info->pDY = info->pEY - info->pSY;
 
-    data->pLength = M_Length(data->pDX, data->pDY);
-    data->pAngle  = M_SlopeToAngle(data->pDX, data->pDY);
+    info->pLength = M_Length(info->pDX, info->pDY);
+    info->pAngle  = M_SlopeToAngle(info->pDX, info->pDY);
 
-    if(data->pLength <= 0)
+    if(info->pLength <= 0)
         Con_Error("HEdge %p has zero p_length.", hEdge);
 
-    data->pPerp =  data->pSY * data->pDX - data->pSX * data->pDY;
-    data->pPara = -data->pSX * data->pDX - data->pSY * data->pDY;
+    info->pPerp =  info->pSY * info->pDX - info->pSX * info->pDY;
+    info->pPara = -info->pSX * info->pDX - info->pSY * info->pDY;
 }
 
-vertex_t* BSP_CreateVertex(halfedgeds_t* halfEdgeDS, double x, double y)
+static void attachHEdgeInfo(hedge_t* hEdge, linedef_t* line,
+                            linedef_t* sourceLine, sector_t* sec,
+                            boolean back)
 {
-    vertex_t* vtx = HalfEdgeDS_CreateVertex(halfEdgeDS);
-    vtx->pos[0] = x;
-    vtx->pos[1] = y;
-    return vtx;
+    assert(hEdge);
+    {
+    bsp_hedgeinfo_t* info = Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
+    info->lineDef = line;
+    info->lprev = info->lnext = NULL;
+    info->side = (back? 1 : 0);
+    info->sector = sec;
+    info->sourceLine = sourceLine;
+    hEdge->data = info;
+    }
 }
 
 hedge_t* BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
                          vertex_t* start, sector_t* sec, boolean back)
 {
-    hedge_t* hEdge = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap));
+    hedge_t* hEdge = HalfEdgeDS_CreateHEdge(Map_HalfEdgeDS(editMap), start);
 
-    hEdge->vertex = start;
-    if(!start->hEdge)
-        start->hEdge = hEdge;
-    hEdge->twin = NULL;
-    hEdge->next = hEdge->prev = hEdge;
-    hEdge->face = NULL;
-
-    {
-    bsp_hedgeinfo_t* data = Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
-    data->lineDef = line;
-    data->lprev = data->lnext = NULL;
-    data->side = (back? 1 : 0);
-    data->sector = sec;
-    data->sourceLine = sourceLine;
-    hEdge->data = data;
-    }
-
+    attachHEdgeInfo(hEdge, line, sourceLine, sec, back);
     return hEdge;
 }
 
-#if _DEBUG
-void testVertexHEdgeRings(vertex_t* v)
-{
-    byte i = 0;
-
-    // Two passes. Pass one = counter clockwise, Pass two = clockwise.
-    for(i = 0; i < 2; ++i)
-    {
-        hedge_t* hEdge, *base;
-
-        hEdge = base = v->hEdge;
-        do
-        {
-            bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
-
-            if(hEdge->vertex != v)
-                Con_Error("testVertexHEdgeRings: break on hEdge->vertex.");
-
-            {
-            hedge_t* other, *base2;
-            boolean found = false;
-
-            other = base2 = hEdge->vertex->hEdge;
-            do
-            {
-                 if(other == hEdge)
-                     found = true;
-            } while((other = i ? other->prev->twin : other->twin->next) != base2);
-
-            if(!found)
-                Con_Error("testVertexHEdgeRings: break on vertex->hEdge.");
-            }
-        } while((hEdge = i ? hEdge->prev->twin : hEdge->twin->next) != base);
-    }
-}
-#endif
-
 /**
- * Splits the given half-edge at the point (x,y). The new half-edge is
- * returned. The old half-edge is shortened (the original start vertex is
- * unchanged), the new half-edge becomes the cut-off tail (keeping the
- * original end vertex).
- *
  * \note
  * If the half-edge has a twin, it is also split and is inserted into the
  * same list as the original (and after it), thus all half-edges (except the
@@ -175,47 +125,12 @@ void testVertexHEdgeRings(vertex_t* v)
  */
 hedge_t* BSP_SplitHEdge(hedge_t* oldHEdge, double x, double y)
 {
-    hedge_t* newHEdge;
-    vertex_t* newVert;
+    assert(oldHEdge);
+    {
+    hedge_t* newHEdge = HEdge_Split(Map_HalfEdgeDS(editMap), oldHEdge, x, y);
 
-#if _DEBUG
-testVertexHEdgeRings(oldHEdge->vertex);
-testVertexHEdgeRings(oldHEdge->twin->vertex);
-#endif
-
-    newVert = BSP_CreateVertex(Map_HalfEdgeDS(editMap), x, y);
-
-    newHEdge = BSP_CreateHEdge(((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef, ((bsp_hedgeinfo_t*) oldHEdge->data)->sourceLine, newVert, ((bsp_hedgeinfo_t*) oldHEdge->data)->sector, ((bsp_hedgeinfo_t*) oldHEdge->data)->side);
-    newHEdge->twin = BSP_CreateHEdge(((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lineDef, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sourceLine, oldHEdge->twin->vertex, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sector, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->side);
-    newHEdge->twin->twin = newHEdge;
-
-    // Update right neighbour back links of oldHEdge and its twin.
-    newHEdge->next = oldHEdge->next;
-    oldHEdge->next->prev = newHEdge;
-
-    newHEdge->twin->prev = oldHEdge->twin->prev;
-    newHEdge->twin->prev->next = newHEdge->twin;
-
-    // Update the vertex links.
-    newHEdge->vertex = newVert;
-    newVert->hEdge = newHEdge;
-
-    newHEdge->twin->vertex = oldHEdge->twin->vertex;
-    oldHEdge->twin->vertex = newVert;
-
-    if(newHEdge->twin->vertex->hEdge == oldHEdge->twin)
-        newHEdge->twin->vertex->hEdge = newHEdge->twin;
-
-    // Link oldHEdge with newHEdge and their twins.
-    oldHEdge->next = newHEdge;
-    newHEdge->prev = oldHEdge;
-
-    oldHEdge->twin->prev = newHEdge->twin;
-    newHEdge->twin->next = oldHEdge->twin;
-
-    // Copy face data from oldHEdge to newHEdge and their twins.
-    newHEdge->face = oldHEdge->face;
-    newHEdge->twin->face = oldHEdge->twin->face;
+    attachHEdgeInfo(newHEdge, ((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef, ((bsp_hedgeinfo_t*) oldHEdge->data)->sourceLine, ((bsp_hedgeinfo_t*) oldHEdge->data)->sector, ((bsp_hedgeinfo_t*) oldHEdge->data)->side);
+    attachHEdgeInfo(newHEdge->twin, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lineDef, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sourceLine, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sector, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->side);
 
     memcpy(newHEdge->data, oldHEdge->data, sizeof(bsp_hedgeinfo_t));
     memcpy(newHEdge->twin->data, oldHEdge->twin->data, sizeof(bsp_hedgeinfo_t));
@@ -250,39 +165,18 @@ testVertexHEdgeRings(oldHEdge->twin->vertex);
     }
     }
 
-#if _DEBUG
-testVertexHEdgeRings(oldHEdge->vertex);
-testVertexHEdgeRings(newHEdge->vertex);
-testVertexHEdgeRings(newHEdge->twin->vertex);
-#endif
-
-    // Update SuperBlock, if needed.
-    if(((bsp_hedgeinfo_t*) oldHEdge->data)->block)
-        SuperBlock_IncHEdgeCounts(((bsp_hedgeinfo_t*) oldHEdge->data)->block,
-                                  ((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef != NULL);
-
     BSP_UpdateHEdgeInfo(oldHEdge);
+    BSP_UpdateHEdgeInfo(oldHEdge->twin);
     BSP_UpdateHEdgeInfo(newHEdge);
-    if(oldHEdge->twin)
+    BSP_UpdateHEdgeInfo(newHEdge->twin);
+
+    if(!oldHEdge->twin->face && ((bsp_hedgeinfo_t*)oldHEdge->twin->data)->block)
     {
-        bsp_hedgeinfo_t* oldInfo =(bsp_hedgeinfo_t*)oldHEdge->twin->data;
-
-        BSP_UpdateHEdgeInfo(oldHEdge->twin);
-        BSP_UpdateHEdgeInfo(newHEdge->twin);
-
-        // Update SuperBlock, if needed.
-        if(oldInfo->block)
-        {
-            SuperBlock_IncHEdgeCounts(oldInfo->block, oldInfo->lineDef != NULL);
-            SuperBlock_PushHEdge(oldInfo->block, newHEdge->twin);
-            ((bsp_hedgeinfo_t*) newHEdge->twin->data)->block = oldInfo->block;
-        }
-        else if(oldHEdge->twin->face)
-        {
-            // Link it into list for the face.
-            Face_LinkHEdge(oldHEdge->twin->face, newHEdge->twin);
-        }
+        SuperBlock_IncHEdgeCounts(((bsp_hedgeinfo_t*)oldHEdge->twin->data)->block, ((bsp_hedgeinfo_t*) newHEdge->twin->data)->lineDef != NULL);
+        SuperBlock_PushHEdge(((bsp_hedgeinfo_t*)oldHEdge->twin->data)->block, newHEdge->twin);
+        ((bsp_hedgeinfo_t*) newHEdge->twin->data)->block = ((bsp_hedgeinfo_t*)oldHEdge->twin->data)->block;
     }
 
     return newHEdge;
+    }
 }

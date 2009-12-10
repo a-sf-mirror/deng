@@ -2891,11 +2891,15 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
 vertex_t* Map_CreateVertex(map_t* map, float x, float y)
 {
     assert(map);
-
+    {
+    vertex_t* vtx;
     if(!map->editActive)
         return NULL;
-
-    return BSP_CreateVertex(Map_HalfEdgeDS(map), (double) x, (double) y);
+    vtx = HalfEdgeDS_CreateVertex(map->_halfEdgeDS);
+    vtx->pos[VX] = x;
+    vtx->pos[VY] = y;
+    return vtx;
+    }
 }
 
 linedef_t* Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,

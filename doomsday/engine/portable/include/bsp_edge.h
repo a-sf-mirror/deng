@@ -70,16 +70,10 @@ typedef struct {
     byte                side; // 0 for right, 1 for left.
 } bsp_hedgeinfo_t;
 
-void        BSP_InitHEdgeAllocator(void);
-void        BSP_ShutdownHEdgeAllocator(void);
+hedge_t*        BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
+                                vertex_t* start, sector_t* sec, boolean back);
+hedge_t*        BSP_SplitHEdge(hedge_t* oldHEdge, double x, double y);
 
-vertex_t*   BSP_CreateVertex(halfedgeds_t* halfEdgeDS, double x, double y);
-hedge_t*    BSP_CreateHEdge(linedef_t* line, linedef_t* sourceLine,
-                            vertex_t* start, sector_t* sec, boolean back);
-
-hedge_t*    BSP_SplitHEdge(hedge_t* oldHEdge, double x, double y);
-
-void        BSP_UpdateHEdgeInfo(const hedge_t* hEdge);
-
-void testVertexHEdgeRings(vertex_t* v);
+// @todo Should be private to this module.
+void            BSP_UpdateHEdgeInfo(const hedge_t* hEdge);
 #endif

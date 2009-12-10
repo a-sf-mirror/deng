@@ -59,7 +59,7 @@ halfedgeds_t*       P_CreateHalfEdgeDS(void);
 void                P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS);
 
 vertex_t*           HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS);
-hedge_t*            HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS);
+hedge_t*            HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS, vertex_t* vertex);
 face_t*             HalfEdgeDS_CreateFace(halfedgeds_t* halfEdgeDS);
 
 uint                HalfEdgeDS_NumVertices(halfedgeds_t* halfEdgeDS);
@@ -69,8 +69,11 @@ int                 HalfEdgeDS_IterateVertices(halfedgeds_t* halfEdgeDS, int (*c
 int                 HalfEdgeDS_IterateHEdges(halfedgeds_t* halfEdgeDS, int (*callback) (hedge_t*, void*), void* context);
 int                 HalfEdgeDS_IterateFaces(halfedgeds_t* halfEdgeDS, int (*callback) (face_t*, void*), void* context);
 
+hedge_t*            HEdge_Split(halfedgeds_t* halfEdgeDS, hedge_t* oldHEdge, double x, double y);
+
 void                Face_LinkHEdge(face_t* face, hedge_t* hEdge);
 void                Face_UnlinkHEdge(face_t* face, hedge_t* hEdge);
 void                Face_ClockwiseOrder(face_t* face);
 
+void                testVertexHEdgeRings(vertex_t* v);
 #endif /* DOOMSDAY_HALFEDGEDS_H */
