@@ -962,11 +962,13 @@ static face_t* createBSPLeaf(nodebuilder_t* nb, face_t* face,
 }
 
 static void makeIntersection(cutlist_t* cutList, vertex_t* vert,
-                             double x, double y, double dX, double dY)
+                             double x, double y, double dX, double dY,
+                             const hedge_t* partHEdge)
 {
     if(!CutList_Find(cutList, vert))
         CutList_Intersect(cutList, vert,
-            (vert->pos[VX] - x) * dX + (vert->pos[VY] - y) * dY);
+            M_ParallelDist(dX, dY, ((bsp_hedgeinfo_t*) partHEdge->data)->pPara, ((bsp_hedgeinfo_t*) partHEdge->data)->pLength,
+                           vert->pos[VX], vert->pos[VY]));
 }
 
 /**
@@ -1039,23 +1041,25 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, double x, double y, double dX,
 
     // Get state of lines' relation to each other.
     if(partHEdge && data->sourceLine ==
-        ((bsp_hedgeinfo_t*) partHEdge->data)->sourceLine)
+       ((bsp_hedgeinfo_t*) partHEdge->data)->sourceLine)
     {
         a = b = 0;
     }
     else
     {
-        a = (y - curHEdge->vertex->pos[VY]) * dX -
-            (x - curHEdge->vertex->pos[VX]) * dY;
-        b = (y - curHEdge->twin->vertex->pos[VY]) * dX -
-            (x - curHEdge->twin->vertex->pos[VX]) * dY;
+        bsp_hedgeinfo_t* part = (bsp_hedgeinfo_t*) partHEdge->data;
+
+        a = M_PerpDist(dX, dY, part->pPerp, part->pLength,
+                       data->pSX, data->pSY);
+        b = M_PerpDist(dX, dY, part->pPerp, part->pLength,
+                       data->pEX, data->pEY);
     }
 
     // Check for being on the same line.
     if(fabs(a) <= DIST_EPSILON && fabs(b) <= DIST_EPSILON)
     {
-        makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY);
-        makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY);
+        makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY, partHEdge);
+        makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY, partHEdge);
 
         // This seg runs along the same line as the partition. Check
         // whether it goes in the same direction or the opposite.
@@ -1075,9 +1079,9 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, double x, double y, double dX,
     if(a > -DIST_EPSILON && b > -DIST_EPSILON)
     {
         if(a < DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY);
+            makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY, partHEdge);
         else if(b < DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY);
+            makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY, partHEdge);
 
         BSP_AddHEdgeToSuperBlock(bRight, curHEdge);
         return;
@@ -1087,9 +1091,9 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, double x, double y, double dX,
     if(a < DIST_EPSILON && b < DIST_EPSILON)
     {
         if(a > -DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY);
+            makeIntersection(cutList, curHEdge->vertex, x, y, dX, dY, partHEdge);
         else if(b > -DIST_EPSILON)
-            makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY);
+            makeIntersection(cutList, curHEdge->twin->vertex, x, y, dX, dY, partHEdge);
 
         BSP_AddHEdgeToSuperBlock(bLeft, curHEdge);
         return;
@@ -1101,7 +1105,7 @@ void BSP_DivideOneHEdge(hedge_t* curHEdge, double x, double y, double dX,
     double iX, iY;
     calcIntersection(curHEdge, x, y, dX, dY, a, b, &iX, &iY);
     newHEdge = BSP_SplitHEdge(curHEdge, iX, iY);
-    makeIntersection(cutList, newHEdge->vertex, x, y, dX, dY);
+    makeIntersection(cutList, newHEdge->vertex, x, y, dX, dY, partHEdge);
     }
 
     if(a < 0)
