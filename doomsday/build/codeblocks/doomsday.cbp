@@ -372,9 +372,6 @@
 		<Unit filename="..\..\engine\portable\src\b_util.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="..\..\engine\portable\src\bsp_edge.c">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="..\..\engine\portable\src\bsp_intersection.c">
 			<Option compilerVar="CC" />
 		</Unit>

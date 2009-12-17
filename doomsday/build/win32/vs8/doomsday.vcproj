@@ -877,10 +877,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\bsp_edge.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\bsp_intersection.c"
 				>
 			</File>

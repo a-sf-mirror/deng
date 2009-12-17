@@ -44,10 +44,9 @@
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-map_t* editMap = NULL;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
+static map_t* editMap = NULL;
 static map_t* lastBuiltMap = NULL;
 
 // CODE --------------------------------------------------------------------

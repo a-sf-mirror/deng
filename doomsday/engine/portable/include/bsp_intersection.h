@@ -49,7 +49,4 @@ void            CutList_Reset(cutlist_t* cutList);
 
 // @todo Should be private to nodebuilder_t
 void            BSP_MergeOverlappingIntersections(cutlist_t* list);
-void            BSP_ConnectGaps(double x, double y, double dX, double dY,
-                                const hedge_t* partHEdge, struct superblock_s* rightList,
-                                struct superblock_s* leftList, cutlist_t* cutList);
 #endif /* BSP_INTERSECTION_H */

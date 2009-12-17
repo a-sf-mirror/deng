@@ -99,7 +99,6 @@
  .\..\..\engine\portable\src\p_vertex.c
  .\..\..\engine\portable\src\dam_main.c
  .\..\..\engine\portable\src\dam_file.c
- .\..\..\engine\portable\src\bsp_edge.c
  .\..\..\engine\portable\src\bsp_intersection.c
  .\..\..\engine\portable\src\bsp_map.c
  .\..\..\engine\portable\src\bsp_node.c

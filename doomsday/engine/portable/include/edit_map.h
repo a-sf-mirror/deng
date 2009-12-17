@@ -31,8 +31,6 @@
 #include "map.h"
 #include "p_materialmanager.h"
 
-extern map_t* editMap;
-
 boolean         MPE_Begin(const char* mapID);
 boolean         MPE_End(void);
 

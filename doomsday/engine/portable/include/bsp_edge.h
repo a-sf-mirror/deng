@@ -36,16 +36,13 @@
 
 #include "halfedgeds.h"
 
-typedef struct {
+typedef struct bsp_hedgeinfo_s {
     // The SuperBlock that contains this half-edge, or NULL if the half-edge
     // is no longer in any SuperBlock (e.g., now in a leaf).
     struct superblock_s* block;
 
     // Precomputed data for faster calculations.
-    double              pSX, pSY;
-    double              pEX, pEY;
     double              pDX, pDY;
-
     double              pLength;
     double              pAngle;
     double              pPara;
@@ -64,10 +61,5 @@ typedef struct {
     byte                side; // 0 for right, 1 for left.
 } bsp_hedgeinfo_t;
 
-hedge_t*        BSP_CreateHEdge(struct linedef_s* line, struct linedef_s* sourceLine,
-                                vertex_t* start, struct sector_s* sec, boolean back);
-hedge_t*        BSP_SplitHEdge(hedge_t* oldHEdge, double x, double y);
 
-// @todo Should be private to this module.
-void            BSP_UpdateHEdgeInfo(const hedge_t* hEdge);
 #endif

@@ -296,7 +296,7 @@ static boolean calcSubsectorReverb(subsector_t* subsector)
         do
         {
             hedge_t* hEdge = ptr;
-            seg_t* seg = (seg_t*) (ptr)->data;
+            seg_t* seg = (seg_t*) hEdge->data;
 
             if(seg->sideDef && seg->sideDef->SW_middlematerial)
             {

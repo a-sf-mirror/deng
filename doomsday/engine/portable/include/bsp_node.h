@@ -53,6 +53,8 @@ typedef struct {
     struct map_s*   _map;
     struct cutlist_s* _cutList;
     struct superblock_s* _superBlockmap;
+    size_t          _numHalfEdgeInfo;
+    struct bsp_hedgeinfo_s** _halfEdgeInfo;
 
     struct superblock_s* _quickAllocSupers;
 } nodebuilder_t;
@@ -62,4 +64,12 @@ void            P_DestroyNodeBuilder(nodebuilder_t* nb);
 
 void            NodeBuilder_Build(nodebuilder_t* nb);
 
+// @todo Should be private to nodebuilder_t
+void            NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y, double dX, double dY,
+                                        const hedge_t* partHEdge, struct superblock_s* rightList,
+                                        struct superblock_s* leftList);
+hedge_t*        NodeBuilder_CreateHEdge(nodebuilder_t* nb, struct linedef_s* line, struct linedef_s* sourceLine,
+                                        vertex_t* start, struct sector_s* sec, boolean back);
+hedge_t*        NodeBuilder_SplitHEdge(nodebuilder_t* nb, hedge_t* oldHEdge, double x, double y);
+void            BSP_UpdateHEdgeInfo(const hedge_t* hEdge);
 #endif

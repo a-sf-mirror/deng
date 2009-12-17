@@ -217,7 +217,8 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
      * within it at once. Only when the partition line intercepts the box do
      * we need to go deeper into it - AJA.
      */
-    num = P_BoxOnLineSide3(hEdgeList->bbox, part->pSX, part->pSY,
+    num = P_BoxOnLineSide3(hEdgeList->bbox, partHEdge->vertex->pos[VX],
+                           partHEdge->vertex->pos[VY],
                            part->pDX, part->pDY, part->pPerp,
                            part->pLength, DIST_EPSILON);
     if(num < 0)
@@ -255,9 +256,9 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
         else
         {
             a = M_PerpDist(part->pDX, part->pDY, part->pPerp, part->pLength,
-                           other->pSX, other->pSY);
+                           otherHEdge->vertex->pos[VX], otherHEdge->vertex->pos[VY]);
             b = M_PerpDist(part->pDX, part->pDY, part->pPerp, part->pLength,
-                           other->pEX, other->pEY);
+                           otherHEdge->twin->vertex->pos[VX], otherHEdge->twin->vertex->pos[VY]);
 
             fa = fabs(a);
             fb = fabs(b);

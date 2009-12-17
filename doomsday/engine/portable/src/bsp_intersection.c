@@ -390,13 +390,13 @@ static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
     return false;
 }
 
-void BSP_ConnectGaps(double x, double y, double dX, double dY,
-                     const hedge_t* partHEdge, superblock_t* rightList,
-                     superblock_t* leftList, cutlist_t* cutList)
+void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
+                             double dX, double dY, const hedge_t* partHEdge,
+                             superblock_t* rightList, superblock_t* leftList)
 {
     cnode_t* node, *firstNode;
 
-    node = firstNode = cutList->head;
+    node = firstNode = nb->_cutList->head;
     while(node && node->next)
     {
         const intersection_t* cur = node->data;
@@ -504,10 +504,10 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 {
                 hedge_t* right, *left;
 
-                right = BSP_CreateHEdge(NULL, ((bsp_hedgeinfo_t*) partHEdge->data)->lineDef, cur->vertex, ((bsp_hedgeinfo_t*) nearHEdge->data)->sector, ((bsp_hedgeinfo_t*) nearHEdge->data)->side);
+                right = NodeBuilder_CreateHEdge(nb, NULL, ((bsp_hedgeinfo_t*) partHEdge->data)->lineDef, cur->vertex, ((bsp_hedgeinfo_t*) nearHEdge->data)->sector, ((bsp_hedgeinfo_t*) nearHEdge->data)->side);
                 right->face = nearHEdge->face;
 
-                left = BSP_CreateHEdge(NULL, ((bsp_hedgeinfo_t*) partHEdge->data)->lineDef, next->vertex, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->sector, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->side);
+                left = NodeBuilder_CreateHEdge(nb, NULL, ((bsp_hedgeinfo_t*) partHEdge->data)->lineDef, next->vertex, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->sector, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->side);
                 left->face = farHEdge->prev->face;
 
                 // Twin the half-edges together.
