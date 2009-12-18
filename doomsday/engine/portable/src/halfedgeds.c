@@ -366,9 +366,8 @@ testVertexHEdgeRings(oldHEdge->twin->vertex);
     newHEdge->twin->next = oldHEdge->twin;
 
     // Copy face data from oldHEdge to newHEdge and their twins.
-    newHEdge->face = oldHEdge->face;
-    newHEdge->twin->face = oldHEdge->twin->face;
-
+    //if(oldHEdge->face)
+    //    Face_LinkHEdge(oldHEdge->face, newHEdge);
     if(oldHEdge->twin->face)
         Face_LinkHEdge(oldHEdge->twin->face, newHEdge->twin);
 
@@ -381,18 +380,18 @@ testVertexHEdgeRings(newHEdge->twin->vertex);
     return newHEdge;
 }
 
-static boolean getAveragedCoords(const hedge_t* firstHEdge, double* x, double* y)
+static boolean getAveragedCoords(face_t* face, double* x, double* y)
 {
     size_t total = 0;
     double avg[2];
-    const hedge_t* hEdge;
+    const hedge_t* firstHEdge, *hEdge;
 
     if(!x || !y)
         return false;
 
     avg[VX] = avg[VY] = 0;
 
-    hEdge = firstHEdge;
+    hEdge = firstHEdge = face->hEdge;
     do
     {
         avg[VX] += hEdge->vertex->pos[VX];
@@ -425,7 +424,7 @@ static void sortHEdgesByAngleAroundMidPoint(face_t* face)
     if(!face->hEdge || face->hEdge->next == face->hEdge)
         return;
 
-    getAveragedCoords(face->hEdge, &midPoint[0], &midPoint[1]);
+    getAveragedCoords(face, &midPoint[0], &midPoint[1]);
 
     hEdge = face->hEdge;
     for(;;)
@@ -475,6 +474,34 @@ void Face_ClockwiseOrder(face_t* face)
 {
     assert(face);
     {
+    sortHEdgesByAngleAroundMidPoint(face);
+
+/*#if _DEBUG
+{
+const hedge_t* hEdge;
+
+Con_Message("Sorted half-edges around (%1.1f,%1.1f)\n", x, y);
+
+hEdge = face->hEdge;
+do
+{
+    const hedge_t* hEdge = hEdge->hEdge;
+    double angle = SlopeToAngle(hEdge->vertex->pos[0] - midPoint[0],
+                                hEdge->vertex->pos[1] - midPoint[1]);
+
+    Con_Message("  half-edge %p: Angle %1.6f  (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
+                hEdge, angle, (float) hEdge->vertex->pos[0], (float) hEdge->vertex->pos[1],
+                (float) hEdge->twin->vertex->pos[0], (float) hEdge->twin->vertex->pos[1]);
+} while((hEdge = hEdge->next) != face->hEdge);
+}
+#endif*/
+    }
+}
+
+void Face_SwitchToHEdgeLinks(face_t* face)
+{
+    assert(face);
+    {
     hedge_t* firstHEdge;
     hedge_node_t* node, *next;
 
@@ -498,27 +525,6 @@ void Face_ClockwiseOrder(face_t* face)
     } while((node = next) != (hedge_node_t*) face->hEdge);
 
     face->hEdge = firstHEdge;
-
-    sortHEdgesByAngleAroundMidPoint(face);
-
-/*#if _DEBUG
-{
-const hedge_t* hEdge;
-
-Con_Message("Sorted half-edges around (%1.1f,%1.1f)\n", x, y);
-
-hEdge = face->hEdge;
-do
-{
-    double angle = SlopeToAngle(hEdge->vertex->pos[0] - midPoint[0],
-                                hEdge->vertex->pos[1] - midPoint[1]);
-
-    Con_Message("  half-edge %p: Angle %1.6f  (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-                hEdge, angle, (float) hEdge->vertex->pos[0], (float) hEdge->vertex->pos[1],
-                (float) hEdge->twin->vertex->pos[0], (float) hEdge->twin->vertex->pos[1]);
-} while((hEdge = hEdge->next) != face->hEdge);
-}
-#endif*/
     }
 }
 
@@ -548,13 +554,11 @@ if(face->hEdge)
 
     if(face->hEdge)
     {
-        hedge_node_t* tmp = ((hedge_node_t*) face->hEdge)->prev;
+        node->prev = ((hedge_node_t*) face->hEdge)->prev;
+        node->next = ((hedge_node_t*) face->hEdge);
 
-        node->next = (hedge_node_t*) face->hEdge;
+        node->prev->next = node;
         node->next->prev = node;
-
-        tmp->next = node;
-        node->prev = tmp;
 
         face->hEdge = (hedge_t*) node;
     }

@@ -227,7 +227,6 @@ static void attachHEdgeInfo(nodebuilder_t* nb, hedge_t* hEdge,
         Z_Calloc(sizeof(bsp_hedgeinfo_t), PU_STATIC, 0);
 
     info->lineDef = line;
-    info->lprev = info->lnext = NULL;
     info->side = (back? 1 : 0);
     info->sector = sec;
     info->sourceLine = sourceLine;
@@ -275,22 +274,11 @@ hedge_t* NodeBuilder_SplitHEdge(nodebuilder_t* nb, hedge_t* oldHEdge,
     attachHEdgeInfo(nb, newHEdge->twin, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lineDef, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sourceLine, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->sector, ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->side);
 
     memcpy(newHEdge->data, oldHEdge->data, sizeof(bsp_hedgeinfo_t));
+    ((bsp_hedgeinfo_t*) newHEdge->data)->block = NULL;
     memcpy(newHEdge->twin->data, oldHEdge->twin->data, sizeof(bsp_hedgeinfo_t));
+    ((bsp_hedgeinfo_t*) newHEdge->twin->data)->block = NULL;
 
-    { // Update along-linedef relationships.
-    if(((bsp_hedgeinfo_t*)oldHEdge->data)->lnext)
-        ((bsp_hedgeinfo_t*) ((bsp_hedgeinfo_t*) oldHEdge->data)
-            ->lnext->data)->lprev = newHEdge;
-
-    if(((bsp_hedgeinfo_t*)oldHEdge->twin->data)->lprev)
-        ((bsp_hedgeinfo_t*) ((bsp_hedgeinfo_t*) oldHEdge->twin->data)
-            ->lprev->data)->lnext = newHEdge->twin;
-
-    ((bsp_hedgeinfo_t*) oldHEdge->data)->lnext = newHEdge;
-    ((bsp_hedgeinfo_t*) newHEdge->data)->lprev = oldHEdge;
-    ((bsp_hedgeinfo_t*) newHEdge->twin->data)->lnext = oldHEdge->twin;
-    ((bsp_hedgeinfo_t*) oldHEdge->twin->data)->lprev = newHEdge->twin;
-
+    // Update along-linedef relationships.
     if(((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef)
     {
         linedef_t* lineDef = ((bsp_hedgeinfo_t*) oldHEdge->data)->lineDef;
@@ -304,7 +292,6 @@ hedge_t* NodeBuilder_SplitHEdge(nodebuilder_t* nb, hedge_t* oldHEdge,
             if(lineDef->hEdges[0] == oldHEdge->twin)
                 lineDef->hEdges[0] = newHEdge->twin;
         }
-    }
     }
 
     BSP_UpdateHEdgeInfo(oldHEdge);
@@ -1028,13 +1015,13 @@ static boolean sanityCheckHasRealHEdge(const face_t* face)
     return false;
 }
 
-static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
+static boolean C_DECL finishLeaf(binarytree_t* tree, void* data)
 {
     if(BinaryTree_IsLeaf(tree))
     {
         face_t* face = (face_t*) BinaryTree_GetData(tree);
 
-        Face_ClockwiseOrder(face);
+        Face_SwitchToHEdgeLinks(face);
 
         sanityCheckClosed(face);
         sanityCheckSameSector(face);
@@ -1380,40 +1367,6 @@ Con_Message("BuildNodes: Partition xy{%1.0f, %1.0f} delta{%1.0f, %1.0f}.\n",
     return tree;
 }
 
-static int buildSeg(hedge_t* hEdge, void* context)
-{
-    bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
-
-    hEdge->data = NULL;
-
-    if(!(info->lineDef &&
-         (!info->sector || (info->side == BACK && info->lineDef->buildData.windowEffect))))
-    {
-        Map_CreateSeg((map_t*) context, info->lineDef, info->side, hEdge);
-    }
-
-    return true; // Continue iteration.
-}
-
-static boolean C_DECL buildSubsector(binarytree_t* tree, void* context)
-{
-    if(!BinaryTree_IsLeaf(tree))
-    {
-        node_t* node = BinaryTree_GetData(tree);
-        binarytree_t* child;
-
-        child = BinaryTree_GetChild(tree, RIGHT);
-        if(child && BinaryTree_IsLeaf(child))
-            Map_CreateSubsector((map_t*) context, (face_t*) BinaryTree_GetData(child));
-
-        child = BinaryTree_GetChild(tree, LEFT);
-        if(child && BinaryTree_IsLeaf(child))
-            Map_CreateSubsector((map_t*) context, (face_t*) BinaryTree_GetData(child));
-    }
-
-    return true; // Continue iteration.
-}
-
 nodebuilder_t* P_CreateNodeBuilder(map_t* map, int bspFactor)
 {
     nodebuilder_t* nb;
@@ -1445,6 +1398,13 @@ void P_DestroyNodeBuilder(nodebuilder_t* nb)
     Z_Free(nb);
 }
 
+static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
+{
+    if(BinaryTree_IsLeaf(tree))
+        Face_ClockwiseOrder((face_t*) BinaryTree_GetData(tree));
+    return true; // Continue iteration.
+}
+
 void NodeBuilder_Build(nodebuilder_t* nb)
 {
     assert(nb);
@@ -1452,25 +1412,23 @@ void NodeBuilder_Build(nodebuilder_t* nb)
     createInitialHEdgesAndAddtoSuperBlockmap(nb);
 
     nb->rootNode = buildNodes(nb, nb->_superBlockmap);
-
     if(nb->rootNode)
-    {   // Success!
-        /**
-         * Traverse the BSP tree and put all the half-edges in each
-         * subsector into clockwise order.
-         *
-         * @note This cannot be done during BuildNodes() since splitting a
-         * half-edge with a twin may insert another half-edge into that
-         * twin's list, usually in the wrong place order-wise.
-         *
-         * danij 25/10/2009: Actually, this CAN (and should) be done during
-         * buildNodes, it just requires updating any present faces.
-         */
-        BinaryTree_PostOrder(nb->rootNode, clockwiseLeaf, NULL);
+        BinaryTree_PostOrder(nb->rootNode, finishLeaf, NULL);
 
-        // Build subsectors and segs.
-        BinaryTree_PostOrder(nb->rootNode, buildSubsector, nb->_map);
-        HalfEdgeDS_IterateHEdges(Map_HalfEdgeDS(nb->_map), buildSeg, nb->_map);
+    /**
+     * Traverse the BSP tree and put all the half-edges in each
+     * subsector into clockwise order.
+     *
+     * @note This cannot be done during BuildNodes() since splitting a
+     * half-edge with a twin may insert another half-edge into that
+     * twin's list, usually in the wrong place order-wise.
+     *
+     * danij 25/10/2009: Actually, this CAN (and should) be done during
+     * buildNodes, it just requires updating any present faces.
+     */
+    if(nb->rootNode)
+    {
+        BinaryTree_PostOrder(nb->rootNode, clockwiseLeaf, NULL);
     }
     }
 }

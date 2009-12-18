@@ -50,7 +50,6 @@ typedef struct bsp_hedgeinfo_s {
 
     // LineDef that this half-edge goes along, or NULL if miniseg.
     struct linedef_s*   lineDef;
-    hedge_t*            lprev, *lnext; // Previous and next half-edges along linedef side.
 
     // LineDef that this half-edge initially comes from.
     // For "real" half-edges, this is just the same as the 'linedef' field

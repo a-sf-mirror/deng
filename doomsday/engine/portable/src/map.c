@@ -2247,6 +2247,40 @@ static void finishPolyobjs(map_t* map)
     }
 }
 
+static int buildSeg(hedge_t* hEdge, void* context)
+{
+    bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
+
+    hEdge->data = NULL;
+
+    if(!(info->lineDef &&
+         (!info->sector || (info->side == BACK && info->lineDef->buildData.windowEffect))))
+    {
+        Map_CreateSeg((map_t*) context, info->lineDef, info->side, hEdge);
+    }
+
+    return true; // Continue iteration.
+}
+
+static boolean C_DECL buildSubsector(binarytree_t* tree, void* context)
+{
+    if(!BinaryTree_IsLeaf(tree))
+    {
+        node_t* node = BinaryTree_GetData(tree);
+        binarytree_t* child;
+
+        child = BinaryTree_GetChild(tree, RIGHT);
+        if(child && BinaryTree_IsLeaf(child))
+            Map_CreateSubsector((map_t*) context, (face_t*) BinaryTree_GetData(child));
+
+        child = BinaryTree_GetChild(tree, LEFT);
+        if(child && BinaryTree_IsLeaf(child))
+            Map_CreateSubsector((map_t*) context, (face_t*) BinaryTree_GetData(child));
+    }
+
+    return true; // Continue iteration.
+}
+
 /**
  * Build the BSP for the given map.
  *
@@ -2258,26 +2292,33 @@ static boolean buildBSP(map_t* map)
     uint startTime = Sys_GetRealTime();
     nodebuilder_t* nb;
 
-    if(verbose >= 1)
-        Con_Message("Map_BuildBSP: Processing map using tunable "
-                    "factor of %d...\n", bspFactor);
+    VERBOSE(
+    Con_Message("buildBSP: Processing map using tunable factor of %d...\n",
+                bspFactor));
 
     nb = P_CreateNodeBuilder(map, bspFactor);
     NodeBuilder_Build(nb);
     map->_rootNode = nb->rootNode;
 
-    Con_Message("Map_BuildBSP: Built %d Nodes, %d Subsectors, %d Segs.\n",
-                map->numNodes, map->numSubsectors, map->numSegs);
+    if(map->_rootNode)
+    {   // Build subsectors and segs.
+        BinaryTree_PostOrder(map->_rootNode, buildSubsector, map);
+        HalfEdgeDS_IterateHEdges(map->_halfEdgeDS, buildSeg, map);
 
-    if(!BinaryTree_IsLeaf(map->_rootNode))
-    {
-        long rHeight, lHeight;
+        if(verbose >= 1)
+        {
+            Con_Message("  Built %d Nodes, %d Subsectors, %d Segs.\n",
+                        map->numNodes, map->numSubsectors, map->numSegs);
 
-        rHeight = (long) BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, RIGHT));
-        lHeight = (long) BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, LEFT));
+            if(!BinaryTree_IsLeaf(map->_rootNode))
+            {
+                long rHeight = (long) BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, RIGHT));
+                long lHeight = (long) BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, LEFT));
 
-        Con_Message("  Balance %+ld (l%ld - r%ld).\n", lHeight - rHeight,
-                    lHeight, rHeight);
+                Con_Message("  Balance %+ld (l%ld - r%ld).\n",
+                            lHeight - rHeight, lHeight, rHeight);
+            }
+        }
     }
 
     P_DestroyNodeBuilder(nb);
