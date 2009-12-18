@@ -31,12 +31,10 @@
  * SourceForge: http://sourceforge.net/projects/glbsp/
  */
 
-#ifndef __BSP_EDGE_H__
-#define __BSP_EDGE_H__
+#ifndef HEDGE_INFO_H
+#define HEDGE_INFO_H
 
-#include "halfedgeds.h"
-
-typedef struct bsp_hedgeinfo_s {
+typedef struct hedge_info_s {
     // The SuperBlock that contains this half-edge, or NULL if the half-edge
     // is no longer in any SuperBlock (e.g., now in a leaf).
     struct superblock_s* block;
@@ -58,7 +56,6 @@ typedef struct bsp_hedgeinfo_s {
 
     struct sector_s*    sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
     byte                side; // 0 for right, 1 for left.
-} bsp_hedgeinfo_t;
+} hedge_info_t;
 
-
-#endif
+#endif /* HEDGE_INFO_H */

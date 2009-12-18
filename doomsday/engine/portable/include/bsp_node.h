@@ -54,7 +54,7 @@ typedef struct {
     struct cutlist_s* _cutList;
     struct superblock_s* _superBlockmap;
     size_t          _numHalfEdgeInfo;
-    struct bsp_hedgeinfo_s** _halfEdgeInfo;
+    struct hedge_info_s** _halfEdgeInfo;
 
     struct superblock_s* _quickAllocSupers;
 } nodebuilder_t;

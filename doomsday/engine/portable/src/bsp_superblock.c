@@ -208,7 +208,7 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
 
     superblock_listnode_t* n;
     double qnty, a, b, fa, fb;
-    bsp_hedgeinfo_t* part = (bsp_hedgeinfo_t*) partHEdge->data;
+    hedge_info_t* part = (hedge_info_t*) partHEdge->data;
     int num;
 
     /**
@@ -240,7 +240,7 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
     for(n = hEdgeList->_hEdges; n; n = n->next)
     {
         hedge_t* otherHEdge = n->hEdge;
-        bsp_hedgeinfo_t* other = (bsp_hedgeinfo_t*) otherHEdge->data;
+        hedge_info_t* other = (hedge_info_t*) otherHEdge->data;
 
         // This is the heart of my pruning idea - it catches
         // "bad half-edges" early on - LK.
@@ -386,7 +386,7 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
 static int evalPartition(const superblock_t* hEdgeList, hedge_t* part,
                          int factor, int bestCost)
 {
-    bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) part->data;
+    hedge_info_t* data = (hedge_info_t*) part->data;
     evalinfo_t info;
 
     // Initialize info structure.
@@ -451,7 +451,7 @@ static boolean pickHEdgeWorker(const superblock_t* partList,
     for(n = partList->_hEdges; n; n = n->next)
     {
         hedge_t* hEdge = n->hEdge;
-        bsp_hedgeinfo_t* data = (bsp_hedgeinfo_t*) hEdge->data;
+        hedge_info_t* data = (hedge_info_t*) hEdge->data;
 
 /*#if _DEBUG
 Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
@@ -596,7 +596,7 @@ void SuperBlock_PrintHEdges(superblock_t* block)
     for(n = block->_hEdges; n; n = n->next)
     {
         const hedge_t* hEdge = n->hEdge;
-        const bsp_hedgeinfo_t* data = hEdge->data;
+        const hedge_info_t* data = hEdge->data;
 
         Con_Message("Build: %s %p sector=%d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
                     (data->lineDef? "NORM" : "MINI"), hEdge,
@@ -621,7 +621,7 @@ static void testSuperWorker(superblock_t* block, uint* real, uint* mini)
     {
         const hedge_t* cur = n->hEdge;
 
-        if(((bsp_hedgeinfo_t*) cur->data)->lineDef)
+        if(((hedge_info_t*) cur->data)->lineDef)
             (*real) += 1;
         else
             (*mini) += 1;

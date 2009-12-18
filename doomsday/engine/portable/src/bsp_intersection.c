@@ -339,8 +339,8 @@ static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle, byte antiClockw
     hEdge = first->twin->next;
     do
     {
-        if(((bsp_hedgeinfo_t*) hEdge->data)->pAngle <=
-           ((bsp_hedgeinfo_t*) first->data)->pAngle)
+        if(((hedge_info_t*) hEdge->data)->pAngle <=
+           ((hedge_info_t*) first->data)->pAngle)
             first = hEdge;
     } while((hEdge = hEdge->twin->next) != vertex->hEdge);
 
@@ -348,7 +348,7 @@ static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle, byte antiClockw
     {
         first = first->twin->next;
         hEdge = first;
-        while(((bsp_hedgeinfo_t*) hEdge->data)->pAngle > angle + ANG_EPSILON &&
+        while(((hedge_info_t*) hEdge->data)->pAngle > angle + ANG_EPSILON &&
               (hEdge = hEdge->twin->next) != first);
 
         return hEdge->twin;
@@ -356,7 +356,7 @@ static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle, byte antiClockw
     else
     {
         hEdge = first;
-        while(((bsp_hedgeinfo_t*) hEdge->data)->pAngle < angle + ANG_EPSILON &&
+        while(((hedge_info_t*) hEdge->data)->pAngle < angle + ANG_EPSILON &&
               (hEdge = hEdge->prev->twin) != first);
 
         return hEdge;
@@ -365,9 +365,9 @@ static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle, byte antiClockw
 
 static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
 {
-    /*if(insect->after && ((bsp_hedgeinfo_t*) insect->after->data)->lineDef)
+    /*if(insect->after && ((hedge_info_t*) insect->after->data)->lineDef)
     {
-        linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->after->data)->lineDef;
+        linedef_t* lineDef = ((hedge_info_t*) insect->after->data)->lineDef;
 
         if(lineDef->buildData.sideDefs[FRONT] &&
            lineDef->buildData.sideDefs[BACK] &&
@@ -376,9 +376,9 @@ static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
             return true;
     }
 
-    if(insect->before && ((bsp_hedgeinfo_t*) insect->before->data)->lineDef)
+    if(insect->before && ((hedge_info_t*) insect->before->data)->lineDef)
     {
-        linedef_t* lineDef = ((bsp_hedgeinfo_t*) insect->before->data)->lineDef;
+        linedef_t* lineDef = ((hedge_info_t*) insect->before->data)->lineDef;
 
         if(lineDef->buildData.sideDefs[FRONT] &&
            lineDef->buildData.sideDefs[BACK] &&
@@ -414,7 +414,7 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
         hEdge = next->vertex->hEdge;
         do
         {
-            angle_g diff = fabs(((bsp_hedgeinfo_t*) hEdge->data)->pAngle - angle);
+            angle_g diff = fabs(((hedge_info_t*) hEdge->data)->pAngle - angle);
             if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
             {
                 alongPartition = true;
@@ -428,8 +428,8 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
             farHEdge = vertexCheckOpen(next->vertex, M_SlopeToAngle(-dX, -dY), false);
             nearHEdge = vertexCheckOpen(cur->vertex, M_SlopeToAngle(dX, dY), true);
 
-            nearSector = nearHEdge ? ((bsp_hedgeinfo_t*) nearHEdge->data)->sector : NULL;
-            farSector = farHEdge? ((bsp_hedgeinfo_t*) farHEdge->data)->sector : NULL;
+            nearSector = nearHEdge ? ((hedge_info_t*) nearHEdge->data)->sector : NULL;
+            farSector = farHEdge? ((hedge_info_t*) farHEdge->data)->sector : NULL;
         }
 
         if(!(!nearSector && !farSector))
@@ -504,10 +504,10 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 {
                 hedge_t* right, *left;
 
-                right = NodeBuilder_CreateHEdge(nb, NULL, ((bsp_hedgeinfo_t*) partHEdge->data)->lineDef, cur->vertex, ((bsp_hedgeinfo_t*) nearHEdge->data)->sector, ((bsp_hedgeinfo_t*) nearHEdge->data)->side);
+                right = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->side);
                 right->face = nearHEdge->face;
 
-                left = NodeBuilder_CreateHEdge(nb, NULL, ((bsp_hedgeinfo_t*) partHEdge->data)->lineDef, next->vertex, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->sector, ((bsp_hedgeinfo_t*) farHEdge->prev->data)->side);
+                left = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->side);
                 left->face = farHEdge->prev->face;
 
                 // Twin the half-edges together.

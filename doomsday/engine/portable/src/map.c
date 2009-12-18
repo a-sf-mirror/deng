@@ -2249,7 +2249,7 @@ static void finishPolyobjs(map_t* map)
 
 static int buildSeg(hedge_t* hEdge, void* context)
 {
-    bsp_hedgeinfo_t* info = (bsp_hedgeinfo_t*) hEdge->data;
+    hedge_info_t* info = (hedge_info_t*) hEdge->data;
 
     hEdge->data = NULL;
 
@@ -2731,20 +2731,20 @@ static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSe
     do
     {
         if(!allowSelfRef && hEdge->twin &&
-           ((bsp_hedgeinfo_t*) hEdge->data)->sector ==
-           ((bsp_hedgeinfo_t*) hEdge->twin->data)->sector)
+           ((hedge_info_t*) hEdge->data)->sector ==
+           ((hedge_info_t*) hEdge->twin->data)->sector)
             continue;
 
-        if(((bsp_hedgeinfo_t*) hEdge->data)->lineDef &&
-           ((bsp_hedgeinfo_t*) hEdge->data)->sector)
+        if(((hedge_info_t*) hEdge->data)->lineDef &&
+           ((hedge_info_t*) hEdge->data)->sector)
         {
-            linedef_t* lineDef = ((bsp_hedgeinfo_t*) hEdge->data)->lineDef;
+            linedef_t* lineDef = ((hedge_info_t*) hEdge->data)->lineDef;
 
-            if(lineDef->buildData.windowEffect && ((bsp_hedgeinfo_t*) hEdge->data)->side == 1)
+            if(lineDef->buildData.windowEffect && ((hedge_info_t*) hEdge->data)->side == 1)
                 sector = lineDef->buildData.windowEffect;
             else
                 sector = lineDef->buildData.sideDefs[
-                    ((bsp_hedgeinfo_t*) hEdge->data)->side]->sector;
+                    ((hedge_info_t*) hEdge->data)->side]->sector;
         }
     } while(!sector && (hEdge = hEdge->next) != firstHEdge);
 
