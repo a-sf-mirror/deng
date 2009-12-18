@@ -222,8 +222,8 @@ static void attachHEdgeInfo(nodebuilder_t* nb, hedge_t* hEdge,
     {
     hedge_info_t* info;
 
-    nb->_halfEdgeInfo = Z_Realloc(nb->_halfEdgeInfo, ++nb->_numHalfEdgeInfo * sizeof(hedge_info_t*), PU_STATIC);
-    info = nb->_halfEdgeInfo[nb->_numHalfEdgeInfo-1] =
+    nb->halfEdgeInfo = Z_Realloc(nb->halfEdgeInfo, ++nb->numHalfEdgeInfo * sizeof(hedge_info_t*), PU_STATIC);
+    info = nb->halfEdgeInfo[nb->numHalfEdgeInfo-1] =
         Z_Calloc(sizeof(hedge_info_t), PU_STATIC, 0);
 
     info->lineDef = line;
@@ -1377,20 +1377,20 @@ nodebuilder_t* P_CreateNodeBuilder(map_t* map, int bspFactor)
     nb->_map = map;
     nb->_cutList = BSP_CutListCreate();
     createSuperBlockmap(nb);
-    nb->_numHalfEdgeInfo = 0;
-    nb->_halfEdgeInfo = NULL;
+    nb->numHalfEdgeInfo = 0;
+    nb->halfEdgeInfo = NULL;
     return nb;
 }
 
 void P_DestroyNodeBuilder(nodebuilder_t* nb)
 {
     assert(nb);
-    if(nb->_halfEdgeInfo)
+    if(nb->halfEdgeInfo)
     {
         size_t i;
-        for(i = 0; i < nb->_numHalfEdgeInfo; ++i)
-            Z_Free(nb->_halfEdgeInfo[i]);
-        Z_Free(nb->_halfEdgeInfo);
+        for(i = 0; i < nb->numHalfEdgeInfo; ++i)
+            Z_Free(nb->halfEdgeInfo[i]);
+        Z_Free(nb->halfEdgeInfo);
     }
     destroySuperBlockmap(nb);
     if(nb->_cutList)
