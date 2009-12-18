@@ -52,14 +52,14 @@ typedef struct cnode_s {
 } cnode_t;
 
 /**
- * An "intersection" remembers the vertex that touches a space partition.
+ * An "intersection" remembers the half-edge that intercepts the partition.
  */
 typedef struct intersection_s {
-    vertex_t*       vertex;
+    hedge_t*        hEdge;
 
-    // How far along the partition line the vertex is. Zero is at the
-    // partition half-edge's start point, positive values move in the same
-    // direction as the partition's direction, and negative values move
+    // How far along the partition line the intercept point is. Zero is at
+    // the partition half-edge's start point, positive values move in the
+    // same direction as the partition's direction, and negative values move
     // in the opposite direction.
     double          distance;
 } intersection_t;
@@ -231,15 +231,15 @@ void BSP_CutListDestroy(cutlist_t* list)
 /**
  * Create a new intersection.
  */
-void CutList_Intersect(cutlist_t* list, vertex_t* vertex, double distance)
+void CutList_Intersect(cutlist_t* list, hedge_t* hEdge, double distance)
 {
     assert(list);
-    assert(vertex);
+    assert(hEdge);
     {
     intersection_t* cut = quickAllocIntersection(list);
 
     cut->distance = distance;
-    cut->vertex = vertex;
+    cut->hEdge = hEdge;
 
     insertIntersection(list, cut);
     }
@@ -258,14 +258,14 @@ void CutList_Reset(cutlist_t* list)
  * Search the given list for an intersection, if found; return it.
  *
  * @param list          The list to be searched.
- * @param vert          Ptr to the intersection vertex to look for.
+ * @param hEdge         Ptr to the intercept half-edge to look for.
  *
  * @return              @c true iff an intersection is found ELSE @c false;
  */
-boolean CutList_Find(cutlist_t* list, vertex_t* v)
+boolean CutList_Find(cutlist_t* list, hedge_t* hEdge)
 {
     assert(list);
-    assert(v);
+    assert(hEdge);
     {
     cnode_t* node;
 
@@ -274,7 +274,7 @@ boolean CutList_Find(cutlist_t* list, vertex_t* v)
     {
         intersection_t *cut = node->data;
 
-        if(cut->vertex == v)
+        if(cut->hEdge == hEdge)
             return true;
 
         node = node->next;
@@ -411,7 +411,7 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
         angle_g angle;
 
         angle = M_SlopeToAngle(-dX, -dY);
-        hEdge = next->vertex->hEdge;
+        hEdge = next->hEdge;
         do
         {
             angle_g diff = fabs(((hedge_info_t*) hEdge->data)->pAngle - angle);
@@ -420,13 +420,13 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
                 alongPartition = true;
                 break;
             }
-        } while((hEdge = hEdge->prev->twin) != next->vertex->hEdge);
+        } while((hEdge = hEdge->prev->twin) != next->hEdge);
         }
 
         if(!alongPartition)
         {
-            farHEdge = vertexCheckOpen(next->vertex, M_SlopeToAngle(-dX, -dY), false);
-            nearHEdge = vertexCheckOpen(cur->vertex, M_SlopeToAngle(dX, dY), true);
+            farHEdge = vertexCheckOpen(next->hEdge->vertex, M_SlopeToAngle(-dX, -dY), false);
+            nearHEdge = vertexCheckOpen(cur->hEdge->vertex, M_SlopeToAngle(dX, dY), true);
 
             nearSector = nearHEdge ? ((hedge_info_t*) nearHEdge->data)->sector : NULL;
             farSector = farHEdge? ((hedge_info_t*) farHEdge->data)->sector : NULL;
@@ -441,8 +441,8 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
                 {
                     double pos[2];
 
-                    pos[0] = cur->vertex->pos[0] + next->vertex->pos[0];
-                    pos[1] = cur->vertex->pos[1] + next->vertex->pos[1];
+                    pos[0] = cur->hEdge->vertex->pos[0] + next->hEdge->vertex->pos[0];
+                    pos[1] = cur->hEdge->vertex->pos[1] + next->hEdge->vertex->pos[1];
                     pos[0] /= 2;
                     pos[1] /= 2;
 
@@ -459,8 +459,8 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
                 {
                     double pos[2];
 
-                    pos[0] = cur->vertex->pos[0] + next->vertex->pos[0];
-                    pos[1] = cur->vertex->pos[1] + next->vertex->pos[1];
+                    pos[0] = cur->hEdge->vertex->pos[0] + next->hEdge->vertex->pos[0];
+                    pos[1] = cur->hEdge->vertex->pos[1] + next->hEdge->vertex->pos[1];
                     pos[0] /= 2;
                     pos[1] /= 2;
 
@@ -487,9 +487,9 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
 VERBOSE(
 Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
             nearSector->buildData.index - 1,
-            (float) cur->vertex->pos[0], (float) cur->vertex->pos[1],
+            (float) cur->hEdge->vertex->pos[0], (float) cur->hEdge->vertex->pos[1],
             farSector->buildData.index - 1,
-            (float) next->vertex->pos[0], (float) next->vertex->pos[1]));
+            (float) next->hEdge->vertex->pos[0], (float) next->hEdge->vertex->pos[1]));
 #endif
                     }
 
@@ -504,10 +504,10 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 {
                 hedge_t* right, *left;
 
-                right = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->side);
+                right = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->side);
                 right->face = nearHEdge->face;
 
-                left = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->side);
+                left = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->hEdge->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->side);
                 left->face = farHEdge->prev->face;
 
                 // Twin the half-edges together.

@@ -43,8 +43,8 @@ typedef struct cutlist_s {
 cutlist_t*      BSP_CutListCreate(void);
 void            BSP_CutListDestroy(cutlist_t* cutList);
 
-void            CutList_Intersect(cutlist_t* list, struct vertex_s* vertex, double distance);
-boolean         CutList_Find(cutlist_t* cutList, struct vertex_s* v);
+void            CutList_Intersect(cutlist_t* list, struct hedge_s* hEdge, double distance);
+boolean         CutList_Find(cutlist_t* cutList, struct hedge_s* hEdge);
 void            CutList_Reset(cutlist_t* cutList);
 
 // @todo Should be private to nodebuilder_t

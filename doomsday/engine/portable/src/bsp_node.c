@@ -1077,14 +1077,14 @@ static face_t* createBSPLeaf(nodebuilder_t* nb, face_t* face,
     return face;
 }
 
-static void makeIntersection(cutlist_t* cutList, vertex_t* vert,
+static void makeIntersection(cutlist_t* cutList, hedge_t* hEdge,
                              double x, double y, double dX, double dY,
                              const hedge_t* partHEdge)
 {
-    if(!CutList_Find(cutList, vert))
-        CutList_Intersect(cutList, vert,
+    if(!CutList_Find(cutList, hEdge))
+        CutList_Intersect(cutList, hEdge,
             M_ParallelDist(dX, dY, ((hedge_info_t*) partHEdge->data)->pPara, ((hedge_info_t*) partHEdge->data)->pLength,
-                           vert->pos[VX], vert->pos[VY]));
+                           hEdge->vertex->pos[VX], hEdge->vertex->pos[VY]));
 }
 
 /**
@@ -1174,8 +1174,8 @@ static void divideOneHEdge(nodebuilder_t* nb, hedge_t* curHEdge, double x,
     // Check for being on the same line.
     if(fabs(a) <= DIST_EPSILON && fabs(b) <= DIST_EPSILON)
     {
-        makeIntersection(nb->_cutList, curHEdge->vertex, x, y, dX, dY, partHEdge);
-        makeIntersection(nb->_cutList, curHEdge->twin->vertex, x, y, dX, dY, partHEdge);
+        makeIntersection(nb->_cutList, curHEdge, x, y, dX, dY, partHEdge);
+        makeIntersection(nb->_cutList, curHEdge->twin, x, y, dX, dY, partHEdge);
 
         // This seg runs along the same line as the partition. Check
         // whether it goes in the same direction or the opposite.
@@ -1195,9 +1195,9 @@ static void divideOneHEdge(nodebuilder_t* nb, hedge_t* curHEdge, double x,
     if(a > -DIST_EPSILON && b > -DIST_EPSILON)
     {
         if(a < DIST_EPSILON)
-            makeIntersection(nb->_cutList, curHEdge->vertex, x, y, dX, dY, partHEdge);
+            makeIntersection(nb->_cutList, curHEdge, x, y, dX, dY, partHEdge);
         else if(b < DIST_EPSILON)
-            makeIntersection(nb->_cutList, curHEdge->twin->vertex, x, y, dX, dY, partHEdge);
+            makeIntersection(nb->_cutList, curHEdge->twin, x, y, dX, dY, partHEdge);
 
         BSP_AddHEdgeToSuperBlock(bRight, curHEdge);
         return;
@@ -1207,9 +1207,9 @@ static void divideOneHEdge(nodebuilder_t* nb, hedge_t* curHEdge, double x,
     if(a < DIST_EPSILON && b < DIST_EPSILON)
     {
         if(a > -DIST_EPSILON)
-            makeIntersection(nb->_cutList, curHEdge->vertex, x, y, dX, dY, partHEdge);
+            makeIntersection(nb->_cutList, curHEdge, x, y, dX, dY, partHEdge);
         else if(b > -DIST_EPSILON)
-            makeIntersection(nb->_cutList, curHEdge->twin->vertex, x, y, dX, dY, partHEdge);
+            makeIntersection(nb->_cutList, curHEdge->twin, x, y, dX, dY, partHEdge);
 
         BSP_AddHEdgeToSuperBlock(bLeft, curHEdge);
         return;
@@ -1221,7 +1221,7 @@ static void divideOneHEdge(nodebuilder_t* nb, hedge_t* curHEdge, double x,
     double iX, iY;
     calcIntersection(curHEdge, x, y, dX, dY, a, b, &iX, &iY);
     newHEdge = NodeBuilder_SplitHEdge(nb, curHEdge, iX, iY);
-    makeIntersection(nb->_cutList, newHEdge->vertex, x, y, dX, dY, partHEdge);
+    makeIntersection(nb->_cutList, newHEdge, x, y, dX, dY, partHEdge);
     }
 
     if(a < 0)
