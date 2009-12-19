@@ -46,7 +46,7 @@
 
 typedef double angle_g;  // Degrees, 0 is E, 90 is N
 
-typedef struct {
+typedef struct nodebuilder_s {
     int             bspFactor;
     binarytree_t*   rootNode;
     size_t          numHalfEdgeInfo;

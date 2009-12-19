@@ -1153,26 +1153,26 @@ static void divideOneHEdge(nodebuilder_t* nb, hedge_t* curHEdge, double x,
 {
     hedge_info_t* data = ((hedge_info_t*) curHEdge->data);
     hedge_t* newHEdge;
-    double a, b;
+    double perpC, perpD;
 
     // Get state of lines' relation to each other.
     if(partHEdge && data->sourceLine ==
        ((hedge_info_t*) partHEdge->data)->sourceLine)
     {
-        a = b = 0;
+        perpC = perpD = 0;
     }
     else
     {
         hedge_info_t* part = (hedge_info_t*) partHEdge->data;
 
-        a = M_PerpDist(dX, dY, part->pPerp, part->pLength,
+        perpC = M_PerpDist(dX, dY, part->pPerp, part->pLength,
                        curHEdge->vertex->pos[VX], curHEdge->vertex->pos[VY]);
-        b = M_PerpDist(dX, dY, part->pPerp, part->pLength,
+        perpD = M_PerpDist(dX, dY, part->pPerp, part->pLength,
                        curHEdge->twin->vertex->pos[VX], curHEdge->twin->vertex->pos[VY]);
     }
 
     // Check for being on the same line.
-    if(fabs(a) <= DIST_EPSILON && fabs(b) <= DIST_EPSILON)
+    if(fabs(perpC) <= DIST_EPSILON && fabs(perpD) <= DIST_EPSILON)
     {
         makeIntersection(nb->_cutList, curHEdge, x, y, dX, dY, partHEdge);
         makeIntersection(nb->_cutList, curHEdge->twin, x, y, dX, dY, partHEdge);
@@ -1192,11 +1192,11 @@ static void divideOneHEdge(nodebuilder_t* nb, hedge_t* curHEdge, double x,
     }
 
     // Check for right side.
-    if(a > -DIST_EPSILON && b > -DIST_EPSILON)
+    if(perpC > -DIST_EPSILON && perpD > -DIST_EPSILON)
     {
-        if(a < DIST_EPSILON)
+        if(perpC < DIST_EPSILON)
             makeIntersection(nb->_cutList, curHEdge, x, y, dX, dY, partHEdge);
-        else if(b < DIST_EPSILON)
+        else if(perpD < DIST_EPSILON)
             makeIntersection(nb->_cutList, curHEdge->twin, x, y, dX, dY, partHEdge);
 
         BSP_AddHEdgeToSuperBlock(bRight, curHEdge);
@@ -1204,27 +1204,27 @@ static void divideOneHEdge(nodebuilder_t* nb, hedge_t* curHEdge, double x,
     }
 
     // Check for left side.
-    if(a < DIST_EPSILON && b < DIST_EPSILON)
+    if(perpC < DIST_EPSILON && perpD < DIST_EPSILON)
     {
-        if(a > -DIST_EPSILON)
+        if(perpC > -DIST_EPSILON)
             makeIntersection(nb->_cutList, curHEdge, x, y, dX, dY, partHEdge);
-        else if(b > -DIST_EPSILON)
+        else if(perpD > -DIST_EPSILON)
             makeIntersection(nb->_cutList, curHEdge->twin, x, y, dX, dY, partHEdge);
 
         BSP_AddHEdgeToSuperBlock(bLeft, curHEdge);
         return;
     }
 
-    // When we reach here, we have a and b non-zero and opposite sign,
+    // When we reach here, we have perpC and perpD non-zero and opposite sign,
     // hence this edge will be split by the partition line.
     {
     double iX, iY;
-    calcIntersection(curHEdge, x, y, dX, dY, a, b, &iX, &iY);
+    calcIntersection(curHEdge, x, y, dX, dY, perpC, perpD, &iX, &iY);
     newHEdge = NodeBuilder_SplitHEdge(nb, curHEdge, iX, iY);
     makeIntersection(nb->_cutList, newHEdge, x, y, dX, dY, partHEdge);
     }
 
-    if(a < 0)
+    if(perpC < 0)
     {
         BSP_AddHEdgeToSuperBlock(bLeft,  curHEdge);
         BSP_AddHEdgeToSuperBlock(bRight, newHEdge);
