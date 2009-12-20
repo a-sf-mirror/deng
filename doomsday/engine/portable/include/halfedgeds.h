@@ -73,7 +73,6 @@ hedge_t*            HEdge_Split(halfedgeds_t* halfEdgeDS, hedge_t* oldHEdge);
 
 void                Face_LinkHEdge(face_t* face, hedge_t* hEdge);
 void                Face_UnlinkHEdge(face_t* face, hedge_t* hEdge);
-void                Face_ClockwiseOrder(face_t* face);
 void                Face_SwitchToHEdgeLinks(face_t* face);
 
 void                testVertexHEdgeRings(vertex_t* v);

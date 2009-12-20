@@ -514,12 +514,6 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 right->twin = left;
                 left->twin = right;
 
-#if 0
-                /**
-                 * @todo Use method for linking the new half-edges along the
-                 * partition into their respective vertex rings.
-                 * Not possible until createInitialHEdges is updated.
-                 */
                 left->prev = farHEdge->prev;
                 right->prev = nearHEdge;
 
@@ -533,12 +527,8 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 left->next->prev = left;
 
 #if _DEBUG
-testVertexHEdgeRings(cur->vertex);
-testVertexHEdgeRings(next->vertex);
-#endif
-#else
-                right->next = right->prev = right;
-                left->next = left->prev = left;
+testVertexHEdgeRings(cur->hEdge->vertex);
+testVertexHEdgeRings(next->hEdge->vertex);
 #endif
 
                 BSP_UpdateHEdgeInfo(right);

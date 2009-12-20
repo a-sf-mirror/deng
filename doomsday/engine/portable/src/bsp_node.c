@@ -1398,13 +1398,6 @@ void P_DestroyNodeBuilder(nodebuilder_t* nb)
     Z_Free(nb);
 }
 
-static boolean C_DECL clockwiseLeaf(binarytree_t* tree, void* data)
-{
-    if(BinaryTree_IsLeaf(tree))
-        Face_ClockwiseOrder((face_t*) BinaryTree_GetData(tree));
-    return true; // Continue iteration.
-}
-
 void NodeBuilder_Build(nodebuilder_t* nb)
 {
     assert(nb);
@@ -1412,9 +1405,6 @@ void NodeBuilder_Build(nodebuilder_t* nb)
     createInitialHEdgesAndAddtoSuperBlockmap(nb);
 
     nb->rootNode = buildNodes(nb, nb->_superBlockmap);
-    if(nb->rootNode)
-        BinaryTree_PostOrder(nb->rootNode, finishLeaf, NULL);
-
     /**
      * Traverse the BSP tree and put all the half-edges in each
      * subsector into clockwise order.
@@ -1427,8 +1417,6 @@ void NodeBuilder_Build(nodebuilder_t* nb)
      * buildNodes, it just requires updating any present faces.
      */
     if(nb->rootNode)
-    {
-        BinaryTree_PostOrder(nb->rootNode, clockwiseLeaf, NULL);
-    }
+        BinaryTree_PostOrder(nb->rootNode, finishLeaf, NULL);
     }
 }
