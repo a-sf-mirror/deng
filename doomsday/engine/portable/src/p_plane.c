@@ -116,7 +116,7 @@ boolean Plane_SetProperty(plane_t* plane, const setargs_t* args)
 
                 for(j = 0; j < sec->planeCount; ++j)
                 {
-                    if(sec->planes[i] == plane)
+                    if(sec->planes[j] == plane)
                         R_MarkDependantSurfacesForDecorationUpdate(sec);
                 }
             }
