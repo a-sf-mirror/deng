@@ -203,9 +203,11 @@ typedef enum {
 #define PS_flags                surface.flags
 #define PS_inflags              surface.inFlags
 
+typedef struct {
+    uint                index;
+} mplane_t;
+
 typedef struct plane_s {
-    ddmobj_base_t       soundOrg;      // Sound origin for plane
-    struct sector_s*    sector;        // Owner of the plane (temp)
     surface_t           surface;
     float               height;        // Current height
     float               oldHeight[2];
@@ -216,7 +218,7 @@ typedef struct plane_s {
     float               visHeight;     // Visible plane height (smoothed)
     float               visHeightDelta;
     planetype_t         type;          // PLN_* type.
-    int                 planeID;
+    mplane_t            buildData;
 } plane_t;
 
 // Helper macros for accessing sector floor/ceiling plane data elements.

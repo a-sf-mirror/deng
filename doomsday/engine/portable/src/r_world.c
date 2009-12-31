@@ -437,16 +437,16 @@ boolean PlaneList_Iterate(planelist_t* pl, boolean (*callback) (plane_t*, void*)
  * decoration origins for surfaces whose material offset is dependant upon
  * the given plane.
  */
-void R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln)
+void R_MarkDependantSurfacesForDecorationUpdate(sector_t* sector)
 {
     linedef_t** linep;
 
-    if(!pln || !pln->sector->lineDefs)
+    if(!sector || !sector->lineDefs)
         return;
 
     // Mark the decor lights on the sides of this plane as requiring
     // an update.
-    linep = pln->sector->lineDefs;
+    linep = sector->lineDefs;
 
     while(*linep)
     {
@@ -454,21 +454,14 @@ void R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln)
 
         if(!LINE_BACKSIDE(li))
         {
-            if(pln->type != PLN_MID)
-                Surface_Update(&LINE_FRONTSIDE(li)->SW_surface(SEG_MIDDLE));
+            Surface_Update(&LINE_FRONTSIDE(li)->SW_surface(SEG_MIDDLE));
         }
         else if(LINE_BACKSECTOR(li) != LINE_FRONTSECTOR(li))
         {
-            byte                side =
-                (LINE_FRONTSECTOR(li) == pln->sector? FRONT : BACK);
-
-            Surface_Update(&LINE_SIDE(li, side)->SW_surface(SEG_BOTTOM));
-            Surface_Update(&LINE_SIDE(li, side)->SW_surface(SEG_TOP));
-
-            if(pln->type == PLN_FLOOR)
-                Surface_Update(&LINE_SIDE(li, side^1)->SW_surface(SEG_BOTTOM));
-            else
-                Surface_Update(&LINE_SIDE(li, side^1)->SW_surface(SEG_TOP));
+            Surface_Update(&LINE_FRONTSIDE(li)->SW_surface(SEG_BOTTOM));
+            Surface_Update(&LINE_FRONTSIDE(li)->SW_surface(SEG_TOP));
+            Surface_Update(&LINE_BACKSIDE(li)->SW_surface(SEG_BOTTOM));
+            Surface_Update(&LINE_BACKSIDE(li)->SW_surface(SEG_TOP));
         }
 
         *linep++;
@@ -574,88 +567,6 @@ void R_CreateBiasSurfacesInSubsector(subsector_t* subsector)
 
     if(!subsector->bsuf)
         R_CreateBiasSurfacesForPlanesInSubsector(subsector);
-}
-
-/**
- * Create a new plane for the given sector. The plane will be initialized
- * with default values.
- *
- * Post: The sector's plane list will be replaced, the new plane will be
- *       linked to the end of the list.
- *
- * @param sec           Sector for which a new plane will be created.
- *
- * @return              Ptr to the newly created plane.
- */
-plane_t* R_NewPlaneForSector(map_t* map, sector_t* sec)
-{
-    surface_t* suf;
-    plane_t* plane;
-
-    if(!map)
-        return NULL;
-    if(!sec)
-        return NULL;
-
-/*#if _DEBUG
-if(sec->planeCount >= 2)
-    Con_Error("P_NewPlaneForSector: Cannot create plane for sector, "
-              "limit is %i per sector.\n", 2);
-#endif*/
-
-    // Allocate the new plane.
-    plane = Z_Malloc(sizeof(plane_t), PU_STATIC, 0);
-
-    // Resize this sector's plane list.
-    sec->planes = Z_Realloc(sec->planes, sizeof(plane_t*) * (++sec->planeCount + 1), PU_STATIC);
-    // Add the new plane to the end of the list.
-    sec->planes[sec->planeCount-1] = plane;
-    sec->planes[sec->planeCount] = NULL; // Terminate.
-
-    if(!ddMapSetup)
-        P_CreateObjectRecord(DMU_PLANE, plane);
-
-    // Initalize the plane.
-    plane->surface.owner = (void*) plane;
-    plane->glowRGB[CR] = plane->glowRGB[CG] = plane->glowRGB[CB] = 1;
-    plane->glow = 0;
-    plane->sector = sec;
-    plane->height = plane->oldHeight[0] = plane->oldHeight[1] = 0;
-    plane->visHeight = plane->visHeightDelta = 0;
-    plane->soundOrg.pos[VX] = sec->soundOrg.pos[VX];
-    plane->soundOrg.pos[VY] = sec->soundOrg.pos[VY];
-    plane->soundOrg.pos[VZ] = sec->soundOrg.pos[VZ];
-    memset(&plane->soundOrg.thinker, 0, sizeof(plane->soundOrg.thinker));
-    plane->speed = 0;
-    plane->target = 0;
-    plane->type = PLN_MID;
-    plane->planeID = sec->planeCount-1;
-
-    // Initialize the surface.
-    memset(&plane->surface, 0, sizeof(plane->surface));
-    suf = &plane->surface;
-    suf->normal[VZ] = suf->oldNormal[VZ] = 1;
-    // \todo The initial material should be the "unknown" material.
-    Surface_SetMaterial(suf, NULL, false);
-    Surface_SetMaterialOffsetXY(suf, 0, 0);
-    Surface_SetColorRGBA(suf, 1, 1, 1, 1);
-    Surface_SetBlendMode(suf, BM_NORMAL);
-
-    /**
-     * Destroy biassurfaces for planes in all sector subsectors if present
-     * (they will be created if needed when next drawn).
-     */
-    {
-    subsector_t** subsectorPtr = sec->subsectors;
-    while(*subsectorPtr)
-    {
-        R_DestroyBiasSurfacesForPlanesInSubSector(*subsectorPtr);
-
-        *subsectorPtr++;
-    }
-    }
-
-    return plane;
 }
 
 /**
@@ -1870,7 +1781,7 @@ void R_SetupMap(int mode, int flags)
                     R_PointInSubSector(ddpl->mo->pos[VX], ddpl->mo->pos[VY]);
 
                 //// \fixme $nplanes
-                if(ddpl->mo->pos[VZ] > subsector->sector->SP_floorvisheight + 4 &&
+                if(ddpl->mo->pos[VZ] >= subsector->sector->SP_floorvisheight &&
                    ddpl->mo->pos[VZ] < subsector->sector->SP_ceilvisheight - 4)
                    ddpl->inVoid = false;
             }
@@ -2105,7 +2016,6 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
 {
     boolean changed = false;
     boolean hasGlow = false;
-    sector_t* sec = pln->sector;
     map_t* map = P_CurrentMap();
 
     // Update the glow properties.
@@ -2141,69 +2051,80 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
         subsector_t** subsectorPtr;
         sidedef_t* front = NULL, *back = NULL;
 
-        // Check if there are any camera players in this sector. If their
-        // height is now above the ceiling/below the floor they are now in
-        // the void.
-        for(i = 0; i < DDMAXPLAYERS; ++i)
+        for(i = 0; i < map->numSectors; ++i)
         {
-            player_t* plr = &ddPlayers[i];
-            ddplayer_t* ddpl = &plr->shared;
+            sector_t* sec = map->sectors[i];
+            uint j;
 
-            if(!ddpl->inGame || !ddpl->mo || !ddpl->mo->subsector)
-                continue;
-
-            //// \fixme $nplanes
-            if((ddpl->flags & DDPF_CAMERA) &&
-               ((subsector_t*)((objectrecord_t*) ddpl->mo->subsector)->obj)->sector == sec &&
-               (ddpl->mo->pos[VZ] > sec->SP_ceilheight ||
-                ddpl->mo->pos[VZ] < sec->SP_floorheight))
+            for(j = 0; j < sec->planeCount; ++j)
             {
-                ddpl->inVoid = true;
-            }
-        }
+                int k;
 
-        // Update the z position of the degenmobj for this plane.
-        pln->soundOrg.pos[VZ] = pln->height;
+                if(sec->planes[j] != pln)
+                    continue;
 
-        subsectorPtr = sec->subsectors;
-        while(*subsectorPtr)
-        {
-            subsector_t* subsector = *subsectorPtr;
-
-            R_UpdateSideDefsOfSubSector(subsector);
-
-            // Inform the shadow bias of changed geometry?
-            if(subsector->bsuf)
-            {
-                hedge_t* hEdge;
-
-                if((hEdge = subsector->face->hEdge))
+                // Check if there are any camera players in this sector. If their
+                // height is now above the ceiling/below the floor they are now in
+                // the void.
+                for(k = 0; k < DDMAXPLAYERS; ++k)
                 {
-                    do
-                    {
-                        seg_t* seg = (seg_t*) hEdge->data;
+                    player_t* plr = &ddPlayers[k];
+                    ddplayer_t* ddpl = &plr->shared;
 
-                        if(seg->sideDef)
-                        {
-                            for(i = 0; i < 3; ++i)
-                                SB_SurfaceMoved(map, seg->bsuf[i]);
-                        }
-                    } while((hEdge = hEdge->next) != subsector->face->hEdge);
+                    if(!ddpl->inGame || !ddpl->mo || !ddpl->mo->subsector)
+                        continue;
+
+                    //// \fixme $nplanes
+                    if((ddpl->flags & DDPF_CAMERA) &&
+                       ((subsector_t*)((objectrecord_t*) ddpl->mo->subsector)->obj)->sector == sec &&
+                       (ddpl->mo->pos[VZ] > sec->SP_ceilheight ||
+                        ddpl->mo->pos[VZ] < sec->SP_floorheight))
+                    {
+                        ddpl->inVoid = true;
+                    }
                 }
 
-                SB_SurfaceMoved(map, subsector->bsuf[pln->planeID]);
+                subsectorPtr = sec->subsectors;
+                while(*subsectorPtr)
+                {
+                    subsector_t* subsector = *subsectorPtr;
+
+                    R_UpdateSideDefsOfSubSector(subsector);
+
+                    // Inform the shadow bias of changed geometry?
+                    if(subsector->bsuf)
+                    {
+                        hedge_t* hEdge;
+
+                        if((hEdge = subsector->face->hEdge))
+                        {
+                            do
+                            {
+                                seg_t* seg = (seg_t*) hEdge->data;
+
+                                if(seg->sideDef)
+                                {
+                                    int m;
+                                    for(m = 0; m < 3; ++m)
+                                        SB_SurfaceMoved(map, seg->bsuf[m]);
+                                }
+                            } while((hEdge = hEdge->next) != subsector->face->hEdge);
+                        }
+
+                        SB_SurfaceMoved(map, subsector->bsuf[j]);
+                    }
+
+                    *subsectorPtr++;
+                }
+
+                Sector_UpdateSoundEnvironment(sec);
+
+                // We need the decorations updated.
+                Surface_Update(&pln->surface);
+
+                changed = true;
             }
-
-            *subsectorPtr++;
         }
-
-        sec->soundOrg.pos[VZ] = (sec->SP_ceilheight - sec->SP_floorheight) / 2;
-        Sector_UpdateSoundEnvironment(sec);
-
-        // We need the decorations updated.
-        Surface_Update(&pln->surface);
-
-        changed = true;
     }
 
     return changed;

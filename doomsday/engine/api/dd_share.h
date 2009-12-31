@@ -634,7 +634,8 @@ enum {
     DMU_SEG_COUNT,
     DMU_SUBSECTOR_COUNT,
     DMU_NODE_COUNT,
-    DMU_POLYOBJ_COUNT
+    DMU_POLYOBJ_COUNT,
+    DMU_PLANE_COUNT
 };
 
 // LineDef flags:

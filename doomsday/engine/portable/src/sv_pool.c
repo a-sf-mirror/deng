@@ -2441,14 +2441,14 @@ void Sv_NewSoundDelta(int soundId, mobj_t* emitter, sector_t* sourceSector,
         id = P_ObjectRecord(DMU_SECTOR, sourceSector)->id - 1;
 
         // Clients need to know which emitter to use.
-        if(emitter)
+#if 0
+        switch(plane)
         {
-            if(emitter == (mobj_t*) &sourceSector->planes[PLN_FLOOR]->soundOrg)
-                df |= SNDDF_FLOOR;
-            else if(emitter == (mobj_t*) &sourceSector->planes[PLN_CEILING]->soundOrg)
-                df |= SNDDF_CEILING;
-            // else client assumes sector->soundOrg
+        case PLN_FLOOR: df |= SNDDF_FLOOR; break;
+        case PLN_CEILING: df |= SNDDF_CEILING; break;
+        default: /* Client assumes sector->soundOrg */ break;
         }
+#endif
     }
     else if(sourcePoly != NULL)
     {

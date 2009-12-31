@@ -361,7 +361,7 @@ void T_MoveFloor(floor_t* floor)
 
 #if !__JHEXEN__
     if(!(mapTime & 7))
-        S_SectorSound(floor->sector, SORG_FLOOR, SFX_FLOORMOVE);
+        S_PlaneSound(floor->sector, PLN_FLOOR, SFX_FLOORMOVE);
 #endif
 
     if(res == pastdest)
@@ -375,7 +375,7 @@ void T_MoveFloor(floor_t* floor)
 #  if __JHERETIC__
         if(floor->type == FT_RAISEBUILDSTEP)
 #  endif
-            S_SectorSound(floor->sector, SORG_FLOOR, SFX_PSTOP);
+            S_PlaneSound(floor->sector, PLN_FLOOR, SFX_PSTOP);
 
 #endif
 #if __JHEXEN__

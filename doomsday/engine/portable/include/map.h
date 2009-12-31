@@ -160,6 +160,9 @@ typedef struct map_s {
     uint            numSideDefs;
     sidedef_t**     sideDefs;
 
+    uint            numPlanes;
+    plane_t**       planes;
+
     uint            numNodes;
     node_t**        nodes;
 
@@ -268,7 +271,7 @@ sidedef_t*      Map_CreateSideDef(map_t* map, sector_t* sector, short flags, mat
                                   float middleAlpha, material_t* bottomMaterial, float bottomOffsetX,
                                   float bottomOffsetY, float bottomRed, float bottomGreen, float bottomBlue);
 sector_t*       Map_CreateSector(map_t* map, float lightLevel, float red, float green, float blue);
-void            Map_CreatePlane(map_t* map, sector_t* sector, float height, material_t* material,
+plane_t*        Map_CreatePlane(map_t* map, float height, material_t* material,
                                 float matOffsetX, float matOffsetY, float r, float g, float b, float a,
                                 float normalX, float normalY, float normalZ);
 polyobj_t*      Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,
@@ -309,7 +312,7 @@ particleblockmap_t* Map_ParticleBlockmap(map_t* map);
 lumobjblockmap_t* Map_LumobjBlockmap(map_t* map);
 
 seg_t*          Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge);
-subsector_t*    Map_CreateSubsector(map_t* map, face_t* face);
+subsector_t*    Map_CreateSubsector(map_t* map, face_t* face, sector_t* sector);
 node_t*         Map_CreateNode(map_t* map, float x, float y, float dX, float dY, float rightAABB[4], float leftAABB[4]);
 
 void            Map_InitLinks(map_t* map);

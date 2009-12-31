@@ -1813,18 +1813,20 @@ boolean TransferMap(void)
     VERBOSE(Con_Message("WadMapConverter::Transfering sectors...\n"));
     for(i = 0; i < map->numSectors; ++i)
     {
-        msector_t*          sec = &map->sectors[i];
-        uint                sectorIDX;
+        msector_t* sec = &map->sectors[i];
+        uint sectorIDX, floorIDX, ceilIDX;
 
-        sectorIDX =
-            MPE_CreateSector((float) sec->lightLevel / 255.0f, 1, 1, 1);
+        sectorIDX = MPE_CreateSector((float) sec->lightLevel / 255.0f, 1, 1, 1);
 
-        MPE_CreatePlane(sectorIDX, sec->floorHeight,
-                        sec->floorMaterial? sec->floorMaterial->material : 0,
-                        0, 0, 1, 1, 1, 1, 0, 0, 1);
-        MPE_CreatePlane(sectorIDX, sec->ceilHeight,
-                        sec->ceilMaterial? sec->ceilMaterial->material : 0,
-                        0, 0, 1, 1, 1, 1, 0, 0, -1);
+        floorIDX = MPE_CreatePlane(sec->floorHeight,
+                                   sec->floorMaterial? sec->floorMaterial->material : 0,
+                                   0, 0, 1, 1, 1, 1, 0, 0, 1);
+        ceilIDX = MPE_CreatePlane(sec->ceilHeight,
+                                  sec->ceilMaterial? sec->ceilMaterial->material : 0,
+                                  0, 0, 1, 1, 1, 1, 0, 0, -1);
+
+        MPE_SetSectorPlane(sectorIDX, 0, floorIDX);
+        MPE_SetSectorPlane(sectorIDX, 1, ceilIDX);
 
         MPE_GameObjectRecordProperty("XSector", i, "ID", DDVT_INT, &i);
         MPE_GameObjectRecordProperty("XSector", i, "Tag", DDVT_SHORT, &sec->tag);

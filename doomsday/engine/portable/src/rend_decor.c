@@ -707,9 +707,10 @@ static void updateSurfaceDecorations(surfacelist_t* list, surface_t* suf, float 
 /**
  * Generate decorations for a plane.
  */
-static void updatePlaneDecorations(surfacelist_t* list, plane_t* pln)
+static void updateSectorPlaneDecorations(surfacelist_t* list, sector_t* sec,
+                                         int planeID)
 {
-    sector_t* sec = pln->sector;
+    plane_t* pln = sec->planes[planeID];
     surface_t* suf = &pln->surface;
     vec3_t v1, v2;
     float offsetS, offsetT;
@@ -866,7 +867,7 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
                 plane_t* pln = sec->SP_plane(j);
 
                 if(pln->surface.inFlags & SUIF_UPDATE_DECORATIONS)
-                    updatePlaneDecorations(&map->decoratedSurfaceList, pln);
+                    updateSectorPlaneDecorations(&map->decoratedSurfaceList, sec, j);
             }
         }
     }

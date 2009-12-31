@@ -512,22 +512,8 @@ sector_t* R_GetSectorForOrigin(map_t* map, const void* ddMobjBase)
     // Check all sectors; find where the sound is coming from.
     for(i = 0; i < map->numSectors; ++i)
     {
-        sector_t* sec = map->sectors[i];
-
-        if(ddMobjBase == &sec->soundOrg)
-        {
-            return sec;
-        }
-        else
-        {   // Check the planes of this sector.
-            uint k;
-
-            for(k = 0; k < sec->planeCount; ++k)
-                if(ddMobjBase == &sec->planes[k]->soundOrg)
-                {
-                    return sec;
-                }
-        }
+        if(ddMobjBase == &map->sectors[i]->soundOrg)
+            return map->sectors[i];
     }
 
     return NULL;

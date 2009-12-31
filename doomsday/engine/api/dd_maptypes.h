@@ -54,8 +54,6 @@ typedef struct thinker_s {
 #define DMT_SURFACE_OFFSET DDVT_FLOAT  // [X, Y] Planar offset to surface material origin.
 #define DMT_SURFACE_RGBA DDVT_FLOAT    // Surface color tint
 
-#define DMT_PLANE_SOUNDORG DDVT_PTR    // Sound origin for plane
-#define DMT_PLANE_SECTOR DDVT_PTR      // Owner of the plane (temp)
 #define DMT_PLANE_HEIGHT DDVT_FLOAT    // Current height
 #define DMT_PLANE_GLOW DDVT_FLOAT      // Glow amount
 #define DMT_PLANE_GLOWRGB DDVT_FLOAT   // Glow color

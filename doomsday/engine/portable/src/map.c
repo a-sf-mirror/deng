@@ -127,7 +127,7 @@ static linedef_t* createLineDef(map_t* map)
     map->lineDefs[map->numLineDefs-1] = line;
     map->lineDefs[map->numLineDefs] = NULL;
 
-    line->buildData.index = map->numLineDefs; // 1-based index, 0 = NIL.
+    line->buildData.index = map->numLineDefs; // 1-based index.
     return line;
 }
 
@@ -139,7 +139,7 @@ static sidedef_t* createSideDef(map_t* map)
     map->sideDefs[map->numSideDefs-1] = side;
     map->sideDefs[map->numSideDefs] = NULL;
 
-    side->buildData.index = map->numSideDefs; // 1-based index, 0 = NIL.
+    side->buildData.index = map->numSideDefs; // 1-based index.
     side->SW_bottomsurface.owner = (void*) side;
     side->SW_middlesurface.owner = (void*) side;
     side->SW_topsurface.owner = (void*) side;
@@ -154,11 +154,11 @@ static sector_t* createSector(map_t* map)
     map->sectors[map->numSectors-1] = sec;
     map->sectors[map->numSectors] = NULL;
 
-    sec->buildData.index = map->numSectors; // 1-based index, 0 = NIL.
+    sec->buildData.index = map->numSectors; // 1-based index.
     return sec;
 }
 
-static plane_t* createPlane(map_t* map)
+static plane_t* P_CreatePlane(map_t* map)
 {
     return Z_Calloc(sizeof(plane_t), PU_STATIC, 0);
 }
@@ -478,19 +478,10 @@ void P_DestroyMap(map_t* map)
         for(i = 0; i < map->numSectors; ++i)
         {
             sector_t* sector = map->sectors[i];
-            uint j;
 
             if(sector->planes)
-            {
-                for(j = 0; j < sector->planeCount; ++j)
-                {
-                    plane_t* plane = sector->planes[j];
-                    if(plane->surface.decorations)
-                        Z_Free(plane->surface.decorations);
-                    Z_Free(plane);
-                }
                 Z_Free(sector->planes);
-            }
+            sector->planeCount = 0;
 
             if(sector->subsectors)
                 Z_Free(sector->subsectors);
@@ -508,6 +499,21 @@ void P_DestroyMap(map_t* map)
     }
     map->sectors = NULL;
     map->numSectors = 0;
+
+    if(map->planes)
+    {
+        uint i;
+        for(i = 0; i < map->numPlanes; ++i)
+        {
+            plane_t* plane = map->planes[i];
+            if(plane->surface.decorations)
+                Z_Free(plane->surface.decorations);
+            Z_Free(plane);
+        }
+        Z_Free(map->planes);
+    }
+    map->planes = NULL;
+    map->numPlanes = 0;
 
     if(map->segs)
         Z_Free(map->segs);
@@ -731,7 +737,7 @@ void Map_LinkMobj(map_t* map, mobj_t* mo, byte flags)
         if(R_IsPointInSector2(player->mo->pos[VX], player->mo->pos[VY],
                               subsector->sector) &&
            (player->mo->pos[VZ] < subsector->sector->SP_ceilvisheight  - 4 &&
-            player->mo->pos[VZ] > subsector->sector->SP_floorvisheight + 4))
+            player->mo->pos[VZ] >= subsector->sector->SP_floorvisheight))
             player->inVoid = false;
     }
 }
@@ -970,17 +976,59 @@ static boolean updatePlaneHeightTracking(plane_t* plane, void* context)
 
 static boolean resetPlaneHeightTracking(plane_t* plane, void* context)
 {
+    map_t* map = (map_t*) context;
+
     Plane_ResetHeightTracking(plane);
-    PlaneList_Remove((planelist_t*) context, plane);
+    PlaneList_Remove(&map->watchedPlaneList, plane);
+
+    if(plane->type == PLN_FLOOR || plane->type == PLN_CEILING)
+    {
+        uint i;
+
+        for(i = 0; i < map->numSectors; ++i)
+        {
+            sector_t* sec = map->sectors[i];
+
+            uint j;
+
+            for(j = 0; j < sec->planeCount; ++j)
+            {
+                if(sec->planes[i] == plane)
+                    R_MarkDependantSurfacesForDecorationUpdate(sec);
+            }
+        }
+    }
+
     return true; // Continue iteration.
 }
 
 static boolean interpolatePlaneHeight(plane_t* plane, void* context)
 {
+    map_t* map = (map_t*) context;
+
     Plane_InterpolateHeight(plane);
     // Has this plane reached its destination?
     if(plane->visHeight == plane->height)
-        PlaneList_Remove((planelist_t*) context, plane);
+        PlaneList_Remove(&map->watchedPlaneList, plane);
+
+    if(plane->type == PLN_FLOOR || plane->type == PLN_CEILING)
+    {
+        uint i;
+
+        for(i = 0; i < map->numSectors; ++i)
+        {
+            sector_t* sec = map->sectors[i];
+
+            uint j;
+
+            for(j = 0; j < sec->planeCount; ++j)
+            {
+                if(sec->planes[i] == plane)
+                    R_MarkDependantSurfacesForDecorationUpdate(sec);
+            }
+        }
+    }
+
     return true; // Continue iteration.
 }
 
@@ -1004,14 +1052,14 @@ static void interpolateWatchedPlanes(map_t* map, boolean resetNextViewer)
     if(resetNextViewer)
     {
         // $smoothplane: Reset the plane height trackers.
-        PlaneList_Iterate(&map->watchedPlaneList, resetPlaneHeightTracking, &map->watchedPlaneList);
+        PlaneList_Iterate(&map->watchedPlaneList, resetPlaneHeightTracking, map);
     }
     // While the game is paused there is no need to calculate any
     // visual plane offsets $smoothplane.
     else //if(!clientPaused)
     {
         // $smoothplane: Set the visible offsets.
-        PlaneList_Iterate(&map->watchedPlaneList, interpolatePlaneHeight, &map->watchedPlaneList);
+        PlaneList_Iterate(&map->watchedPlaneList, interpolatePlaneHeight, map);
     }
 }
 
@@ -1774,19 +1822,12 @@ static void finishSectors2(map_t* map)
         // Set the degenmobj_t to the middle of the bounding box.
         sec->soundOrg.pos[VX] = (min[VX] + max[VX]) / 2;
         sec->soundOrg.pos[VY] = (min[VY] + max[VY]) / 2;
-
-        // Set the z height of the sector sound origin.
-        sec->soundOrg.pos[VZ] =
-            (sec->SP_ceilheight - sec->SP_floorheight) / 2;
+        sec->soundOrg.pos[VZ] = 0;
 
         // Set the position of the sound origin for all plane sound origins.
         // Set target heights for all planes.
         for(k = 0; k < sec->planeCount; ++k)
         {
-            sec->planes[k]->soundOrg.pos[VX] = sec->soundOrg.pos[VX];
-            sec->planes[k]->soundOrg.pos[VY] = sec->soundOrg.pos[VY];
-            sec->planes[k]->soundOrg.pos[VZ] = sec->planes[k]->height;
-
             sec->planes[k]->target = sec->planes[k]->height;
         }
     }
@@ -2183,28 +2224,6 @@ static void addSectorsToDMU(map_t* map)
         P_CreateObjectRecord(DMU_SECTOR, map->sectors[i]);
 }
 
-static void hardenPlanes(map_t* map)
-{
-    uint i, j;
-
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        sector_t* sector = map->sectors[i];
-
-        for(j = 0; j < sector->planeCount; ++j)
-        {
-            plane_t* plane = sector->planes[j]; //R_NewPlaneForSector(destS);
-
-            plane->height = plane->oldHeight[0] = plane->oldHeight[1] =
-                plane->visHeight = plane->height;
-            plane->visHeightDelta = 0;
-            plane->sector = sector;
-
-            P_CreateObjectRecord(DMU_PLANE, plane);
-        }
-    }
-}
-
 static void finishPolyobjs(map_t* map)
 {
     uint i;
@@ -2262,6 +2281,35 @@ static int buildSeg(hedge_t* hEdge, void* context)
     return true; // Continue iteration.
 }
 
+static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSelfRef)
+{
+    const hedge_t* hEdge;
+    sector_t* sector = NULL;
+
+    hEdge = firstHEdge;
+    do
+    {
+        if(!allowSelfRef && hEdge->twin &&
+           ((hedge_info_t*) hEdge->data)->sector ==
+           ((hedge_info_t*) hEdge->twin->data)->sector)
+            continue;
+
+        if(((hedge_info_t*) hEdge->data)->lineDef &&
+           ((hedge_info_t*) hEdge->data)->sector)
+        {
+            linedef_t* lineDef = ((hedge_info_t*) hEdge->data)->lineDef;
+
+            if(lineDef->buildData.windowEffect && ((hedge_info_t*) hEdge->data)->side == 1)
+                sector = lineDef->buildData.windowEffect;
+            else
+                sector = lineDef->buildData.sideDefs[
+                    ((hedge_info_t*) hEdge->data)->side]->sector;
+        }
+    } while(!sector && (hEdge = hEdge->next) != firstHEdge);
+
+    return sector;
+}
+
 static boolean C_DECL buildSubsector(binarytree_t* tree, void* context)
 {
     if(!BinaryTree_IsLeaf(tree))
@@ -2271,11 +2319,39 @@ static boolean C_DECL buildSubsector(binarytree_t* tree, void* context)
 
         child = BinaryTree_GetChild(tree, RIGHT);
         if(child && BinaryTree_IsLeaf(child))
-            Map_CreateSubsector((map_t*) context, (face_t*) BinaryTree_GetData(child));
+        {
+            face_t* face = (face_t*) BinaryTree_GetData(child);
+            sector_t* sector;
+
+            /**
+             * Determine which sector this subsector belongs to.
+             * On the first pass, we are picky; do not consider half-edges from
+             * self-referencing linedefs. If that fails, take whatever we can find.
+             */
+            sector = pickSectorFromHEdges(face->hEdge, false);
+            if(!sector)
+                sector = pickSectorFromHEdges(face->hEdge, true);
+
+            Map_CreateSubsector((map_t*) context, face, sector);
+        }
 
         child = BinaryTree_GetChild(tree, LEFT);
         if(child && BinaryTree_IsLeaf(child))
-            Map_CreateSubsector((map_t*) context, (face_t*) BinaryTree_GetData(child));
+        {
+            face_t* face = (face_t*) BinaryTree_GetData(child);
+            sector_t* sector;
+
+            /**
+             * Determine which sector this subsector belongs to.
+             * On the first pass, we are picky; do not consider half-edges from
+             * self-referencing linedefs. If that fails, take whatever we can find.
+             */
+            sector = pickSectorFromHEdges(face->hEdge, false);
+            if(!sector)
+                sector = pickSectorFromHEdges(face->hEdge, true);
+
+            Map_CreateSubsector((map_t*) context, face, sector);
+        }
     }
 
     return true; // Continue iteration.
@@ -2504,7 +2580,6 @@ void Map_EditEnd(map_t* map)
     }
 
     buildSectorSubsectorLists(map);
-    hardenPlanes(map);
     buildSectorLineLists(map);
     finishLineDefs2(map);
     finishSectors2(map);
@@ -2722,36 +2797,7 @@ seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge)
     }
 }
 
-static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSelfRef)
-{
-    const hedge_t* hEdge;
-    sector_t* sector = NULL;
-
-    hEdge = firstHEdge;
-    do
-    {
-        if(!allowSelfRef && hEdge->twin &&
-           ((hedge_info_t*) hEdge->data)->sector ==
-           ((hedge_info_t*) hEdge->twin->data)->sector)
-            continue;
-
-        if(((hedge_info_t*) hEdge->data)->lineDef &&
-           ((hedge_info_t*) hEdge->data)->sector)
-        {
-            linedef_t* lineDef = ((hedge_info_t*) hEdge->data)->lineDef;
-
-            if(lineDef->buildData.windowEffect && ((hedge_info_t*) hEdge->data)->side == 1)
-                sector = lineDef->buildData.windowEffect;
-            else
-                sector = lineDef->buildData.sideDefs[
-                    ((hedge_info_t*) hEdge->data)->side]->sector;
-        }
-    } while(!sector && (hEdge = hEdge->next) != firstHEdge);
-
-    return sector;
-}
-
-subsector_t* Map_CreateSubsector(map_t* map, face_t* face)
+subsector_t* Map_CreateSubsector(map_t* map, face_t* face, sector_t* sector)
 {
     assert(map);
     assert(face);
@@ -2770,20 +2816,10 @@ subsector_t* Map_CreateSubsector(map_t* map, face_t* face)
     subsector->face = face;
     subsector->hEdgeCount = (uint) hEdgeCount;
 
-    /**
-     * Determine which sector this subsector belongs to.
-     * On the first pass, we are picky; do not consider half-edges from
-     * self-referencing linedefs. If that fails, take whatever we can find.
-     */
-    subsector->sector = pickSectorFromHEdges(face->hEdge, false);
+    subsector->sector = sector;
     if(!subsector->sector)
-        subsector->sector = pickSectorFromHEdges(face->hEdge, true);
-
-    if(!subsector->sector)
-    {
-        Con_Message("hardenLeaf: Warning orphan subsector %p (%i half-edges).\n",
+        Con_Message("Map_CreateSubsector: Warning orphan subsector %p (%i half-edges).\n",
                     subsector, subsector->hEdgeCount);
-    }
 
     face->data = (void*) subsector;
 
@@ -3095,45 +3131,48 @@ sector_t* Map_CreateSector(map_t* map, float lightLevel, float red, float green,
     return s;
 }
 
-void Map_CreatePlane(map_t* map, sector_t* sector, float height, material_t* material,
-                     float matOffsetX, float matOffsetY, float r, float g, float b, float a,
-                     float normalX, float normalY, float normalZ)
+plane_t* Map_CreatePlane(map_t* map, float height, material_t* material,
+                         float matOffsetX, float matOffsetY, float r, float g,
+                         float b, float a, float normalX, float normalY,
+                         float normalZ)
 {
-    uint i;
-    plane_t** newList, *pln;
+    plane_t* pln;
 
     assert(map);
 
     if(!map->editActive)
-        return;
+        return NULL;
 
-    pln = createPlane(map);
+    pln = P_CreatePlane(map);
 
-    pln->height = height;
+    pln->type = PLN_MID; // Good default.
+    pln->height = pln->visHeight = pln->oldHeight[0] =
+        pln->oldHeight[1] = height;
+    pln->visHeightDelta = 0;
+    pln->speed = 0;
+    pln->target = 0;
+
+    pln->glowRGB[CR] = pln->glowRGB[CG] = pln->glowRGB[CB] = 1;
+    pln->glow = 0;
+
     Surface_SetMaterial(&pln->surface, material? ((objectrecord_t*) material)->obj : NULL, false);
     Surface_SetColorRGBA(&pln->surface, r, g, b, a);
+    Surface_SetBlendMode(&pln->surface, BM_NORMAL);
     Surface_SetMaterialOffsetXY(&pln->surface, matOffsetX, matOffsetY);
+
     pln->PS_normal[VX] = normalX;
     pln->PS_normal[VY] = normalY;
     pln->PS_normal[VZ] = normalZ;
-    if(pln->PS_normal[VZ] < 0)
+    /*if(pln->PS_normal[VZ] < 0)
         pln->type = PLN_CEILING;
     else
-        pln->type = PLN_FLOOR;
+        pln->type = PLN_FLOOR;*/
     M_Normalize(pln->PS_normal);
-    pln->sector = sector;
 
-    newList = Z_Malloc(sizeof(plane_t*) * (++sector->planeCount + 1), PU_STATIC, 0);
-    for(i = 0; i < sector->planeCount - 1; ++i)
-    {
-        newList[i] = sector->planes[i];
-    }
-    newList[i++] = pln;
-    newList[i] = NULL; // Terminate.
-
-    if(sector->planes)
-        Z_Free(sector->planes);
-    sector->planes = newList;
+    pln->buildData.index = P_CreateObjectRecord(DMU_PLANE, pln) - 1;
+    map->planes = Z_Realloc(map->planes, ++map->numPlanes * sizeof(plane_t*), PU_STATIC);
+    map->planes[map->numPlanes-1] = pln;
+    return pln;
 }
 
 polyobj_t* Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,

@@ -70,34 +70,28 @@ void S_MapMusic(void)
  * from the same origin.
  *
  * @param sec           Sector in which the sound should be played.
+ * @param id            ID number of the sound to be played.
+ */
+void S_SectorSound(sector_t* sec, int id)
+{
+    mobj_t* origin = (mobj_t*) DMU_GetPtrp(sec, DMU_SOUND_ORIGIN);
+
+    S_StopSound(0, origin);
+    S_StartSound(id, origin);
+}
+
+/**
+ * Doom-like sector sounds: when a new sound starts, stop any old ones
+ * from the same origin.
+ *
+ * @param sec           Sector in which the sound should be played.
  * @param origin        Origin of the sound (center/floor/ceiling).
  * @param id            ID number of the sound to be played.
  */
-void S_SectorSound(sector_t* sec, int origin, int id)
+void S_PlaneSound(sector_t* sec, int plane, int id)
 {
-    mobj_t*             centerOrigin, *floorOrigin, *ceilingOrigin;
+    mobj_t* origin = (mobj_t*) DMU_GetPtrp(sec, DMU_SOUND_ORIGIN);
 
-    centerOrigin = (mobj_t *) DMU_GetPtrp(sec, DMU_SOUND_ORIGIN);
-    floorOrigin = (mobj_t *) DMU_GetPtrp(sec, DMU_FLOOR_SOUND_ORIGIN);
-    ceilingOrigin = (mobj_t *) DMU_GetPtrp(sec, DMU_CEILING_SOUND_ORIGIN);
-
-    S_StopSound(0, centerOrigin);
-    S_StopSound(0, floorOrigin);
-    S_StopSound(0, ceilingOrigin);
-
-    switch(origin)
-    {
-    case SORG_FLOOR:
-        S_StartSound(id, floorOrigin);
-        break;
-
-    case SORG_CEILING:
-        S_StartSound(id, ceilingOrigin);
-        break;
-
-    case SORG_CENTER:
-    default:
-        S_StartSound(id, centerOrigin);
-        break;
-    }
+    S_StopSound(0, origin);
+    S_StartSound(id, origin);
 }

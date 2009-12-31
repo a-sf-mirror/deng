@@ -60,11 +60,6 @@ void Plane_ResetHeightTracking(plane_t* plane)
 
     plane->visHeightDelta = 0;
     plane->oldHeight[0] = plane->oldHeight[1] = plane->height;
-
-    if(plane->type == PLN_FLOOR || plane->type == PLN_CEILING)
-    {
-        R_MarkDependantSurfacesForDecorationUpdate(plane);
-    }
 }
 
 void Plane_UpdateHeightTracking(plane_t* plane)
@@ -95,11 +90,6 @@ void Plane_InterpolateHeight(plane_t* plane)
 
     // Visible plane height.
     plane->visHeight = plane->height + plane->visHeightDelta;
-
-    if(plane->type == PLN_FLOOR || plane->type == PLN_CEILING)
-    {
-        R_MarkDependantSurfacesForDecorationUpdate(plane);
-    }
 }
 
 /**
@@ -113,9 +103,23 @@ boolean Plane_SetProperty(plane_t* plane, const setargs_t* args)
         DMU_SetValue(DMT_PLANE_HEIGHT, &plane->height, args, 0);
         if(!ddMapSetup)
         {
+            uint i;
             map_t* map = P_CurrentMap();
+
             PlaneList_Add(&map->watchedPlaneList, plane);
-            R_MarkDependantSurfacesForDecorationUpdate(plane);
+
+            for(i = 0; i < map->numSectors; ++i)
+            {
+                sector_t* sec = map->sectors[i];
+
+                uint j;
+
+                for(j = 0; j < sec->planeCount; ++j)
+                {
+                    if(sec->planes[i] == plane)
+                        R_MarkDependantSurfacesForDecorationUpdate(sec);
+                }
+            }
         }
         break;
     case DMU_TARGET_HEIGHT:
@@ -139,18 +143,9 @@ boolean Plane_GetProperty(const plane_t* plane, setargs_t* args)
 {
     switch(args->prop)
     {
-    case DMU_SECTOR:
-        DMU_GetValue(DMT_PLANE_SECTOR, &plane->sector, args, 0);
-        break;
     case DMU_HEIGHT:
         DMU_GetValue(DMT_PLANE_HEIGHT, &plane->height, args, 0);
         break;
-    case DMU_SOUND_ORIGIN:
-    {
-        const ddmobj_base_t* dmo = &plane->soundOrg;
-        DMU_GetValue(DMT_PLANE_SOUNDORG, &dmo, args, 0);
-        break;
-    }
     case DMU_TARGET_HEIGHT:
         DMU_GetValue(DMT_PLANE_TARGET, &plane->target, args, 0);
         break;

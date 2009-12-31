@@ -130,17 +130,6 @@ void Cl_ReadSoundDelta2(deltatype_t type, boolean skip)
         sound = Msg_ReadShort();
     }
 
-    if(type == DT_SECTOR_SOUND)
-    {
-        // Should we use a specific origin?
-        if(flags & SNDDF_FLOOR)
-            emitter = (mobj_t*) &sector->planes[PLN_FLOOR]->soundOrg;
-        else if(flags & SNDDF_CEILING)
-            emitter = (mobj_t*) &sector->planes[PLN_CEILING]->soundOrg;
-        else
-            emitter = (mobj_t*) &sector->soundOrg;
-    }
-
     if(flags & SNDDF_VOLUME)
     {
         byte b = Msg_ReadByte();
@@ -211,6 +200,22 @@ Con_Printf("Cl_ReadSoundDelta2(%i): Insufficient data, snd=%i\n",
         if(type != DT_SOUND && emitter)
         {
             S_StopSound(0, emitter);
+        }
+
+        if(sector)
+        {
+            vec3_t origin;
+
+            V3_Copy(origin, sector->soundOrg.pos);
+            if(flags & SNDDF_FLOOR)
+                origin[VZ] = sector->SP_floorheight;
+            else if(flags & SNDDF_CEILING)
+                origin[VZ] = sector->SP_ceilheight;
+            else
+                origin[VZ] = (sector->SP_ceilheight - sector->SP_floorheight) / 2;
+
+            S_LocalSoundAtVolumeFrom(sound | soundFlags, NULL, origin, volume);
+            return;
         }
 
         S_LocalSoundAtVolume(sound | soundFlags, emitter, volume);

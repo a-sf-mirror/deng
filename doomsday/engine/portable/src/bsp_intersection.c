@@ -505,10 +505,7 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 hedge_t* right, *left;
 
                 right = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->side);
-                right->face = nearHEdge->face;
-
                 left = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->hEdge->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->side);
-                left->face = farHEdge->prev->face;
 
                 // Twin the half-edges together.
                 right->twin = left;
@@ -535,11 +532,17 @@ testVertexHEdgeRings(next->hEdge->vertex);
                 BSP_UpdateHEdgeInfo(left);
 
                 // Add the new half-edges to the appropriate lists.
-                BSP_AddHEdgeToSuperBlock(rightList, right);
-                BSP_AddHEdgeToSuperBlock(leftList, left);
 
+                /*if(nearHEdge->face)
+                    Face_LinkHEdge(nearHEdge->face, right);
+                else*/
+                    BSP_AddHEdgeToSuperBlock(rightList, right);
+                /*if(farHEdge->prev->face)
+                    Face_LinkHEdge(farHEdge->prev->face, left);
+                else*/
+                    BSP_AddHEdgeToSuperBlock(leftList, left);
 /*#if _DEBUG
-Con_Message("buildEdgeBetweenIntersections: Capped intersection:\n");
+Con_Message(" Capped intersection:\n");
 Con_Message("  %p RIGHT  sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
             right, (right->sector? right->sector->index : -1),
             right->vertex->V_pos[VX], right->vertex->V_pos[VY],

@@ -430,14 +430,24 @@ void XS_Init(void)
     }
 }
 
-void XS_SectorSound(sector_t *sec, int origin, int snd)
+void XS_SectorSound(sector_t* sec, int snd)
 {
     if(!snd)
         return;
 
     XG_Dev("XS_SectorSound: Play Sound ID (%i) in Sector ID (%i)",
-            snd, DMU_ToIndex(sec));
-    S_SectorSound(sec, origin, snd);
+           snd, DMU_ToIndex(sec));
+    S_SectorSound(sec, snd);
+}
+
+void XS_PlaneSound(sector_t* sec, int plane, int snd)
+{
+    if(!snd)
+        return;
+
+    XG_Dev("XS_SectorSound: Play Sound ID (%i) in Sector ID (%i)",
+           snd, DMU_ToIndex(sec));
+    S_PlaneSound(sec, plane, snd);
 }
 
 void XS_MoverStopped(xgplanemover_t *mover, boolean done)
@@ -510,13 +520,11 @@ void XS_PlaneMover(xgplanemover_t *mover)
         {
             mover->flags &= ~PMF_WAIT;
             // Play a sound.
-            XS_SectorSound(mover->sector, SORG_FLOOR + mover->ceiling,
-                           mover->startSound);
+            XS_PlaneSound(mover->sector, mover->ceiling, mover->startSound);
         }
 
         mover->timer = XG_RandomInt(mover->minInterval, mover->maxInterval);
-        XS_SectorSound(mover->sector, SORG_FLOOR + mover->ceiling,
-                       mover->moveSound);
+        XS_PlaneSound(mover->sector, mover->ceiling, mover->moveSound);
     }
 
     // Are we waiting?
@@ -579,8 +587,7 @@ void XS_PlaneMover(xgplanemover_t *mover)
         }
 
         // Play sound?
-        XS_SectorSound(mover->sector, SORG_FLOOR + mover->ceiling,
-                       mover->endSound);
+        XS_PlaneSound(mover->sector, mover->ceiling, mover->endSound);
     }
     else if(res == crushed)
     {
@@ -1456,7 +1463,7 @@ int C_DECL XSTrav_MovePlane(sector_t *sector, boolean ceiling, void *context,
 
     // Do start stuff. Play sound?
     if(playsound)
-        XS_SectorSound(sector, SORG_FLOOR + ceiling, info->iparm[4]);
+        XS_PlaneSound(sector, ceiling, info->iparm[4]);
 
     // Change texture at start?
     if(info->iparm[7] == SPREF_NONE || info->iparm[7] == SPREF_SPECIAL)
@@ -1577,14 +1584,14 @@ boolean XS_DoBuild(sector_t *sector, boolean ceiling, linedef_t *origin,
     {
         mover->timer = XG_RandomInt(mover->minInterval, mover->maxInterval);
         // Play step start sound immediately.
-        XS_SectorSound(sector, SORG_FLOOR + ceiling, info->iparm[5]);
+        XS_PlaneSound(sector, ceiling, info->iparm[5]);
     }
 
     // Do start stuff. Play sound?
     if(stepcount != 0)
     {
         // Start building start sound.
-        XS_SectorSound(sector, SORG_FLOOR + ceiling, info->iparm[4]);
+        XS_PlaneSound(sector, ceiling, info->iparm[4]);
     }
 
     return true; // Building has begun!
@@ -1883,15 +1890,13 @@ int C_DECL XSTrav_SectorSound(struct sector_s *sec, boolean ceiling,
                               void *context, void *context2,
                               mobj_t *activator)
 {
-    int         originid;
-    linetype_t *info = context2;
+    linetype_t* info = context2;
 
-    if(info->iparm[3])
-        originid = info->iparm[3];
+    if(!info->iparm[3] || info->iparm[3] == 0)
+        XS_SectorSound(sec, info->iparm[2]);
     else
-        originid = SORG_CENTER;
-
-    XS_SectorSound(sec, originid, info->iparm[2]);
+        XS_PlaneSound(sec, info->iparm[3], info->iparm[2]);
+    
     return true;
 }
 
@@ -2942,7 +2947,7 @@ void XS_Thinker(xsthinker_t* xs)
                 xg->timer =
                     XG_RandomInt(FLT2TIC(xg->info.soundInterval[0]),
                                  FLT2TIC(xg->info.soundInterval[1]));
-                S_SectorSound(sector, SORG_CENTER, xg->info.ambientSound);
+                S_SectorSound(sector, xg->info.ambientSound);
             }
         }
     }

@@ -232,20 +232,19 @@ objectrecordid_t MPE_CreateLineDef(objectrecordid_t v1, objectrecordid_t v2,
     return l->buildData.index;
 }
 
-void MPE_CreatePlane(objectrecordid_t sector, float height, material_t* material,
-                     float matOffsetX, float matOffsetY,
-                     float r, float g, float b, float a,
-                     float normalX, float normalY, float normalZ)
+objectrecordid_t MPE_CreatePlane(float height, material_t* material, float matOffsetX,
+                                 float matOffsetY, float r, float g, float b, float a,
+                                 float normalX, float normalY, float normalZ)
 {
+    plane_t* p;
     map_t* map = editMap;
 
     if(!map)
-        return;
-    if(sector == 0 || sector > map->numSectors)
-        return;
+        return 0;
 
-    Map_CreatePlane(map, map->sectors[sector - 1], height, material, matOffsetX, matOffsetY,
-                    r, g, b, a, normalX, normalY, normalZ);
+    p = Map_CreatePlane(map, height, material, matOffsetX, matOffsetY,
+                        r, g, b, a, normalX, normalY, normalZ);
+    return p ? p->buildData.index : 0;
 }
 
 objectrecordid_t MPE_CreateSector(float lightLevel, float red, float green, float blue)
@@ -259,6 +258,43 @@ objectrecordid_t MPE_CreateSector(float lightLevel, float red, float green, floa
     s = Map_CreateSector(map, lightLevel, red, green, blue);
 
     return s ? s->buildData.index : 0;
+}
+
+void MPE_SetSectorPlane(objectrecordid_t sector, uint type, objectrecordid_t plane)
+{
+    map_t* map = editMap;
+    sector_t* sec;
+    plane_t* pln;
+    objectrecord_t* obj;
+    uint i;
+
+    if(!map)
+        return;
+    if(sector > map->numSectors)
+        return;
+    if(plane > map->numPlanes)
+        return;
+
+    sec = map->sectors[sector - 1];
+
+    // First check whether sector is already linked with this plane.
+    for(i = 0; i < sec->planeCount; ++i)
+    {
+        if(sec->planes[i]->buildData.index == plane)
+            return;
+    }
+
+    obj = (objectrecord_t*) P_ToPtr(DMU_PLANE, plane);
+
+    if(sec->planeCount == 1 || obj == NULL)
+        obj = NULL;
+
+    pln = (plane_t*) ((objectrecord_t*) P_ToPtr(DMU_PLANE, plane))->obj;
+    pln->type = type == 0? PLN_FLOOR : type == 1? PLN_CEILING : PLN_MID;
+
+    sec->planes = Z_Realloc(sec->planes, sizeof(plane_t*) * (++sec->planeCount + 1), PU_STATIC);
+    sec->planes[type == PLN_MID? sec->planeCount-1 : type] = pln;
+    sec->planes[sec->planeCount] = NULL; // Terminate.
 }
 
 objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint lineCount, int tag,

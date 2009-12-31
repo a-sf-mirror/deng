@@ -62,9 +62,6 @@ void            R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid);
 void            R_OrderVertices(const linedef_t* line, const sector_t* sector,
                                 vertex_t* verts[2]);
 
-plane_t*        R_NewPlaneForSector(map_t* map, sector_t* sec);
-void            R_DestroyPlaneOfSector(map_t* map, uint id, sector_t* sec);
-
 surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf);
 void            R_ClearSurfaceDecorations(surface_t* suf);
 
@@ -84,7 +81,7 @@ boolean         SurfaceList_Iterate(surfacelist_t* sl,
                                     boolean (*callback) (surface_t*, void*),
                                     void* context);
 
-void            R_MarkDependantSurfacesForDecorationUpdate(plane_t* pln);
+void            R_MarkDependantSurfacesForDecorationUpdate(sector_t* sector);
 boolean         R_IsGlowingPlane(const plane_t* pln);
 
 boolean         R_SideDefIsSoftSurface(sidedef_t* sideDef, segsection_t section);

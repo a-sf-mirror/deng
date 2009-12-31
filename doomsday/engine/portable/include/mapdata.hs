@@ -248,11 +248,13 @@ internal
 #define PS_rgba                 surface.rgba
 #define PS_flags                surface.flags
 #define PS_inflags              surface.inFlags
+
+typedef struct {
+	uint                index;
+} mplane_t;
 end
 
 struct plane
-    PTR     ddmobj_base_t soundOrg // Sound origin for plane
-    PTR     sector_s*   sector // Owner of the plane (temp)
     -       surface_t   surface
     FLOAT   float       height // Current height
     -       float[2]    oldHeight
@@ -263,7 +265,7 @@ struct plane
     -       float       visHeight // Visible plane height (smoothed)
     -       float       visHeightDelta
     -       planetype_t type // PLN_* type.
-    -       int         planeID
+    -       mplane_t    buildData
 end
 
 internal

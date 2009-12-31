@@ -2831,8 +2831,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                          suf->inFlags, suf->rgba,
                          suf->blendMode, texOffset, texScale,
                          IS_SKYSURFACE(suf), true, isGlowing,
-                         subsector->bsuf[plane->planeID], plane->planeID,
-                         texMode);
+                         subsector->bsuf[i], i, texMode);
     }
 
     if(devRendSkyMode == 2)
@@ -2863,8 +2862,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
                              (vy > plane->visHeight? true : false),
-                             false, NULL,
-                             plane->planeID, 2);
+                             false, NULL, PLN_FLOOR, 2);
         }
 
         if(sect->SP_ceilvisheight < P_CurrentMap()->skyFixCeiling &&
@@ -2883,8 +2881,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
                              (vy < plane->visHeight? true : false),
-                             false, NULL,
-                             plane->planeID, 2);
+                             false, NULL, PLN_CEILING, 2);
         }
     }
 }

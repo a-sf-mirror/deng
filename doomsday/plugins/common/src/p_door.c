@@ -127,7 +127,7 @@ void T_Door(door_t* door)
             case DT_BLAZERAISE:
 # endif
                 door->state = DS_DOWN; // Time to go back down.
-                S_SectorSound(door->sector, SORG_CEILING, SFX_DOORBLAZECLOSE);
+                S_PlaneSound(door->sector, PLN_CEILING, SFX_DOORBLAZECLOSE);
                 break;
 #endif
             case DT_NORMAL:
@@ -136,14 +136,14 @@ void T_Door(door_t* door)
                 SN_StartSequence(P_SectorSoundOrigin(door->sector),
                                  SEQ_DOOR_STONE + xsec->seqType);
 #else
-                S_SectorSound(door->sector, SORG_CEILING, SFX_DOORCLOSE);
+                S_PlaneSound(door->sector, PLN_CEILING, SFX_DOORCLOSE);
 #endif
                 break;
 
             case DT_CLOSE30THENOPEN:
                 door->state = DS_UP;
 #if !__JHEXEN__
-                S_SectorSound(door->sector, SORG_CEILING, SFX_DOOROPEN);
+                S_PlaneSound(door->sector, PLN_CEILING, SFX_DOOROPEN);
 #endif
                 break;
 
@@ -162,7 +162,7 @@ void T_Door(door_t* door)
                 door->state = DS_UP;
                 door->type = DT_NORMAL;
 #if !__JHEXEN__
-                S_SectorSound(door->sector, SORG_CEILING, SFX_DOOROPEN);
+                S_PlaneSound(door->sector, PLN_CEILING, SFX_DOOROPEN);
 #endif
                 break;
 
@@ -206,7 +206,7 @@ void T_Door(door_t* door)
                 // This is what causes blazing doors to produce two closing
                 // sounds as one has already been played when the door starts
                 // to close (above)
-                S_SectorSound(door->sector, SORG_CEILING, SFX_DOORBLAZECLOSE);
+                S_PlaneSound(door->sector, PLN_CEILING, SFX_DOORBLAZECLOSE);
                 break;
 #endif
             case DT_NORMAL:
@@ -217,7 +217,7 @@ void T_Door(door_t* door)
 #endif
                 DD_ThinkerRemove(&door->thinker); // Unlink and free.
 #if __JHERETIC__
-                S_SectorSound(door->sector, SORG_CEILING, SFX_DOORCLOSE);
+                S_PlaneSound(door->sector, PLN_CEILING, SFX_DOORCLOSE);
 #endif
                 break;
 
@@ -246,7 +246,7 @@ void T_Door(door_t* door)
             default:
                 door->state = DS_UP;
 #if !__JHEXEN__
-                S_SectorSound(door->sector, SORG_CEILING, SFX_DOOROPEN);
+                S_PlaneSound(door->sector, PLN_CEILING, SFX_DOOROPEN);
 #endif
                 break;
             }
@@ -298,8 +298,7 @@ void T_Door(door_t* door)
 #endif
                 DD_ThinkerRemove(&door->thinker); // Unlink and free.
 #if __JHERETIC__
-                S_StopSound(0, (mobj_t *) DMU_GetPtrp(door->sector,
-                                                    DMU_CEILING_SOUND_ORIGIN));
+                S_StopSound(0, (mobj_t*) DMU_GetPtrp(door->sector, DMU_SOUND_ORIGIN));
 #endif
                 break;
 
@@ -421,7 +420,7 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
         SN_StartSequence(P_SectorSoundOrigin(door->sector), sound);
 #else
         if(sound)
-            S_SectorSound(door->sector, SORG_CEILING, sound);
+            S_PlaneSound(door->sector, PLN_CEILING, sound);
 #endif
     }
     return rtn;
@@ -773,19 +772,19 @@ boolean EV_VerticalDoor(linedef_t* line, mobj_t* mo)
     case 527: // jd64
 #  endif
         // BLAZING DOOR RAISE/OPEN
-        S_SectorSound(door->sector, SORG_CEILING, SFX_DOORBLAZEOPEN);
+        S_PlaneSound(door->sector, PLN_CEILING, SFX_DOORBLAZEOPEN);
         break;
 # endif
 
     case 1:
     case 31:
         // NORMAL DOOR SOUND
-        S_SectorSound(door->sector, SORG_CEILING, SFX_DOOROPEN);
+        S_PlaneSound(door->sector, PLN_CEILING, SFX_DOOROPEN);
         break;
 
     default:
         // LOCKED DOOR SOUND
-        S_SectorSound(door->sector, SORG_CEILING, SFX_DOOROPEN);
+        S_PlaneSound(door->sector, PLN_CEILING, SFX_DOOROPEN);
         break;
     }
 #endif

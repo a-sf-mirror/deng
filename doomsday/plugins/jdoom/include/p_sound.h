@@ -34,14 +34,7 @@
 
 #include "doomsday.h"
 
-typedef enum {
-    SORG_CENTER,
-    SORG_FLOOR,
-    SORG_CEILING
-} sectorsoundorigin_t;
-
 void            S_MapMusic(void);
-void            S_SectorSound(sector_t* sec, sectorsoundorigin_t origin,
-                              int id);
-
+void            S_SectorSound(sector_t* sec, int id);
+void            S_PlaneSound(sector_t* sec, int plane, int id);
 #endif

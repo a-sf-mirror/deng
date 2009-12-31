@@ -919,6 +919,13 @@ void* P_GetVariable(int value)
             count = map->numNodes;
         return &count;
         }
+    case DMU_PLANE_COUNT:
+        {
+        map_t* map = P_CurrentMap();
+        if(map)
+            count = map->numPlanes;
+        return &count;
+        }
     default:
         break;
     }
@@ -964,7 +971,7 @@ objectrecordid_t P_ToIndex(const void* ptr)
     case DMU_NODE:
         return ((objectrecord_t*) ptr)->id - 1;
     case DMU_PLANE:
-        return ((plane_t*) (((objectrecord_t*) ptr)->obj))->planeID;
+        return ((objectrecord_t*) ptr)->id - 1;
 
     case DMU_MATERIAL:
         return Materials_ToIndex(((objectrecord_t*) ptr)->obj);
@@ -1189,10 +1196,12 @@ int P_Callback(int type, objectrecordid_t index, int (*callback)(void* p, void* 
         break;
         }
     case DMU_PLANE:
-        Con_Error("P_Callback: %s cannot be referenced by id alone (sector is unknown).\n",
-                  DMU_Str(type));
+        {
+        map_t* map = P_CurrentMap();
+        if(index < map->numPlanes)
+            return callback(P_ObjectRecord(DMU_PLANE, map->planes[index]), context);
         break;
-
+        }
     case DMU_MATERIAL:
         if(index < numMaterialBinds)
             return callback(Materials_ToMaterial(index), context);
@@ -1625,18 +1634,6 @@ static int setProperty(void* ptr, void* context)
     if(args->type == DMU_SURFACE)
     {
         updateSurface = (surface_t*) obj;
-/*
-        // Resolve implicit references to properties of the surface's material.
-        switch(args->prop)
-        {
-        case UNKNOWN1:
-            obj = &((surface_t*) obj)->material;
-            args->type = DMU_MATERIAL;
-            break;
-
-        default:
-            break;
-        }*/
     }
 
     switch(args->type)
@@ -1728,7 +1725,23 @@ static int setProperty(void* ptr, void* context)
     if(updatePlane)
     {
         if(R_UpdatePlane(updatePlane, false))
-            updateSector1 = updatePlane->sector;
+        {
+            uint i;
+            map_t* map = P_CurrentMap();
+
+            for(i = 0; i < map->numSectors; ++i)
+            {
+                sector_t* sec = map->sectors[i];
+
+                uint j;
+
+                for(j = 0; j < sec->planeCount; ++j)
+                {
+                    if(sec->planes[i] == updatePlane)
+                        R_UpdateSector(sec, false);
+                }
+            }
+        }
     }
 
     if(updateSector1)
@@ -1740,11 +1753,6 @@ static int setProperty(void* ptr, void* context)
     {
         R_UpdateSector(updateSector2, false);
     }
-
-/*  if(updateSubSector)
-    {
-        R_UpdateSubSector(updateSubSector, false);
-    } */
 
     return true; // Continue iteration.
 }
@@ -2063,23 +2071,6 @@ static int getProperty(void* ptr, void* context)
             break;
         }
     }
-
-/*
-    if(args->type == DMU_SURFACE)
-    {
-        // Resolve implicit references to properties of the surface's material.
-        switch(args->prop)
-        {
-        case UNKNOWN1:
-            obj = &((surface_t*) obj)->material;
-            args->type = DMU_MATERIAL;
-            break;
-
-        default:
-            break;
-        }
-    }
-*/
 
     switch(args->type)
     {

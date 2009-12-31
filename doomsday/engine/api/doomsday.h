@@ -183,10 +183,11 @@ typedef struct material_s { int type; } material_t;
     objectrecordid_t MPE_CreateLineDef(objectrecordid_t v1, objectrecordid_t v2, objectrecordid_t frontSide,
                                       objectrecordid_t backSide, int flags);
     objectrecordid_t MPE_CreateSector(float lightlevel, float red, float green, float blue);
-    void             MPE_CreatePlane(objectrecordid_t sector, float height, material_t* material,
-                                    float matOffsetX, float matOffsetY,
-                                    float r, float g, float b, float a,
-                                    float normalX, float normalY, float normalZ);
+    objectrecordid_t MPE_CreatePlane(float height, material_t* material,
+                                     float matOffsetX, float matOffsetY,
+                                     float r, float g, float b, float a,
+                                     float normalX, float normalY, float normalZ);
+    void             MPE_SetSectorPlane(objectrecordid_t sector, uint type, objectrecordid_t plane);
     objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint linecount,
                                        int tag, int sequenceType, float anchorX, float anchorY);
     boolean         MPE_GameObjectRecordProperty(const char* objName, uint idx,

@@ -113,14 +113,14 @@ void T_MoveCeiling(ceiling_t* ceiling)
         if(!(mapTime & 7))
         {
 # if __JHERETIC__
-            S_SectorSound(ceiling->sector, SORG_CEILING, SFX_CEILINGMOVE);
+            S_PlaneSound(ceiling->sector, PLN_CEILING, SFX_CEILINGMOVE);
 # else
             switch(ceiling->type)
             {
             case CT_SILENTCRUSHANDRAISE:
                 break;
             default:
-                S_SectorSound(ceiling->sector, SORG_CEILING, SFX_CEILINGMOVE);
+                S_PlaneSound(ceiling->sector, PLN_CEILING, SFX_CEILINGMOVE);
                 break;
             }
 # endif
@@ -143,7 +143,7 @@ void T_MoveCeiling(ceiling_t* ceiling)
                 break;
 # if !__JHERETIC__
             case CT_SILENTCRUSHANDRAISE:
-                S_SectorSound(ceiling->sector, SORG_CEILING, SFX_CEILINGSTOP);
+                S_PlaneSound(ceiling->sector, PLN_CEILING, SFX_CEILINGSTOP);
 # endif
             case CT_CRUSHANDRAISEFAST:
 #endif
@@ -174,14 +174,14 @@ void T_MoveCeiling(ceiling_t* ceiling)
         if(!(mapTime & 7))
         {
 # if __JHERETIC__
-            S_SectorSound(ceiling->sector, SORG_CEILING, SFX_CEILINGMOVE);
+            S_PlaneSound(ceiling->sector, PLN_CEILING, SFX_CEILINGMOVE);
 # else
             switch(ceiling->type)
             {
             case CT_SILENTCRUSHANDRAISE:
                 break;
             default:
-                S_SectorSound(ceiling->sector, SORG_CEILING, SFX_CEILINGMOVE);
+                S_PlaneSound(ceiling->sector, PLN_CEILING, SFX_CEILINGMOVE);
             }
 # endif
         }
@@ -196,7 +196,7 @@ void T_MoveCeiling(ceiling_t* ceiling)
             {
 #if __JDOOM__ || __JDOOM64__
             case CT_SILENTCRUSHANDRAISE:
-                S_SectorSound(ceiling->sector, SORG_CEILING, SFX_CEILINGSTOP);
+                S_PlaneSound(ceiling->sector, PLN_CEILING, SFX_CEILINGSTOP);
                 ceiling->speed = CEILSPEED;
                 ceiling->state = CS_UP;
                 break;
