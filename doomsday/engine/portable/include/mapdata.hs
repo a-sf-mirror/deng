@@ -232,12 +232,8 @@ struct surface
 end
 
 internal
-typedef enum {
-    PLN_FLOOR,
-    PLN_CEILING,
-    PLN_MID,
-    NUM_PLANE_TYPES
-} planetype_t;
+#define PLN_FLOOR       0
+#define PLN_CEILING     1
 end
 
 internal

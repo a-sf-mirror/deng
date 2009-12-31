@@ -715,7 +715,7 @@ static void updateSectorPlaneDecorations(surfacelist_t* list, sector_t* sec,
     vec3_t v1, v2;
     float offsetS, offsetT;
 
-    if(pln->type == PLN_FLOOR)
+    if(planeID == PLN_FLOOR)
     {
         V3_Set(v1, sec->bBox[BOXLEFT], sec->bBox[BOXTOP], pln->visHeight);
         V3_Set(v2, sec->bBox[BOXRIGHT], sec->bBox[BOXBOTTOM], pln->visHeight);

@@ -1598,10 +1598,8 @@ static void radioSubsectorEdges(const subsector_t* subsector)
                     {   // Its a normal neighbor.
                         if(LINE_SECTOR(neighbor, otherSide) !=
                            LINE_SECTOR(line, side) &&
-                           !((plane->type == PLN_FLOOR &&
-                                  othersec->SP_ceilvisheight <= plane->visHeight) ||
-                             (plane->type == PLN_CEILING &&
-                                  othersec->SP_floorheight >= plane->visHeight)))
+                           !((pln == PLN_FLOOR   && othersec->SP_ceilvisheight <= plane->visHeight) ||
+                             (pln == PLN_CEILING && othersec->SP_floorheight >= plane->visHeight)))
                         {
                             front = LINE_SECTOR(line, side);
                             back  = LINE_SECTOR(neighbor, otherSide);

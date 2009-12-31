@@ -1516,7 +1516,7 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
         !(p->alpha < 1 || !msA->isOpaque || p->blendMode > 0));
 }
 
-static void renderPlane(subsector_t* subsector, planetype_t type,
+static void renderPlane(subsector_t* subsector, uint planeId,
                         float height, const vectorcomp_t normal[3],
                         material_t* inMat, material_t* inMatB,
                         float matBlendFactor, short sufInFlags,
@@ -1585,7 +1585,7 @@ static void renderPlane(subsector_t* subsector, planetype_t type,
             params.glowing = true; // Make it stand out
         }
 
-        if(type != PLN_MID)
+        if(planeId == PLN_FLOOR || planeId == PLN_CEILING)
         {
             params.blendMode = BM_NORMAL;
             params.alpha = 1;
@@ -1618,7 +1618,7 @@ static void renderPlane(subsector_t* subsector, planetype_t type,
                 DL_ProjectOnSurface(P_CurrentMap(), subsector, params.texTL, params.texBR,
                                     normal,
                                     (DLF_NO_PLANAR |
-                                     (type == PLN_FLOOR? DLF_TEX_FLOOR : DLF_TEX_CEILING)));
+                                     (planeId == PLN_FLOOR? DLF_TEX_FLOOR : DLF_TEX_CEILING)));
         }
 
         // Render Shiny polys?
@@ -1679,7 +1679,7 @@ float RendPlane_TakeMaterialSnapshots(material_snapshot_t* msA, material_snapsho
     return interPos;
 }
 
-static void Rend_RenderPlane(subsector_t* subsector, planetype_t type,
+static void Rend_RenderPlane(subsector_t* subsector, uint planeId,
                              float height, const vectorcomp_t normal[3],
                              material_t* inMat, material_t* inMatB,
                              float matBlendFactor,
@@ -1709,11 +1709,11 @@ static void Rend_RenderPlane(subsector_t* subsector, planetype_t type,
 
         // Set the texture origin, Y is flipped for the ceiling.
         V3_Set(texTL, subsector->bBox[0][VX],
-               subsector->bBox[type == PLN_FLOOR? 1 : 0][VY], height);
+               subsector->bBox[planeId == PLN_FLOOR? 1 : 0][VY], height);
         V3_Set(texBR, subsector->bBox[1][VX],
-               subsector->bBox[type == PLN_FLOOR? 0 : 1][VY], height);
+               subsector->bBox[planeId == PLN_FLOOR? 0 : 1][VY], height);
 
-        renderPlane(subsector, type, height, normal, inMat, inMatB, matBlendFactor,
+        renderPlane(subsector, planeId, height, normal, inMat, inMatB, matBlendFactor,
                     sufInFlags, sufColor, blendMode, texTL, texBR, texOffset,
                     texScale, skyMasked, addDLights, isGlowing, bsuf, elmIdx,
                     texMode);
@@ -2776,18 +2776,12 @@ static void Rend_RenderSubSector(subsector_t* subsector)
             if(devRendSkyMode == 0 && (subsector->sector->flags & SECF_UNCLOSED))
                 return;
 
-            switch(plane->type)
-            {
-            case PLN_FLOOR:
+            if(i == PLN_FLOOR)
                 height = P_CurrentMap()->skyFixFloor;
-                break;
-            case PLN_CEILING:
+            else if(i == PLN_CEILING)
                 height = P_CurrentMap()->skyFixCeiling;
-                break;
-            case PLN_MID:
+            else
                 height = plane->visHeight;
-                break;
-            }
         }
 
         if(renderTextures == 2)
@@ -2811,7 +2805,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
         V2_Copy(texOffset, suf->visOffset);
 
         // Add the Y offset to orient the Y flipped texture.
-        if(plane->type == PLN_CEILING)
+        if(i == PLN_CEILING)
             texOffset[VY] -= subsector->bBox[1][VY] - subsector->bBox[0][VY];
 
         // Add the additional offset to align with the worldwide grid.
@@ -2826,7 +2820,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                              (mat && (mat->flags & MATF_GLOW)))))
             isGlowing = true;
 
-        Rend_RenderPlane(subsector, plane->type, height, suf->normal, mat,
+        Rend_RenderPlane(subsector, i, height, suf->normal, mat,
                          suf->materialB, suf->matBlendFactor,
                          suf->inFlags, suf->rgba,
                          suf->blendMode, texOffset, texScale,
@@ -2857,7 +2851,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
             if(vy < plane->visHeight)
                 normal[VZ] *= -1;
 
-            Rend_RenderPlane(subsector, PLN_MID, plane->visHeight, normal,
+            Rend_RenderPlane(subsector, PLN_CEILING+1, plane->visHeight, normal,
                              Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY), NULL, 0,
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
@@ -2876,7 +2870,7 @@ static void Rend_RenderSubSector(subsector_t* subsector)
             if(vy > plane->visHeight)
                 normal[VZ] *= -1;
 
-            Rend_RenderPlane(subsector, PLN_MID, plane->visHeight, normal,
+            Rend_RenderPlane(subsector, PLN_CEILING+1, plane->visHeight, normal,
                              Materials_ToMaterial2(MN_SYSTEM, DDT_GRAY), NULL, 0,
                              suf->inFlags, suf->rgba,
                              BM_NORMAL, NULL, NULL, false,
@@ -3122,8 +3116,8 @@ void Rend_RenderNormals(map_t* map)
             float scale = NORM_TAIL_LENGTH;
 
             V3_Set(origin, subsector->midPoint[VX], subsector->midPoint[VY], pln->visHeight);
-            if(pln->type != PLN_MID && IS_SKYSURFACE(&pln->surface))
-                origin[VZ] = pln->type == PLN_FLOOR? map->skyFixFloor : map->skyFixCeiling;
+            if((j == PLN_FLOOR || j == PLN_CEILING) && IS_SKYSURFACE(&pln->surface))
+                origin[VZ] = j == PLN_FLOOR? map->skyFixFloor : map->skyFixCeiling;
 
             drawNormal(origin, pln->PS_normal, scale);
         }

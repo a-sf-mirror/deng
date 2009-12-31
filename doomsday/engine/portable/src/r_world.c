@@ -841,7 +841,7 @@ static void doFindSegDivisions(walldiv_t* div, hedge_t* base,
                 uint j;
                 boolean stop = false;
 
-                for(j = PLN_MID; j < scanSec->planeCount - 2 && !stop; ++j)
+                for(j = PLN_CEILING+1; j < scanSec->planeCount - 2 && !stop; ++j)
                 {
                     pln = scanSec->SP_plane(j);
                     if(!testForPlaneDivision(div, pln, bottomZ, topZ))

@@ -977,25 +977,20 @@ static boolean updatePlaneHeightTracking(plane_t* plane, void* context)
 static boolean resetPlaneHeightTracking(plane_t* plane, void* context)
 {
     map_t* map = (map_t*) context;
+    uint i;
 
     Plane_ResetHeightTracking(plane);
     PlaneList_Remove(&map->watchedPlaneList, plane);
 
-    if(plane->type == PLN_FLOOR || plane->type == PLN_CEILING)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        uint i;
+        sector_t* sec = map->sectors[i];
+        uint j;
 
-        for(i = 0; i < map->numSectors; ++i)
+        for(j = 0; j < sec->planeCount; ++j)
         {
-            sector_t* sec = map->sectors[i];
-
-            uint j;
-
-            for(j = 0; j < sec->planeCount; ++j)
-            {
-                if(sec->planes[i] == plane)
-                    R_MarkDependantSurfacesForDecorationUpdate(sec);
-            }
+            if(sec->planes[i] == plane)
+                R_MarkDependantSurfacesForDecorationUpdate(sec);
         }
     }
 
@@ -1005,27 +1000,22 @@ static boolean resetPlaneHeightTracking(plane_t* plane, void* context)
 static boolean interpolatePlaneHeight(plane_t* plane, void* context)
 {
     map_t* map = (map_t*) context;
+    uint i;
 
     Plane_InterpolateHeight(plane);
     // Has this plane reached its destination?
     if(plane->visHeight == plane->height)
         PlaneList_Remove(&map->watchedPlaneList, plane);
 
-    if(plane->type == PLN_FLOOR || plane->type == PLN_CEILING)
+    for(i = 0; i < map->numSectors; ++i)
     {
-        uint i;
+        sector_t* sec = map->sectors[i];
+        uint j;
 
-        for(i = 0; i < map->numSectors; ++i)
+        for(j = 0; j < sec->planeCount; ++j)
         {
-            sector_t* sec = map->sectors[i];
-
-            uint j;
-
-            for(j = 0; j < sec->planeCount; ++j)
-            {
-                if(sec->planes[i] == plane)
-                    R_MarkDependantSurfacesForDecorationUpdate(sec);
-            }
+            if(sec->planes[i] == plane)
+                R_MarkDependantSurfacesForDecorationUpdate(sec);
         }
     }
 
@@ -3145,7 +3135,6 @@ plane_t* Map_CreatePlane(map_t* map, float height, material_t* material,
 
     pln = P_CreatePlane(map);
 
-    pln->type = PLN_MID; // Good default.
     pln->height = pln->visHeight = pln->oldHeight[0] =
         pln->oldHeight[1] = height;
     pln->visHeightDelta = 0;

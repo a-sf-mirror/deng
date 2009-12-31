@@ -290,10 +290,9 @@ void MPE_SetSectorPlane(objectrecordid_t sector, uint type, objectrecordid_t pla
         obj = NULL;
 
     pln = (plane_t*) ((objectrecord_t*) P_ToPtr(DMU_PLANE, plane))->obj;
-    pln->type = type == 0? PLN_FLOOR : type == 1? PLN_CEILING : PLN_MID;
 
     sec->planes = Z_Realloc(sec->planes, sizeof(plane_t*) * (++sec->planeCount + 1), PU_STATIC);
-    sec->planes[type == PLN_MID? sec->planeCount-1 : type] = pln;
+    sec->planes[type > PLN_CEILING? sec->planeCount-1 : type] = pln;
     sec->planes[sec->planeCount] = NULL; // Terminate.
 }
 

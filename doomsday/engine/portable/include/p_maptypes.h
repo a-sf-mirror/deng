@@ -188,12 +188,8 @@ typedef struct surface_s {
     surfacedecor_t      *decorations;
 } surface_t;
 
-typedef enum {
-    PLN_FLOOR,
-    PLN_CEILING,
-    PLN_MID,
-    NUM_PLANE_TYPES
-} planetype_t;
+#define PLN_FLOOR       0
+#define PLN_CEILING     1
 
 #define PS_normal               surface.normal
 #define PS_material             surface.material
@@ -217,7 +213,6 @@ typedef struct plane_s {
     float               speed;         // Move speed
     float               visHeight;     // Visible plane height (smoothed)
     float               visHeightDelta;
-    planetype_t         type;          // PLN_* type.
     mplane_t            buildData;
 } plane_t;
 
