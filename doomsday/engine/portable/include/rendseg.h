@@ -26,6 +26,7 @@
 
 // temporary includes:
 #include "rend_list.h"
+#include "rend_fakeradio.h"
 #include "p_material.h"
 
 /**
@@ -57,10 +58,11 @@ typedef struct rendseg_s {
     float               surfaceMaterialOffset[2];
     float               surfaceMaterialScale[2];
     biassurface_t*      biasSurface;
-    sideradioconfig_t*  radioConfig;
     float               alpha; // @c < 0 signifies "force opaque"
     blendmode_t         blendMode;
     uint                dynlistID;
+
+    rendseg_shadow_t    radioConfig[4];
 
     // @todo get rid of divs in their current form.
     // Use a list of "plane interfaces" attached to each world vertex

@@ -102,9 +102,16 @@ void Rend_RadioRegister(void)
     C_VAR_FLOAT("rend-fakeradio-darkness", &rendFakeRadioDarkness, 0, 0, 2);
 }
 
-static __inline float calcShadowDarkness(float lightLevel)
+float Rend_RadioShadowDarkness(float lightLevel)
 {
+    // @fixme Make cvars out of constants.
     return (0.6f - lightLevel * 0.4f) * rendFakeRadioDarkness;
+}
+
+float Rend_RadioShadowSize(float lightLevel)
+{
+    // @fixme Make cvars out of constants.
+    return 2 * (8 + 16 - lightLevel * 16);
 }
 
 /**
@@ -135,29 +142,6 @@ void Rend_RadioUpdateLineDef(linedef_t* line, boolean backSide)
         scanEdges(radioConfig, line, backSide);
 
         radioConfig->fakeRadioUpdateCount = frameCount; // Mark as done.
-    }
-}
-
-/**
- * Set the vertex colors in the rendpoly.
- */
-static void setRendpolyColor(rcolor_t* rcolors, uint num, float darkness)
-{
-    uint                i;
-
-    // Clamp it.
-    if(darkness < 0)
-        darkness = 0;
-    if(darkness > 1)
-        darkness = 1;
-
-    // Shadows are black.
-    for(i = 0; i < num; ++i)
-    {
-        rcolors[i].rgba[CR] =
-            rcolors[i].rgba[CG] =
-                rcolors[i].rgba[CB] = 0;
-        rcolors[i].rgba[CA] = darkness;
     }
 }
 
@@ -573,9 +557,9 @@ static void scanEdges(sideradioconfig_t* radioConfig,
  * Long walls get slightly larger shadows. The bonus will simply be added
  * to the shadow size for the wall in question.
  */
-static __inline float calcLongWallBonus(float span)
+float Rend_RadioLongWallBonus(float span)
 {
-    float               limit;
+    float limit;
 
     if(rendRadioLongWallDiv > 0 && span > rendRadioLongWallMin)
     {
@@ -587,119 +571,110 @@ static __inline float calcLongWallBonus(float span)
     return 0;
 }
 
-typedef struct {
-    lightingtexid_t     texture;
-    boolean             horizontal;
-    float               shadowMul;
-    float               texWidth;
-    float               texHeight;
-    float               texOffset[2];
-    float               wallLength;
-} rendershadowseg_params_t;
-
-static void setTopShadowParams(rendershadowseg_params_t* p, float size,
-                               float top,
-                               float xOffset, float segLength,
-                               const float* fFloor, const float* fCeil,
-                               const sideradioconfig_t* radioConfig)
+void Rend_RadioSetupTopShadow(rendseg_shadow_t* rseg, float size, float top,
+                              float xOffset, float segLength,
+                              const float* fFloor, const float* fCeil,
+                              const sideradioconfig_t* radioConfig,
+                              float shadowDark)
 {
-    p->shadowMul = 1;
-    p->horizontal = false;
-    p->texHeight = size;
-    p->texOffset[VY] = calcTexCoordY(top, *fFloor, *fCeil, p->texHeight);
-    p->wallLength = segLength;
+    rseg->shadowDark = shadowDark;
+    rseg->shadowMul = 1;
+    rseg->horizontal = false;
+    rseg->texHeight = size;
+    rseg->texOffset[VY] = calcTexCoordY(top, *fFloor, *fCeil, rseg->texHeight);
+    rseg->wallLength = segLength;
 
-    p->texture = LST_RADIO_OO;
+    rseg->texture = LST_RADIO_OO;
     // Corners without a neighbour backsector
     if(radioConfig->sideCorners[0].corner == -1 || radioConfig->sideCorners[1].corner == -1)
     {   // At least one corner faces outwards
-        p->texture = LST_RADIO_OO;
-        p->texWidth = radioConfig->spans[TOP].length;
-        p->texOffset[VX] =
+        rseg->texture = LST_RADIO_OO;
+        rseg->texWidth = radioConfig->spans[TOP].length;
+        rseg->texOffset[VX] =
             calcTexCoordX(radioConfig->spans[TOP].length, radioConfig->spans[TOP].shift + xOffset);
 
         if((radioConfig->sideCorners[0].corner == -1 && radioConfig->sideCorners[1].corner == -1) ||
            (radioConfig->topCorners[0].corner == -1 && radioConfig->topCorners[1].corner == -1))
         {   // Both corners face outwards
-            p->texture = LST_RADIO_OO;//CC;
+            rseg->texture = LST_RADIO_OO;//CC;
         }
         else if(radioConfig->sideCorners[1].corner == -1)
         {   // right corner faces outwards
             if(-radioConfig->topCorners[0].pOffset < 0 && radioConfig->bottomCorners[0].pHeight < *fCeil)
             {// Must flip horizontally!
-                p->texWidth = -radioConfig->spans[TOP].length;
-                p->texOffset[VX] =
+                rseg->texWidth = -radioConfig->spans[TOP].length;
+                rseg->texOffset[VX] =
                     calcTexCoordX(-radioConfig->spans[TOP].length, radioConfig->spans[TOP].shift + xOffset);
-                p->texture = LST_RADIO_OE;
+                rseg->texture = LST_RADIO_OE;
             }
         }
         else  // left corner faces outwards
         {
             if(-radioConfig->topCorners[1].pOffset < 0 && radioConfig->bottomCorners[1].pHeight < *fCeil)
             {
-                p->texture = LST_RADIO_OE;
+                rseg->texture = LST_RADIO_OE;
             }
         }
     }
     else
     {   // Corners WITH a neighbour backsector
-        p->texWidth = radioConfig->spans[TOP].length;
-        p->texOffset[VX] =
+        rseg->texWidth = radioConfig->spans[TOP].length;
+        rseg->texOffset[VX] =
             calcTexCoordX(radioConfig->spans[TOP].length, radioConfig->spans[TOP].shift + xOffset);
         if(radioConfig->topCorners[0].corner == -1 && radioConfig->topCorners[1].corner == -1)
         {   // Both corners face outwards
-            p->texture = LST_RADIO_OO;//CC;
+            rseg->texture = LST_RADIO_OO;//CC;
         }
         else if(radioConfig->topCorners[1].corner == -1 && radioConfig->topCorners[0].corner > MIN_OPEN)
         {   // Right corner faces outwards
-            p->texture = LST_RADIO_OO;
+            rseg->texture = LST_RADIO_OO;
         }
         else if(radioConfig->topCorners[0].corner == -1 && radioConfig->topCorners[1].corner > MIN_OPEN)
         {   // Left corner faces outwards
-            p->texture = LST_RADIO_OO;
+            rseg->texture = LST_RADIO_OO;
         }
         // Open edges
         else if(radioConfig->topCorners[0].corner <= MIN_OPEN && radioConfig->topCorners[1].corner <= MIN_OPEN)
         {   // Both edges are open
-            p->texture = LST_RADIO_OO;
+            rseg->texture = LST_RADIO_OO;
             if(radioConfig->topCorners[0].proximity && radioConfig->topCorners[1].proximity)
             {
                 if(-radioConfig->topCorners[0].pOffset >= 0 && -radioConfig->topCorners[1].pOffset < 0)
                 {
-                    p->texture = LST_RADIO_CO;
+                    rseg->texture = LST_RADIO_CO;
                     // The shadow can't go over the higher edge.
                     if(size > -radioConfig->topCorners[0].pOffset)
                     {
                         if(-radioConfig->topCorners[0].pOffset < INDIFF)
-                            p->texture = LST_RADIO_OE;
+                            rseg->texture = LST_RADIO_OE;
                         else
                         {
-                            p->texHeight = -radioConfig->topCorners[0].pOffset;
-                            p->texOffset[VY] =
+                            rseg->texHeight = -radioConfig->topCorners[0].pOffset;
+                            rseg->texOffset[VY] =
                                 calcTexCoordY(top, *fFloor, *fCeil,
-                                              p->texHeight);
+                                              rseg->texHeight);
                         }
                     }
                 }
                 else if(-radioConfig->topCorners[0].pOffset < 0 && -radioConfig->topCorners[1].pOffset >= 0)
                 {
                     // Must flip horizontally!
-                    p->texture = LST_RADIO_CO;
-                    p->texWidth = -radioConfig->spans[TOP].length;
-                    p->texOffset[VX] =
+                    rseg->texture = LST_RADIO_CO;
+                    rseg->texWidth = -radioConfig->spans[TOP].length;
+                    rseg->texOffset[VX] =
                         calcTexCoordX(-radioConfig->spans[TOP].length, radioConfig->spans[TOP].shift + xOffset);
 
                     // The shadow can't go over the higher edge.
                     if(size > -radioConfig->topCorners[1].pOffset)
                     {
                         if(-radioConfig->topCorners[1].pOffset < INDIFF)
-                            p->texture = LST_RADIO_OE;
+                            rseg->texture = LST_RADIO_OE;
                         else
                         {
-                            p->texHeight = -radioConfig->topCorners[1].pOffset;
-                            p->texOffset[VY] =
+                            rseg->texHeight = -radioConfig->topCorners[1].pOffset;
+                            rseg->texOffset[VY] =
                                 calcTexCoordY(top, *fFloor, *fCeil,
-                                              p->texHeight);
+                                              rseg->texHeight);
                         }
                     }
                 }
@@ -709,146 +684,147 @@ static void setTopShadowParams(rendershadowseg_params_t* p, float size,
                 if(-radioConfig->topCorners[0].pOffset < -MINDIFF)
                 {
                     // Must flip horizontally!
-                    p->texture = LST_RADIO_OE;
-                    p->texWidth = -radioConfig->spans[BOTTOM].length;
-                    p->texOffset[VX] =
+                    rseg->texture = LST_RADIO_OE;
+                    rseg->texWidth = -radioConfig->spans[BOTTOM].length;
+                    rseg->texOffset[VX] =
                         calcTexCoordX(-radioConfig->spans[BOTTOM].length,
                                       radioConfig->spans[BOTTOM].shift + xOffset);
                 }
                 else if(-radioConfig->topCorners[1].pOffset < -MINDIFF)
-                    p->texture = LST_RADIO_OE;
+                    rseg->texture = LST_RADIO_OE;
             }
         }
         else if(radioConfig->topCorners[0].corner <= MIN_OPEN)
         {
             if(-radioConfig->topCorners[0].pOffset < 0)
-                p->texture = LST_RADIO_CO;
+                rseg->texture = LST_RADIO_CO;
             else
-                p->texture = LST_RADIO_OO;
+                rseg->texture = LST_RADIO_OO;
 
             // Must flip horizontally!
-            p->texWidth = -radioConfig->spans[TOP].length;
-            p->texOffset[VX] =
+            rseg->texWidth = -radioConfig->spans[TOP].length;
+            rseg->texOffset[VX] =
                 calcTexCoordX(-radioConfig->spans[TOP].length, radioConfig->spans[TOP].shift + xOffset);
         }
         else if(radioConfig->topCorners[1].corner <= MIN_OPEN)
         {
             if(-radioConfig->topCorners[1].pOffset < 0)
-                p->texture = LST_RADIO_CO;
+                rseg->texture = LST_RADIO_CO;
             else
-                p->texture = LST_RADIO_OO;
+                rseg->texture = LST_RADIO_OO;
         }
         else  // C/C ???
         {
-            p->texture = LST_RADIO_OO;
+            rseg->texture = LST_RADIO_OO;
         }
     }
 }
 
-static void setBottomShadowParams(rendershadowseg_params_t *p, float size,
-                                  float top,
-                                  float xOffset, float segLength,
-                                  const float* fFloor, const float* fCeil,
-                                  const sideradioconfig_t* radioConfig)
+void Rend_RadioSetupBottomShadow(rendseg_shadow_t* rseg, float size, float top,
+                                 float xOffset, float segLength,
+                                 const float* fFloor, const float* fCeil,
+                                 const sideradioconfig_t* radioConfig,
+                                 float shadowDark)
 {
-    p->shadowMul = 1;
-    p->horizontal = false;
-    p->texHeight = -size;
-    p->texOffset[VY] = calcTexCoordY(top, *fFloor, *fCeil, p->texHeight);
-    p->wallLength = segLength;
+    rseg->shadowDark = shadowDark;
+    rseg->shadowMul = 1;
+    rseg->horizontal = false;
+    rseg->texHeight = -size;
+    rseg->texOffset[VY] = calcTexCoordY(top, *fFloor, *fCeil, rseg->texHeight);
+    rseg->wallLength = segLength;
 
-    p->texture = LST_RADIO_OO;
+    rseg->texture = LST_RADIO_OO;
     // Corners without a neighbour backsector
     if(radioConfig->sideCorners[0].corner == -1 || radioConfig->sideCorners[1].corner == -1)
     {   // At least one corner faces outwards
-        p->texture = LST_RADIO_OO;
-        p->texWidth = radioConfig->spans[BOTTOM].length;
-        p->texOffset[VX] =
+        rseg->texture = LST_RADIO_OO;
+        rseg->texWidth = radioConfig->spans[BOTTOM].length;
+        rseg->texOffset[VX] =
             calcTexCoordX(radioConfig->spans[BOTTOM].length, radioConfig->spans[BOTTOM].shift + xOffset);
 
         if((radioConfig->sideCorners[0].corner == -1 && radioConfig->sideCorners[1].corner == -1) ||
            (radioConfig->bottomCorners[0].corner == -1 && radioConfig->bottomCorners[1].corner == -1) )
         {   // Both corners face outwards
-            p->texture = LST_RADIO_OO;//CC;
+            rseg->texture = LST_RADIO_OO;//CC;
         }
         else if(radioConfig->sideCorners[1].corner == -1) // right corner faces outwards
         {
             if(radioConfig->bottomCorners[0].pOffset < 0 && radioConfig->topCorners[0].pHeight > *fFloor)
             {   // Must flip horizontally!
-                p->texWidth = -radioConfig->spans[BOTTOM].length;
-                p->texOffset[VX] =
+                rseg->texWidth = -radioConfig->spans[BOTTOM].length;
+                rseg->texOffset[VX] =
                     calcTexCoordX(-radioConfig->spans[BOTTOM].length, radioConfig->spans[BOTTOM].shift + xOffset);
-                p->texture = LST_RADIO_OE;
+                rseg->texture = LST_RADIO_OE;
             }
         }
         else
         {   // left corner faces outwards
             if(radioConfig->bottomCorners[1].pOffset < 0 && radioConfig->topCorners[1].pHeight > *fFloor)
             {
-                p->texture = LST_RADIO_OE;
+                rseg->texture = LST_RADIO_OE;
             }
         }
     }
     else
     {   // Corners WITH a neighbour backsector
-        p->texWidth = radioConfig->spans[BOTTOM].length;
-        p->texOffset[VX] =
+        rseg->texWidth = radioConfig->spans[BOTTOM].length;
+        rseg->texOffset[VX] =
             calcTexCoordX(radioConfig->spans[BOTTOM].length, radioConfig->spans[BOTTOM].shift + xOffset);
         if(radioConfig->bottomCorners[0].corner == -1 && radioConfig->bottomCorners[1].corner == -1)
         {   // Both corners face outwards
-            p->texture = LST_RADIO_OO;//CC;
+            rseg->texture = LST_RADIO_OO;//CC;
         }
         else if(radioConfig->bottomCorners[1].corner == -1 && radioConfig->bottomCorners[0].corner > MIN_OPEN)
         {   // Right corner faces outwards
-            p->texture = LST_RADIO_OO;
+            rseg->texture = LST_RADIO_OO;
         }
         else if(radioConfig->bottomCorners[0].corner == -1 && radioConfig->bottomCorners[1].corner > MIN_OPEN)
         {   // Left corner faces outwards
-            p->texture = LST_RADIO_OO;
+            rseg->texture = LST_RADIO_OO;
         }
         // Open edges
         else if(radioConfig->bottomCorners[0].corner <= MIN_OPEN && radioConfig->bottomCorners[1].corner <= MIN_OPEN)
         {   // Both edges are open
-            p->texture = LST_RADIO_OO;
+            rseg->texture = LST_RADIO_OO;
 
             if(radioConfig->bottomCorners[0].proximity && radioConfig->bottomCorners[1].proximity)
             {
                 if(radioConfig->bottomCorners[0].pOffset >= 0 && radioConfig->bottomCorners[1].pOffset < 0)
                 {
-                    p->texture = LST_RADIO_CO;
+                    rseg->texture = LST_RADIO_CO;
                     // The shadow can't go over the higher edge.
                     if(size > radioConfig->bottomCorners[0].pOffset)
                     {
                         if(radioConfig->bottomCorners[0].pOffset < INDIFF)
-                            p->texture = LST_RADIO_OE;
+                            rseg->texture = LST_RADIO_OE;
                         else
                         {
-                            p->texHeight = -radioConfig->bottomCorners[0].pOffset;
-                            p->texOffset[VY] =
+                            rseg->texHeight = -radioConfig->bottomCorners[0].pOffset;
+                            rseg->texOffset[VY] =
                                 calcTexCoordY(top, *fFloor, *fCeil,
-                                              p->texHeight);
+                                              rseg->texHeight);
                         }
                     }
                 }
                 else if(radioConfig->bottomCorners[0].pOffset < 0 && radioConfig->bottomCorners[1].pOffset >= 0)
                 {
                     // Must flip horizontally!
-                    p->texture = LST_RADIO_CO;
-                    p->texWidth = -radioConfig->spans[BOTTOM].length;
-                    p->texOffset[VX] =
+                    rseg->texture = LST_RADIO_CO;
+                    rseg->texWidth = -radioConfig->spans[BOTTOM].length;
+                    rseg->texOffset[VX] =
                         calcTexCoordX(-radioConfig->spans[BOTTOM].length,
                                       radioConfig->spans[BOTTOM].shift + xOffset);
 
                     if(size > radioConfig->bottomCorners[1].pOffset)
                     {
                         if(radioConfig->bottomCorners[1].pOffset < INDIFF)
-                            p->texture = LST_RADIO_OE;
+                            rseg->texture = LST_RADIO_OE;
                         else
                         {
-                            p->texHeight = -radioConfig->bottomCorners[1].pOffset;
-                            p->texOffset[VY] =
+                            rseg->texHeight = -radioConfig->bottomCorners[1].pOffset;
+                            rseg->texOffset[VY] =
                                 calcTexCoordY(top, *fFloor, *fCeil,
-                                              p->texHeight);
+                                              rseg->texHeight);
                         }
                     }
                 }
@@ -858,86 +834,85 @@ static void setBottomShadowParams(rendershadowseg_params_t *p, float size,
                 if(radioConfig->bottomCorners[0].pOffset < -MINDIFF)
                 {
                     // Must flip horizontally!
-                    p->texture = LST_RADIO_OE;
-                    p->texWidth = -radioConfig->spans[BOTTOM].length;
-                    p->texOffset[VX] =
+                    rseg->texture = LST_RADIO_OE;
+                    rseg->texWidth = -radioConfig->spans[BOTTOM].length;
+                    rseg->texOffset[VX] =
                         calcTexCoordX(-radioConfig->spans[BOTTOM].length,
                                       radioConfig->spans[BOTTOM].shift + xOffset);
                 }
                 else if(radioConfig->bottomCorners[1].pOffset < -MINDIFF)
-                    p->texture = LST_RADIO_OE;
+                    rseg->texture = LST_RADIO_OE;
             }
         }
         else if(radioConfig->bottomCorners[0].corner <= MIN_OPEN) // Right Corner is Closed
         {
             if(radioConfig->bottomCorners[0].pOffset < 0)
-                p->texture = LST_RADIO_CO;
+                rseg->texture = LST_RADIO_CO;
             else
-                p->texture = LST_RADIO_OO;
+                rseg->texture = LST_RADIO_OO;
 
             // Must flip horizontally!
-            p->texWidth = -radioConfig->spans[BOTTOM].length;
-            p->texOffset[VX] =
+            rseg->texWidth = -radioConfig->spans[BOTTOM].length;
+            rseg->texOffset[VX] =
                 calcTexCoordX(-radioConfig->spans[BOTTOM].length, radioConfig->spans[BOTTOM].shift + xOffset);
         }
         else if(radioConfig->bottomCorners[1].corner <= MIN_OPEN)  // Left Corner is closed
         {
             if(radioConfig->bottomCorners[1].pOffset < 0)
-                p->texture = LST_RADIO_CO;
+                rseg->texture = LST_RADIO_CO;
             else
-                p->texture = LST_RADIO_OO;
+                rseg->texture = LST_RADIO_OO;
         }
         else  // C/C ???
         {
-            p->texture = LST_RADIO_OO;
+            rseg->texture = LST_RADIO_OO;
         }
     }
 }
 
-static void setSideShadowParams(rendershadowseg_params_t* p,
-                                float size, float bottom, float top,
-                                boolean rightSide, boolean bottomGlow,
-                                boolean topGlow,
-                                float xOffset, float segLength,
-                                const float* fFloor, const float* fCeil,
-                                const float* bFloor, const float* bCeil,
-                                float lineLength,
-                                const shadowcorner_t* sideCn)
+void Rend_RadioSetupSideShadow(rendseg_shadow_t* rseg, float size, float bottom,
+                               float top, boolean rightSide, boolean bottomGlow,
+                               boolean topGlow, float xOffset, float segLength,
+                               const float* fFloor, const float* fCeil,
+                               const float* bFloor, const float* bCeil,
+                               float lineLength, const shadowcorner_t* sideCn,
+                               float shadowDark)
 {
-    p->shadowMul = sideCn[rightSide? 1 : 0].corner;
-    p->shadowMul *= p->shadowMul * p->shadowMul;
-    p->horizontal = true;
-    p->texOffset[VY] = bottom - *fFloor;
-    p->texHeight = *fCeil - *fFloor;
-    p->wallLength = segLength;
+    rseg->shadowDark = shadowDark;
+    rseg->shadowMul = sideCn[rightSide? 1 : 0].corner;
+    rseg->shadowMul *= rseg->shadowMul * rseg->shadowMul;
+    rseg->horizontal = true;
+    rseg->texOffset[VY] = bottom - *fFloor;
+    rseg->texHeight = *fCeil - *fFloor;
+    rseg->wallLength = segLength;
 
     if(rightSide)
     {   // Right shadow.
-        p->texOffset[VX] = -(lineLength) + xOffset;
+        rseg->texOffset[VX] = -(lineLength) + xOffset;
         // Make sure the shadow isn't too big
         if(size > lineLength)
         {
             if(sideCn[0].corner <= MIN_OPEN)
-                p->texWidth = -lineLength;
+                rseg->texWidth = -lineLength;
             else
-                p->texWidth = -(lineLength / 2);
+                rseg->texWidth = -(lineLength / 2);
         }
         else
-            p->texWidth = -size;
+            rseg->texWidth = -size;
     }
     else
     {   // Left shadow.
-        p->texOffset[VX] = xOffset;
+        rseg->texOffset[VX] = xOffset;
         // Make sure the shadow isn't too big
         if(size > lineLength)
         {
             if(sideCn[1].corner <= MIN_OPEN)
-                p->texWidth = lineLength;
+                rseg->texWidth = lineLength;
             else
-                p->texWidth = lineLength / 2;
+                rseg->texWidth = lineLength / 2;
         }
         else
-            p->texWidth = size;
+            rseg->texWidth = size;
     }
 
     if(bFloor)
@@ -946,320 +921,63 @@ static void setSideShadowParams(rendershadowseg_params_t* p,
         {
             if(!bottomGlow && !topGlow)
             {
-                p->texture = LST_RADIO_CC;
+                rseg->texture = LST_RADIO_CC;
             }
             else if(bottomGlow)
             {
-                p->texOffset[VY] = bottom - *fCeil;
-                p->texHeight = -(*fCeil - *fFloor);
-                p->texture = LST_RADIO_CO;
+                rseg->texOffset[VY] = bottom - *fCeil;
+                rseg->texHeight = -(*fCeil - *fFloor);
+                rseg->texture = LST_RADIO_CO;
             }
             else
-                p->texture = LST_RADIO_CO;
+                rseg->texture = LST_RADIO_CO;
         }
         else if(*bFloor > *fFloor)
         {
             if(!bottomGlow && !topGlow)
             {
-                p->texture = LST_RADIO_CC;
+                rseg->texture = LST_RADIO_CC;
             }
             else if(bottomGlow)
             {
-                p->texOffset[VY] = bottom - *fCeil;
-                p->texHeight = -(*fCeil - *fFloor);
-                p->texture = LST_RADIO_CO;
+                rseg->texOffset[VY] = bottom - *fCeil;
+                rseg->texHeight = -(*fCeil - *fFloor);
+                rseg->texture = LST_RADIO_CO;
             }
             else
-                p->texture = LST_RADIO_CO;
+                rseg->texture = LST_RADIO_CO;
         }
         else if(*bCeil < *fCeil)
         {
             if(!bottomGlow && !topGlow)
             {
-                p->texture = LST_RADIO_CC;
+                rseg->texture = LST_RADIO_CC;
             }
             else if(bottomGlow)
             {
-                p->texOffset[VY] = bottom - *fCeil;
-                p->texHeight = -(*fCeil - *fFloor);
-                p->texture = LST_RADIO_CO;
+                rseg->texOffset[VY] = bottom - *fCeil;
+                rseg->texHeight = -(*fCeil - *fFloor);
+                rseg->texture = LST_RADIO_CO;
             }
             else
-                p->texture = LST_RADIO_CO;
+                rseg->texture = LST_RADIO_CO;
         }
     }
     else
     {
         if(bottomGlow)
         {
-            p->texHeight = -(*fCeil - *fFloor);
-            p->texOffset[VY] =
-                calcTexCoordY(top, *fFloor, *fCeil, p->texHeight);
+            rseg->texHeight = -(*fCeil - *fFloor);
+            rseg->texOffset[VY] =
+                calcTexCoordY(top, *fFloor, *fCeil, rseg->texHeight);
 
-            p->texture = LST_RADIO_CO;
+            rseg->texture = LST_RADIO_CO;
         }
         else if(topGlow)
-            p->texture = LST_RADIO_CO;
+            rseg->texture = LST_RADIO_CO;
         else
-            p->texture = LST_RADIO_CC;
+            rseg->texture = LST_RADIO_CC;
     }
-}
-
-static void quadTexCoords(rtexcoord_t* tc, const rvertex_t* rverts,
-                          float wallLength, float texWidth, float texHeight,
-                          const float texOrigin[2][3], const float texOffset[2],
-                          boolean horizontal)
-{
-    if(horizontal)
-    {   // Special horizontal coordinates for wall shadows.
-        tc[0].st[0] = tc[2].st[0] =
-            rverts[0].pos[VX] - texOrigin[0][VX] + texOffset[VY] / texHeight;
-        tc[0].st[1] = tc[1].st[1] =
-            rverts[0].pos[VY] - texOrigin[0][VY] + texOffset[VX] / texWidth;
-        tc[1].st[0] = tc[0].st[0] + (rverts[1].pos[VZ] - texOrigin[0][VZ]) / texHeight;
-        tc[3].st[0] = tc[0].st[0] + (rverts[3].pos[VZ] - texOrigin[0][VZ]) / texHeight;
-        tc[3].st[1] = tc[0].st[1] + wallLength / texWidth;
-        tc[2].st[1] = tc[0].st[1] + wallLength / texWidth;
-        return;
-    }
-
-    tc[0].st[0] = tc[1].st[0] = rverts[0].pos[VX] - texOrigin[0][VX] +
-        texOffset[VX] / texWidth;
-    tc[3].st[1] = tc[1].st[1] = rverts[0].pos[VY] - texOrigin[0][VY] +
-        texOffset[VY] / texHeight;
-    tc[3].st[0] = tc[2].st[0] = tc[0].st[0] + wallLength / texWidth;
-    tc[2].st[1] = tc[3].st[1] + (rverts[1].pos[VZ] - rverts[0].pos[VZ]) / texHeight;
-    tc[0].st[1] = tc[3].st[1] + (rverts[3].pos[VZ] - rverts[2].pos[VZ]) / texHeight;
-}
-
-static void renderShadowSeg(const rvertex_t* origVertices,
-                            const walldiv_t* wdivs,
-                            const rendershadowseg_params_t* p,
-                            float shadowDark)
-{
-    float               texOrigin[2][3];
-    rcolor_t*           rcolors;
-    rtexcoord_t*        rtexcoords;
-    rtexmapunit_t       rTU[NUM_TEXMAP_UNITS];
-    uint                realNumVertices;
-
-    if(wdivs && (wdivs[0].num || wdivs[1].num))
-    {
-        realNumVertices = 3 + wdivs[0].num + 3 + wdivs[1].num;
-    }
-    else
-    {
-        realNumVertices = 4;
-    }
-
-    memset(rTU, 0, sizeof(rTU));
-    rTU[TU_PRIMARY].tex = GL_PrepareLSTexture(p->texture);
-    rTU[TU_PRIMARY].magMode = GL_LINEAR;
-    rTU[TU_PRIMARY].blend = 1;
-
-    // Top left.
-    texOrigin[0][VX] = origVertices[1].pos[VX];
-    texOrigin[0][VY] = origVertices[1].pos[VY];
-    texOrigin[0][VZ] = origVertices[1].pos[VZ];
-
-    // Bottom right.
-    texOrigin[1][VX] = origVertices[2].pos[VX];
-    texOrigin[1][VY] = origVertices[2].pos[VY];
-    texOrigin[1][VZ] = origVertices[2].pos[VZ];
-
-    // Allocate enough for the divisions too.
-    rtexcoords = R_AllocRendTexCoords(realNumVertices);
-    rcolors = R_AllocRendColors(realNumVertices);
-
-    quadTexCoords(rtexcoords, origVertices, p->wallLength, p->texWidth,
-                  p->texHeight, texOrigin, p->texOffset,
-                  p->horizontal);
-
-    setRendpolyColor(rcolors, 4, p->shadowMul * shadowDark);
-
-    if(rendFakeRadio != 2)
-    {
-        // Write multiple polys depending on rend params.
-        if(wdivs && (wdivs[0].num || wdivs[1].num))
-        {
-            float               bL, tL, bR, tR;
-            rvertex_t*          rvertices;
-            rtexcoord_t         origTexCoords[4];
-            rcolor_t            origColors[4];
-
-            /**
-             * Need to swap indices around into fans set the position
-             * of the division vertices, interpolate texcoords and
-             * color.
-             */
-
-            rvertices = R_AllocRendVertices(realNumVertices);
-
-            memcpy(origTexCoords, rtexcoords, sizeof(rtexcoord_t) * 4);
-            memcpy(origColors, rcolors, sizeof(rcolor_t) * 4);
-
-            bL = origVertices[0].pos[VZ];
-            tL = origVertices[1].pos[VZ];
-            bR = origVertices[2].pos[VZ];
-            tR = origVertices[3].pos[VZ];
-
-            R_DivVerts(rvertices, origVertices, wdivs);
-            R_DivTexCoords(rtexcoords, origTexCoords, wdivs, bL, tL, bR, tR);
-            R_DivVertColors(rcolors, origColors, wdivs, bL, tL, bR, tR);
-
-            RL_AddPoly(PT_FAN, RPT_SHADOW, 3 + wdivs[1].num, rvertices + 3 + wdivs[0].num,
-                       NULL, rtexcoords + 3 + wdivs[0].num, NULL,
-                       rcolors + 3 + wdivs[0].num,
-                       0, 0, NULL, rTU);
-            RL_AddPoly(PT_FAN, RPT_SHADOW, 3 + wdivs[0].num, rvertices, NULL, rtexcoords, NULL,
-                       rcolors, 0, 0, NULL, rTU);
-
-            R_FreeRendVertices(rvertices);
-        }
-        else
-        {
-            RL_AddPoly(PT_TRIANGLE_STRIP, RPT_SHADOW, 4, origVertices,
-                       NULL, rtexcoords, NULL,
-                       rcolors, 0, 0, NULL, rTU);
-        }
-    }
-
-    R_FreeRendTexCoords(rtexcoords);
-    R_FreeRendColors(rcolors);
-}
-
-/**
- * Create the appropriate FakeRadio shadow polygons for the wall segment.
- */
-static void rendRadioSegSection(const rvertex_t* rvertices,
-                                const walldiv_t* wdivs,
-                                float shadowSize, float shadowDark,
-                                const sideradioconfig_t* radioConfig,
-                                const rendsegradio_params_t* p)
-{
-    const float*        fFloor, *fCeil, *bFloor, *bCeil;
-    float               size;
-    boolean             bottomGlow, topGlow;
-
-    bottomGlow = R_IsGlowingPlane(p->frontSec->SP_plane(PLN_FLOOR));
-    topGlow = R_IsGlowingPlane(p->frontSec->SP_plane(PLN_CEILING));
-
-    fFloor = &p->frontSec->SP_floorvisheight;
-    fCeil = &p->frontSec->SP_ceilvisheight;
-    if(p->backSec)
-    {
-        bFloor = &p->backSec->SP_floorvisheight;
-        bCeil  = &p->backSec->SP_ceilvisheight;
-    }
-    else
-        bFloor = bCeil = NULL;
-
-    /*
-     * Top Shadow.
-     */
-    if(!topGlow)
-    {
-        // The top shadow will reach this far down.
-        size = shadowSize + calcLongWallBonus(radioConfig->spans[TOP].length);
-        if(rvertices[3].pos[VZ] > *fCeil - size &&
-           rvertices[0].pos[VZ] < *fCeil)
-        {
-            rendershadowseg_params_t params;
-
-            setTopShadowParams(&params, size, rvertices[1].pos[VZ],
-                               p->segOffset, p->segLength, fFloor, fCeil,
-                               radioConfig);
-            renderShadowSeg(rvertices, wdivs, &params, shadowDark);
-        }
-    }
-
-    /*
-     * Bottom Shadow.
-     */
-    if(!bottomGlow)
-    {
-        size = shadowSize + calcLongWallBonus(radioConfig->spans[BOTTOM].length);
-        if(rvertices[0].pos[VZ] < *fFloor + size &&
-           rvertices[3].pos[VZ] > *fFloor)
-        {
-            rendershadowseg_params_t params;
-
-            setBottomShadowParams(&params, size, rvertices[1].pos[VZ],
-                                  p->segOffset, p->segLength, fFloor, fCeil,
-                                  radioConfig);
-            renderShadowSeg(rvertices, wdivs, &params, shadowDark);
-        }
-    }
-
-    // Walls with glowing floor & ceiling get no side shadows.
-    // Is there anything better we can do?
-    if(bottomGlow && topGlow)
-        return;
-
-    size = shadowSize + calcLongWallBonus(p->linedefLength);
-
-    /*
-     * Left Shadow.
-     */
-    if(radioConfig->sideCorners[0].corner > 0 && p->segOffset < size)
-    {
-        rendershadowseg_params_t params;
-
-        setSideShadowParams(&params, size, rvertices[0].pos[VZ],
-                            rvertices[1].pos[VZ], false,
-                            bottomGlow, topGlow, p->segOffset, p->segLength,
-                            fFloor, fCeil, bFloor, bCeil, p->linedefLength,
-                            radioConfig->sideCorners);
-        renderShadowSeg(rvertices, wdivs, &params, shadowDark);
-    }
-
-    /*
-     * Right Shadow.
-     */
-    if(radioConfig->sideCorners[1].corner > 0 &&
-       p->segOffset + p->segLength > p->linedefLength - size)
-    {
-        rendershadowseg_params_t params;
-
-        setSideShadowParams(&params, size, rvertices[0].pos[VZ],
-                            rvertices[1].pos[VZ], true,
-                            bottomGlow, topGlow, p->segOffset, p->segLength,
-                            fFloor, fCeil, bFloor, bCeil, p->linedefLength,
-                            radioConfig->sideCorners);
-        renderShadowSeg(rvertices, wdivs, &params, shadowDark);
-    }
-}
-
-/**
- * Render FakeRadio for the given seg section.
- */
-void Rend_RadioSegSection(const rvertex_t* rvertices, const walldiv_t* wdivs,
-                          const sideradioconfig_t* radioConfig,
-                          const rendsegradio_params_t* params)
-{
-    float               lightLevel, shadowSize, shadowDark;
-
-    if(!rendFakeRadio || !renderTextures || mapFullBright) // Disabled?
-        return;
-
-    if(!rvertices || !params)
-        return; // Wha?
-
-    lightLevel = params->sectorLightLevel;
-    R_ApplyLightAdaptation(&lightLevel);
-    if(!(lightLevel > 0))
-        return; // No point drawing shadows in a PITCH black sector.
-
-    // Determine the shadow properties.
-    // \fixme Make cvars out of constants.
-    shadowSize = 2 * (8 + 16 - lightLevel * 16);
-
-    if(!(shadowSize > 0))
-        return;
-
-    shadowDark = calcShadowDarkness(lightLevel) *.8f;
-
-    rendRadioSegSection(rvertices, wdivs, shadowSize, shadowDark, radioConfig, params);
 }
 
 /**
@@ -1464,7 +1182,7 @@ static void radioSubsectorEdges(const subsector_t* subsector)
     // Determine the shadow properties.
     // \fixme Make cvars out of constants.
     shadowSize = 2 * (8 + 16 - sectorlight * 16);
-    shadowDark = calcShadowDarkness(sectorlight) *.8f;
+    shadowDark = Rend_RadioShadowDarkness(sectorlight) *.8f;
 
     vec[VX] = vx - subsector->midPoint[VX];
     vec[VY] = vz - subsector->midPoint[VY];

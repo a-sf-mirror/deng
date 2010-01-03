@@ -246,15 +246,30 @@ static void markSegSectionsPVisible(hedge_t* hEdge)
 }
 
 static void quadTexCoords(rtexcoord_t* tc, const rvertex_t* rverts,
-                          const vectorcomp_t topLeft[3], float wallLength)
+                          float wallLength, float texWidth, float texHeight,
+                          const float texOrigin[3], const float texOffset[2],
+                          boolean horizontal)
 {
+    if(horizontal)
+    {   // Special horizontal coordinates for wall shadows.
+        tc[0].st[0] = tc[2].st[0] =
+            rverts[0].pos[VX] - texOrigin[VX] + texOffset[VY] / texHeight;
+        tc[0].st[1] = tc[1].st[1] =
+            rverts[0].pos[VY] - texOrigin[VY] + texOffset[VX] / texWidth;
+        tc[1].st[0] = tc[0].st[0] + (rverts[1].pos[VZ] - texOrigin[VZ]) / texHeight;
+        tc[3].st[0] = tc[0].st[0] + (rverts[3].pos[VZ] - texOrigin[VZ]) / texHeight;
+        tc[3].st[1] = tc[0].st[1] + wallLength / texWidth;
+        tc[2].st[1] = tc[0].st[1] + wallLength / texWidth;
+        return;
+    }
+
     tc[0].st[0] = tc[1].st[0] =
-        rverts[0].pos[VX] - topLeft[VX];
+        rverts[0].pos[VX] - texOrigin[VX] + texOffset[VX] / texWidth;
     tc[3].st[1] = tc[1].st[1] =
-        rverts[0].pos[VY] - topLeft[VY];
-    tc[3].st[0] = tc[2].st[0] = tc[0].st[0] + wallLength;
-    tc[2].st[1] = tc[3].st[1] + (rverts[1].pos[VZ] - rverts[0].pos[VZ]);
-    tc[0].st[1] = tc[3].st[1] + (rverts[3].pos[VZ] - rverts[2].pos[VZ]);
+        rverts[0].pos[VY] - texOrigin[VY] + texOffset[VY] / texHeight;
+    tc[3].st[0] = tc[2].st[0] = tc[0].st[0] + wallLength / texWidth;
+    tc[2].st[1] = tc[3].st[1] + (rverts[1].pos[VZ] - rverts[0].pos[VZ]) / texHeight;
+    tc[0].st[1] = tc[3].st[1] + (rverts[3].pos[VZ] - rverts[2].pos[VZ]) / texHeight;
 }
 
 static void quadLightCoords(rtexcoord_t* tc, const float s[2],
@@ -549,14 +564,14 @@ static void lightPolygon(rendseg_t* rseg, const rvertex_t* rvertices, rcolor_t* 
         }
         else
         {
-            uint                i;
-            float               ll = rseg->sectorLightLevel + rseg->surfaceLightLevelDelta;
+            float ll = rseg->sectorLightLevel + rseg->surfaceLightLevelDelta;
+            uint i;
 
             // Calculate the color for each vertex, blended with surface color tint?
             if(rseg->surfaceColorTint[0] < 1 || rseg->surfaceColorTint[1] < 1 ||
                rseg->surfaceColorTint[2] < 1)
             {
-                float               vColor[4];
+                float vColor[4];
 
                 // Blend sector light+color+surfacecolor
                 vColor[CR] = rseg->surfaceColorTint[CR] * rseg->sectorLightColor[CR];
@@ -577,7 +592,7 @@ static void lightPolygon(rendseg_t* rseg, const rvertex_t* rvertices, rcolor_t* 
             // Bottom color (if different from top)?
             if(rseg->surfaceColorTint2)
             {
-                float               vColor[4];
+                float vColor[4];
 
                 // Blend sector light+color+surfacecolor
                 vColor[CR] = rseg->surfaceColorTint2[CR] * rseg->sectorLightColor[CR];
@@ -643,67 +658,27 @@ static DGLuint initModTexFromDynlight(float modColor[3], float modTexTC[2][2],
     return dyn->texture;
 }
 
-static void dividePolygon(rvertex_t* rvertices, rcolor_t* rcolors,
-                          rtexcoord_t* rtcModulate, rtexcoord_t* rtcPrimary,
-                          rtexcoord_t* rtcInter,
-                          rcolor_t* rcolorsShiny, rtexcoord_t* rtcShiny,
-                          const walldiv_t* divs)
+static void divideVertices(rvertex_t* rvertices, const walldiv_t* divs)
 {
-    float               bL, tL, bR, tR;
-    rvertex_t           origVerts[4];
-    rcolor_t            origColors[4];
-    rtexcoord_t         origTexCoords[4];
-
-    /**
-     * Need to swap indices around into fans set the position
-     * of the division vertices, interpolate texcoords and
-     * color.
-     */
-
+    rvertex_t origVerts[4];
     memcpy(origVerts, rvertices, sizeof(rvertex_t) * 4);
-    memcpy(origTexCoords, rtcPrimary, sizeof(rtexcoord_t) * 4);
-    memcpy(origColors, rcolors, sizeof(rcolor_t) * 4);
-
-    bL = origVerts[0].pos[VZ];
-    tL = origVerts[1].pos[VZ];
-    bR = origVerts[2].pos[VZ];
-    tR = origVerts[3].pos[VZ];
-
     R_DivVerts(rvertices, origVerts, divs);
-    R_DivTexCoords(rtcPrimary, origTexCoords, divs, bL, tL, bR, tR);
+}
+
+static void divideCoords(rtexcoord_t* rcoords, const walldiv_t* divs,
+                         float bL, float tL, float bR, float tR)
+{
+    rtexcoord_t origCoords[4];
+    memcpy(origCoords, rcoords, sizeof(rtexcoord_t) * 4);
+    R_DivTexCoords(rcoords, origCoords, divs, bL, tL, bR, tR);
+}
+
+static void divideColors(rcolor_t* rcolors, const walldiv_t* divs,
+                         float bL, float tL, float bR, float tR)
+{
+    rcolor_t origColors[4];
+    memcpy(origColors, rcolors, sizeof(rcolor_t) * 4);
     R_DivVertColors(rcolors, origColors, divs, bL, tL, bR, tR);
-
-    if(rtcInter)
-    {
-        rtexcoord_t         origTexCoords2[4];
-
-        memcpy(origTexCoords2, rtcInter, sizeof(rtexcoord_t) * 4);
-        R_DivTexCoords(rtcInter, origTexCoords2, divs, bL, tL, bR, tR);
-    }
-
-    if(rtcModulate)
-    {
-        rtexcoord_t         origTexCoords5[4];
-
-        memcpy(origTexCoords5, rtcModulate, sizeof(rtexcoord_t) * 4);
-        R_DivTexCoords(rtcModulate, origTexCoords5, divs, bL, tL, bR, tR);
-    }
-
-    if(rtcShiny)
-    {
-        rtexcoord_t         origShinyTexCoords[4];
-
-        memcpy(origShinyTexCoords, rtcShiny, sizeof(rtexcoord_t) * 4);
-        R_DivTexCoords(rtcShiny, origShinyTexCoords, divs, bL, tL, bR, tR);
-    }
-
-    if(rcolorsShiny)
-    {
-        rcolor_t            origShinyColors[4];
-
-        memcpy(origShinyColors, rcolorsShiny, sizeof(rcolor_t) * 4);
-        R_DivVertColors(rcolorsShiny, origShinyColors, divs, bL, tL, bR, tR);
-    }
 }
 
 static void writePolygon(rendpolytype_t polyType, const walldiv_t* divs,
@@ -1174,25 +1149,6 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
         }
     }
 
-    if(p->isWall)
-    {
-        // Primary texture coordinates.
-        quadTexCoords(rtexcoords, rvertices, p->texTL, p->segLength);
-
-        // Blend texture coordinates.
-        if(rTU[TU_INTER].tex && !drawAsVisSprite)
-            quadTexCoords(rtexcoords2, rvertices, p->texTL, p->segLength);
-
-        // Shiny texture coordinates.
-        if(p->reflective && rTUs[TU_PRIMARY].tex && !drawAsVisSprite)
-            quadShinyTexCoords(shinyTexCoords, &rvertices[1], &rvertices[2],
-                               p->segLength);
-
-        // First light texture coordinates.
-        if(numLights > 0 && RL_IsMTexLights())
-            quadLightCoords(rtexcoords5, modTexTC[0], modTexTC[1]);
-    }
-    else
     {
         uint                i;
 
@@ -1720,10 +1676,31 @@ static void Rend_RenderPlane(subsector_t* subsector, uint planeId,
     }
 }
 
+/**
+ * Set the vertex colors in the rendpoly.
+ */
+static void setShadowColor(rcolor_t* rcolors, uint num, float alpha)
+{
+    uint i;
+
+    alpha = MINMAX_OF(0, alpha, 1);
+
+    for(i = 0; i < num; ++i)
+    {
+        // Shadows are black.
+        rcolors[i].rgba[CR] = rcolors[i].rgba[CG] = rcolors[i].rgba[CB] = 0;
+        rcolors[i].rgba[CA] = alpha;
+    }
+}
+
 static void renderWorldSeg(rendseg_t* rseg, uint numVertices,
                            rvertex_t* rvertices, rcolor_t* rcolors, rtexcoord_t* rcoords,
                            int modCoordsIdx, int interCoordsIdx, int shinyCoordsIdx, int shinyColorsIdx,
                            DGLuint modTex, float modColor[3], const rtexmapunit_t* rTU, const rtexmapunit_t* rTUs,
+                           int radioVerticesIdx, int radioColorsIdx, int radioCoordsIdx, const rtexmapunit_t* radioTU,
+                           int radioVertices2Idx, int radioColors2Idx, int radioCoords2Idx, const rtexmapunit_t* radioTU2,
+                           int radioVertices3Idx, int radioColors3Idx, int radioCoords3Idx, const rtexmapunit_t* radioTU3,
+                           int radioVertices4Idx, int radioColors4Idx, int radioCoords4Idx, const rtexmapunit_t* radioTU4,
                            uint numLights)
 {
     rendpolytype_t rptype = RendSeg_SkyMasked(rseg)? RPT_SKY_MASK : RPT_NORMAL;
@@ -1741,10 +1718,62 @@ static void renderWorldSeg(rendseg_t* rseg, uint numVertices,
     // Do we need to do any divisions?
     if(rseg->divs && (rseg->divs[0].num || rseg->divs[1].num))
     {
-        dividePolygon(rvertices, rcolors, modCoordsIdx != -1 ? rcoords + modCoordsIdx : NULL,
-                      rcoords, interCoordsIdx != -1 ? rcoords + interCoordsIdx : NULL,
-                      shinyColorsIdx != -1 ? rcolors + shinyColorsIdx : NULL,
-                      shinyCoordsIdx != -1 ? rcoords + shinyCoordsIdx : NULL, rseg->divs);
+        float bL, tL, bR, tR;
+
+        /**
+         * Need to swap indices around into fans set the position
+         * of the division vertices, interpolate texcoords and
+         * color.
+         */
+
+        bL = rvertices[0].pos[VZ];
+        tL = rvertices[1].pos[VZ];
+        bR = rvertices[2].pos[VZ];
+        tR = rvertices[3].pos[VZ];
+
+        divideVertices(rvertices, rseg->divs);
+        divideCoords(rcoords, rseg->divs, bL, tL, bR, tR);
+        divideColors(rcolors, rseg->divs, bL, tL, bR, tR);
+
+        if(interCoordsIdx != -1)
+            divideCoords(rcoords + interCoordsIdx, rseg->divs, bL, tL, bR, tR);
+
+        if(modCoordsIdx != -1)
+            divideCoords(rcoords + modCoordsIdx, rseg->divs, bL, tL, bR, tR);
+
+        if(shinyCoordsIdx != -1)
+            divideCoords(rcoords + shinyCoordsIdx, rseg->divs, bL, tL, bR, tR);
+
+        if(shinyColorsIdx != -1)
+            divideColors(rcolors + shinyColorsIdx, rseg->divs, bL, tL, bR, tR);
+
+        if(radioVerticesIdx != -1)
+            divideVertices(rvertices + radioVerticesIdx, rseg->divs);
+        if(radioCoordsIdx != -1)
+            divideCoords(rcoords + radioCoordsIdx, rseg->divs, bL, tL, bR, tR);
+        if(radioColorsIdx != -1)
+            divideColors(rcolors + radioColorsIdx, rseg->divs, bL, tL, bR, tR);
+
+        if(radioVertices2Idx != -1)
+            divideVertices(rvertices + radioVertices2Idx, rseg->divs);
+        if(radioCoords2Idx != -1)
+            divideCoords(rcoords + radioCoords2Idx, rseg->divs, bL, tL, bR, tR);
+        if(radioColors2Idx != -1)
+            divideColors(rcolors + radioColors2Idx, rseg->divs, bL, tL, bR, tR);
+
+        if(radioVertices3Idx != -1)
+            divideVertices(rvertices + radioVertices3Idx, rseg->divs);
+        if(radioCoords3Idx != -1)
+            divideCoords(rcoords + radioCoords3Idx, rseg->divs, bL, tL, bR, tR);
+        if(radioColors3Idx != -1)
+            divideColors(rcolors + radioColors3Idx, rseg->divs, bL, tL, bR, tR);
+
+        if(radioVertices4Idx != -1)
+            divideVertices(rvertices + radioVertices4Idx, rseg->divs);
+        if(radioCoords4Idx != -1)
+            divideCoords(rcoords + radioCoords4Idx, rseg->divs, bL, tL, bR, tR);
+        if(radioColors4Idx != -1)
+            divideColors(rcolors + radioColors4Idx, rseg->divs, bL, tL, bR, tR);
     }
 
     writePolygon(rptype, rseg->divs, numVertices,
@@ -1756,102 +1785,139 @@ static void renderWorldSeg(rendseg_t* rseg, uint numVertices,
         writeShinyPolygon(RPT_SHINY, rseg->divs, numVertices,
                           rvertices, rcolors + shinyColorsIdx, rcoords, rcoords + shinyCoordsIdx,
                           rTUs);
+
+    if(rendFakeRadio != 2)
+    {
+        if(radioVerticesIdx != -1)
+            writePolygon(RPT_SHADOW, rseg->divs, numVertices, rvertices + radioVerticesIdx, rcolors + radioColorsIdx, rcoords + radioCoordsIdx, NULL, NULL, 0, NULL, radioTU, 0);
+
+        if(radioVertices2Idx != -1)
+            writePolygon(RPT_SHADOW, rseg->divs, numVertices, rvertices + radioVertices2Idx, rcolors + radioColors2Idx, rcoords + radioCoords2Idx, NULL, NULL, 0, NULL, radioTU2, 0);
+
+        if(radioVertices3Idx != -1)
+            writePolygon(RPT_SHADOW, rseg->divs, numVertices, rvertices + radioVertices3Idx, rcolors + radioColors3Idx, rcoords + radioCoords3Idx, NULL, NULL, 0, NULL, radioTU3, 0);
+
+        if(radioVertices4Idx != -1)
+            writePolygon(RPT_SHADOW, rseg->divs, numVertices, rvertices + radioVertices4Idx, rcolors + radioColors4Idx, rcoords + radioCoords4Idx, NULL, NULL, 0, NULL, radioTU4, 0);
+    }
 }
 
-static void renderRadioPolygons(rendseg_t* rseg, sideradioconfig_t* radioConfig,
-                                float segOffset, float lineDefLength,
-                                const sector_t* segFrontSec, const sector_t* segBackSec)
-{
-    rvertex_t*          rvertices;
-    rendsegradio_params_t radioParams;
-
-    radioParams.sectorLightLevel = rseg->sectorLightLevel;
-    radioParams.linedefLength = lineDefLength;
-
-    radioParams.segOffset = segOffset;
-    radioParams.segLength = rseg->texQuadWidth;
-
-    radioParams.frontSec = segFrontSec;
-    radioParams.backSec = segBackSec;
-
-    rvertices = R_VerticesFromRendSeg(rseg, NULL);
-
-    Rend_RadioSegSection(rvertices, rseg->divs, radioConfig, &radioParams);
-
-    R_FreeRendVertices(rvertices);
-}
-
-static void renderGeometry(rendseg_t* rseg, uint numVertices,
-                           rvertex_t* rvertices, rcolor_t* rcolors, rtexcoord_t* rcoords,
+static void renderGeometry(rendseg_t* rseg, uint numVertices, rvertex_t* rvertices, rcolor_t* rcolors, rtexcoord_t* rcoords,
                            int modCoordsIdx, int interCoordsIdx, int shinyCoordsIdx, int shinyColorsIdx,
                            DGLuint modTex, float modColor[3], const rtexmapunit_t* rTU, const rtexmapunit_t* rTUs,
-                           uint numLights,
-
-                           // @todo refactor away the following arguments.
-                           float segOffset, float lineDefLength,
-                           const sector_t* segFrontSec, const sector_t* segBackSec)
+                           int radioVerticesIdx, int radioColorsIdx, int radioCoordsIdx, const rtexmapunit_t* radioTU,
+                           int radioVertices2Idx, int radioColors2Idx, int radioCoords2Idx, const rtexmapunit_t* radioTU2,
+                           int radioVertices3Idx, int radioColors3Idx, int radioCoords3Idx, const rtexmapunit_t* radioTU3,
+                           int radioVertices4Idx, int radioColors4Idx, int radioCoords4Idx, const rtexmapunit_t* radioTU4,
+                           uint numLights)
 {
     renderWorldSeg(rseg, numVertices, rvertices, rcolors, rcoords,
                    modCoordsIdx, interCoordsIdx, shinyCoordsIdx, shinyColorsIdx,
-                   modTex, modColor, rTU, rTUs, numLights);
-
-    // Render Fakeradio polys for this seg?
-    if(!(rseg->flags & RSF_NO_RADIO) && rseg->radioConfig)
-    {
-        renderRadioPolygons(rseg, rseg->radioConfig, segOffset,
-                            lineDefLength, segFrontSec, segBackSec);
-    }
+                   modTex, modColor, rTU, rTUs,
+                   radioVerticesIdx, radioColorsIdx, radioCoordsIdx, radioTU,
+                   radioVertices2Idx, radioColors2Idx, radioCoords2Idx, radioTU2,
+                   radioVertices3Idx, radioColors3Idx, radioCoords3Idx, radioTU3,
+                   radioVertices4Idx, radioColors4Idx, radioCoords4Idx, radioTU4,
+                   numLights);
 }
 
 static uint buildGeometryFromRendSeg(rendseg_t* rseg,
                                      DGLuint modTex, float modTexTC[2][2], float modColor[3],
                                      rvertex_t** rvertices, rcolor_t** rcolors, rtexcoord_t** rcoords,
                                      int* modCoordsIdx, int* interCoordsIdx, int* shinyCoordsIdx, int* shinyColorsIdx,
-                                     rtexmapunit_t rTU[NUM_TEXMAP_UNITS], rtexmapunit_t rTUs[NUM_TEXMAP_UNITS])
+                                     rtexmapunit_t rTU[NUM_TEXMAP_UNITS], rtexmapunit_t rTUs[NUM_TEXMAP_UNITS],
+                                     int* radioVerticesIdx, int* radioColorsIdx, int* radioCoordsIdx, rtexmapunit_t radioTU[NUM_TEXMAP_UNITS],
+                                     int* radioVertices2Idx, int* radioColors2Idx, int* radioCoords2Idx, rtexmapunit_t radioTU2[NUM_TEXMAP_UNITS],
+                                     int* radioVertices3Idx, int* radioColors3Idx, int* radioCoords3Idx, rtexmapunit_t radioTU3[NUM_TEXMAP_UNITS],
+                                     int* radioVertices4Idx, int* radioColors4Idx, int* radioCoords4Idx, rtexmapunit_t radioTU4[NUM_TEXMAP_UNITS])
 {
-    int                 numVertices, numCoords, numColors;
-    float               interPos = 0;
-    rvertex_t*          vertices = NULL;
-    rtexcoord_t*        coords = NULL;
-    rcolor_t*           colors = NULL;
+    int numVertices, totalVertices, numCoords, numColors;
+    float texOffset[2] = { 0, 0 };
+    rvertex_t* vertices = NULL;
+    rtexcoord_t* coords = NULL;
+    rcolor_t* colors = NULL;
 
     R_TexmapUnitsFromRendSeg(rseg, rTU, rTUs);
 
     numVertices = numColors = numCoords = RendSeg_NumRequiredVertices(rseg);
+    totalVertices = numVertices;
+
+    *modCoordsIdx = -1;
+    *interCoordsIdx = -1;
+    *shinyColorsIdx = -1;
+    *shinyCoordsIdx = -1;
+    *radioVerticesIdx = *radioVertices2Idx = *radioVertices3Idx = *radioVertices4Idx = -1;
+    *radioCoordsIdx = *radioCoords2Idx = *radioCoords3Idx = *radioCoords4Idx = -1;
+    *radioColorsIdx = *radioColors2Idx = *radioColors3Idx = *radioColors4Idx = -1;
 
     if(modTex)
     {
         *modCoordsIdx = numCoords;
         numCoords += numVertices;
     }
-    else
-        *modCoordsIdx = -1;
 
     if(rTU[TU_INTER].tex)
     {
         *interCoordsIdx = numCoords;
         numCoords += numVertices;
     }
-    else
-        *interCoordsIdx = -1;
 
-    // ShinySurface?
-    if(!RendSeg_SkyMasked(rseg) && !(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
+    if(!RendSeg_SkyMasked(rseg))
     {
-        // We'll reuse the same verts but we need new colors.
-        *shinyColorsIdx = numColors;
-        numColors += numVertices;
+        // ShinySurface?
+        if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
+        {
+            // We'll reuse the same verts but we need new colors.
+            *shinyColorsIdx = numColors;
+            numColors += numVertices;
 
-        *shinyCoordsIdx = numCoords;
-        numCoords += numVertices;
-    }
-    else
-    {
-        *shinyColorsIdx = -1;
-        *shinyCoordsIdx = -1;
+            *shinyCoordsIdx = numCoords;
+            numCoords += numVertices;
+        }
+
+        // Fakeradio?
+        if(!(rseg->flags & RSF_NO_RADIO) && rendFakeRadio && renderTextures)
+        {
+            if(rseg->radioConfig[0].texture)
+            {
+                *radioVerticesIdx = totalVertices;
+                totalVertices += numVertices;
+                *radioCoordsIdx = numCoords;
+                numCoords += numVertices;
+                *radioColorsIdx = numColors;
+                numColors += numVertices;
+            }
+            if(rseg->radioConfig[1].texture)
+            {
+                *radioVertices2Idx = totalVertices;
+                totalVertices += numVertices;
+                *radioCoords2Idx = numCoords;
+                numCoords += numVertices;
+                *radioColors2Idx = numColors;
+                numColors += numVertices;
+            }
+            if(rseg->radioConfig[2].texture)
+            {
+                *radioVertices3Idx = totalVertices;
+                totalVertices += numVertices;
+                *radioCoords3Idx = numCoords;
+                numCoords += numVertices;
+                *radioColors3Idx = numColors;
+                numColors += numVertices;
+            }
+            if(rseg->radioConfig[3].texture)
+            {
+                *radioVertices4Idx = totalVertices;
+                totalVertices += numVertices;
+                *radioCoords4Idx = numCoords;
+                numCoords += numVertices;
+                *radioColors4Idx = numColors;
+                numColors += numVertices;
+            }
+        }
     }
 
-    vertices = R_AllocRendVertices(numVertices);
+    vertices = R_AllocRendVertices(totalVertices);
     colors = R_AllocRendColors(numColors);
     coords = R_AllocRendTexCoords(numCoords);
 
@@ -1860,8 +1926,133 @@ static uint buildGeometryFromRendSeg(rendseg_t* rseg,
     V3_Set(vertices[2].pos, rseg->to  [VX], rseg->to  [VY], rseg->bottom);
     V3_Set(vertices[3].pos, rseg->to  [VX], rseg->to  [VY], rseg->top);
 
+    // Render Fakeradio polys for this seg?
+    if(*radioCoordsIdx != -1)
+    {
+        const rendseg_shadow_t* shadow = &rseg->radioConfig[0];
+        float texOrigin[2][3];
+        uint i;
+
+        memset(radioTU, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+        radioTU[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
+        radioTU[TU_PRIMARY].magMode = GL_LINEAR;
+        radioTU[TU_PRIMARY].blend = 1;
+
+        // Top left.
+        texOrigin[0][VX] = vertices[1].pos[VX];
+        texOrigin[0][VY] = vertices[1].pos[VY];
+        texOrigin[0][VZ] = vertices[1].pos[VZ];
+
+        // Bottom right.
+        texOrigin[1][VX] = vertices[2].pos[VX];
+        texOrigin[1][VY] = vertices[2].pos[VY];
+        texOrigin[1][VZ] = vertices[2].pos[VZ];
+
+        for(i = 0; i < 4; ++i)
+            memcpy(&(vertices + *radioVerticesIdx)[i], &vertices[i], sizeof(rvertex_t));
+
+        quadTexCoords(coords + *radioCoordsIdx, vertices, shadow->wallLength, shadow->texWidth,
+                      shadow->texHeight, texOrigin[0], shadow->texOffset,
+                      shadow->horizontal);
+
+        setShadowColor(colors + *radioColorsIdx, 4, shadow->shadowMul * shadow->shadowDark);
+    }
+
+    if(*radioCoords2Idx != -1)
+    {
+        const rendseg_shadow_t* shadow = &rseg->radioConfig[1];
+        float texOrigin[2][3];
+        uint i;
+
+        memset(radioTU2, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+        radioTU2[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
+        radioTU2[TU_PRIMARY].magMode = GL_LINEAR;
+        radioTU2[TU_PRIMARY].blend = 1;
+
+        // Top left.
+        texOrigin[0][VX] = vertices[1].pos[VX];
+        texOrigin[0][VY] = vertices[1].pos[VY];
+        texOrigin[0][VZ] = vertices[1].pos[VZ];
+
+        // Bottom right.
+        texOrigin[1][VX] = vertices[2].pos[VX];
+        texOrigin[1][VY] = vertices[2].pos[VY];
+        texOrigin[1][VZ] = vertices[2].pos[VZ];
+
+        for(i = 0; i < 4; ++i)
+            memcpy(&(vertices + *radioVertices2Idx)[i], &vertices[i], sizeof(rvertex_t));
+
+        quadTexCoords(coords + *radioCoords2Idx, vertices, shadow->wallLength, shadow->texWidth,
+                      shadow->texHeight, texOrigin[0], shadow->texOffset,
+                      shadow->horizontal);
+
+        setShadowColor(colors + *radioColors2Idx, 4, shadow->shadowMul * shadow->shadowDark);
+    }
+
+    if(*radioCoords3Idx != -1)
+    {
+        const rendseg_shadow_t* shadow = &rseg->radioConfig[2];
+        float texOrigin[2][3];
+        uint i;
+
+        memset(radioTU3, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+        radioTU3[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
+        radioTU3[TU_PRIMARY].magMode = GL_LINEAR;
+        radioTU3[TU_PRIMARY].blend = 1;
+
+        // Top left.
+        texOrigin[0][VX] = vertices[1].pos[VX];
+        texOrigin[0][VY] = vertices[1].pos[VY];
+        texOrigin[0][VZ] = vertices[1].pos[VZ];
+
+        // Bottom right.
+        texOrigin[1][VX] = vertices[2].pos[VX];
+        texOrigin[1][VY] = vertices[2].pos[VY];
+        texOrigin[1][VZ] = vertices[2].pos[VZ];
+
+        for(i = 0; i < 4; ++i)
+            memcpy(&(vertices + *radioVertices3Idx)[i], &vertices[i], sizeof(rvertex_t));
+
+        quadTexCoords(coords + *radioCoords3Idx, vertices, shadow->wallLength, shadow->texWidth,
+                      shadow->texHeight, texOrigin[0], shadow->texOffset,
+                      shadow->horizontal);
+
+        setShadowColor(colors + *radioColors3Idx, 4, shadow->shadowMul * shadow->shadowDark);
+    }
+
+    if(*radioCoords4Idx != -1)
+    {
+        const rendseg_shadow_t* shadow = &rseg->radioConfig[3];
+        float texOrigin[2][3];
+        uint i;
+
+        memset(radioTU4, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+        radioTU4[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
+        radioTU4[TU_PRIMARY].magMode = GL_LINEAR;
+        radioTU4[TU_PRIMARY].blend = 1;
+
+        // Top left.
+        texOrigin[0][VX] = vertices[1].pos[VX];
+        texOrigin[0][VY] = vertices[1].pos[VY];
+        texOrigin[0][VZ] = vertices[1].pos[VZ];
+
+        // Bottom right.
+        texOrigin[1][VX] = vertices[2].pos[VX];
+        texOrigin[1][VY] = vertices[2].pos[VY];
+        texOrigin[1][VZ] = vertices[2].pos[VZ];
+
+        for(i = 0; i < 4; ++i)
+            memcpy(&(vertices + *radioVertices4Idx)[i], &vertices[i], sizeof(rvertex_t));
+
+        quadTexCoords(coords + *radioCoords4Idx, vertices, shadow->wallLength, shadow->texWidth,
+                      shadow->texHeight, texOrigin[0], shadow->texOffset,
+                      shadow->horizontal);
+
+        setShadowColor(colors + *radioColors4Idx, 4, shadow->shadowMul * shadow->shadowDark);
+    }
+
     // Primary texture coordinates.
-    quadTexCoords(coords, vertices, rseg->texQuadTopLeft, rseg->texQuadWidth);
+    quadTexCoords(coords, vertices, rseg->texQuadWidth, 1, 1, rseg->texQuadTopLeft, texOffset, false);
 
     // Modulation texture coordinates.
     if(modTex)
@@ -1869,7 +2060,7 @@ static uint buildGeometryFromRendSeg(rendseg_t* rseg,
 
     // Blend texture coordinates.
     if(rTU[TU_INTER].tex)
-        quadTexCoords(coords + *interCoordsIdx, vertices, rseg->texQuadTopLeft, rseg->texQuadWidth);
+        quadTexCoords(coords + *interCoordsIdx, vertices, rseg->texQuadWidth, 1, 1, rseg->texQuadTopLeft, texOffset, false);
 
     // Shiny texture coordinates.
     if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
@@ -1905,7 +2096,7 @@ static boolean Rend_RenderPolyobjSeg(subsector_t* subsector, poseg_t* seg)
     if(sideDef->SW_middleinflags & SUIF_PVIS)
     {
         sector_t* frontSec = subsector->sector;
-        float from[2], to[2], bottom = frontSec->SP_floorvisheight, top = frontSec->SP_ceilvisheight, offset = 0;
+        float from[2], to[2], bottom = frontSec->SP_floorvisheight, top = frontSec->SP_ceilvisheight;
         rendseg_t temp, *rendSeg;
 
         if(frontSec->SP_floorvisheight >= frontSec->SP_ceilvisheight)
@@ -1958,7 +2149,10 @@ static boolean Rend_RenderPolyobjSeg(subsector_t* subsector, poseg_t* seg)
                 buildGeometryFromRendSeg(rendSeg, modTex, modTexTC, modTexColor,
                                          &rvertices, &rcolors, &rcoords,
                                          &modCoordsIdx, &interCoordsIdx, &shinyCoordsIdx,
-                                         &shinyColorsIdx, rTU, rTUs);
+                                         &shinyColorsIdx, rTU, rTUs,
+                                         NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                                         NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                                         NULL, NULL);
 
             if(dynlistID && !(averageLuma(rcolors, numVertices) > 0.98f))
                 writeDynlights(dynlistID, rvertices, 4, numVertices,
@@ -1967,8 +2161,10 @@ static boolean Rend_RenderPolyobjSeg(subsector_t* subsector, poseg_t* seg)
 
             renderGeometry(rendSeg, numVertices, rvertices, rcolors, rcoords,
                            modCoordsIdx, interCoordsIdx, shinyCoordsIdx, shinyColorsIdx,
-                           modTex, modTexColor, rTU, rTUs, numLights,
-                           offset, sideDef->lineDef->length, frontSec, NULL);
+                           modTex, modTexColor, rTU, rTUs,
+                           -1, -1, -1, NULL, -1, -1, -1, NULL,
+                           -1, -1, -1, NULL, -1, -1, -1, NULL,
+                           numLights);
         }
 
         if(rvertices)
@@ -2016,6 +2212,7 @@ static void prepareSkyMaskPoly(rvertex_t verts[4], rtexcoord_t coords[4],
                                float wallLength, material_t* mat)
 {
     material_snapshot_t ms;
+    float texOffset[2] = { 0, 0 };
     vec3_t texOrigin[2];
 
     // In devRendSkyMode mode we render all polys destined for the skymask as
@@ -2038,7 +2235,7 @@ static void prepareSkyMaskPoly(rvertex_t verts[4], rtexcoord_t coords[4],
     // Bottom right.
     V3_Set(texOrigin[1], verts[2].pos[VX], verts[2].pos[VY], verts[2].pos[VZ]);
 
-    quadTexCoords(coords, verts, texOrigin[0], wallLength);
+    quadTexCoords(coords, verts, wallLength, 1, 1, texOrigin[0], texOffset, false);
 }
 
 static void Rend_SubsectorSkyFixes(subsector_t* subsector)
@@ -2531,7 +2728,11 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                     rcolor_t* rcolors = NULL;
                     rtexcoord_t* rcoords = NULL;
                     int modCoordsIdx, interCoordsIdx, shinyCoordsIdx, shinyColorsIdx;
+                    int radioCoordsIdx, radioCoords2Idx, radioCoords3Idx, radioCoords4Idx;
+                    int radioColorsIdx, radioColors2Idx, radioColors3Idx, radioColors4Idx;
+                    int radioVerticesIdx, radioVertices2Idx, radioVertices3Idx, radioVertices4Idx;
                     rtexmapunit_t rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
+                    rtexmapunit_t radioTU[NUM_TEXMAP_UNITS], radioTU2[NUM_TEXMAP_UNITS], radioTU3[NUM_TEXMAP_UNITS], radioTU4[NUM_TEXMAP_UNITS];
                     DGLuint modTex = 0;
                     float modTexTC[2][2];
                     float modTexColor[3];
@@ -2553,7 +2754,11 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                         buildGeometryFromRendSeg(rendSeg, modTex, modTexTC, modTexColor,
                                                  &rvertices, &rcolors, &rcoords,
                                                  &modCoordsIdx, &interCoordsIdx, &shinyCoordsIdx,
-                                                 &shinyColorsIdx, rTU, rTUs);
+                                                 &shinyColorsIdx, rTU, rTUs,
+                                                 &radioVerticesIdx, &radioColorsIdx, &radioCoordsIdx, radioTU,
+                                                 &radioVertices2Idx, &radioColors2Idx, &radioCoords2Idx, radioTU2,
+                                                 &radioVertices3Idx, &radioColors3Idx, &radioCoords3Idx, radioTU3,
+                                                 &radioVertices4Idx, &radioColors4Idx, &radioCoords4Idx, radioTU4);
 
                     if(dynlistID && !(averageLuma(rcolors, numVertices) > 0.98f))
                         writeDynlights(dynlistID, rvertices, 4, numVertices,
@@ -2562,9 +2767,12 @@ static void Rend_RenderSubSector(subsector_t* subsector)
 
                     renderGeometry(rendSeg, numVertices, rvertices, rcolors, rcoords,
                                    modCoordsIdx, interCoordsIdx, shinyCoordsIdx, shinyColorsIdx,
-                                   modTex, modTexColor, rTU, rTUs, numLights,
-                                   seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                   HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+                                   modTex, modTexColor, rTU, rTUs,
+                                   radioVerticesIdx, radioColorsIdx, radioCoordsIdx, radioTU,
+                                   radioVertices2Idx, radioColors2Idx, radioCoords2Idx, radioTU2,
+                                   radioVertices3Idx, radioColors3Idx, radioCoords3Idx, radioTU3,
+                                   radioVertices4Idx, radioColors4Idx, radioCoords4Idx, radioTU4,
+                                   numLights);
 
                     if(rvertices)
                         R_FreeRendVertices(rvertices);
@@ -2582,7 +2790,11 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                     rcolor_t* rcolors = NULL;
                     rtexcoord_t* rcoords = NULL;
                     int modCoordsIdx, interCoordsIdx, shinyCoordsIdx, shinyColorsIdx;
+                    int radioCoordsIdx, radioCoords2Idx, radioCoords3Idx, radioCoords4Idx;
+                    int radioColorsIdx, radioColors2Idx, radioColors3Idx, radioColors4Idx;
+                    int radioVerticesIdx, radioVertices2Idx, radioVertices3Idx, radioVertices4Idx;
                     rtexmapunit_t rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
+                    rtexmapunit_t radioTU[NUM_TEXMAP_UNITS], radioTU2[NUM_TEXMAP_UNITS], radioTU3[NUM_TEXMAP_UNITS], radioTU4[NUM_TEXMAP_UNITS];
                     DGLuint modTex = 0;
                     float modTexTC[2][2];
                     float modTexColor[3];
@@ -2614,7 +2826,11 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                             buildGeometryFromRendSeg(rendSeg, modTex, modTexTC, modTexColor,
                                                      &rvertices, &rcolors, &rcoords,
                                                      &modCoordsIdx, &interCoordsIdx, &shinyCoordsIdx,
-                                                     &shinyColorsIdx, rTU, rTUs);
+                                                     &shinyColorsIdx, rTU, rTUs,
+                                                     &radioVerticesIdx, &radioColorsIdx, &radioCoordsIdx, radioTU,
+                                                     &radioVertices2Idx, &radioColors2Idx, &radioCoords2Idx, radioTU2,
+                                                     &radioVertices3Idx, &radioColors3Idx, &radioCoords3Idx, radioTU3,
+                                                     &radioVertices4Idx, &radioColors4Idx, &radioCoords4Idx, radioTU4);
 
                         if(dynlistID && !(averageLuma(rcolors, numVertices) > 0.98f))
                             writeDynlights(dynlistID, rvertices, 4, numVertices,
@@ -2623,9 +2839,12 @@ static void Rend_RenderSubSector(subsector_t* subsector)
 
                         renderGeometry(rendSeg, numVertices, rvertices, rcolors, rcoords,
                                        modCoordsIdx, interCoordsIdx, shinyCoordsIdx, shinyColorsIdx,
-                                       modTex, modTexColor, rTU, rTUs, numLights,
-                                       seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                       HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+                                       modTex, modTexColor, rTU, rTUs,
+                                       radioVerticesIdx, radioColorsIdx, radioCoordsIdx, radioTU,
+                                       radioVertices2Idx, radioColors2Idx, radioCoords2Idx, radioTU2,
+                                       radioVertices3Idx, radioColors3Idx, radioCoords3Idx, radioTU3,
+                                       radioVertices4Idx, radioColors4Idx, radioCoords4Idx, radioTU4,
+                                       numLights);
 
                         solid = true;
                     }
@@ -2646,7 +2865,11 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                     rcolor_t* rcolors = NULL;
                     rtexcoord_t* rcoords = NULL;
                     int modCoordsIdx, interCoordsIdx, shinyCoordsIdx, shinyColorsIdx;
+                    int radioCoordsIdx, radioCoords2Idx, radioCoords3Idx, radioCoords4Idx;
+                    int radioColorsIdx, radioColors2Idx, radioColors3Idx, radioColors4Idx;
+                    int radioVerticesIdx, radioVertices2Idx, radioVertices3Idx, radioVertices4Idx;
                     rtexmapunit_t rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
+                    rtexmapunit_t radioTU[NUM_TEXMAP_UNITS], radioTU2[NUM_TEXMAP_UNITS], radioTU3[NUM_TEXMAP_UNITS], radioTU4[NUM_TEXMAP_UNITS];
                     DGLuint modTex = 0;
                     float modTexTC[2][2];
                     float modTexColor[3];
@@ -2668,7 +2891,11 @@ static void Rend_RenderSubSector(subsector_t* subsector)
                         buildGeometryFromRendSeg(rendSeg, modTex, modTexTC, modTexColor,
                                                  &rvertices, &rcolors, &rcoords,
                                                  &modCoordsIdx, &interCoordsIdx, &shinyCoordsIdx,
-                                                 &shinyColorsIdx, rTU, rTUs);
+                                                 &shinyColorsIdx, rTU, rTUs,
+                                                 &radioVerticesIdx, &radioColorsIdx, &radioCoordsIdx, radioTU,
+                                                 &radioVertices2Idx, &radioColors2Idx, &radioCoords2Idx, radioTU2,
+                                                 &radioVertices3Idx, &radioColors3Idx, &radioCoords3Idx, radioTU3,
+                                                 &radioVertices4Idx, &radioColors4Idx, &radioCoords4Idx, radioTU4);
 
                     if(dynlistID && !(averageLuma(rcolors, numVertices) > 0.98f))
                         writeDynlights(dynlistID, rvertices, 4, numVertices,
@@ -2677,9 +2904,12 @@ static void Rend_RenderSubSector(subsector_t* subsector)
 
                     renderGeometry(rendSeg, numVertices, rvertices, rcolors, rcoords,
                                    modCoordsIdx, interCoordsIdx, shinyCoordsIdx, shinyColorsIdx,
-                                   modTex, modTexColor, rTU, rTUs, numLights,
-                                   seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
-                                   HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+                                   modTex, modTexColor, rTU, rTUs,
+                                   radioVerticesIdx, radioColorsIdx, radioCoordsIdx, radioTU,
+                                   radioVertices2Idx, radioColors2Idx, radioCoords2Idx, radioTU2,
+                                   radioVertices3Idx, radioColors3Idx, radioCoords3Idx, radioTU3,
+                                   radioVertices4Idx, radioColors4Idx, radioCoords4Idx, radioTU4,
+                                   numLights);
 
                     if(rvertices)
                         R_FreeRendVertices(rvertices);

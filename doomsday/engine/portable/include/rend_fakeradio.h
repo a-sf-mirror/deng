@@ -30,19 +30,45 @@
 #define DOOMSDAY_RENDER_FAKERADIO_H
 
 typedef struct {
-    float               sectorLightLevel;
-    float               segOffset;
-    float               segLength;
-    float               linedefLength;
-    const sector_t*     frontSec, *backSec;
-} rendsegradio_params_t;
+    lightingtexid_t texture;
+    boolean         horizontal;
+    float           shadowMul;
+    float           texWidth;
+    float           texHeight;
+    float           texOffset[2];
+    float           wallLength;
+    float           shadowDark;
+} rendseg_shadow_t;
+
+extern int rendFakeRadio;
 
 void            Rend_RadioRegister(void);
 void            Rend_RadioUpdateLineDef(linedef_t* line, boolean backSide);
-void            Rend_RadioSegSection(const rvertex_t* rvertices,
-                                     const walldiv_t* divs,
-                                     const sideradioconfig_t* radioConfig,
-                                     const rendsegradio_params_t* params);
 void            Rend_RadioSubsectorEdges(subsector_t* subsector);
+
+float           Rend_RadioShadowSize(float lightLevel);
+float           Rend_RadioShadowDarkness(float lightLevel);
+float           Rend_RadioLongWallBonus(float span);
+
+void            Rend_RadioSetupTopShadow(rendseg_shadow_t* rendSeg, float size,
+                                         float top, float xOffset, float segLength,
+                                         const float* fFloor, const float* fCeil,
+                                         const sideradioconfig_t* radioConfig,
+                                         float shadowDark);
+void            Rend_RadioSetupBottomShadow(rendseg_shadow_t* rendSeg, float size,
+                                            float top, float xOffset, float segLength,
+                                            const float* fFloor, const float* fCeil,
+                                            const sideradioconfig_t* radioConfig,
+                                            float shadowDark);
+void            Rend_RadioSetupSideShadow(rendseg_shadow_t* rendSeg,
+                                          float size, float bottom, float top,
+                                          boolean rightSide, boolean bottomGlow,
+                                          boolean topGlow,
+                                          float xOffset, float segLength,
+                                          const float* fFloor, const float* fCeil,
+                                          const float* bFloor, const float* bCeil,
+                                          float lineLength,
+                                          const shadowcorner_t* sideCn,
+                                          float shadowDark);
 
 #endif /* DOOMSDAY_RENDER_FAKERADIO_H */

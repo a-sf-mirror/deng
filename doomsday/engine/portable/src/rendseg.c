@@ -204,7 +204,7 @@ static void constructor(rendseg_t* rseg, float from[2], float to[2],
                         float sectorLightLevel, const float* sectorLightColor,
                         float surfaceLightLevelDelta, const float* surfaceColorTint,
                         const float* surfaceColorTint2, float alpha,
-                        biassurface_t* biasSurface, sideradioconfig_t* radioConfig,
+                        biassurface_t* biasSurface,
                         const float materialOffset[2], const float materialScale[2],
                         boolean lightWithLumobjs)
 {
@@ -220,7 +220,6 @@ static void constructor(rendseg_t* rseg, float from[2], float to[2],
     rseg->surfaceColorTint = surfaceColorTint;
     rseg->surfaceColorTint2 = surfaceColorTint2;
     rseg->biasSurface = biasSurface;
-    rseg->radioConfig = radioConfig;
 
     V2_Copy(rseg->surfaceMaterialOffset, materialOffset);
     V2_Copy(rseg->surfaceMaterialScale, materialScale);
@@ -247,6 +246,70 @@ static void constructor(rendseg_t* rseg, float from[2], float to[2],
         {
             RendSeg_TakeBlendedMaterialSnapshots(rseg, materialA, materialBlendInter, materialB);
         }
+    }
+}
+
+static void getShadowRendSegs(rendseg_t* rseg, float bottomLeft, float topLeft, float topRight,
+                        float shadowSize, float shadowDark, sideradioconfig_t* radioConfig,
+                        float segOffset, float lineDefLength,
+                        const sector_t* frontSec, const sector_t* backSec)
+{
+    const float* fFloor, *fCeil, *bFloor, *bCeil;
+    boolean bottomGlow, topGlow;
+    float size;
+
+    bottomGlow = R_IsGlowingPlane(frontSec->SP_plane(PLN_FLOOR));
+    topGlow = R_IsGlowingPlane(frontSec->SP_plane(PLN_CEILING));
+
+    fFloor = &frontSec->SP_floorvisheight;
+    fCeil = &frontSec->SP_ceilvisheight;
+    if(backSec)
+    {
+        bFloor = &backSec->SP_floorvisheight;
+        bCeil  = &backSec->SP_ceilvisheight;
+    }
+    else
+        bFloor = bCeil = NULL;
+
+    if(!topGlow)
+    {
+        // The top shadow will reach this far down.
+        size = shadowSize + Rend_RadioLongWallBonus(radioConfig->spans[1].length);
+        if(topRight > *fCeil - size && bottomLeft < *fCeil)
+            Rend_RadioSetupTopShadow(&rseg->radioConfig[0], size, topLeft,
+                                     segOffset, rseg->texQuadWidth, fFloor, fCeil,
+                                     radioConfig, shadowDark);
+    }
+
+    if(!bottomGlow)
+    {
+        size = shadowSize + Rend_RadioLongWallBonus(radioConfig->spans[0].length);
+        if(bottomLeft < *fFloor + size && topRight > *fFloor)
+            Rend_RadioSetupBottomShadow(&rseg->radioConfig[1], size, topLeft,
+                                  segOffset, rseg->texQuadWidth, fFloor, fCeil,
+                                  radioConfig, shadowDark);
+    }
+
+    // Walls with glowing floor & ceiling get no side shadows.
+    // Is there anything better we can do?
+    if(!(bottomGlow && topGlow))
+    {
+        size = shadowSize + Rend_RadioLongWallBonus(lineDefLength);
+
+        if(radioConfig->sideCorners[0].corner > 0 && segOffset < size)
+            Rend_RadioSetupSideShadow(&rseg->radioConfig[2], size, bottomLeft,
+                                topLeft, false,
+                                bottomGlow, topGlow, segOffset, rseg->texQuadWidth,
+                                fFloor, fCeil, bFloor, bCeil, lineDefLength,
+                                radioConfig->sideCorners, shadowDark);
+
+        if(radioConfig->sideCorners[1].corner > 0 &&
+           segOffset + rseg->texQuadWidth > lineDefLength - size)
+            Rend_RadioSetupSideShadow(&rseg->radioConfig[3], size, bottomLeft,
+                                topLeft, true,
+                                bottomGlow, topGlow, segOffset, rseg->texQuadWidth,
+                                fFloor, fCeil, bFloor, bCeil, lineDefLength,
+                                radioConfig->sideCorners, shadowDark);
     }
 }
 
@@ -298,7 +361,7 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
                 (subsector_t*) hEdge->face->data, HE_FRONTSIDEDEF(hEdge), section,
                 sectorLightLevel, sectorLightColor,
                 surfaceLightLevelDelta, surfaceColorTint, surfaceColorTint2, alpha,
-                seg->bsuf[section], &HE_FRONTSIDEDEF(hEdge)->radioConfig,
+                seg->bsuf[section],
                 materialOffset, materialScale, true);
 
     // Check for neighborhood division?
@@ -307,6 +370,25 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
          HE_FRONTSIDEDEF(hEdge) && HE_BACKSIDEDEF(hEdge)))
     {
         R_FindSegSectionDivisions(rseg->divs, hEdge, HE_FRONTSECTOR(hEdge), bottom, top);
+    }
+
+    // Render Fakeradio polys for this seg?
+    if(!(rseg->flags & RSF_NO_RADIO))
+    {
+        // Determine the shadow properties.
+        R_ApplyLightAdaptation(&sectorLightLevel);
+
+        // No point drawing shadows in a pitch black sector.
+        if(sectorLightLevel > 0)
+        {
+            float shadowSize = Rend_RadioShadowSize(sectorLightLevel);
+            float shadowDark = Rend_RadioShadowDarkness(sectorLightLevel) *.8f;
+
+            getShadowRendSegs(rseg, bottom, top, top, shadowSize, shadowDark,
+                              &HE_FRONTSIDEDEF(hEdge)->radioConfig,
+                              seg->offset, HE_FRONTSIDEDEF(hEdge)->lineDef->length,
+                              HE_FRONTSECTOR(hEdge), HE_BACKSECTOR(hEdge));
+        }
     }
 
     return rseg;
@@ -347,7 +429,7 @@ rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, side
                 sideDef->SW_middlenormal, subsector, sideDef, SEG_MIDDLE,
                 frontSec->lightLevel, R_GetSectorLightColor(frontSec),
                 R_WallAngleLightLevelDelta(sideDef->lineDef, FRONT), surfaceColorTint, surfaceColorTint2, 1,
-                poSeg->bsuf, NULL,
+                poSeg->bsuf,
                 materialOffset, materialScale, true);
 
     return rseg;
