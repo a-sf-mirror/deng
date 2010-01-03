@@ -703,7 +703,11 @@ rvertex_t* R_VerticesFromRendSeg(rendseg_t* rseg, uint* size)
 }
 
 void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
-                              rtexmapunit_t* rTUs)
+                              rtexmapunit_t* rTUs,
+                              rtexmapunit_t* radioTU,
+                              rtexmapunit_t* radioTU2,
+                              rtexmapunit_t* radioTU3,
+                              rtexmapunit_t* radioTU4)
 {
     const material_snapshot_t* msA = &rseg->materials.snapshotA;
     const material_snapshot_t* msB =
@@ -711,11 +715,55 @@ void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
 
     memset(rTU, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
     memset(rTUs, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+    memset(radioTU, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+    memset(radioTU2, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+    memset(radioTU3, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
+    memset(radioTU4, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
 
     if(!RendSeg_SkyMasked(rseg))
     {
         Rend_SetupRTU(rTU, rTUs, msA, rseg->materials.inter, msB);
         Rend_SetupRTU2(rTU, rTUs, true, rseg->surfaceMaterialOffset, rseg->surfaceMaterialScale, msA, msB);
+
+        // Fakeradio?
+        if(!(rseg->flags & RSF_NO_RADIO) && rendFakeRadio && renderTextures)
+        {
+            if(rseg->radioConfig[0].texture)
+            {
+                const rendseg_shadow_t* shadow = &rseg->radioConfig[0];
+
+                radioTU[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
+                radioTU[TU_PRIMARY].magMode = GL_LINEAR;
+                radioTU[TU_PRIMARY].blend = 1;
+            }
+
+            if(rseg->radioConfig[1].texture)
+            {
+                const rendseg_shadow_t* shadow = &rseg->radioConfig[1];
+
+                radioTU2[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
+                radioTU2[TU_PRIMARY].magMode = GL_LINEAR;
+                radioTU2[TU_PRIMARY].blend = 1;
+            }
+
+            if(rseg->radioConfig[2].texture)
+            {
+                const rendseg_shadow_t* shadow = &rseg->radioConfig[2];
+
+                radioTU3[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
+                radioTU3[TU_PRIMARY].magMode = GL_LINEAR;
+                radioTU3[TU_PRIMARY].blend = 1;
+            }
+
+            if(rseg->radioConfig[3].texture)
+            {
+                const rendseg_shadow_t* shadow = &rseg->radioConfig[3];
+
+                radioTU4[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
+                radioTU4[TU_PRIMARY].magMode = GL_LINEAR;
+                radioTU4[TU_PRIMARY].blend = 1;
+            }
+        }
     }
 }
 

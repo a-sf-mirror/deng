@@ -281,7 +281,11 @@ void            R_FreeRendTexCoords(rtexcoord_t* rtexcoords);
 
 rvertex_t*      R_VerticesFromRendSeg(struct rendseg_s* rseg, uint* size);
 void            R_TexmapUnitsFromRendSeg(struct rendseg_s* rseg, rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
-                                         rtexmapunit_t rTUs[NUM_TEXMAP_UNITS]);
+                                         rtexmapunit_t rTUs[NUM_TEXMAP_UNITS],
+                                         rtexmapunit_t radioTU[NUM_TEXMAP_UNITS],
+                                         rtexmapunit_t radioTU2[NUM_TEXMAP_UNITS],
+                                         rtexmapunit_t radioTU3[NUM_TEXMAP_UNITS],
+                                         rtexmapunit_t radioTU4[NUM_TEXMAP_UNITS]);
 
 void Rend_SetupRTU(rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
                    rtexmapunit_t rTUs[NUM_TEXMAP_UNITS],
