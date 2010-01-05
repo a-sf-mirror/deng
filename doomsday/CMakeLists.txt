@@ -40,6 +40,10 @@ SET(deng_VERSION "${deng_VERSION_MAJOR}.${deng_VERSION_MINOR}.${deng_VERSION_PAT
 # where to look first for cmake modules, before ${CMAKE_ROOT}/Modules/ is checked
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/build/cmake")
 
+IF (APPLE)
+    SET(CMAKE_OSX_DEPLOYMENT_TARGET 10.4)
+ENDIF ()
+
 ################################################################################
 ######################## Additional Win32 Path Setup  ##########################
 IF (WIN32)
@@ -401,11 +405,11 @@ IF (WIN32)
 ENDIF (WIN32)
 
 IF (APPLE)
-	ADD_DEFINITIONS ( -DMACOSX)
-	SET (CMAKE_OSX_ARCHITECTURES ppc;i386)
-	SET (CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.4u.sdk)
-	SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.4" )
-	SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.4" )
+	ADD_DEFINITIONS ( -DMACOSX )
+	##SET (CMAKE_OSX_ARCHITECTURES ppc;i386)
+	##SET (CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.4u.sdk)
+	##SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.4" )
+	##SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.4" )
 	
 	SET (BUILDSYSTEM MACOSX)
 
