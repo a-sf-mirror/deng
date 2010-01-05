@@ -31,10 +31,8 @@
 
 typedef struct {
     lightingtexid_t texture;
-    float           texWidth;
-    float           texHeight;
+    float           texScale[2];
     float           texOffset[2];
-    float           shadowMul;
     float           shadowDark;
 } rendseg_shadow_t;
 
