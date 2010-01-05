@@ -115,7 +115,7 @@ void SB_RendSeg(struct map_s* map, struct rcolor_s* rcolors, struct biassurface_
 void SB_RendPlane(struct map_s* map, struct rcolor_s* rcolors, struct biassurface_s* bsuf,
                   const struct rvertex_s* rvertices, size_t numVertices,
                   const vectorcomp_t* normal, float sectorLightLevel,
-                  struct subsector_s* subsector, uint plane);
+                  const vectorcomp_t* pointInPlane);
 
 void            SB_InitVertexIllum(vertexillum_t* villum);
 #endif

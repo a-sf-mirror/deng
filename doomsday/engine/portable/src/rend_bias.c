@@ -1232,14 +1232,20 @@ void SB_RendSeg(map_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
  * @param numVertices   Number of vertices (in the array) to be lit.
  * @param normal        Surface normal.
  * @param sectorLightLevel Sector light level.
- * @param face          Ptr to a face.
- * @param plane         Plane number.
+ * @param pointInPlane  A point in the plane.
  */
 void SB_RendPlane(map_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
                   const rvertex_t* rvertices, size_t numVertices,
                   const vectorcomp_t* normal, float sectorLightLevel,
-                  subsector_t* subsector, uint plane)
+                  const vectorcomp_t* pointInPlane)
 {
+    assert(map);
+    assert(rcolors);
+    assert(bsuf);
+    assert(rvertices);
+    assert(normal);
+    assert(pointInPlane);
+    {
     uint i;
     boolean forced;
 
@@ -1255,12 +1261,7 @@ void SB_RendPlane(map_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
          * \todo This could be enhanced so that only the lights on the
          * right side of the surface are taken into consideration.
          */
-        vec3_t point;
-
-        V3_Set(point, subsector->midPoint[VX], subsector->midPoint[VY],
-               subsector->sector->planes[plane]->height);
-
-        updateAffected2(map, bsuf, rvertices, numVertices, point, normal);
+        updateAffected2(map, bsuf, rvertices, numVertices, pointInPlane, normal);
     }
 
     for(i = 0; i < numVertices; ++i)
@@ -1268,4 +1269,5 @@ void SB_RendPlane(map_t* map, rcolor_t* rcolors, biassurface_t* bsuf,
                   rvertices[i].pos, normal);
 
     trackerClear(&bsuf->tracker, &trackApplied);
+    }
 }

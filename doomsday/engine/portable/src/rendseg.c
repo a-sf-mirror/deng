@@ -176,12 +176,6 @@ static void init(rendseg_t* rseg, float from[2], float to[2], float bottom, floa
     V3_Set(rseg->texQuadTopLeft, from[VX], from[VY], top);
     V3_Set(rseg->texQuadBottomRight, to[VX], to[VY], bottom);
 
-    rseg->texQuadWidth = P_AccurateDistance(
-        rseg->texQuadBottomRight[VX] - rseg->texQuadTopLeft[VX],
-        rseg->texQuadBottomRight[VY] - rseg->texQuadTopLeft[VY]);
-    if(rseg->texQuadWidth == 0)
-        rseg->texQuadWidth = 0.01f;
-
     rseg->alpha = 1;
     rseg->surfaceColorTint = NULL;
     rseg->surfaceColorTint2 = NULL;
@@ -290,6 +284,10 @@ static void getShadowRendSegs(rendseg_t* rseg, float bottomLeft, float topLeft, 
     // Is there anything better we can do?
     if(!(bottomGlow && topGlow))
     {
+        float texQuadWidth = P_AccurateDistance(
+            rseg->texQuadBottomRight[VX] - rseg->texQuadTopLeft[VX],
+            rseg->texQuadBottomRight[VY] - rseg->texQuadTopLeft[VY]);
+
         if(radioConfig->sideCorners[0].corner > 0 && segOffset < shadowSize)
             Rend_RadioSetupSideShadow(&rseg->radioConfig[2], shadowSize, bottomLeft,
                                 topLeft, false,
@@ -298,7 +296,7 @@ static void getShadowRendSegs(rendseg_t* rseg, float bottomLeft, float topLeft, 
                                 radioConfig->sideCorners, shadowDark);
 
         if(radioConfig->sideCorners[1].corner > 0 &&
-           segOffset + rseg->texQuadWidth > lineDefLength - shadowSize)
+           segOffset + texQuadWidth > lineDefLength - shadowSize)
             Rend_RadioSetupSideShadow(&rseg->radioConfig[3], shadowSize, bottomLeft,
                                 topLeft, true,
                                 bottomGlow, topGlow, segOffset,

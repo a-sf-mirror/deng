@@ -48,7 +48,6 @@ typedef struct rendseg_s {
     pvec3_t             normal;
 
     float               texQuadTopLeft[3], texQuadBottomRight[3];
-    float               texQuadWidth;
 
     float               sectorLightLevel;
     const float*        sectorLightColor;

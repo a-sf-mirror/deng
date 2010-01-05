@@ -554,8 +554,9 @@ static void lightPolygon(rendseg_t* rseg, const rvertex_t* rvertices, rcolor_t* 
             uint i;
 
             // Calculate the color for each vertex, blended with surface color tint?
-            if(rseg->surfaceColorTint[0] < 1 || rseg->surfaceColorTint[1] < 1 ||
-               rseg->surfaceColorTint[2] < 1)
+            if(rseg->surfaceColorTint &&
+               (rseg->surfaceColorTint[CR] < 1 || rseg->surfaceColorTint[CG] < 1 ||
+                rseg->surfaceColorTint[CB] < 1))
             {
                 float vColor[4];
 
@@ -984,6 +985,9 @@ static void renderWorldSegAsVisSprite(rendseg_t* rseg, rvertex_t* rvertices,
     boolean forceOpaque = rseg->alpha < 0 ? true : false;
     float alpha = forceOpaque ? 1 : rseg->alpha;
     rcolor_t* rcolors = R_AllocRendColors(4);
+    float texQuadWidth = P_AccurateDistance(
+        rseg->texQuadBottomRight[VX] - rseg->texQuadTopLeft[VX],
+        rseg->texQuadBottomRight[VY] - rseg->texQuadTopLeft[VY]);
 
     lightPolygon(rseg, rvertices, rcolors, 4, alpha, (rseg->flags & RSF_GLOW) != 0);
 
@@ -992,7 +996,7 @@ static void renderWorldSegAsVisSprite(rendseg_t* rseg, rvertex_t* rvertices,
      * This is needed because all masked polys must be sorted (sprites
      * are masked polys). Otherwise there will be artifacts.
      */
-    Rend_AddMaskedPoly(rvertices, rcolors, rseg->texQuadWidth,
+    Rend_AddMaskedPoly(rvertices, rcolors, texQuadWidth,
                        rseg->materials.snapshotA.width,
                        rseg->materials.snapshotA.height, rseg->surfaceMaterialOffset,
                        rseg->blendMode, rseg->dynlistID,
@@ -1011,39 +1015,59 @@ dynlight_t* Rend_PickDynlightForModTex(uint dynlistID)
     return dyn;
 }
 
-typedef struct {
-    boolean         isWall;
+/**
+ * @defGroup rendPlaneFlags Rend Plane Flags.
+ */
+/*@{*/
+//#define RSF_SKYMASK         (0x1)
+#define RPF_GLOW            (0x2)
+//#define RSF_NO_RADIO        (0x4)
+#define RPF_NO_REFLECTION   (0x8)
+/*@}*/
+
+typedef struct rendplane_s {
+    byte                flags; // @see rendPlaneFlags.
+
+    float               height;
+    float               midPoint[2];
+
+    pvec3_t             normal;
+
+    float               texQuadTopLeft[3], texQuadBottomRight[3];
+
+    float               sectorLightLevel;
+    const float*        sectorLightColor;
+
+    //float               surfaceLightLevelDelta;
+    const float*        surfaceColorTint; //, *surfaceColorTint2;
+    float               surfaceMaterialOffset[2];
+    float               surfaceMaterialScale[2];
+    biassurface_t*      biasSurface;
+    float               alpha; // @c < 0 signifies "force opaque"
+    blendmode_t         blendMode;
+    uint                dynlistID;
+
+    /*rendseg_shadow_t    radioConfig[4];
+
+    // @todo get rid of divs in their current form.
+    // Use a list of "plane interfaces" attached to each world vertex
+    // and sorted by visheight.
+    walldiv_t           divs[2];
+
+    // @todo members not wanted in this class!
+    struct {
+        material_snapshot_t snapshotA, snapshotB;
+        float           inter;
+        boolean         blend;
+    } materials;*/
+
     rendpolytype_t  type;
-    blendmode_t     blendMode;
-    const float*    texTL, *texBR;
-    const float*    texOffset, *texScale;
-    const float*    normal; // Surface normal.
-    float           alpha;
-    float           sectorLightLevel;
-    const float*    sectorLightColor;
-    float           surfaceLightLevelDelta;
-    const float*    surfaceColor;
-
-    uint            lightListIdx; // List of lights that affect this poly.
-    boolean         glowing;
-    boolean         reflective;
-    boolean         forceOpaque;
-
-// For bias:
-    subsector_t*    subsector;
-    uint            plane;
-    biassurface_t*  bsuf;
-
-// Wall only (todo).
-    float           segLength;
-    const float*    surfaceColor2; // Secondary color.
 } rendworldpoly2_params_t;
 
-static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
-                                const walldiv_t* divs,
-                                const rendworldpoly2_params_t* p,
-                                const material_snapshot_t* msA, float inter,
-                                const material_snapshot_t* msB)
+static void renderWorldPlane(rvertex_t* rvertices, uint numVertices,
+                             const rendworldpoly2_params_t* p,
+                             const material_snapshot_t* msA, float inter,
+                             const material_snapshot_t* msB)
 {
     rcolor_t*           rcolors;
     rtexcoord_t*        rtexcoords = NULL, *rtexcoords2 = NULL,
@@ -1056,17 +1080,10 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
     DGLuint             modTex = 0;
     float               modTexTC[2][2];
     float               modColor[3];
-    boolean             drawAsVisSprite = false, isGlowing = p->glowing;
+    boolean             isGlowing = (p->flags & RPF_GLOW) != 0;
     rtexmapunit_t       rTU[NUM_TEXMAP_UNITS], rTUs[NUM_TEXMAP_UNITS];
 
-    if(!p->forceOpaque && p->type != RPT_SKY_MASK &&
-       (!msA->isOpaque || p->alpha < 1 || p->blendMode > 0))
-        drawAsVisSprite = true;
-
-    if(p->isWall && divs && (divs[0].num || divs[1].num))
-        realNumVertices = 3 + divs[0].num + 3 + divs[1].num;
-    else
-        realNumVertices = numVertices;
+    realNumVertices = numVertices;
 
     memset(rTU, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
     memset(rTUs, 0, sizeof(rtexmapunit_t) * NUM_TEXMAP_UNITS);
@@ -1074,7 +1091,7 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
     if(p->type != RPT_SKY_MASK)
     {
         Rend_SetupRTU(rTU, rTUs, msA, inter, msB);
-        Rend_SetupRTU2(rTU, rTUs, p->isWall, p->texOffset, p->texScale, msA, msB);
+        Rend_SetupRTU2(rTU, rTUs, false, p->surfaceMaterialOffset, p->surfaceMaterialScale, msA, msB);
     }
 
     memset(modTexTC, 0, sizeof(modTexTC));
@@ -1088,7 +1105,7 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
     if(p->type != RPT_SKY_MASK)
     {
         // ShinySurface?
-        if(p->reflective && rTUs[TU_PRIMARY].tex && !drawAsVisSprite)
+        if(!(p->flags & RPF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
         {
             // We'll reuse the same verts but we need new colors.
             shinyColors = R_AllocRendColors(realNumVertices);
@@ -1104,7 +1121,7 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
          */
         if(!isGlowing)
         {
-            useLights = (p->lightListIdx? true : false);
+            useLights = (p->dynlistID? true : false);
 
             /**
              * If multitexturing is enabled and there is at least one
@@ -1115,7 +1132,7 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
             {
                 dynlight_t*         dyn = NULL;
 
-                DL_DynlistIterator(p->lightListIdx, DLIT_GetFirstDynlight, &dyn);
+                DL_DynlistIterator(p->dynlistID, DLIT_GetFirstDynlight, &dyn);
 
                 rtexcoords5 = R_AllocRendTexCoords(realNumVertices);
 
@@ -1141,9 +1158,9 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
             const rvertex_t*    vtx = &rvertices[i];
             float               xyz[3];
 
-            xyz[VX] = vtx->pos[VX] - p->texTL[VX];
-            xyz[VY] = vtx->pos[VY] - p->texTL[VY];
-            xyz[VZ] = vtx->pos[VZ] - p->texTL[VZ];
+            xyz[VX] = vtx->pos[VX] - p->texQuadTopLeft[VX];
+            xyz[VY] = vtx->pos[VY] - p->texQuadTopLeft[VY];
+            xyz[VZ] = vtx->pos[VZ] - p->texQuadTopLeft[VZ];
 
             // Primary texture coordinates.
             if(rTU[TU_PRIMARY].tex)
@@ -1157,14 +1174,14 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
             // Blend primary texture coordinates.
             if(rTU[TU_INTER].tex)
             {
-                rtexcoord_t*        tc = &rtexcoords2[i];
+                rtexcoord_t* tc = &rtexcoords2[i];
 
                 tc->st[0] =  xyz[VX];
                 tc->st[1] = -xyz[VY];
             }
 
             // Shiny texture coordinates.
-            if(p->reflective && rTUs[TU_PRIMARY].tex)
+            if(!(p->flags & RPF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
             {
                 flatShinyTexCoords(&shinyTexCoords[i], vtx->pos);
             }
@@ -1172,15 +1189,15 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
             // First light texture coordinates.
             if(numLights > 0 && RL_IsMTexLights())
             {
-                rtexcoord_t*        tc = &rtexcoords5[i];
-                float               width, height;
+                rtexcoord_t* tc = &rtexcoords5[i];
+                float width, height;
 
-                width  = p->texBR[VX] - p->texTL[VX];
-                height = p->texBR[VY] - p->texTL[VY];
+                width  = p->texQuadBottomRight[VX] - p->texQuadTopLeft[VX];
+                height = p->texQuadBottomRight[VY] - p->texQuadTopLeft[VY];
 
-                tc->st[0] = ((p->texBR[VX] - vtx->pos[VX]) / width * modTexTC[0][0]) +
+                tc->st[0] = ((p->texQuadBottomRight[VX] - vtx->pos[VX]) / width * modTexTC[0][0]) +
                     (xyz[VX] / width * modTexTC[0][1]);
-                tc->st[1] = ((p->texBR[VY] - vtx->pos[VY]) / height * modTexTC[1][0]) +
+                tc->st[1] = ((p->texQuadBottomRight[VY] - vtx->pos[VY]) / height * modTexTC[1][0]) +
                     (xyz[VY] / height * modTexTC[1][1]);
             }
         }
@@ -1195,29 +1212,34 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
         }
         else
         {   // Non-uniform color.
-            if(useBias && p->bsuf)
+            if(useBias && p->biasSurface)
             {
+                vec3_t pointInPlane;
+
+                V3_Set(pointInPlane, p->midPoint[0], p->midPoint[1], p->height);
+
                 // Do BIAS lighting for this poly.
-                SB_RendPlane(P_CurrentMap(), rcolors, p->bsuf,
+                SB_RendPlane(P_CurrentMap(), rcolors, p->biasSurface,
                              rvertices, numVertices,
                              p->normal, p->sectorLightLevel,
-                             p->subsector, p->plane);
+                             pointInPlane);
             }
             else
             {
                 uint i;
-                float ll = p->sectorLightLevel + p->surfaceLightLevelDelta;
+                float ll = p->sectorLightLevel;
 
                 // Calculate the color for each vertex, blended with plane color?
-                if(p->surfaceColor[0] < 1 || p->surfaceColor[1] < 1 ||
-                   p->surfaceColor[2] < 1)
+                if(p->surfaceColorTint &&
+                   (p->surfaceColorTint[CR] < 1 || p->surfaceColorTint[CG] < 1 ||
+                    p->surfaceColorTint[CB] < 1))
                 {
-                    float               vColor[4];
+                    float vColor[4];
 
                     // Blend sector light+color+surfacecolor
-                    vColor[CR] = p->surfaceColor[CR] * p->sectorLightColor[CR];
-                    vColor[CG] = p->surfaceColor[CG] * p->sectorLightColor[CG];
-                    vColor[CB] = p->surfaceColor[CB] * p->sectorLightColor[CB];
+                    vColor[CR] = p->surfaceColorTint[CR] * p->sectorLightColor[CR];
+                    vColor[CG] = p->surfaceColorTint[CG] * p->sectorLightColor[CG];
+                    vColor[CB] = p->surfaceColorTint[CB] * p->sectorLightColor[CB];
                     vColor[CA] = 1;
 
                     for(i = 0; i < numVertices; ++i)
@@ -1230,29 +1252,14 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
                         R_VertexColorsApplyAmbientLight(&rcolors[i], &rvertices[i], ll,
                                     p->sectorLightColor);
                 }
-
-                // Bottom color (if different from top)?
-                if(p->isWall && p->surfaceColor2)
-                {
-                    float               vColor[4];
-
-                    // Blend sector light+color+surfacecolor
-                    vColor[CR] = p->surfaceColor2[CR] * p->sectorLightColor[CR];
-                    vColor[CG] = p->surfaceColor2[CG] * p->sectorLightColor[CG];
-                    vColor[CB] = p->surfaceColor2[CB] * p->sectorLightColor[CB];
-                    vColor[CA] = 1;
-
-                    R_VertexColorsApplyAmbientLight(&rcolors[0], &rvertices[0], ll, vColor);
-                    R_VertexColorsApplyAmbientLight(&rcolors[2], &rvertices[2], ll, vColor);
-                }
             }
 
             R_VertexColorsApplyTorchLight(rcolors, rvertices, numVertices);
         }
 
-        if(p->reflective && rTUs[TU_PRIMARY].tex && !drawAsVisSprite)
+        if(!(p->flags & RPF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
         {
-            uint                i;
+            uint i;
 
             // Strength of the shine.
             for(i = 0; i < numVertices; ++i)
@@ -1298,33 +1305,6 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
         }
     }
 
-    if(drawAsVisSprite)
-    {
-        assert(p->isWall);
-
-        /**
-         * Masked polys (walls) get a special treatment (=> vissprite).
-         * This is needed because all masked polys must be sorted (sprites
-         * are masked polys). Otherwise there will be artifacts.
-         */
-        Rend_AddMaskedPoly(rvertices, rcolors, p->segLength,
-                           msA->width, msA->height, p->texOffset,
-                           p->blendMode, p->lightListIdx, isGlowing,
-                           !msA->isOpaque, rTU);
-        R_FreeRendTexCoords(rtexcoords);
-        if(rtexcoords2)
-            R_FreeRendTexCoords(rtexcoords2);
-        if(rtexcoords5)
-            R_FreeRendTexCoords(rtexcoords5);
-        if(shinyTexCoords)
-            R_FreeRendTexCoords(shinyTexCoords);
-        R_FreeRendColors(rcolors);
-        if(shinyColors)
-            R_FreeRendColors(shinyColors);
-
-        return false; // We HAD to use a vissprite, so it MUST not be opaque.
-    }
-
     if(p->type != RPT_SKY_MASK && useLights)
     {
         /**
@@ -1338,104 +1318,25 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
         dlparams.numVertices = numVertices;
         dlparams.realNumVertices = realNumVertices;
         dlparams.lastIdx = 0;
-        dlparams.isWall = p->isWall;
-        dlparams.divs = divs;
-        dlparams.texTL = p->texTL;
-        dlparams.texBR = p->texBR;
+        dlparams.isWall = false;
+        dlparams.divs = NULL;
+        dlparams.texTL = p->texQuadTopLeft;
+        dlparams.texBR = p->texQuadBottomRight;
 
-        DL_DynlistIterator(p->lightListIdx, DLIT_WriteDynlight, &dlparams);
+        DL_DynlistIterator(p->dynlistID, DLIT_WriteDynlight, &dlparams);
         numLights += dlparams.lastIdx;
         if(RL_IsMTexLights())
             numLights -= 1;
     }
 
     // Write multiple polys depending on rend params.
-    if(p->isWall && divs && (divs[0].num || divs[1].num))
     {
-        float               bL, tL, bR, tR;
-        rvertex_t           origVerts[4];
-        rcolor_t            origColors[4];
-        rtexcoord_t         origTexCoords[4];
-
-        /**
-         * Need to swap indices around into fans set the position
-         * of the division vertices, interpolate texcoords and
-         * color.
-         */
-
-        memcpy(origVerts, rvertices, sizeof(rvertex_t) * 4);
-        memcpy(origTexCoords, rtexcoords, sizeof(rtexcoord_t) * 4);
-        memcpy(origColors, rcolors, sizeof(rcolor_t) * 4);
-
-        bL = origVerts[0].pos[VZ];
-        tL = origVerts[1].pos[VZ];
-        bR = origVerts[2].pos[VZ];
-        tR = origVerts[3].pos[VZ];
-
-        R_DivVerts(rvertices, origVerts, divs);
-        R_DivTexCoords(rtexcoords, origTexCoords, divs, bL, tL, bR, tR);
-        R_DivVertColors(rcolors, origColors, divs, bL, tL, bR, tR);
-
-        if(rtexcoords2)
-        {
-            rtexcoord_t         origTexCoords2[4];
-
-            memcpy(origTexCoords2, rtexcoords2, sizeof(rtexcoord_t) * 4);
-            R_DivTexCoords(rtexcoords2, origTexCoords2, divs, bL, tL, bR, tR);
-        }
-
-        if(rtexcoords5)
-        {
-            rtexcoord_t         origTexCoords5[4];
-
-            memcpy(origTexCoords5, rtexcoords5, sizeof(rtexcoord_t) * 4);
-            R_DivTexCoords(rtexcoords5, origTexCoords5, divs, bL, tL, bR, tR);
-        }
-
-        if(shinyTexCoords)
-        {
-            rtexcoord_t         origShinyTexCoords[4];
-
-            memcpy(origShinyTexCoords, shinyTexCoords, sizeof(rtexcoord_t) * 4);
-            R_DivTexCoords(shinyTexCoords, origShinyTexCoords, divs, bL, tL, bR, tR);
-        }
-
-        if(shinyColors)
-        {
-            rcolor_t            origShinyColors[4];
-            memcpy(origShinyColors, shinyColors, sizeof(rcolor_t) * 4);
-            R_DivVertColors(shinyColors, origShinyColors, divs, bL, tL, bR, tR);
-        }
-
-        RL_AddPoly(PT_FAN, p->type, 3 + divs[1].num, rvertices + 3 + divs[0].num,
-                   rtexcoords5? rtexcoords5 + 3 + divs[0].num : NULL,
-                   rtexcoords + 3 + divs[0].num,
-                   rtexcoords2? rtexcoords2 + 3 + divs[0].num : NULL,
-                   rcolors + 3 + divs[0].num,
-                   numLights, modTex, modColor, rTU);
-        RL_AddPoly(PT_FAN, p->type, 3 + divs[0].num, rvertices,
+        RL_AddPoly(PT_FAN, p->type, numVertices, rvertices,
                    rtexcoords5, rtexcoords, rtexcoords2, rcolors,
                    numLights, modTex, modColor, rTU);
 
-        if(p->reflective && rTUs[TU_PRIMARY].tex)
-        {
-            RL_AddPoly(PT_FAN, RPT_SHINY, 3 + divs[1].num, rvertices + 3 + divs[0].num, NULL,
-                       shinyTexCoords? shinyTexCoords + 3 + divs[0].num : NULL,
-                       rTUs[TU_INTER].tex? rtexcoords + 3 + divs[0].num : NULL,
-                       shinyColors + 3 + divs[0].num, 0, 0, NULL, rTUs);
-            RL_AddPoly(PT_FAN, RPT_SHINY, 3 + divs[0].num, rvertices, NULL,
-                       shinyTexCoords, rTUs[TU_INTER].tex? rtexcoords : NULL,
-                       shinyColors, 0, 0, NULL, rTUs);
-        }
-    }
-    else
-    {
-        RL_AddPoly(p->isWall? PT_TRIANGLE_STRIP : PT_FAN, p->type, numVertices, rvertices,
-                   rtexcoords5, rtexcoords, rtexcoords2, rcolors,
-                   numLights, modTex, modColor, rTU);
-
-        if(p->reflective && rTUs[TU_PRIMARY].tex)
-            RL_AddPoly(p->isWall? PT_TRIANGLE_STRIP : PT_FAN, RPT_SHINY,
+        if(!(p->flags & RPF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
+            RL_AddPoly(PT_FAN, RPT_SHINY,
                        numVertices, rvertices, NULL, shinyTexCoords,
                        rTUs[TU_INTER].tex? rtexcoords : NULL,
                        shinyColors, 0, 0, NULL, rTUs);
@@ -1451,13 +1352,10 @@ static boolean renderWorldPlane(rvertex_t* rvertices, uint numVertices,
     R_FreeRendColors(rcolors);
     if(shinyColors)
         R_FreeRendColors(shinyColors);
-
-    return (p->forceOpaque ||
-        !(p->alpha < 1 || !msA->isOpaque || p->blendMode > 0));
 }
 
 static void renderPlane(subsector_t* subsector, uint planeId,
-                        float height, const vectorcomp_t normal[3],
+                        float height, vectorcomp_t normal[3],
                         material_t* inMat, material_t* inMatB,
                         float matBlendFactor, short sufInFlags,
                         const float sufColor[4], blendmode_t blendMode,
@@ -1482,19 +1380,17 @@ static void renderPlane(subsector_t* subsector, uint planeId,
 
     memset(&params, 0, sizeof(params));
 
-    params.isWall = false;
-    params.subsector = subsector;
-    params.plane = plane;
-    params.bsuf = bsuf;
+    V2_Set(params.midPoint, subsector->midPoint[0], subsector->midPoint[1]);
+    params.height = subsector->sector->planes[plane]->visHeight;
+    params.biasSurface = bsuf;
     params.normal = normal;
-    params.texTL = texTL;
-    params.texBR = texBR;
+    V3_Set(params.texQuadTopLeft, texTL[VX], texTL[VY], texTL[VZ]);
+    V3_Set(params.texQuadBottomRight, texBR[VX], texBR[VY], texBR[VZ]);
     params.sectorLightLevel = sec->lightLevel;
     params.sectorLightColor = R_GetSectorLightColor(sec);
-    params.surfaceLightLevelDelta = 0;
-    params.surfaceColor = sufColor;
-    params.texOffset = texOffset;
-    params.texScale = texScale;
+    params.surfaceColorTint = sufColor;
+    V2_Copy(params.surfaceMaterialOffset, texOffset);
+    V2_Copy(params.surfaceMaterialScale, texScale);
 
     if(skyMasked)
     {
@@ -1506,8 +1402,7 @@ static void renderPlane(subsector_t* subsector, uint planeId,
         {
             params.type = RPT_NORMAL;
             params.blendMode = BM_NORMAL;
-            params.glowing = true;
-            params.forceOpaque = true;
+            params.flags |= RPF_GLOW;
             mat = inMat;
         }
         else
@@ -1522,14 +1417,13 @@ static void renderPlane(subsector_t* subsector, uint planeId,
 
         if(isGlowing)
         {
-            params.glowing = true; // Make it stand out
+            params.flags |= RPF_GLOW; // Make it stand out
         }
 
         if(planeId == PLN_FLOOR || planeId == PLN_CEILING)
         {
             params.blendMode = BM_NORMAL;
             params.alpha = 1;
-            params.forceOpaque = true;
         }
         else
         {
@@ -1552,19 +1446,20 @@ static void renderPlane(subsector_t* subsector, uint planeId,
             blended = true;
 
         // Dynamic lights.
-        if(addDLights && !params.glowing)
+        if(addDLights && !(params.flags & RPF_GLOW))
         {
-            params.lightListIdx =
-                DL_ProjectOnSurface(P_CurrentMap(), subsector, params.texTL, params.texBR,
+            params.dynlistID =
+                DL_ProjectOnSurface(P_CurrentMap(), subsector, params.texQuadTopLeft,
+                                    params.texQuadBottomRight,
                                     normal,
                                     (DLF_NO_PLANAR |
                                      (planeId == PLN_FLOOR? DLF_TEX_FLOOR : DLF_TEX_CEILING)));
         }
 
         // Render Shiny polys?
-        if(useShinySurfaces && mat && mat->reflection)
+        if(!useShinySurfaces || !mat || !mat->reflection)
         {
-            params.reflective = true;
+            params.flags |= RPF_NO_REFLECTION;
         }
     }
 
@@ -1584,7 +1479,7 @@ static void renderPlane(subsector_t* subsector, uint planeId,
     rvertices = R_AllocRendVertices(numVertices);
     R_VerticesFromSubsectorPlane(rvertices, subsector, height, !(normal[VZ] > 0));
 
-    renderWorldPlane(rvertices, numVertices, NULL, &params,
+    renderWorldPlane(rvertices, numVertices, &params,
                      &msA, inter, (blended || inMatB)? &msB : NULL);
 
     R_FreeRendVertices(rvertices);
@@ -1620,7 +1515,7 @@ float RendPlane_TakeMaterialSnapshots(material_snapshot_t* msA, material_snapsho
 }
 
 static void Rend_RenderPlane(subsector_t* subsector, uint planeId,
-                             float height, const vectorcomp_t normal[3],
+                             float height, vectorcomp_t normal[3],
                              material_t* inMat, material_t* inMatB,
                              float matBlendFactor,
                              short sufInFlags,
@@ -1797,7 +1692,7 @@ static uint buildGeometryFromRendSeg(rendseg_t* rseg,
                                      int* radioColors4Idx, rtexmapunit_t radioTU4[NUM_TEXMAP_UNITS])
 {
     int numVertices, numCoords, numColors;
-    float texOffset[2] = { 0, 0 };
+    float texQuadWidth, texOffset[2] = { 0, 0 };
     rvertex_t* vertices = NULL;
     rtexcoord_t* coords = NULL;
     rcolor_t* colors = NULL;
@@ -1862,8 +1757,12 @@ static uint buildGeometryFromRendSeg(rendseg_t* rseg,
     V3_Set(vertices[2].pos, rseg->to  [VX], rseg->to  [VY], rseg->bottom);
     V3_Set(vertices[3].pos, rseg->to  [VX], rseg->to  [VY], rseg->top);
 
+    texQuadWidth = P_AccurateDistance(
+        rseg->texQuadBottomRight[VX] - rseg->texQuadTopLeft[VX],
+        rseg->texQuadBottomRight[VY] - rseg->texQuadTopLeft[VY]);
+
     // Primary texture coordinates.
-    quadTexCoords(coords, vertices, rseg->texQuadWidth, 1, 1, rseg->texQuadTopLeft, texOffset);
+    quadTexCoords(coords, vertices, texQuadWidth, 1, 1, rseg->texQuadTopLeft, texOffset);
 
     // Modulation texture coordinates.
     if(modTex)
@@ -1871,7 +1770,7 @@ static uint buildGeometryFromRendSeg(rendseg_t* rseg,
 
     // Shiny texture coordinates.
     if(!(rseg->flags & RSF_NO_REFLECTION) && rTUs[TU_PRIMARY].tex)
-        quadShinyTexCoords(coords + *shinyCoordsIdx, &vertices[1], &vertices[2], rseg->texQuadWidth);
+        quadShinyTexCoords(coords + *shinyCoordsIdx, &vertices[1], &vertices[2], texQuadWidth);
 
     // Fakeradio?
     if(radioTU[TU_PRIMARY].tex)
@@ -2697,8 +2596,8 @@ static void Rend_RenderSubSector(subsector_t* subsector)
     {
         int texMode;
         float height, texOffset[2], texScale[2];
-        const plane_t* plane = sect->planes[i];
-        const surface_t* suf = &plane->surface;
+        plane_t* plane = sect->planes[i];
+        surface_t* suf = &plane->surface;
         material_t* mat;
         boolean isGlowing = false;
 
