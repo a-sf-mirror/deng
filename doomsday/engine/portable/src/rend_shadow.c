@@ -180,6 +180,7 @@ static void processMobjShadow(mobj_t* mo)
     rTU[TU_PRIMARY].tex = GL_PrepareLSTexture(LST_DYNAMIC);
     rTU[TU_PRIMARY].magMode = GL_LINEAR;
     rTU[TU_PRIMARY].blend = 1;
+    rTU[TU_PRIMARY].scale[0] = rTU[TU_PRIMARY].scale[1] = 1;
 
     rvertices[0].pos[VX] = pos[VX] - radius;
     rvertices[0].pos[VY] = pos[VY] + radius;

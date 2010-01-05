@@ -1264,7 +1264,7 @@ void Def_Read(void)
 void Def_PostInit(void)
 {
     int                 i, k;
-    ded_generator_t*       gen;
+    ded_generator_t*    gen;
     char                name[40];
     modeldef_t*         modef;
     ded_ptcstage_t*     st;

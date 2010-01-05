@@ -1329,7 +1329,7 @@ if(numTexUnits < 2)
             glScalef(.99f, .99f, .99f);
             glTranslatef(-vx, -vy, -vz);
         }
-        return 0;
+        return DCF_SET_MATRIX_TEXTURE0;
 
     case LM_MASKED_SHINY:
         if(TU(list, TU_INTER)->tex)

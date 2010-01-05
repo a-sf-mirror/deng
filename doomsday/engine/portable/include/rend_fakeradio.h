@@ -31,12 +31,10 @@
 
 typedef struct {
     lightingtexid_t texture;
-    boolean         horizontal;
-    float           shadowMul;
     float           texWidth;
     float           texHeight;
     float           texOffset[2];
-    float           wallLength;
+    float           shadowMul;
     float           shadowDark;
 } rendseg_shadow_t;
 
@@ -48,15 +46,14 @@ void            Rend_RadioSubsectorEdges(subsector_t* subsector);
 
 float           Rend_RadioShadowSize(float lightLevel);
 float           Rend_RadioShadowDarkness(float lightLevel);
-float           Rend_RadioLongWallBonus(float span);
 
 void            Rend_RadioSetupTopShadow(rendseg_shadow_t* rendSeg, float size,
-                                         float top, float xOffset, float segLength,
+                                         float top, float xOffset,
                                          const float* fFloor, const float* fCeil,
                                          const sideradioconfig_t* radioConfig,
                                          float shadowDark);
 void            Rend_RadioSetupBottomShadow(rendseg_shadow_t* rendSeg, float size,
-                                            float top, float xOffset, float segLength,
+                                            float top, float xOffset,
                                             const float* fFloor, const float* fCeil,
                                             const sideradioconfig_t* radioConfig,
                                             float shadowDark);
@@ -64,7 +61,7 @@ void            Rend_RadioSetupSideShadow(rendseg_shadow_t* rendSeg,
                                           float size, float bottom, float top,
                                           boolean rightSide, boolean bottomGlow,
                                           boolean topGlow,
-                                          float xOffset, float segLength,
+                                          float xOffset,
                                           const float* fFloor, const float* fCeil,
                                           const float* bFloor, const float* bCeil,
                                           float lineLength,

@@ -735,6 +735,10 @@ void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
                 radioTU[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
                 radioTU[TU_PRIMARY].magMode = GL_LINEAR;
                 radioTU[TU_PRIMARY].blend = 1;
+                radioTU[TU_PRIMARY].scale[0] = 1.f / shadow->texWidth;
+                radioTU[TU_PRIMARY].scale[1] = 1.f / shadow->texHeight;
+                radioTU[TU_PRIMARY].offset[0] = shadow->texOffset[0] / shadow->texWidth;
+                radioTU[TU_PRIMARY].offset[1] = shadow->texOffset[1] / shadow->texHeight;
             }
 
             if(rseg->radioConfig[1].texture)
@@ -744,6 +748,10 @@ void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
                 radioTU2[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
                 radioTU2[TU_PRIMARY].magMode = GL_LINEAR;
                 radioTU2[TU_PRIMARY].blend = 1;
+                radioTU2[TU_PRIMARY].scale[0] = 1.f / shadow->texWidth;
+                radioTU2[TU_PRIMARY].scale[1] = 1.f / shadow->texHeight;
+                radioTU2[TU_PRIMARY].offset[0] = shadow->texOffset[0] / shadow->texWidth;
+                radioTU2[TU_PRIMARY].offset[1] = shadow->texOffset[1] / shadow->texHeight;
             }
 
             if(rseg->radioConfig[2].texture)
@@ -753,6 +761,10 @@ void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
                 radioTU3[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
                 radioTU3[TU_PRIMARY].magMode = GL_LINEAR;
                 radioTU3[TU_PRIMARY].blend = 1;
+                radioTU3[TU_PRIMARY].scale[0] = 1.f / shadow->texWidth;
+                radioTU3[TU_PRIMARY].scale[1] = 1.f / shadow->texHeight;
+                radioTU3[TU_PRIMARY].offset[0] = shadow->texOffset[0] / shadow->texWidth;
+                radioTU3[TU_PRIMARY].offset[1] = shadow->texOffset[1] / shadow->texHeight;
             }
 
             if(rseg->radioConfig[3].texture)
@@ -762,6 +774,10 @@ void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
                 radioTU4[TU_PRIMARY].tex = GL_PrepareLSTexture(shadow->texture);
                 radioTU4[TU_PRIMARY].magMode = GL_LINEAR;
                 radioTU4[TU_PRIMARY].blend = 1;
+                radioTU4[TU_PRIMARY].scale[0] = 1.f / shadow->texWidth;
+                radioTU4[TU_PRIMARY].scale[1] = 1.f / shadow->texHeight;
+                radioTU4[TU_PRIMARY].offset[0] = shadow->texOffset[0] / shadow->texWidth;
+                radioTU4[TU_PRIMARY].offset[1] = shadow->texOffset[1] / shadow->texHeight;
             }
         }
     }

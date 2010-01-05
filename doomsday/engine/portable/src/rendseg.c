@@ -256,7 +256,6 @@ static void getShadowRendSegs(rendseg_t* rseg, float bottomLeft, float topLeft, 
 {
     const float* fFloor, *fCeil, *bFloor, *bCeil;
     boolean bottomGlow, topGlow;
-    float size;
 
     bottomGlow = R_IsGlowingPlane(frontSec->SP_plane(PLN_FLOOR));
     topGlow = R_IsGlowingPlane(frontSec->SP_plane(PLN_CEILING));
@@ -273,20 +272,17 @@ static void getShadowRendSegs(rendseg_t* rseg, float bottomLeft, float topLeft, 
 
     if(!topGlow)
     {
-        // The top shadow will reach this far down.
-        size = shadowSize + Rend_RadioLongWallBonus(radioConfig->spans[1].length);
-        if(topRight > *fCeil - size && bottomLeft < *fCeil)
-            Rend_RadioSetupTopShadow(&rseg->radioConfig[0], size, topLeft,
-                                     segOffset, rseg->texQuadWidth, fFloor, fCeil,
+        if(topRight > *fCeil - shadowSize && bottomLeft < *fCeil)
+            Rend_RadioSetupTopShadow(&rseg->radioConfig[0], shadowSize, topLeft,
+                                     segOffset, fFloor, fCeil,
                                      radioConfig, shadowDark);
     }
 
     if(!bottomGlow)
     {
-        size = shadowSize + Rend_RadioLongWallBonus(radioConfig->spans[0].length);
-        if(bottomLeft < *fFloor + size && topRight > *fFloor)
-            Rend_RadioSetupBottomShadow(&rseg->radioConfig[1], size, topLeft,
-                                  segOffset, rseg->texQuadWidth, fFloor, fCeil,
+        if(bottomLeft < *fFloor + shadowSize && topRight > *fFloor)
+            Rend_RadioSetupBottomShadow(&rseg->radioConfig[1], shadowSize, topLeft,
+                                  segOffset, fFloor, fCeil,
                                   radioConfig, shadowDark);
     }
 
@@ -294,20 +290,18 @@ static void getShadowRendSegs(rendseg_t* rseg, float bottomLeft, float topLeft, 
     // Is there anything better we can do?
     if(!(bottomGlow && topGlow))
     {
-        size = shadowSize + Rend_RadioLongWallBonus(lineDefLength);
-
-        if(radioConfig->sideCorners[0].corner > 0 && segOffset < size)
-            Rend_RadioSetupSideShadow(&rseg->radioConfig[2], size, bottomLeft,
+        if(radioConfig->sideCorners[0].corner > 0 && segOffset < shadowSize)
+            Rend_RadioSetupSideShadow(&rseg->radioConfig[2], shadowSize, bottomLeft,
                                 topLeft, false,
-                                bottomGlow, topGlow, segOffset, rseg->texQuadWidth,
+                                bottomGlow, topGlow, segOffset,
                                 fFloor, fCeil, bFloor, bCeil, lineDefLength,
                                 radioConfig->sideCorners, shadowDark);
 
         if(radioConfig->sideCorners[1].corner > 0 &&
-           segOffset + rseg->texQuadWidth > lineDefLength - size)
-            Rend_RadioSetupSideShadow(&rseg->radioConfig[3], size, bottomLeft,
+           segOffset + rseg->texQuadWidth > lineDefLength - shadowSize)
+            Rend_RadioSetupSideShadow(&rseg->radioConfig[3], shadowSize, bottomLeft,
                                 topLeft, true,
-                                bottomGlow, topGlow, segOffset, rseg->texQuadWidth,
+                                bottomGlow, topGlow, segOffset,
                                 fFloor, fCeil, bFloor, bCeil, lineDefLength,
                                 radioConfig->sideCorners, shadowDark);
     }
