@@ -923,6 +923,9 @@ void RL_AddPoly(primtype_t type, rendpolytype_t polyType,
     if(type < PT_FIRST || type >= NUM_PRIM_TYPES)
         Con_Error("RL_AddPoly: Unknown primtype %i.", type);
 
+    if(type == RPT_SKY_MASK)
+        skyHemispheres |= (SKYHEMI_LOWER | SKYHEMI_UPPER);
+
     addPoly(type, polyType, numVertices, vertices, modCoords, coords, coords2,
             colors, rTU[TU_PRIMARY].blendMode, numLights, modTex, modColor, rTU);
 }

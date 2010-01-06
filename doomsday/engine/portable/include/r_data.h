@@ -287,6 +287,9 @@ void            R_TexmapUnitsFromRendSeg(struct rendseg_s* rseg, rtexmapunit_t r
                                          rtexmapunit_t radioTU3[NUM_TEXMAP_UNITS],
                                          rtexmapunit_t radioTU4[NUM_TEXMAP_UNITS]);
 
+rvertex_t*      R_VerticesFromRendPlane(struct rendplane_s* rplane, const struct face_s* face,
+                                        float height, boolean antiClockwise, uint* size);
+
 void Rend_SetupRTU(rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
                    rtexmapunit_t rTUs[NUM_TEXMAP_UNITS],
                    const struct material_snapshot_s* msA, float inter,
@@ -307,8 +310,7 @@ void            R_VertexColorsApplyTorchLight(rcolor_t* colors, const rvertex_t*
 void            R_VertexColorsApplyAmbientLight(rcolor_t* color, const rvertex_t* vtx,
                                                 float lightLevel, const float* ambientColor);
 
-void            R_VerticesFromSubsectorPlane(rvertex_t* rvertices, const subsector_t* subSector,
-                                             float height, boolean antiClockwise);
+
 
 void            R_DivVerts(rvertex_t* dst, const rvertex_t* src,
                            const walldiv_t* divs);

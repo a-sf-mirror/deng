@@ -59,6 +59,7 @@
  .\..\..\engine\portable\src\rend_dyn.c
  .\..\..\engine\portable\src\rend_decor.c
  .\..\..\engine\portable\src\rend_clip.c
+ .\..\..\engine\portable\src\rendplane.c
  .\..\..\engine\portable\src\rendseg.c
  .\..\..\engine\portable\src\r_world.c
  .\..\..\engine\portable\src\r_util.c

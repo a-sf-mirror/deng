@@ -322,6 +322,7 @@
 		<Unit filename="..\..\engine\portable\include\rend_shadow.h" />
 		<Unit filename="..\..\engine\portable\include\rend_sky.h" />
 		<Unit filename="..\..\engine\portable\include\rend_sprite.h" />
+		<Unit filename="..\..\engine\portable\include\rendplane.h" />
 		<Unit filename="..\..\engine\portable\include\rendseg.h" />
 		<Unit filename="..\..\engine\portable\include\s_cache.h" />
 		<Unit filename="..\..\engine\portable\include\s_environ.h" />
@@ -727,6 +728,7 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="..\..\engine\portable\src\rend_sprite.c" />
+		<Unit filename="..\..\engine\portable\src\rendplane.c" />
 		<Unit filename="..\..\engine\portable\src\rendseg.c" />
 		<Unit filename="..\..\engine\portable\src\s_cache.c">
 			<Option compilerVar="CC" />

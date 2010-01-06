@@ -59,10 +59,10 @@ static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef,
                                          float* materialBlendInter,
                                          material_t** materialB)
 {
-    int                 texMode = 0;
-    surface_t*          surface = &sideDef->SW_surface(section);
-    boolean             forceOpaque = false;
-    blendmode_t         blendMode = BM_NORMAL;
+    int texMode = 0;
+    surface_t* surface = &sideDef->SW_surface(section);
+    boolean forceOpaque = false;
+    blendmode_t blendMode = BM_NORMAL;
 
     *materialBlendInter = 0;
 
@@ -81,11 +81,12 @@ static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef,
         else
         {   // We'll mask this.
             rseg->flags |= RSF_SKYMASK;
+            *materialA = NULL;
         }
     }
     else
     {
-        int                 surfaceFlags, surfaceInFlags;
+        int surfaceFlags, surfaceInFlags;
 
         // Determine which texture to use.
         if(renderTextures == 2)
@@ -148,7 +149,7 @@ static void pickMaterialsAndGetDrawFlags(rendseg_t* rseg, sidedef_t* sideDef,
     if((rseg->flags & RSF_GLOW) || (rseg->flags & RSF_SKYMASK))
         rseg->flags |= RSF_NO_RADIO;
 
-    if(!useShinySurfaces || !(*materialA) && !(*materialA)->reflection)
+    if(!useShinySurfaces || !(*materialA) || !(*materialA)->reflection)
         rseg->flags |= RSF_NO_REFLECTION;
 
     if(forceOpaque)

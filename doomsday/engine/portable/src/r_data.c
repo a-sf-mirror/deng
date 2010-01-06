@@ -40,6 +40,7 @@
 
 #include "m_stack.h"
 #include "rendseg.h"
+#include "rendplane.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -673,15 +674,15 @@ void R_FreeRendVertices(rvertex_t* rvertices)
 static rvertex_t* allocateVerticesForRendSeg(rendseg_t* rseg, uint* size)
 {
     uint num = RendSeg_NumRequiredVertices(rseg);
-
     if(size)
         *size = num;
-
     return R_AllocRendVertices(num);
 }
 
 rvertex_t* R_VerticesFromRendSeg(rendseg_t* rseg, uint* size)
 {
+    assert(rseg);
+    {
     rvertex_t* rvertices = allocateVerticesForRendSeg(rseg, size);
 
     // Vertex coords.
@@ -697,9 +698,56 @@ rvertex_t* R_VerticesFromRendSeg(rendseg_t* rseg, uint* size)
     // Top Right.
     V3_Set(rvertices[3].pos, rseg->to[VX], rseg->to[VY], rseg->top);
 
-    // @todo apply divisions here!
+    return rvertices;
+    }
+}
+
+static rvertex_t* allocateVerticesForRendPlane(rendplane_t* rplane, uint* size)
+{
+    uint num = RendPlane_NumRequiredVertices(rplane);
+    if(size)
+        *size = num;
+    return R_AllocRendVertices(num);
+}
+
+rvertex_t* R_VerticesFromRendPlane(rendplane_t* rplane, const face_t* face,
+                                   float height, boolean antiClockwise, uint* size)
+{
+    assert(rplane);
+    assert(face);
+    {
+    const subsector_t* subsector = (subsector_t*) face->data;
+    rvertex_t* rvertices = allocateVerticesForRendPlane(rplane, size);
+    hedge_t* hEdge;
+    size_t i = 0;
+
+    if(subsector->useMidPoint)
+    {
+        rvertices[i].pos[VX] = subsector->midPoint[VX];
+        rvertices[i].pos[VY] = subsector->midPoint[VY];
+        rvertices[i].pos[VZ] = height;
+        ++i;
+    }
+
+    // Copy the vertices in reverse order for ceilings (flip faces).
+    hEdge = subsector->firstFanHEdge;
+    do
+    {
+        rvertices[i].pos[VX] = hEdge->HE_v1->pos[VX];
+        rvertices[i].pos[VY] = hEdge->HE_v1->pos[VY];
+        rvertices[i].pos[VZ] = height;
+        ++i;
+    } while((hEdge = (antiClockwise? hEdge->prev : hEdge->next)) != subsector->firstFanHEdge);
+
+    if(subsector->useMidPoint)
+    {
+        rvertices[i].pos[VX] = subsector->firstFanHEdge->HE_v1->pos[VX];
+        rvertices[i].pos[VY] = subsector->firstFanHEdge->HE_v1->pos[VY];
+        rvertices[i].pos[VZ] = height;
+    }
 
     return rvertices;
+    }
 }
 
 void R_TexmapUnitsFromRendSeg(rendseg_t* rseg, rtexmapunit_t* rTU,
@@ -887,7 +935,7 @@ void R_ColorApplyTorchLight(float* color, float distance)
 }
 
 void R_VertexColorsApplyTorchLight(rcolor_t* colors, const rvertex_t* vertices,
-                             size_t numVertices)
+                                   size_t numVertices)
 {
     size_t i;
     ddplayer_t* ddpl = &viewPlayer->shared;
@@ -905,7 +953,7 @@ void R_VertexColorsApplyTorchLight(rcolor_t* colors, const rvertex_t* vertices,
 }
 
 void R_VertexColorsApplyAmbientLight(rcolor_t* color, const rvertex_t* vtx,
-                   float lightLevel, const float* ambientColor)
+                                     float lightLevel, const float* ambientColor)
 {
     float lightVal, dist;
 
@@ -923,38 +971,6 @@ void R_VertexColorsApplyAmbientLight(rcolor_t* color, const rvertex_t* vtx,
     color->rgba[CR] = lightVal * ambientColor[CR];
     color->rgba[CG] = lightVal * ambientColor[CG];
     color->rgba[CB] = lightVal * ambientColor[CB];
-}
-
-void R_VerticesFromSubsectorPlane(rvertex_t* rvertices, const subsector_t* subSector,
-                                         float height, boolean antiClockwise)
-{
-    size_t i = 0;
-    hedge_t* hEdge;
-
-    if(subSector->useMidPoint)
-    {
-        rvertices[i].pos[VX] = subSector->midPoint[VX];
-        rvertices[i].pos[VY] = subSector->midPoint[VY];
-        rvertices[i].pos[VZ] = height;
-        ++i;
-    }
-
-    // Copy the vertices in reverse order for ceilings (flip faces).
-    hEdge = subSector->firstFanHEdge;
-    do
-    {
-        rvertices[i].pos[VX] = hEdge->HE_v1->pos[VX];
-        rvertices[i].pos[VY] = hEdge->HE_v1->pos[VY];
-        rvertices[i].pos[VZ] = height;
-        ++i;
-    } while((hEdge = (antiClockwise? hEdge->prev : hEdge->next)) != subSector->firstFanHEdge);
-
-    if(subSector->useMidPoint)
-    {
-        rvertices[i].pos[VX] = subSector->firstFanHEdge->HE_v1->pos[VX];
-        rvertices[i].pos[VY] = subSector->firstFanHEdge->HE_v1->pos[VY];
-        rvertices[i].pos[VZ] = height;
-    }
 }
 
 void R_DivVerts(rvertex_t* dst, const rvertex_t* src, const walldiv_t* wdivs)
