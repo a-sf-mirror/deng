@@ -850,10 +850,10 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
 
     if(!luminousClipped[lumIdx])
     {
-        uint i;
-        vec2_t eye;
         subsector_t* subsector = (subsector_t*) context;
         polyobj_t* po = subsector->polyObj;
+        vec2_t eye;
+        uint i;
 
         V2_Set(eye, vx, vz);
 
@@ -861,16 +861,19 @@ boolean LOIT_ClipLumObjBySight(void* data, void* context)
         // between the viewpoint and the lumobj.
         for(i = 0; i < po->numLineDefs; ++i)
         {
-            linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
+            const linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
+            const vertex_t* from = line->L_v1;
+            const vertex_t* to = line->L_v2;
 
             // Ignore lines facing the wrong way.
-            if(!(R_FacingViewerDot(line->L_v1, line->L_v2) < 0))
+            if(!(R_FacingViewerDot(from->pos[VX], from->pos[VY],
+                                   to->pos  [VX], to->pos  [VY]) < 0))
             {
                 vec2_t source, v1pos, v2pos;
 
                 V2_Set(source, lum->pos[VX], lum->pos[VY]);
-                V2_Set(v1pos, line->L_v1->pos[VX], line->L_v1->pos[VY]);
-                V2_Set(v2pos, line->L_v2->pos[VX], line->L_v2->pos[VY]);
+                V2_Set(v1pos, from->pos[VX], from->pos[VY]);
+                V2_Set(v2pos, to->pos  [VX], to->pos  [VY]);
 
                 if(V2_Intercept2(source, eye, v1pos, v2pos, NULL, NULL, NULL))
                 {

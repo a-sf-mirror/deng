@@ -392,9 +392,9 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
  *
  * @todo Replace @a from and @a to arguments with a parametric representation.
  */
-rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, sidedef_t* sideDef,
-                                     float from[2], float to[2], float bottom, float top,
-                                     subsector_t* subsector, poseg_t* poSeg)
+rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg,
+    sidedef_t* sideDef, float from[2], float to[2], float bottom, float top,
+    subsector_t* subsector, poseg_t* poSeg)
 {
     rendseg_t* rseg = newRendSeg; // allocate.
 
@@ -405,6 +405,9 @@ rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg, side
     surface_t* surface = &sideDef->SW_middlesurface;
 
     if(surface->material && (surface->material->flags & MATF_NO_DRAW))
+        return NULL; // @todo return null_object
+
+    if(subsector->sector->SP_floorvisheight >= subsector->sector->SP_ceilvisheight)
         return NULL; // @todo return null_object
 
     materialOffset[0] = surface->visOffset[0];
