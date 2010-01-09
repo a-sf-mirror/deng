@@ -37,6 +37,7 @@
 #include "de_defs.h"
 #include "de_bsp.h"
 #include "de_edit.h"
+#include "de_play.h"
 
 #include "bsp_edge.h"
 #include "s_environ.h"
@@ -3716,15 +3717,7 @@ boolean P_LoadMap(const char* mapID)
     }
 
     if(DAM_TryMapConversion(mapID))
-    {
-        ddstring_t* s = DAM_ComposeArchiveMapFilepath(mapID);
-
         map = MPE_GetLastBuiltMap();
-
-        //DAM_MapWrite(map, Str_Text(s));
-
-        Str_Delete(s);
-    }
     else
         return false;
 

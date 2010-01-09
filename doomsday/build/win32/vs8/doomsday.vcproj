@@ -945,10 +945,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\dam_file.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\dam_main.c"
 				>
 			</File>
@@ -2631,10 +2627,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\con_main.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\dam_file.h"
 				>
 			</File>
 			<File

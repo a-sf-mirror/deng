@@ -74,16 +74,6 @@ static boolean convertMap(const char* mapID)
     return converted;
 }
 
-ddstring_t* DAM_ComposeArchiveMapFilepath(const char* mapID)
-{
-    ddstring_t* s = Str_New();
-
-    Str_Init(s);
-    Str_Appendf(s, "%s.pk3", mapID);
-
-    return s;
-}
-
 /**
  * Generate a 'unique' identifier for the map.  This identifier
  * contains information about the map tag (E3M3), the WAD that
@@ -124,25 +114,4 @@ boolean DAM_TryMapConversion(const char* mapID)
     P_DestroyObjectRecordsByType(DMU_NODE);
 
     return convertMap(mapID);
-}
-
-map_t* DAM_LoadMap(const char* mapID)
-{
-    ddstring_t* s = DAM_ComposeArchiveMapFilepath(mapID);
-    map_t* map = P_CreateMap(mapID);
-
-    // Destroy DMU obj records for map-owned objects.
-    P_DestroyObjectRecordsByType(DMU_VERTEX);
-    P_DestroyObjectRecordsByType(DMU_LINEDEF);
-    P_DestroyObjectRecordsByType(DMU_SIDEDEF);
-    P_DestroyObjectRecordsByType(DMU_PLANE);
-    P_DestroyObjectRecordsByType(DMU_SECTOR);
-    P_DestroyObjectRecordsByType(DMU_SEG);
-    P_DestroyObjectRecordsByType(DMU_SUBSECTOR);
-    P_DestroyObjectRecordsByType(DMU_NODE);
-
-    DAM_MapRead(map, Str_Text(s));
-
-    Str_Delete(s);
-    return map;
 }
