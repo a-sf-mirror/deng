@@ -66,14 +66,8 @@ typedef struct material_snapshot_s {
     boolean         isOpaque;
     float           color[3]; // Average color (for lighting).
     float           topColor[3]; // Averaged top line color, used for sky fadeouts.
+    float           shinyMinColor[3];
     material_textureunit_t units[NUM_MATERIAL_TEXTURE_UNITS];
-
-/**
- * \todo: the following should be removed once incorporated into the layers (above).
- */
-    struct shinydata_s {
-        float           minColor[3];
-    } shiny;
 } material_snapshot_t;
 
 byte            Material_Prepare(struct material_snapshot_s* snapshot,

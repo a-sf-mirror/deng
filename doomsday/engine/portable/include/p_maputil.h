@@ -32,31 +32,25 @@
 #include "m_vector.h"
 #include "p_object.h"
 
-#define MAXINTERCEPTS   128
-
-extern float  opentop, openbottom, openrange, lowfloor;
+extern float opentop, openbottom, openrange, lowfloor;
 extern divline_t traceLOS;
+extern boolean earlyout;
 
 float           P_AccurateDistanceFixed(fixed_t dx, fixed_t dy);
 float           P_AccurateDistance(float dx, float dy);
 float           P_ApproxDistance(float dx, float dy);
 float           P_ApproxDistance3(float dx, float dy, float dz);
-void            P_LineUnitVector(linedef_t* line, float* unitvec);
 float           P_MobjPointDistancef(mobj_t* start, mobj_t* end,
                                      float* fixpoint);
-int             P_PointOnLineDefSide(float x, float y, const linedef_t* line);
+int             P_PointOnLineSide(float x, float y, float lX, float lY, float lDX, float lDY);
 int             P_PointOnLineDefSide2(double pointX, double pointY,
                                    double lineDX, double lineDY,
                                    double linePerp, double lineLength,
                                    double epsilon);
-int             P_BoxOnLineSide(const float* tmbox, const linedef_t* ld);
-int             P_BoxOnLineSide2(float xl, float xh, float yl, float yh,
-                                 const linedef_t* ld);
 int             P_BoxOnLineSide3(const int bbox[4], double lineSX,
                                  double lineSY, double lineDX, double lineDY,
                                  double linePerp, double lineLength,
                                  double epsilon);
-void            P_MakeDivline(const linedef_t* li, divline_t* dl);
 int             P_PointOnDivlineSide(float x, float y, const divline_t* line);
 float           P_InterceptVector(const divline_t* v2, const divline_t* v1);
 int             P_PointOnDivLineSidef(fvertex_t* pnt, fdivline_t* dline);
@@ -66,18 +60,12 @@ void            P_LineOpening(linedef_t* linedef);
 void            P_MobjLink(mobj_t* mo, byte flags);
 int             P_MobjUnlink(mobj_t* mo);
 
-boolean         PIT_AddLineIntercepts(linedef_t* ld, void* data);
-boolean         PIT_AddMobjIntercepts(mobj_t* mo, void* data);
-
 boolean         P_MobjLinesIterator(const mobj_t* mo,
                                     boolean (*func) (linedef_t*, void*),
                                     void* data);
 boolean         P_MobjSectorsIterator(const mobj_t* mo,
                                       boolean (*func) (sector_t*, void*),
                                       void* data);
-boolean         P_LineMobjsIterator(linedef_t* line,
-                                    boolean (*func) (mobj_t*, void*),
-                                    void* data);
 boolean         P_SectorTouchingMobjsIterator(sector_t* sector,
                                               int (*func) (void*, void*),
                                               void*data);

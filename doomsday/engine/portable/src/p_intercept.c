@@ -67,7 +67,7 @@ void P_CalcInterceptDistances(const divline_t* strace)
     {
         divline_t           dl;
 
-        P_MakeDivline(scan->d.lineDef, &dl);
+        LineDef_ConstructDivline(scan->d.lineDef, &dl);
         scan->frac = P_InterceptVector(strace, &dl);
     }
 }

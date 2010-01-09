@@ -796,20 +796,17 @@ if(num >= map->numSideDefs)
         sid->flags |= sideFlags;
     }
 
-    if(df & SIDF_LINE_FLAGS)
+    if((df & SIDF_LINE_FLAGS) && sid->lineDef)
     {
-        linedef_t *line = R_GetLineForSide(sid);
+        linedef_t* line = sid->lineDef;
 
-        if(line)
-        {
-            // The delta includes the entire lowest byte.
-            line->flags &= ~0xff;
-            line->flags |= lineFlags;
+        // The delta includes the entire lowest byte.
+        line->flags &= ~0xff;
+        line->flags |= lineFlags;
 #if _DEBUG
 Con_Printf("Cl_ReadSideDelta2: Lineflag %i: %02x\n",
            (int) P_ObjectRecord(DMU_LINEDEF, line)->id, lineFlags);
 #endif
-        }
     }
 }
 

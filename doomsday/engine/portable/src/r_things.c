@@ -1149,7 +1149,7 @@ void getLightingParams(float x, float y, float z, subsector_t* subsector,
 
             // Evaluate the position in the light grid.
             V3_Set(point, x, y, z);
-            LG_Evaluate(P_CurrentMap(), point, ambientColor);
+            LightGrid_Evaluate(Map_LightGrid(P_CurrentMap()), point, ambientColor);
         }
         else
         {

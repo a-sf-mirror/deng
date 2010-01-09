@@ -181,9 +181,9 @@ void P_MobjRecycle(mobj_t* mo)
  */
 void P_MobjSetState(mobj_t* mobj, int statenum)
 {
-    state_t*            st = states + statenum;
-    boolean             spawning = (mobj->state == 0);
-    ded_generator_t*       pg;
+    state_t* st = states + statenum;
+    boolean spawning = (mobj->state == 0);
+    ded_generator_t* def;
 
 #if _DEBUG
     if(statenum < 0 || statenum >= defs.count.states.num)
@@ -196,12 +196,12 @@ void P_MobjSetState(mobj_t* mobj, int statenum)
     mobj->frame = st->frame;
 
     // Check for a ptcgen trigger.
-    for(pg = stateGenerators[statenum]; pg; pg = pg->stateNext)
+    for(def = stateGeneratorDefs[statenum]; def; def = def->stateNext)
     {
-        if(!(pg->flags & PGF_SPAWN_ONLY) || spawning)
+        if(!(def->flags & PGF_SPAWN_ONLY) || spawning)
         {
             // We are allowed to spawn the generator.
-            P_SpawnParticleGen(pg, mobj);
+            P_SpawnParticleGen(mobj, def);
         }
     }
 
@@ -223,8 +223,8 @@ boolean PIT_LineCollide(linedef_t* ld, void* parm)
        // Bounding boxes do not overlap.
         return true;
 
-    if(P_BoxOnLineSide2(tm->box[0][VX], tm->box[1][VX],
-                        tm->box[0][VY], tm->box[1][VY], ld) != -1)
+    if(LineDef_BoxOnSide2(ld, tm->box[0][VX], tm->box[1][VX],
+                              tm->box[0][VY], tm->box[1][VY]) != -1)
         return true;
 
     // A line has been hit.
@@ -365,7 +365,7 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     V2_Set(point, x + mo->radius + DDMOBJ_RADIUS_MAX, y + mo->radius + DDMOBJ_RADIUS_MAX);
     V2_AddToBox(data.box, point);
 
-    newsubsec = R_PointInSubSector(x, y);
+    newsubsec = Map_PointInSubsector(map, x, y);
 
     // The base floor / ceiling is from the subsector that contains the
     // point. Any contacted lines the step closer together will adjust them.
@@ -565,7 +565,7 @@ static void wallMomSlide(linedef_t *ld)
         return;
     }
 
-    side = P_PointOnLineDefSide(slideMo->pos[VX], slideMo->pos[VY], ld);
+    side = LineDef_PointOnSide(ld, slideMo->pos[VX], slideMo->pos[VY]);
     lineangle = R_PointToAngle2(0, 0, ld->dX, ld->dY);
 
     if(side == 1)
@@ -586,9 +586,9 @@ static void wallMomSlide(linedef_t *ld)
     tmpMom[VY] = newlen * FIX2FLT(finesine[an]);
 }
 
-static boolean slideTraverse(intercept_t *in)
+static boolean slideTraverse(intercept_t* in)
 {
-    linedef_t          *li;
+    linedef_t* li;
 
     if(in->type != ICPT_LINE)
         Con_Error("PTR_SlideTraverse: not a line?");
@@ -597,8 +597,7 @@ static boolean slideTraverse(intercept_t *in)
 
     if(!LINE_FRONTSIDE(li) || !LINE_BACKSIDE(li))
     {
-        if(P_PointOnLineDefSide(slideMo->pos[VX],
-                             slideMo->pos[VY], li))
+        if(LineDef_PointOnSide(li, slideMo->pos[VX], slideMo->pos[VY]))
         {   // The back side.
             return true; // Continue iteration.
         }

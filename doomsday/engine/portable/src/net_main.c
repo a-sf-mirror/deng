@@ -862,7 +862,7 @@ void Net_Drawer(void)
     if(map)
     {
         // Draw lightgrid debug display.
-        LG_Debug(map);
+        Rend_LightGridVisual(Map_LightGrid(map));
 
         // Draw the blockmap debug display?
         if(devBlockmap)

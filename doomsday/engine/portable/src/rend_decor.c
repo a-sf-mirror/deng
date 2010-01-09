@@ -485,12 +485,13 @@ static void getDecorationSkipPattern(const int patternSkip[2], int* skip)
     }
 }
 
-static uint generateDecorLights(surfacelist_t* list, const ded_decorlight_t* def,
+static uint generateDecorLights(map_t* map, const ded_decorlight_t* def,
                                 surface_t* suf, const pvec3_t v1,
                                 const pvec3_t v2, float width, float height,
                                 const pvec3_t delta, int axis,
                                 float offsetS, float offsetT, sector_t* sec)
 {
+    surfacelist_t* list = &map->decoratedSurfaceList;
     uint num;
     float s, t; // Horizontal and vertical offset.
     vec3_t posBase, pos;
@@ -536,14 +537,14 @@ static uint generateDecorLights(surfacelist_t* list, const ded_decorlight_t* def
             if(sec)
             {
                 // The point must be inside the correct sector.
-                if(!R_IsPointInSector(pos[VX], pos[VY], sec))
+                if(!Sector_PointInside(sec, pos[VX], pos[VY]))
                     continue;
             }
 
             if(NULL != (d = R_CreateSurfaceDecoration(DT_LIGHT, suf)))
             {
                 V3_Copy(d->pos, pos);
-                d->subsector = R_PointInSubSector(d->pos[VX], d->pos[VY]);
+                d->subsector = Map_PointInSubsector(map, d->pos[VX], d->pos[VY]);
                 DEC_LIGHT(d)->def = def;
 
                 SurfaceList_Add(list, suf);
@@ -556,12 +557,13 @@ static uint generateDecorLights(surfacelist_t* list, const ded_decorlight_t* def
     return num;
 }
 
-static uint generateDecorModels(surfacelist_t* list, const ded_decormodel_t* def,
+static uint generateDecorModels(map_t* map, const ded_decormodel_t* def,
                                 surface_t* suf, const pvec3_t v1,
                                 const pvec3_t v2, float width, float height,
                                 const pvec3_t delta, int axis,
                                 float offsetS, float offsetT, sector_t* sec)
 {
+    surfacelist_t* list = &map->decoratedSurfaceList;
     uint num;
     modeldef_t* mf;
     float pitch, yaw;
@@ -618,14 +620,14 @@ static uint generateDecorModels(surfacelist_t* list, const ded_decormodel_t* def
             if(sec)
             {
                 // The point must be inside the correct sector.
-                if(!R_IsPointInSector(pos[VX], pos[VY], sec))
+                if(!Sector_PointInside(sec, pos[VX], pos[VY]))
                     continue;
             }
 
             if(NULL != (d = R_CreateSurfaceDecoration(DT_MODEL, suf)))
             {
                 V3_Copy(d->pos, pos);
-                d->subsector = R_PointInSubSector(d->pos[VX], d->pos[VY]);
+                d->subsector = Map_PointInSubsector(map, d->pos[VX], d->pos[VY]);
                 DEC_MODEL(d)->def = def;
                 DEC_MODEL(d)->mf = mf;
                 DEC_MODEL(d)->pitch = pitch;
@@ -644,14 +646,14 @@ static uint generateDecorModels(surfacelist_t* list, const ded_decormodel_t* def
 /**
  * Generate decorations for the specified surface.
  */
-static void updateSurfaceDecorations(surfacelist_t* list, surface_t* suf, float offsetS,
+static void updateSurfaceDecorations(map_t* map, surface_t* suf, float offsetS,
                                      float offsetT, vec3_t v1, vec3_t v2,
                                      sector_t* sec, boolean visible)
 {
     vec3_t delta;
 
     R_ClearSurfaceDecorations(suf);
-    SurfaceList_Remove(list, suf);
+    SurfaceList_Remove(&map->decoratedSurfaceList, suf);
 
     V3_Subtract(delta, v2, v1);
 
@@ -687,7 +689,7 @@ static void updateSurfaceDecorations(surfacelist_t* list, surface_t* suf, float 
             // Generate a number of models.
             for(i = 0; i < DED_DECOR_NUM_MODELS; ++i)
             {
-                generateDecorModels(list, &def->models[i], suf, v1, v2, width,
+                generateDecorModels(map, &def->models[i], suf, v1, v2, width,
                                     height, delta, axis, offsetS, offsetT,
                                     sec);
             }
@@ -695,7 +697,7 @@ static void updateSurfaceDecorations(surfacelist_t* list, surface_t* suf, float 
             // Generate a number of lights.
             for(i = 0; i < DED_DECOR_NUM_LIGHTS; ++i)
             {
-                generateDecorLights(list, &def->lights[i], suf, v1, v2, width, height,
+                generateDecorLights(map, &def->lights[i], suf, v1, v2, width, height,
                                     delta, axis, offsetS, offsetT, sec);
             }
         }
@@ -707,8 +709,7 @@ static void updateSurfaceDecorations(surfacelist_t* list, surface_t* suf, float 
 /**
  * Generate decorations for a plane.
  */
-static void updateSectorPlaneDecorations(surfacelist_t* list, sector_t* sec,
-                                         int planeID)
+static void updateSectorPlaneDecorations(map_t* map, sector_t* sec, int planeID)
 {
     plane_t* pln = sec->planes[planeID];
     surface_t* suf = &pln->surface;
@@ -729,10 +730,10 @@ static void updateSectorPlaneDecorations(surfacelist_t* list, sector_t* sec,
     offsetS = -fmod(sec->bBox[BOXLEFT], 64);
     offsetT = -fmod(sec->bBox[BOXBOTTOM], 64);
 
-    updateSurfaceDecorations(list, suf, offsetS, offsetT, v1, v2, sec, true);
+    updateSurfaceDecorations(map, suf, offsetS, offsetT, v1, v2, sec, true);
 }
 
-static void updateSideSectionDecorations(surfacelist_t* list, sidedef_t* side,
+static void updateSideSectionDecorations(map_t* map, sidedef_t* side,
                                          segsection_t section)
 {
     linedef_t* line;
@@ -825,7 +826,7 @@ static void updateSideSectionDecorations(surfacelist_t* list, sidedef_t* side,
         }
     }
 
-    updateSurfaceDecorations(list, suf, offsetS, offsetT, v1, v2, NULL, visible);
+    updateSurfaceDecorations(map, suf, offsetS, offsetT, v1, v2, NULL, visible);
 }
 
 void Rend_UpdateSurfaceDecorations(map_t* map)
@@ -845,15 +846,15 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
 
             suf = &side->SW_middlesurface;
             if(suf->inFlags & SUIF_UPDATE_DECORATIONS)
-                updateSideSectionDecorations(&map->decoratedSurfaceList, side, SEG_MIDDLE);
+                updateSideSectionDecorations(map, side, SEG_MIDDLE);
 
             suf = &side->SW_topsurface;
             if(suf->inFlags & SUIF_UPDATE_DECORATIONS)
-                updateSideSectionDecorations(&map->decoratedSurfaceList, side, SEG_TOP);
+                updateSideSectionDecorations(map, side, SEG_TOP);
 
             suf = &side->SW_bottomsurface;
             if(suf->inFlags & SUIF_UPDATE_DECORATIONS)
-                updateSideSectionDecorations(&map->decoratedSurfaceList, side, SEG_BOTTOM);
+                updateSideSectionDecorations(map, side, SEG_BOTTOM);
         }
 
         // Process all planes.
@@ -867,7 +868,7 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
                 plane_t* pln = sec->SP_plane(j);
 
                 if(pln->surface.inFlags & SUIF_UPDATE_DECORATIONS)
-                    updateSectorPlaneDecorations(&map->decoratedSurfaceList, sec, j);
+                    updateSectorPlaneDecorations(map, sec, j);
             }
         }
     }

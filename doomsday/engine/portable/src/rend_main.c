@@ -133,7 +133,7 @@ void Rend_Register(void)
     C_VAR_INT("rend-tex-shiny", &useShinySurfaces, 0, 0, 1);
     C_VAR_FLOAT2("rend-light-compression", &lightRangeCompression, 0, -1, 1, R_CalcLightModRange);
     C_VAR_INT2("rend-light-ambient", &ambientLight, 0, 0, 255, R_CalcLightModRange);
-    C_VAR_INT2("rend-light-sky", &rendSkyLight, 0, 0, 1, LG_MarkAllForUpdate);
+    C_VAR_INT2("rend-light-sky", &rendSkyLight, 0, 0, 1, R_MarkAllSectorsForLightGridUpdate);
     C_VAR_FLOAT("rend-light-wall-angle", &rendLightWallAngle, CVF_NO_MAX, 0, 0);
     C_VAR_FLOAT("rend-light-attenuation", &rendLightDistanceAttentuation, CVF_NO_MAX, 0, 0);
 
@@ -153,7 +153,7 @@ void Rend_Register(void)
     RL_Register();
     DL_Register();
     SB_Register();
-    LG_Register();
+    R_RegisterLightGrid();
     Rend_ModelRegister();
     Rend_ParticleRegister();
     Rend_RadioRegister();
@@ -1018,7 +1018,7 @@ static void setShadowColor(rcolor_t* rcolors, uint num, float alpha)
 }
 
 static uint buildGeometryFromRendSeg(rendseg_t* rseg,
-                                     DGLuint modTex, float modTexTC[2][2], float modColor[3],
+                                     DGLuint modTex, const float modTexTC[2][2], const float modColor[3],
                                      rvertex_t** rvertices, rcolor_t** rcolors, int rcolorIndices[NUM_COLOR_INDICES],
                                      rtexcoord_t** rcoords, int rcoordIndices[NUM_COORD_INDICES],
                                      rtexmapunit_t rTU[NUM_TEXMAP_UNITS], rtexmapunit_t rTUs[NUM_TEXMAP_UNITS],
@@ -1142,7 +1142,7 @@ static uint buildGeometryFromRendSeg(rendseg_t* rseg,
 }
 
 static uint buildGeometryFromRendPlane(rendplane_t* rplane,
-    DGLuint modTex, float modTexTC[2][2], float modColor[3],
+    DGLuint modTex, const float modTexTC[2][2], const float modColor[3],
     rvertex_t** rvertices, rcolor_t** rcolors,
     int rcolorIndices[NUM_COLOR_INDICES],
     rtexcoord_t** rcoords, int rcoordIndices[NUM_COORD_INDICES],
@@ -1318,7 +1318,7 @@ static void renderWorldSeg(rendseg_t* rseg, uint numVertices, rvertex_t* rvertic
     if(coordIndices[COORD_SHINY] != -1)
     {
         lightShinyPolygon(rcolors + colorIndices[COLOR_SHINY], rcolors, numVertices,
-                          rseg->materials.snapshotA.shiny.minColor,
+                          rseg->materials.snapshotA.shinyMinColor,
                           rTUs[TU_PRIMARY].blend);
     }
 
@@ -1414,7 +1414,7 @@ static void renderWorldPlane(rendplane_t* rplane, uint numVertices, rvertex_t* r
     {
         lightShinyPolygon(rcolors + colorIndices[COLOR_SHINY],
                           rcolors + colorIndices[COLOR_PRIMARY], numVertices,
-                          rplane->materials.snapshotA.shiny.minColor,
+                          rplane->materials.snapshotA.shinyMinColor,
                           rTUs[TU_PRIMARY].blend);
     }
 

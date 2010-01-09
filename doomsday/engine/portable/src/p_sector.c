@@ -127,7 +127,7 @@ boolean Sector_PlanesChanged(sector_t* sector)
 
     // We'll use validCount to make sure mobjs are only checked once.
     validCount++;
-    P_SectorTouchingMobjsIterator(sector, PIT_SectorPlanesChanged, 0);
+    Sector_IterateMobjsTouching(sector, PIT_SectorPlanesChanged, 0);
 
     return noFit;
 }
@@ -140,6 +140,81 @@ float Sector_LightLevel(sector_t* sec)
         return 1.0f;
 
     return sec->lightLevel;
+}
+
+/**
+ * Is the point inside the sector, according to the edge lines of the
+ * subsector. Uses the well-known algorithm described here:
+ * http://www.alienryderflex.com/polygon/
+ *
+ * @param               X coordinate to test.
+ * @param               Y coordinate to test.
+ * @param               Sector to test.
+ *
+ * @return              @c true, if the point is inside the sector.
+ */
+boolean Sector_PointInside(const sector_t* sector, float x, float y)
+{
+    assert(sector);
+    {
+    boolean isOdd = false;
+    uint i;
+
+    for(i = 0; i < sector->lineDefCount; ++i)
+    {
+        linedef_t* line = sector->lineDefs[i];
+        vertex_t* vtx[2];
+
+        // Skip lines that aren't sector boundaries.
+        if(LINE_SELFREF(line))
+            continue;
+
+        vtx[0] = line->L_v1;
+        vtx[1] = line->L_v2;
+        // It shouldn't matter whether the line faces inward or outward.
+        if((vtx[0]->pos[VY] < y && vtx[1]->pos[VY] >= y) ||
+           (vtx[1]->pos[VY] < y && vtx[0]->pos[VY] >= y))
+        {
+            if(vtx[0]->pos[VX] +
+               (((y - vtx[0]->pos[VY]) / (vtx[1]->pos[VY] - vtx[0]->pos[VY])) *
+                (vtx[1]->pos[VX] - vtx[0]->pos[VX])) < x)
+            {
+                // Toggle oddness.
+                isOdd = !isOdd;
+            }
+        }
+    }
+
+    // The point is inside if the number of crossed nodes is odd.
+    return isOdd;
+    }
+}
+
+/**
+ * Is the point inside the sector, according to the edge lines of the
+ * subsector. Uses the well-known algorithm described here:
+ * http://www.alienryderflex.com/polygon/
+ *
+ * More accurate than Sector_PointInside.
+ *
+ * @param               X coordinate to test.
+ * @param               Y coordinate to test.
+ * @param               Sector to test.
+ *
+ * @return              @c true, if the point is inside the sector.
+ */
+boolean Sector_PointInside2(const sector_t* sector, float x, float y)
+{
+    assert(sector);
+    {
+    // @todo Subsector should return the map its linked in.
+    const subsector_t* subsector = Map_PointInSubsector(P_CurrentMap(), x, y);
+
+    if(subsector->sector != sector)
+        return false; // Wrong sector.
+
+    return Subsector_PointInside(subsector, x, y);
+    }
 }
 
 /**
@@ -292,4 +367,83 @@ boolean Sector_GetProperty(const sector_t *sec, setargs_t *args)
     }
 
     return true; // Continue iteration.
+}
+
+/**
+ * Increment validCount before using this. 'func' is called for each mobj
+ * that is (even partly) inside the sector. This is not a 3D test, the
+ * mobjs may actually be above or under the sector.
+ *
+ * (Lovely name; actually this is a combination of SectorMobjs and
+ * a bunch of LineMobjs iterations.)
+ */
+boolean Sector_IterateMobjsTouching(sector_t* sector, int (*func) (void*, void*), void* data)
+{
+    assert(sector);
+    assert(func);
+    {
+/**
+ * Linkstore is list of pointers gathered when iterating stuff.
+ * This is pretty much the only way to avoid *all* potential problems
+ * caused by callback routines behaving badly (moving or destroying
+ * mobjs). The idea is to get a snapshot of all the objects being
+ * iterated before any callbacks are called. The hardcoded limit is
+ * a drag, but I'd like to see you iterating 2048 mobjs/lines in one block.
+ */
+#define MAXLINKED           2048
+#define DO_LINKS(it, end)   for(it = linkstore; it < end; it++) \
+                                if(!func(*it, data)) return false;
+    uint i;
+    void* linkstore[MAXLINKED];
+    void** end = linkstore, **it;
+    mobj_t* mo;
+    linedef_t* li;
+    nodeindex_t root, nix;
+    map_t* map;
+
+    if(!sector)
+        return true;
+    if(!func)
+        return true;
+
+    // First process the mobjs that obviously are in the sector.
+    for(mo = sector->mobjList; mo; mo = mo->sNext)
+    {
+        if(mo->validCount == validCount)
+            continue;
+
+        mo->validCount = validCount;
+        *end++ = mo;
+    }
+
+    // Then check the sector's lines.
+    map = P_CurrentMap();
+    for(i = 0; i < sector->lineDefCount; ++i)
+    {
+        linknode_t* ln;
+
+        li = sector->lineDefs[i];
+
+        // @fixme LineDef should tell us which map it belongs to.
+        ln = map->lineNodes->nodes;
+
+        // Iterate all mobjs on the line.
+        root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
+        for(nix = ln[root].next; nix != root; nix = ln[nix].next)
+        {
+            mo = (mobj_t *) ln[nix].ptr;
+            if(mo->validCount == validCount)
+                continue;
+
+            mo->validCount = validCount;
+            *end++ = mo;
+        }
+    }
+
+    DO_LINKS(it, end);
+    return true;
+
+#undef MAXLINKED
+#undef DO_LINKS
+    }
 }

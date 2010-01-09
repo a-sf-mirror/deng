@@ -76,6 +76,17 @@ typedef struct {
     objcontacttype_t       type;
 } linkobjtosubsectorparams_t;
 
+// Used for vertex sector owners, side line owners and reverb subsectors.
+typedef struct ownernode_s {
+    void*           data;
+    struct ownernode_s* next;
+} ownernode_t;
+
+typedef struct {
+    ownernode_t*    head;
+    uint            count;
+} ownerlist_t;
+
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -94,6 +105,8 @@ static vertex_t* rootVtx; // Used when sorting vertex line owners.
 
 // List of unused and used obj-face contacts.
 static objcontact_t* contFirst = NULL, *contCursor = NULL;
+
+static ownernode_t* unusedNodeList = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -330,7 +343,10 @@ static int recycleMobjs(void* ptr, void* context)
 
 static int destroyGenerator(void* ptr, void* content)
 {
-    P_DestroyGenerator((generator_t*) ptr);
+    generator_t* gen = (generator_t*) ptr;
+    P_DestroyGenerator(gen);
+    // @todo generator should return the map it's linked to.
+    Map_RemoveThinker(P_CurrentMap(), &gen->thinker);
     return true; // Continue iteration.
 }
 
@@ -340,10 +356,12 @@ map_t* P_CreateMap(const char* mapID)
 
     dd_snprintf(map->mapID, 9, "%s", mapID);
     map->editActive = true;
+    map->bias.editGrabbedID = -1;
 
     map->_thinkers = P_CreateThinkers();
     map->_halfEdgeDS = P_CreateHalfEdgeDS();
     map->_gameObjectRecords = P_CreateGameObjectRecords();
+    map->_lightGrid = P_CreateLightGrid();
 
     return map;
 }
@@ -369,9 +387,9 @@ void P_DestroyMap(map_t* map)
 
     SB_DestroySurfaces(map);
 
-    if(map->lg.inited)
-        Z_Free(map->lg.grid);
-    map->lg.grid = NULL;
+    if(map->_lightGrid)
+        P_DestroyLightGrid(map->_lightGrid);
+    map->_lightGrid = NULL;
 
     PlaneList_Empty(&map->watchedPlaneList);
     SurfaceList_Empty(&map->movingSurfaceList);
@@ -571,8 +589,8 @@ static boolean PIT_LinkToLines(linedef_t* ld, void* parm)
         // Bounding boxes do not overlap.
         return true;
 
-    if(P_BoxOnLineSide2(data->box[0][VX], data->box[1][VX],
-                        data->box[0][VY], data->box[1][VY], ld) != -1)
+    if(LineDef_BoxOnSide2(ld, data->box[0][VX], data->box[1][VX],
+                              data->box[0][VY], data->box[1][VY]) != -1)
         // Line does not cross the mobj's bounding box.
         return true;
 
@@ -686,12 +704,10 @@ static boolean unlinkMobjFromSector(map_t* map, mobj_t* mo)
 
 void Map_LinkMobj(map_t* map, mobj_t* mo, byte flags)
 {
-    subsector_t* subsector;
-
     assert(map);
     assert(mo);
-
-    subsector = R_PointInSubSector(mo->pos[VX], mo->pos[VY]);
+    {
+    subsector_t* subsector = Map_PointInSubsector(map, mo->pos[VX], mo->pos[VY]);
 
     // Link into the sector.
     mo->subsector = (subsector_t*) P_ObjectRecord(DMU_SUBSECTOR, subsector);
@@ -734,20 +750,20 @@ void Map_LinkMobj(map_t* map, mobj_t* mo, byte flags)
         ddplayer_t* player = mo->dPlayer;
 
         player->inVoid = true;
-        if(R_IsPointInSector2(player->mo->pos[VX], player->mo->pos[VY],
-                              subsector->sector) &&
+        if(Sector_PointInside2(subsector->sector, player->mo->pos[VX], player->mo->pos[VY]) &&
            (player->mo->pos[VZ] < subsector->sector->SP_ceilvisheight  - 4 &&
             player->mo->pos[VZ] >= subsector->sector->SP_floorvisheight))
             player->inVoid = false;
+    }
     }
 }
 
 int Map_UnlinkMobj(map_t* map, mobj_t* mo)
 {
-    int links = 0;
-
     assert(map);
     assert(mo);
+    {
+    int links = 0;
 
     if(unlinkMobjFromSector(map, mo))
         links |= DDLINK_SECTOR;
@@ -757,6 +773,7 @@ int Map_UnlinkMobj(map_t* map, mobj_t* mo)
         links |= DDLINK_NOLINE;
 
     return links;
+    }
 }
 
 /**
@@ -849,12 +866,193 @@ void Map_ThinkerSetStasis(map_t* map, thinker_t* th, boolean on)
     th->inStasis = on;
 }
 
+subsector_t* Map_PointInSubsector(map_t* map, float x, float y)
+{
+    assert(map);
+    {
+    binarytree_t* tree;
+    face_t* face;
+
+    if(!map->numNodes) // Single subsector is a special case.
+        return (subsector_t*) map->subsectors;
+
+    tree = map->_rootNode;
+    while(!BinaryTree_IsLeaf(tree))
+    {
+        node_t* node = (node_t*) BinaryTree_GetData(tree);
+        tree = BinaryTree_GetChild(tree, R_PointOnSide(x, y, &node->partition));
+    }
+
+    face = (face_t*) BinaryTree_GetData(tree);
+    return (subsector_t*) face->data;
+    }
+}
+
+/**
+ * Returns a ptr to the sector which owns the given ddmobj_base_t.
+ *
+ * @param ddMobjBase    ddmobj_base_t to search for.
+ *
+ * @return              Ptr to the Sector where the ddmobj_base_t resides,
+ *                      else @c NULL.
+ */
+sector_t* Map_SectorForOrigin(map_t* map, const void* ddMobjBase)
+{
+    assert(map);
+    assert(ddMobjBase);
+    {
+    uint i;
+
+    for(i = 0; i < map->numSectors; ++i)
+    {
+        if(ddMobjBase == &map->sectors[i]->soundOrg)
+            return map->sectors[i];
+    }
+
+    return NULL;
+    }
+}
+
+/**
+ * @return              @c true, iff this is indeed a polyobj origin.
+ */
+polyobj_t* Map_PolyobjForOrigin(map_t* map, const void* ddMobjBase)
+{
+    assert(map);
+    assert(ddMobjBase);
+    {
+    uint i;
+
+    for(i = 0; i < map->numPolyObjs; ++i)
+    {
+        if(ddMobjBase == (ddmobj_base_t*) map->polyObjs[i])
+            return map->polyObjs[i];
+    }
+
+    return NULL;
+    }
+}
+
+static void spawnMapParticleGens(map_t* map)
+{
+    ded_generator_t* def;
+    int i;
+
+    if(isDedicated || !useParticles)
+        return;
+
+    for(i = 0, def = defs.generators; i < defs.count.generators.num; ++i, def++)
+    {
+        if(!def->map[0] || stricmp(def->map, map->mapID))
+            continue;
+
+        if(def->spawnAge > 0 && ddMapTime > def->spawnAge)
+            continue; // No longer spawning this generator.
+
+        P_SpawnMapParticleGen(map, def);
+    }
+}
+
+/**
+ * Spawns all type-triggered particle generators, regardless of whether
+ * the type of mobj exists in the map or not (mobjs might be dynamically
+ * created).
+ */
+static void spawnTypeParticleGens(map_t* map)
+{
+    ded_generator_t* def;
+    int i;
+
+    if(isDedicated || !useParticles)
+        return;
+
+    for(i = 0, def = defs.generators; i < defs.count.generators.num; ++i, def++)
+    {
+        if(def->typeNum < 0)
+            continue;
+
+        P_SpawnTypeParticleGen(map, def);
+    }
+}
+
+typedef struct {
+    sector_t*       sector;
+    uint            planeID;
+} findplanegeneratorparams_t;
+
+static int findPlaneGenerator(void* ptr, void* context)
+{
+    generator_t* gen = (generator_t*) ptr;
+    findplanegeneratorparams_t* params = (findplanegeneratorparams_t*) context;
+
+    if(gen->thinker.function && gen->sector == params->sector &&
+       gen->planeID == params->planeID)
+        return false; // Stop iteration, we've found one!
+    return true; // Continue iteration.
+}
+
+/**
+ * Returns true iff there is an active ptcgen for the given plane.
+ */
+static boolean P_HasActiveGenerator(sector_t* sector, uint planeID)
+{
+    findplanegeneratorparams_t params;
+
+    params.sector = sector;
+    params.planeID = planeID;
+
+    // @todo Sector should return the map its linked to.
+    return !Map_IterateThinkers(P_CurrentMap(), (think_t) P_GeneratorThinker, ITF_PRIVATE,
+                                findPlaneGenerator, &params);
+}
+
+/**
+ * Spawns new ptcgens for planes, if necessary.
+ */
+static void checkPtcPlanes(map_t* map)
+{
+    uint i, p;
+
+    if(isDedicated || !useParticles)
+        return;
+
+    // There is no need to do this on every tic.
+    if(SECONDS_TO_TICKS(gameTime) % 4)
+        return;
+
+    for(i = 0; i < map->numSectors; ++i)
+    {
+        sector_t* sector = map->sectors[i];
+
+        for(p = 0; p < 2; ++p)
+        {
+            uint plane = p;
+            material_t* mat = sector->SP_planematerial(plane);
+            const ded_generator_t* def = Material_GetGenerator(mat);
+
+            if(!def)
+                continue;
+
+            if(def->flags & PGF_CEILING_SPAWN)
+                plane = PLN_CEILING;
+            if(def->flags & PGF_FLOOR_SPAWN)
+                plane = PLN_FLOOR;
+
+            if(!P_HasActiveGenerator(sector, plane))
+            {
+                // Spawn it!
+                P_SpawnPlaneParticleGen(sector, plane, def);
+            }
+        }
+    }
+}
+
 static void initGenerators(map_t* map)
 {
     // Spawn all type-triggered particle generators.
     // Let's hope there aren't too many...
-    P_SpawnTypeParticleGens(map);
-    P_SpawnMapParticleGens(map);
+    spawnTypeParticleGens(map);
+    spawnMapParticleGens(map);
 }
 
 static int updateGenerator(void* ptr, void* context)
@@ -873,7 +1071,7 @@ static int updateGenerator(void* ptr, void* context)
         // just destroy those too.
         if((gen->flags & PGF_UNTRIGGERED) || gen->sector)
         {
-            P_DestroyGenerator(gen);
+            destroyGenerator(gen, NULL);
             return true; // Continue iteration.
         }
 
@@ -913,7 +1111,7 @@ static int updateGenerator(void* ptr, void* context)
         }
         else
         {   // Nothing else we can do, destroy it.
-            P_DestroyGenerator(gen);
+            destroyGenerator(gen, NULL);
         }
     }
 
@@ -933,7 +1131,7 @@ void Map_Update(map_t* map)
     Map_IterateThinkers(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
                         updateGenerator, NULL);
     // Re-spawn map generators.
-    P_SpawnMapParticleGens(map);
+    spawnMapParticleGens(map);
 
     // Update all world surfaces.
     for(i = 0; i < map->numSectors; ++i)
@@ -2503,6 +2701,138 @@ void MPE_DetectOverlappingLines(map_t* map)
 }
 #endif
 
+static ownernode_t* newOwnerNode(void)
+{
+    ownernode_t*        node;
+
+    if(unusedNodeList)
+    {   // An existing node is available for re-use.
+        node = unusedNodeList;
+        unusedNodeList = unusedNodeList->next;
+
+        node->next = NULL;
+        node->data = NULL;
+    }
+    else
+    {   // Need to allocate another.
+        node = M_Malloc(sizeof(ownernode_t));
+    }
+
+    return node;
+}
+
+static void setSectorOwner(ownerlist_t* ownerList, subsector_t* subsector)
+{
+    ownernode_t* node;
+
+    if(!subsector)
+        return;
+
+    // Add a new owner.
+    // NOTE: No need to check for duplicates.
+    ownerList->count++;
+
+    node = newOwnerNode();
+    node->data = subsector;
+    node->next = ownerList->head;
+    ownerList->head = node;
+}
+
+static void findSubSectorsAffectingSector(map_t* map, uint secIDX)
+{
+    uint i;
+    ownernode_t* node, *p;
+    float bbox[4];
+    ownerlist_t subsectorOwnerList;
+    sector_t* sec = map->sectors[secIDX];
+
+    memset(&subsectorOwnerList, 0, sizeof(subsectorOwnerList));
+
+    memcpy(bbox, sec->bBox, sizeof(bbox));
+    bbox[BOXLEFT]   -= 128;
+    bbox[BOXRIGHT]  += 128;
+    bbox[BOXTOP]    += 128;
+    bbox[BOXBOTTOM] -= 128;
+/*
+#if _DEBUG
+Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
+            bbox[BOXLEFT], bbox[BOXTOP], bbox[BOXRIGHT], bbox[BOXBOTTOM]);
+#endif
+*/
+    for(i = 0; i < map->numSubsectors; ++i)
+    {
+        subsector_t* subsector =  map->subsectors[i];
+
+        // Is this subsector close enough?
+        if(subsector->sector == sec || // subsector is IN this sector
+           (subsector->midPoint[VX] > bbox[BOXLEFT] &&
+            subsector->midPoint[VX] < bbox[BOXRIGHT] &&
+            subsector->midPoint[VY] < bbox[BOXTOP] &&
+            subsector->midPoint[VY] > bbox[BOXBOTTOM]))
+        {
+            // It will contribute to the reverb settings of this sector.
+            setSectorOwner(&subsectorOwnerList, subsector);
+        }
+    }
+
+    // Now harden the list.
+    sec->numReverbSubsectorAttributors = subsectorOwnerList.count;
+    if(sec->numReverbSubsectorAttributors)
+    {
+        subsector_t** ptr;
+
+        sec->reverbSubsectors =
+            Z_Malloc((sec->numReverbSubsectorAttributors + 1) * sizeof(subsector_t*),
+                     PU_STATIC, 0);
+
+        for(i = 0, ptr = sec->reverbSubsectors, node = subsectorOwnerList.head;
+            i < sec->numReverbSubsectorAttributors; ++i, ptr++)
+        {
+            p = node->next;
+            *ptr = (subsector_t*) node->data;
+
+            if(i < map->numSectors - 1)
+            {   // Move this node to the unused list for re-use.
+                node->next = unusedNodeList;
+                unusedNodeList = node;
+            }
+            else
+            {   // No further use for the nodes.
+                M_Free(node);
+            }
+            node = p;
+        }
+        *ptr = NULL; // terminate.
+    }
+}
+
+/**
+ * Called during map init to determine which subsectors affect the reverb
+ * properties of all sectors. Given that subsectors do not change shape (in
+ * two dimensions at least), they do not move and are not created/destroyed
+ * once the map has been loaded; this step can be pre-processed.
+ */
+static void initSoundEnvironment(map_t* map)
+{
+    ownernode_t* node, *p;
+    uint i;
+
+    for(i = 0; i < map->numSectors; ++i)
+    {
+        findSubSectorsAffectingSector(map, i);
+    }
+
+    // Free any nodes left in the unused list.
+    node = unusedNodeList;
+    while(node)
+    {
+        p = node->next;
+        M_Free(node);
+        node = p;
+    }
+    unusedNodeList = NULL;
+}
+
 static int addVertexToDMU(vertex_t* vertex, void* context)
 {
     P_CreateObjectRecord(DMU_VERTEX, vertex);
@@ -2575,7 +2905,7 @@ void Map_EditEnd(map_t* map)
     finishSectors2(map);
     updateMapBounds(map);
 
-    Map_InitSoundEnvironment(map);
+    initSoundEnvironment(map);
     findSubsectorMidPoints(map);
 
     {
@@ -2604,6 +2934,25 @@ checkVertexOwnerRings(vertexInfo, numVertices);
     map->editActive = false;
 }
 
+static boolean PIT_ClientMobjTicker(clmobj_t *cmo, void *parm)
+{
+    P_MobjTicker((thinker_t*) &cmo->mo, NULL);
+    return true; // Continue iteration.
+}
+
+void Map_Ticker(map_t* map, timespan_t time)
+{
+    assert(map);
+
+    // New ptcgens for planes?
+    checkPtcPlanes(map);
+
+    Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
+
+    // Check all client mobjs.
+    Cl_MobjIterator(map, PIT_ClientMobjTicker, NULL);
+}
+
 void Map_BeginFrame(map_t* map, boolean resetNextViewer)
 {
     assert(map);
@@ -2616,7 +2965,7 @@ void Map_BeginFrame(map_t* map, boolean resetNextViewer)
     {
         clearSubsectorContacts(map);
 
-        LG_Update(map);
+        LightGrid_Update(map->_lightGrid);
         SB_BeginFrame(map);
         LO_ClearForFrame(map);
         Rend_InitDecorationsForFrame(map);
@@ -2729,6 +3078,32 @@ lumobjblockmap_t* Map_LumobjBlockmap(map_t* map)
     return map->_lumobjBlockmap;
 }
 
+lightgrid_t* Map_LightGrid(map_t* map)
+{
+    assert(map);
+    return map->_lightGrid;
+}
+
+void Map_MarkAllSectorsForLightGridUpdate(map_t* map)
+{
+    assert(map);
+    {
+    lightgrid_t* lg = map->_lightGrid;
+
+    if(lg->inited)
+    {
+        uint i;
+
+        // Mark all blocks and contributors.
+        for(i = 0; i < map->numSectors; ++i)
+        {
+            sector_t* sec = map->sectors[i];
+            LightGrid_MarkForUpdate(map->_lightGrid, sec->blocks, sec->changedBlockCount, sec->blockCount);
+        }
+    }
+    }
+}
+
 seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge)
 {
     assert(map);
@@ -2835,11 +3210,9 @@ node_t* Map_CreateNode(map_t* map, float x, float y, float dX, float dY,
     }
 }
 
-void Map_InitLinks(map_t* map)
+static void initLinks(map_t* map)
 {
     uint i;
-
-    assert(map);
 
     // Initialize node piles and line rings.
     map->mobjNodes = P_CreateNodePile(256); // Allocate a small pile.
@@ -3369,17 +3742,15 @@ boolean P_LoadMap(const char* mapID)
             gx.SetupForMapData(DMU_SECTOR, map->numSectors);
         }
 
-        SBE_InitForMap(map);
-
         {
         uint starttime = Sys_GetRealTime();
 
         // Must be called before any mobjs are spawned.
-        Map_InitLinks(map);
+        initLinks(map);
 
         // How much time did we spend?
         VERBOSE(Con_Message
-                ("Map_InitLinks: Allocating line link rings. Done in %.2f seconds.\n",
+                ("initLinks: Allocating line link rings. Done in %.2f seconds.\n",
                  (Sys_GetRealTime() - starttime) / 1000.0f));
         }
 
@@ -3475,7 +3846,7 @@ boolean P_LoadMap(const char* mapID)
         initGenerators(map);
 
         // Initialize the lighting grid.
-        LG_Init(map);
+        LightGrid_Init(map);
 
         return true;
     }

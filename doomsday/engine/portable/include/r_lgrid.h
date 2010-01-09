@@ -29,14 +29,42 @@
 #ifndef DOOMSDAY_REFRESH_LIGHT_GRID_H
 #define DOOMSDAY_REFRESH_LIGHT_GRID_H
 
-void            LG_Register(void);
-void            LG_Init(struct map_s* map);
+/**
+ * @defGroup gridBlockFlags Grid Block Flags
+ */
+/*{*/
+#define GBF_CHANGED     0x1     // Grid block sector light has changed.
+#define GBF_CONTRIBUTOR 0x2     // Contributes light to a changed block.
+/*}*/
 
-void            LG_Update(struct map_s* map);
-void            LG_MarkAllForUpdate(cvar_t* unused);
-void            LG_SectorChanged(sector_t* sector);
+typedef struct lgridblock_s {
+    sector_t*       sector; // @see gridBlockFlags
+    byte            flags;
+    char            bias; // Positive bias means that the light is shining in the floor of the sector.
+    float           rgb[3]; // Color of the light in this block.
+    // Used instead of rgb if the lighting in this block has changed and we
+    // have not yet done a full grid update.
+    float           oldRGB[3];
+} lgridblock_t;
 
-void            LG_Evaluate(struct map_s* map, const float* point, float* destColor);
-void            LG_Debug(struct map_s* map);
+typedef struct lightgrid_s {
+    boolean         inited, needsUpdate;
+    float           origin[3];
+    int             blockWidth, blockHeight;
+    lgridblock_t*   grid;
+} lightgrid_t;
+
+void            R_RegisterLightGrid(void);
+
+lightgrid_t*    P_CreateLightGrid(void);
+void            P_DestroyLightGrid(lightgrid_t* lg);
+
+void            LightGrid_Init(struct map_s* map);
+void            LightGrid_Update(lightgrid_t* lg);
+void            LightGrid_MarkForUpdate(lightgrid_t* lg, const unsigned short* blocks,
+                                        unsigned int changedBlockCount, unsigned int blockCount);
+void            LightGrid_Evaluate(lightgrid_t* lg, const float* point, float* destColor);
+
+void            Rend_LightGridVisual(lightgrid_t* lg);
 
 #endif /* DOOMSDAY_REFRESH_LIGHT_GRID_H */

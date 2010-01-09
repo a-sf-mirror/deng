@@ -341,12 +341,12 @@ static void addLight(float dest[4], const float* color, float howMuch)
 /**
  * Add ambient light.
  */
-static void applyAmbientLight(map_t* map, const float* point, float* light)
+static void applyAmbientLight(lightgrid_t* lg, const float* point, float* light)
 {
     // Add grid light (represents ambient lighting).
     float color[3];
 
-    LG_Evaluate(map, point, color);
+    LightGrid_Evaluate(lg, point, color);
     addLight(light, color, 1.0f);
 }
 
@@ -450,24 +450,19 @@ static void evalPoint(map_t* map, float light[4], vertexillum_t* illum,
 {
 #define COLOR_CHANGE_THRESHOLD  0.1f
 
-    float               newColor[3];
-    float               dot;
-    vec3_t              delta, surfacePoint;
-    float               distance;
-    float               level;
-    uint                i;
-    int                 idx;
-    boolean             illuminationChanged = false;
-    unsigned int        latestSourceUpdate = 0;
-    source_t*           s;
-    float*              casted;
+    float newColor[3], dot, distance, level;
+    vec3_t delta, surfacePoint;
+    uint i, latestSourceUpdate = 0;
+    int idx;
+    boolean illuminationChanged = false;
+    source_t* s;
+    float* casted;
     struct {
-        int              index;
-        //uint           affNum; // Index in affectedSources.
-        source_t*        source;
+        int index;
+        source_t* source;
         biasaffection_t* affection;
-        boolean          changed;
-        boolean          overrider;
+        boolean changed;
+        boolean overrider;
     } affecting[MAX_BIAS_AFFECTED + 1], *aff;
 
     // Vertices that are rendered for the first time need to be fully
@@ -526,7 +521,7 @@ static void evalPoint(map_t* map, float light[4], vertexillum_t* illum,
     {
         // Reuse the previous value.
         lerpIllumination(illum, light);
-        applyAmbientLight(map, point, light);
+        applyAmbientLight(Map_LightGrid(map), point, light);
         return;
     }
 
@@ -655,7 +650,7 @@ static void evalPoint(map_t* map, float light[4], vertexillum_t* illum,
         light[CB] = newColor[CB];
     }
 
-    applyAmbientLight(map, point, light);
+    applyAmbientLight(Map_LightGrid(map), point, light);
 
 #undef COLOR_CHANGE_THRESHOLD
 }
@@ -940,7 +935,7 @@ BEGIN_PROF( PROF_BIAS_UPDATE );
         {
             float minLevel = s->sectorLevel[0];
             float maxLevel = s->sectorLevel[1];
-            subsector_t* subsector = R_PointInSubSector(s->pos[VX], s->pos[VY]);
+            subsector_t* subsector = Map_PointInSubsector(map, s->pos[VX], s->pos[VY]);
             sector_t* sector;
             float oldIntensity = s->intensity;
 

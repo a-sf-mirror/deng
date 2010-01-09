@@ -316,7 +316,8 @@ static void drawLightLevelGauge(int x, int y, int height, source_t* src)
     int secY, maxY = 0, minY = 0, p;
     char buf[80];
 
-    sector = R_PointInSubSector(src->pos[VX], src->pos[VY])->sector;
+    // @todo Source should return the map its linked in.
+    sector = Map_PointInSubsector(P_CurrentMap(), src->pos[VX], src->pos[VY])->sector;
 
     if(lastSector != sector)
     {
@@ -705,17 +706,9 @@ static boolean save(map_t* map, const char* name)
     return true;
 }
 
-void SBE_InitForMap(map_t* map)
-{
-    if(!map)
-        return;
-
-    map->bias.editGrabbedID = -1;
-}
-
 void SBE_EndFrame(map_t* map)
 {
-    source_t*           src;
+    source_t* src;
 
     if(!map)
         return;

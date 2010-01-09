@@ -41,6 +41,7 @@
 #include "rend_bias.h"
 #include "p_think.h"
 #include "p_particle.h"
+#include "r_lgrid.h"
 
 // Return the index of plane within a sector's planes array.
 #define GET_PLANE_IDX(pln)  ((pln) - (pln)->sector->planes[0])
@@ -104,25 +105,6 @@ typedef struct objcontactlist_s {
     objcontact_t*   head[NUM_OBJCONTACT_TYPES];
 } objcontactlist_t;
 
-#define GBF_CHANGED     0x1     // Grid block sector light has changed.
-#define GBF_CONTRIBUTOR 0x2     // Contributes light to a changed block.
-
-typedef struct lgridblock_s {
-    struct sector_s *sector;
-
-    byte        flags;
-
-    // Positive bias means that the light is shining in the floor of
-    // the sector.
-    char        bias;
-
-    // Color of the light:
-    float       rgb[3];
-    float       oldRGB[3];  // Used instead of rgb if the lighting in this
-                            // block has changed and we haven't yet done a
-                            // a full grid update.
-} lgridblock_t;
-
 typedef struct shadowlink_s {
     struct shadowlink_s* next;
     linedef_t*      lineDef;
@@ -149,6 +131,7 @@ typedef struct map_s {
     lumobjblockmap_t* _lumobjBlockmap;
 
     objcontactlist_t* _subsectorContacts; // List of obj contacts for each subsector.
+    lightgrid_t*    _lightGrid;
 
     float           bBox[4];
     uint            numSectors;
@@ -204,14 +187,6 @@ typedef struct map_s {
 
         int             editGrabbedID;
     } bias;
-
-    struct {
-        boolean         inited, needsUpdate;
-
-        float           origin[3];
-        int             blockWidth, blockHeight;
-        lgridblock_t*   grid;
-    } lg;
 } map_t;
 
 extern int bspFactor;
@@ -228,6 +203,8 @@ int             Map_AmbientLightLevel(map_t* map);
 
 void            Map_BeginFrame(map_t* map, boolean resetNextViewer);
 void            Map_EndFrame(map_t* map);
+
+void            Map_Ticker(map_t* map, timespan_t time);
 
 void            Map_Update(map_t* map);
 void            Map_UpdateWatchedPlanes(map_t* map);
@@ -302,6 +279,10 @@ boolean         Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, secto
 boolean         Map_PathTraverse(map_t* map, float x1, float y1, float x2, float y2,
                                  int flags, boolean (*trav) (intercept_t*));
 
+subsector_t*    Map_PointInSubsector(map_t* map, float x, float y);
+sector_t*       Map_SectorForOrigin(map_t* map, const void* ddMobjBase);
+polyobj_t*      Map_PolyobjForOrigin(map_t* map, const void* ddMobjBase);
+
 // @todo the following should be Map private:
 thinkers_t*     Map_Thinkers(map_t* map);
 halfedgeds_t*   Map_HalfEdgeDS(map_t* map);
@@ -310,14 +291,14 @@ linedefblockmap_t* Map_LineDefBlockmap(map_t* map);
 subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map);
 particleblockmap_t* Map_ParticleBlockmap(map_t* map);
 lumobjblockmap_t* Map_LumobjBlockmap(map_t* map);
+lightgrid_t*    Map_LightGrid(map_t* map);
 
 seg_t*          Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge);
 subsector_t*    Map_CreateSubsector(map_t* map, face_t* face, sector_t* sector);
 node_t*         Map_CreateNode(map_t* map, float x, float y, float dX, float dY, float rightAABB[4], float leftAABB[4]);
 
-void            Map_InitLinks(map_t* map);
 void            Map_InitSkyFix(map_t* map);
-void            Map_InitSoundEnvironment(map_t* map);
+void            Map_MarkAllSectorsForLightGridUpdate(map_t* map);
 
 gameobjrecords_t* Map_GameObjectRecords(map_t* map);
 void            Map_DestroyGameObjectRecords(map_t* map);

@@ -44,17 +44,6 @@
 
 // TYPES -------------------------------------------------------------------
 
-// Used for vertex sector owners, side line owners and reverb subsectors.
-typedef struct ownernode_s {
-    void*           data;
-    struct ownernode_s* next;
-} ownernode_t;
-
-typedef struct {
-    ownernode_t*    head;
-    uint            count;
-} ownerlist_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -74,8 +63,6 @@ static materialenvinfo_t matInfo[NUM_MATERIAL_ENV_CLASSES] = {
     {"Water",     MEF_BLEND, 20,     80,     140},
     {"Cloth",     0,    5,       5,      255}
 };
-
-static ownernode_t *unusedNodeList = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -125,145 +112,6 @@ material_env_class_t S_MaterialClassForName(const char* name,
     }
 
     return MEC_UNKNOWN;
-}
-
-static ownernode_t* newOwnerNode(void)
-{
-    ownernode_t*        node;
-
-    if(unusedNodeList)
-    {   // An existing node is available for re-use.
-        node = unusedNodeList;
-        unusedNodeList = unusedNodeList->next;
-
-        node->next = NULL;
-        node->data = NULL;
-    }
-    else
-    {   // Need to allocate another.
-        node = M_Malloc(sizeof(ownernode_t));
-    }
-
-    return node;
-}
-
-static void setSectorOwner(ownerlist_t* ownerList, subsector_t* subsector)
-{
-    ownernode_t* node;
-
-    if(!subsector)
-        return;
-
-    // Add a new owner.
-    // NOTE: No need to check for duplicates.
-    ownerList->count++;
-
-    node = newOwnerNode();
-    node->data = subsector;
-    node->next = ownerList->head;
-    ownerList->head = node;
-}
-
-static void findSubSectorsAffectingSector(map_t* map, uint secIDX)
-{
-    uint i;
-    ownernode_t* node, *p;
-    float bbox[4];
-    ownerlist_t subsectorOwnerList;
-    sector_t* sec = map->sectors[secIDX];
-
-    memset(&subsectorOwnerList, 0, sizeof(subsectorOwnerList));
-
-    memcpy(bbox, sec->bBox, sizeof(bbox));
-    bbox[BOXLEFT]   -= 128;
-    bbox[BOXRIGHT]  += 128;
-    bbox[BOXTOP]    += 128;
-    bbox[BOXBOTTOM] -= 128;
-/*
-#if _DEBUG
-Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
-            bbox[BOXLEFT], bbox[BOXTOP], bbox[BOXRIGHT], bbox[BOXBOTTOM]);
-#endif
-*/
-    for(i = 0; i < map->numSubsectors; ++i)
-    {
-        subsector_t* subsector =  map->subsectors[i];
-
-        // Is this subsector close enough?
-        if(subsector->sector == sec || // subsector is IN this sector
-           (subsector->midPoint[VX] > bbox[BOXLEFT] &&
-            subsector->midPoint[VX] < bbox[BOXRIGHT] &&
-            subsector->midPoint[VY] < bbox[BOXTOP] &&
-            subsector->midPoint[VY] > bbox[BOXBOTTOM]))
-        {
-            // It will contribute to the reverb settings of this sector.
-            setSectorOwner(&subsectorOwnerList, subsector);
-        }
-    }
-
-    // Now harden the list.
-    sec->numReverbSubsectorAttributors = subsectorOwnerList.count;
-    if(sec->numReverbSubsectorAttributors)
-    {
-        subsector_t** ptr;
-
-        sec->reverbSubsectors =
-            Z_Malloc((sec->numReverbSubsectorAttributors + 1) * sizeof(subsector_t*),
-                     PU_STATIC, 0);
-
-        for(i = 0, ptr = sec->reverbSubsectors, node = subsectorOwnerList.head;
-            i < sec->numReverbSubsectorAttributors; ++i, ptr++)
-        {
-            p = node->next;
-            *ptr = (subsector_t*) node->data;
-
-            if(i < map->numSectors - 1)
-            {   // Move this node to the unused list for re-use.
-                node->next = unusedNodeList;
-                unusedNodeList = node;
-            }
-            else
-            {   // No further use for the nodes.
-                M_Free(node);
-            }
-            node = p;
-        }
-        *ptr = NULL; // terminate.
-    }
-}
-
-/**
- * Called during map init to determine which subsectors affect the reverb
- * properties of all sectors. Given that subsectors do not change shape (in
- * two dimensions at least), they do not move and are not created/destroyed
- * once the map has been loaded; this step can be pre-processed.
- */
-void Map_InitSoundEnvironment(map_t* map)
-{
-    uint startTime = Sys_GetRealTime();
-
-    uint i;
-    ownernode_t* node, *p;
-
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        findSubSectorsAffectingSector(map, i);
-    }
-
-    // Free any nodes left in the unused list.
-    node = unusedNodeList;
-    while(node)
-    {
-        p = node->next;
-        M_Free(node);
-        node = p;
-    }
-    unusedNodeList = NULL;
-
-    // How much time did we spend?
-    VERBOSE(Con_Message
-            ("Map_InitSoundEnvironment: Done in %.2f seconds.\n",
-             (Sys_GetRealTime() - startTime) / 1000.0f));
 }
 
 static boolean calcSubsectorReverb(subsector_t* subsector)

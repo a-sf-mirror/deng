@@ -196,7 +196,7 @@ void Sv_InitPools(void)
         sideOwners = Z_Malloc(sizeof(linedef_t *) * map->numSideDefs, PU_MAP, 0);
         for(i = 0; i < map->numSideDefs; ++i)
         {
-            sideOwners[i] = R_GetLineForSide(map->sideDefs[i]);
+            sideOwners[i] = map->sideDefs[i]->lineDef;
         }
 
         // Origins of sectors.

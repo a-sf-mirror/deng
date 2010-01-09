@@ -87,7 +87,7 @@ static boolean interceptLineDef(const linedef_t* li, losdata_t* los,
     else
         dlPtr = &localDL;
 
-    P_MakeDivline(li, dlPtr);
+    LineDef_ConstructDivline(li, dlPtr);
 
     if(P_PointOnDivlineSide(FIX2FLT(los->trace.pos[VX]),
                             FIX2FLT(los->trace.pos[VY]), dlPtr) ==
@@ -127,8 +127,8 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
     if(noBack)
     {
         if((los->flags & LS_PASSLEFT) &&
-           side != P_PointOnLineDefSide(FIX2FLT(los->trace.pos[VX]),
-                                        FIX2FLT(los->trace.pos[VY]), li))
+           side != LineDef_PointOnSide(li, FIX2FLT(los->trace.pos[VX]),
+                                           FIX2FLT(los->trace.pos[VY])))
             return true; // Ray does not intercept seg from left to right.
 
         if(!(los->flags & (LS_PASSOVER | LS_PASSUNDER)))
@@ -157,22 +157,22 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
 
     if(ranges & RMIDDLE)
     {
-        surface_t*          surface = &LINE_FRONTSIDE(li)->SW_middlesurface;
+        surface_t* surface = &LINE_FRONTSIDE(li)->SW_middlesurface;
 
         if(surface->material && !(surface->blendMode > 0) &&
            !(surface->rgba[CA] < 1.0f) &&
            (!(los->flags & LS_PASSLEFT) ||
-            side == P_PointOnLineDefSide(FIX2FLT(los->trace.pos[VX]),
-                                         FIX2FLT(los->trace.pos[VY]), li)))
+            side == LineDef_PointOnSide(li, FIX2FLT(los->trace.pos[VX]),
+                                        FIX2FLT(los->trace.pos[VY]))))
         {
             material_snapshot_t ms;
 
             Materials_Prepare(surface->material, MPF_SMOOTH, NULL, &ms);
             if(ms.isOpaque)
             {
-                hedge_t*            hEdge = li->hEdges[0];
-                plane_t*            ffloor, *fceil, *bfloor, *bceil;
-                float               bottom, top;
+                hedge_t* hEdge = li->hEdges[0];
+                plane_t* ffloor, *fceil, *bfloor, *bceil;
+                float bottom, top;
 
                 R_PickPlanesForSegExtrusion(hEdge, R_UseSectorsFromFrontSideDef(hEdge, SEG_MIDDLE),
                                             &ffloor, &fceil, &bfloor, &bceil);

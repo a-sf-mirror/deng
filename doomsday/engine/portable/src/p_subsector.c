@@ -413,6 +413,28 @@ void Subsector_UpdateMidPoint(subsector_t* subsector)
     subsector->worldGridOffset[VY] = fmod(subsector->bBox[1][VY], 64);
 }
 
+boolean Subsector_PointInside(const subsector_t* subsector, float x, float y)
+{
+    assert(subsector);
+    {
+    const hedge_t* hEdge = subsector->face->hEdge;
+
+    do
+    {
+        const vertex_t* v1 = hEdge->HE_v1;
+        const vertex_t* v2 = hEdge->next->HE_v1;
+
+        if(((v1->pos[VY] - y) * (v2->pos[VX] - v1->pos[VX]) -
+            (v1->pos[VX] - x) * (v2->pos[VY] - v1->pos[VY])) < 0)
+        {
+            return false; // Outside the subsector's edges.
+        }
+    } while((hEdge = hEdge->next) != subsector->face->hEdge);
+
+    return true;
+    }
+}
+
 /**
  * Update the subsector, property is selected by DMU_* name.
  */

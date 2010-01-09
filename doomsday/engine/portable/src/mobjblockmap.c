@@ -117,7 +117,7 @@ static void freeList(linklist_t* list)
 static void listPushFront(linklist_t* list, mobj_t* mobj)
 {
     listnode_t* node = allocListNode();
-    
+
     node->data = mobj;
 
     node->next = list->head;
@@ -411,6 +411,53 @@ boolean MobjBlockmap_BoxIterate(mobjblockmap_t* blockmap, const uint blockBox[4]
     return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iterateMobjs, (void*) &args);
 }
 
+static boolean addMobjIntercepts(mobj_t* mo, void* data)
+{
+    float x1, y1, x2, y2;
+    int s[2];
+    divline_t dl;
+    float frac;
+
+    if(mo->dPlayer && (mo->dPlayer->flags & DDPF_CAMERA))
+        return true; // $democam: ssshh, keep going, we're not here...
+
+    // Check a corner to corner crosubSectortion for hit.
+    if((traceLOS.dX ^ traceLOS.dY) > 0)
+    {
+        x1 = mo->pos[VX] - mo->radius;
+        y1 = mo->pos[VY] + mo->radius;
+
+        x2 = mo->pos[VX] + mo->radius;
+        y2 = mo->pos[VY] - mo->radius;
+    }
+    else
+    {
+        x1 = mo->pos[VX] - mo->radius;
+        y1 = mo->pos[VY] - mo->radius;
+
+        x2 = mo->pos[VX] + mo->radius;
+        y2 = mo->pos[VY] + mo->radius;
+    }
+
+    s[0] = P_PointOnDivlineSide(x1, y1, &traceLOS);
+    s[1] = P_PointOnDivlineSide(x2, y2, &traceLOS);
+    if(s[0] == s[1])
+        return true; // Line isn't crossed.
+
+    dl.pos[VX] = FLT2FIX(x1);
+    dl.pos[VY] = FLT2FIX(y1);
+    dl.dX = FLT2FIX(x2 - x1);
+    dl.dY = FLT2FIX(y2 - y1);
+
+    frac = P_InterceptVector(&traceLOS, &dl);
+    if(frac < 0)
+        return true; // Behind source.
+
+    P_AddIntercept(frac, false, mo);
+
+    return true; // Keep going.
+}
+
 boolean MobjBlockmap_PathTraverse(mobjblockmap_t* blockmap, const uint originBlock[2],
                                   const uint destBlock[2], const float origin[2],
                                   const float dest[2],
@@ -478,7 +525,7 @@ boolean MobjBlockmap_PathTraverse(mobjblockmap_t* blockmap, const uint originBlo
     step[1] = FLT2FIX(delta[1]);
     for(count = 0; count < 64; ++count)
     {
-        if(!MobjBlockmap_Iterate(blockmap, block, PIT_AddMobjIntercepts, 0))
+        if(!MobjBlockmap_Iterate(blockmap, block, addMobjIntercepts, 0))
             return false; // Early out.
 
         if(block[0] == destBlock[0] && block[1] == destBlock[1])

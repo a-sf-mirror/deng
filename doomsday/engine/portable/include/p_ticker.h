@@ -31,4 +31,6 @@
 
 void            P_Ticker(timespan_t time);
 
+// @fixme Does not belong in this file.
+int             P_MobjTicker(void* p, void* context);
 #endif

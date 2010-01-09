@@ -1691,7 +1691,10 @@ void R_SetupMap(int mode, int flags)
             initSurfaceMaterialOffset(&si->SW_bottomsurface);
         }
 
-        P_MapInitPolyobjs(map);
+        for(i = 0; i < map->numPolyObjs; ++i)
+        {
+            P_InitPolyobj(map->polyObjs[i]);
+        }
         return;
         }
     case DDSMM_FINALIZE:
@@ -1735,7 +1738,10 @@ void R_SetupMap(int mode, int flags)
             initSurfaceMaterialOffset(&si->SW_bottomsurface);
         }
 
-        P_MapInitPolyobjs(map);
+        for(i = 0; i < map->numPolyObjs; ++i)
+        {
+            P_InitPolyobj(map->polyObjs[i]);
+        }
 
         // Run any commands specified in Map Info.
         {
@@ -1778,7 +1784,7 @@ void R_SetupMap(int mode, int flags)
             if(ddpl->mo)
             {
                 const subsector_t* subsector =
-                    R_PointInSubSector(ddpl->mo->pos[VX], ddpl->mo->pos[VY]);
+                    Map_PointInSubsector(map, ddpl->mo->pos[VX], ddpl->mo->pos[VY]);
 
                 //// \fixme $nplanes
                 if(ddpl->mo->pos[VZ] >= subsector->sector->SP_floorvisheight &&
@@ -2156,7 +2162,7 @@ boolean R_UpdateSector(sector_t* sec, boolean forceUpdate)
         sec->oldLightLevel = sec->lightLevel;
         memcpy(sec->oldRGB, sec->rgb, sizeof(sec->oldRGB));
 
-        LG_SectorChanged(sec);
+        LightGrid_MarkForUpdate(Map_LightGrid(P_CurrentMap()), sec->blocks, sec->changedBlockCount, sec->blockCount);
 
         changed = true;
     }
@@ -2211,6 +2217,17 @@ void R_UpdatePlanes(void)
 }
 
 /**
+ * Called when a setting is changed which affects the lightgrid.
+ */
+void R_MarkAllSectorsForLightGridUpdate(cvar_t* unused)
+{
+    map_t* map;
+
+    if((map = P_CurrentMap()))
+        Map_MarkAllSectorsForLightGridUpdate(map);
+}
+
+/**
  * The DOOM lighting model applies distance attenuation to sector light
  * levels.
  *
@@ -2252,7 +2269,7 @@ float R_WallAngleLightLevelDelta(const linedef_t* l, byte side)
         return 0;
 
     // Do a lighting adjustment based on orientation.
-    return LineDef_GetLightLevelDelta(l) * (side? -1 : 1) *
+    return LineDef_LightLevelDelta(l) * (side? -1 : 1) *
         rendLightWallAngle;
 }
 

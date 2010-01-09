@@ -31,7 +31,6 @@
 
 void            SBE_Register(void);
 
-void            SBE_InitForMap(struct map_s* map);
 void            SBE_EndFrame(struct map_s* map);
 
 void            SBE_DrawCursor(struct map_s* map);

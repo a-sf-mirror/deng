@@ -118,7 +118,7 @@ static void freeList(linklist_t* list)
 static void listPushFront(linklist_t* list, linedef_t* lineDef)
 {
     listnode_t* node = allocListNode();
-    
+
     node->data = lineDef;
 
     node->next = list->head;
@@ -551,7 +551,7 @@ boolean LineDefBlockmap_Unlink(linedefblockmap_t* blockmap, linedef_t* lineDef)
         for(x = 0; x < dimensions[0]; ++x)
             unlinkLineDefFromBlock(blockmap, x, y, lineDef);
 
-    return true;    
+    return true;
 }
 
 void LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t max)
@@ -629,6 +629,54 @@ boolean LineDefBlockmap_BoxIterate(linedefblockmap_t* blockmap, const uint block
     return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iterateLineDefs, (void*) &args);
 }
 
+/**
+ * Looks for lines in the given block that intercept the given trace to add
+ * to the intercepts list
+ * A line is crossed if its endpoints are on opposite sides of the trace.
+ *
+ * @return              @c true if earlyout and a solid line hit.
+ */
+static boolean addLineIntercepts(linedef_t* ld, void* data)
+{
+    int s[2];
+    float frac;
+    divline_t dl;
+
+    // Avoid precision problems with two routines.
+    if(traceLOS.dX > FRACUNIT * 16 || traceLOS.dY > FRACUNIT * 16 ||
+       traceLOS.dX < -FRACUNIT * 16 || traceLOS.dY < -FRACUNIT * 16)
+    {
+        s[0] = P_PointOnDivlineSide(ld->L_v1->pos[VX],
+                                    ld->L_v1->pos[VY], &traceLOS);
+        s[1] = P_PointOnDivlineSide(ld->L_v2->pos[VX],
+                                    ld->L_v2->pos[VY], &traceLOS);
+    }
+    else
+    {
+        s[0] = LineDef_PointOnSide(ld, FIX2FLT(traceLOS.pos[VX]),
+                                       FIX2FLT(traceLOS.pos[VY]));
+        s[1] = LineDef_PointOnSide(ld, FIX2FLT(traceLOS.pos[VX] + traceLOS.dX),
+                                       FIX2FLT(traceLOS.pos[VY] + traceLOS.dY));
+    }
+
+    if(s[0] == s[1])
+        return true; // Line isn't crossed.
+
+    // Hit the line.
+    LineDef_ConstructDivline(ld, &dl);
+    frac = P_InterceptVector(&traceLOS, &dl);
+    if(frac < 0)
+        return true; // Behind source.
+
+    // Try to early out the check.
+    if(earlyout && frac < 1 && !LINE_BACKSIDE(ld))
+        return false; // Stop iteration.
+
+    P_AddIntercept(frac, true, ld);
+
+    return true; // Continue iteration.
+}
+
 boolean LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const uint originBlock[2],
                                      const uint destBlock[2], const float origin[2],
                                      const float dest[2],
@@ -696,7 +744,7 @@ boolean LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const uint ori
     step[1] = FLT2FIX(delta[1]);
     for(count = 0; count < 64; ++count)
     {
-        if(!LineDefBlockmap_Iterate(blockmap, block, PIT_AddLineIntercepts, 0, false))
+        if(!LineDefBlockmap_Iterate(blockmap, block, addLineIntercepts, 0, false))
             return false; // Early out
 
         if(block[0] == destBlock[0] && block[1] == destBlock[1])

@@ -35,16 +35,7 @@ angle_t         R_PointToAngle(float x, float y);
 angle_t         R_PointToAngle2(float x1, float y1,
                                 float x2, float y2);
 float           R_PointToDist(const float x, const float y);
-linedef_t*      R_GetLineForSide(const sidedef_t* sideDef);
-subsector_t*    R_PointInSubSector(const float x, const float y);
-boolean         R_IsPointInSector(const float x, const float y,
-                                  const sector_t* sector);
-boolean         R_IsPointInSector2(const float x, const float y,
-                                   const sector_t* sector);
-boolean         R_IsPointInSubSector(const float x, const float y,
-                                     const subsector_t* subsector);
 void            R_ScaleAmbientRGB(float* out, const float* in, float mul);
 void            R_HSVToRGB(float* rgb, float h, float s, float v);
-sector_t*       R_GetSectorForOrigin(struct map_s* map, const void* ddMobjBase);
 
 #endif

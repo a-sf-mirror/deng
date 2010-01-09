@@ -34,6 +34,8 @@ void            P_DestroySubsector(subsector_t* subsector);
 void            Subsector_SpreadObjs(subsector_t* subsector);
 void            Subsector_UpdateMidPoint(subsector_t* subsector);
 
+boolean         Subsector_PointInside(const subsector_t* subsector, float x, float y);
+
 boolean         Subsector_GetProperty(const subsector_t* subsector, setargs_t* args);
 boolean         Subsector_SetProperty(subsector_t* subsector, const setargs_t* args);
 

@@ -39,17 +39,6 @@
 
 #define ORDER(x,y,a,b)  ( (x)<(y)? ((a)=(x),(b)=(y)) : ((b)=(x),(a)=(y)) )
 
-// Linkstore is list of pointers gathered when iterating stuff.
-// This is pretty much the only way to avoid *all* potential problems
-// caused by callback routines behaving badly (moving or destroying
-// mobjs). The idea is to get a snapshot of all the objects being
-// iterated before any callbacks are called. The hardcoded limit is
-// a drag, but I'd like to see you iterating 2048 mobjs/lines in one block.
-
-#define MAXLINKED           2048
-#define DO_LINKS(it, end)   for(it = linkstore; it < end; it++) \
-                                if(!func(*it, data)) return false;
-
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -103,24 +92,6 @@ float P_ApproxDistance(float dx, float dy)
 float P_ApproxDistance3(float dx, float dy, float dz)
 {
     return P_ApproxDistance(P_ApproxDistance(dx, dy), dz * 1.2f);
-}
-
-/**
- * Returns a two-component float unit vector parallel to the line.
- */
-void P_LineUnitVector(linedef_t* line, float* unitvec)
-{
-    float               len = M_ApproxDistancef(line->dX, line->dY);
-
-    if(len)
-    {
-        unitvec[VX] = line->dX / len;
-        unitvec[VY] = line->dY / len;
-    }
-    else
-    {
-        unitvec[VX] = unitvec[VY] = 0;
-    }
 }
 
 /**
@@ -220,19 +191,9 @@ int P_PointOnDivLineSidef(fvertex_t* pnt, fdivline_t* dline)
                               dline->pos[VY], dline->dX, dline->dY);
 }
 
-/**
- * @return              Non-zero if the point is on the right side of the
- *                      specified line.
- */
-int P_PointOnLineDefSide(float x, float y, const linedef_t* line)
-{
-    return !P_PointOnLineSide(x, y, line->L_v1->pos[VX], line->L_v1->pos[VY],
-                              line->dX, line->dY);
-}
-
 int DMU_PointOnLineDefSide(float x, float y, void* p)
 {
-    return P_PointOnLineDefSide(x, y, ((objectrecord_t*) p)->obj);
+    return LineDef_PointOnSide((linedef_t*) ((objectrecord_t*) p)->obj, x, y);
 }
 
 /**
@@ -332,67 +293,9 @@ int P_BoxOnLineSide3(const int bbox[4], double lineSX, double lineSY,
 #undef IFFY_LEN
 }
 
-/**
- * Considers the line to be infinite.
- *
- * @return              @c  0 = completely in front of the line.
- * @return              @c  1 = completely behind the line.
- *                      @c -1 = box crosses the line.
- */
-int P_BoxOnLineSide2(float xl, float xh, float yl, float yh,
-                     const linedef_t* ld)
-{
-    int                 a = 0, b = 0;
-
-    switch(ld->slopeType)
-    {
-    default: // Shut up compiler.
-      case ST_HORIZONTAL:
-        a = yh > ld->L_v1->pos[VY];
-        b = yl > ld->L_v1->pos[VY];
-        if(ld->dX < 0)
-        {
-            a ^= 1;
-            b ^= 1;
-        }
-        break;
-
-      case ST_VERTICAL:
-        a = xh < ld->L_v1->pos[VX];
-        b = xl < ld->L_v1->pos[VX];
-        if(ld->dY < 0)
-        {
-            a ^= 1;
-            b ^= 1;
-        }
-        break;
-
-      case ST_POSITIVE:
-        a = P_PointOnLineDefSide(xl, yh, ld);
-        b = P_PointOnLineDefSide(xh, yl, ld);
-        break;
-
-    case ST_NEGATIVE:
-        a = P_PointOnLineDefSide(xh, yh, ld);
-        b = P_PointOnLineDefSide(xl, yl, ld);
-        break;
-    }
-
-    if(a == b)
-        return a;
-
-    return -1;
-}
-
-int P_BoxOnLineSide(const float* box, const linedef_t* ld)
-{
-    return P_BoxOnLineSide2(box[BOXLEFT], box[BOXRIGHT],
-                            box[BOXBOTTOM], box[BOXTOP], ld);
-}
-
 int DMU_BoxOnLineSide(const float* box, void* p)
 {
-    return P_BoxOnLineSide(box, ((objectrecord_t*) p)->obj);
+    return LineDef_BoxOnSide((linedef_t*) ((objectrecord_t*) p)->obj, box);
 }
 
 /**
@@ -429,19 +332,9 @@ int P_PointOnDivlineSide(float fx, float fy, const divline_t* line)
     }
 }
 
-void P_MakeDivline(const linedef_t* li, divline_t* dl)
-{
-    const vertex_t* vtx = li->L_v1;
-
-    dl->pos[VX] = FLT2FIX(vtx->pos[VX]);
-    dl->pos[VY] = FLT2FIX(vtx->pos[VY]);
-    dl->dX = FLT2FIX(li->dX);
-    dl->dY = FLT2FIX(li->dY);
-}
-
 void DMU_MakeDivline(void* p, divline_t* dl)
 {
-    P_MakeDivline(((objectrecord_t*) p)->obj, dl);
+    LineDef_ConstructDivline(((objectrecord_t*) p)->obj, dl);
 }
 
 /**
@@ -538,6 +431,18 @@ void P_MobjLink(mobj_t* mo, byte flags)
 boolean P_MobjLinesIterator(const mobj_t* mo, boolean (*func) (linedef_t*, void*),
                             void* data)
 {
+/**
+ * Linkstore is list of pointers gathered when iterating stuff.
+ * This is pretty much the only way to avoid *all* potential problems
+ * caused by callback routines behaving badly (moving or destroying
+ * mobjs). The idea is to get a snapshot of all the objects being
+ * iterated before any callbacks are called. The hardcoded limit is
+ * a drag, but I'd like to see you iterating 2048 mobjs/lines in one block.
+ */
+#define MAXLINKED           2048
+#define DO_LINKS(it, end)   for(it = linkstore; it < end; it++) \
+                                if(!func(*it, data)) return false;
+
     void* linkstore[MAXLINKED];
     void** end = linkstore, **it;
     nodeindex_t nix;
@@ -561,6 +466,9 @@ boolean P_MobjLinesIterator(const mobj_t* mo, boolean (*func) (linedef_t*, void*
 
     DO_LINKS(it, end);
     return true;
+
+#undef MAXLINKED
+#undef DO_LINKS
 }
 
 /**
@@ -573,6 +481,18 @@ boolean P_MobjSectorsIterator(const mobj_t* mo,
                               boolean (*func) (sector_t*, void*),
                               void* data)
 {
+/**
+ * Linkstore is list of pointers gathered when iterating stuff.
+ * This is pretty much the only way to avoid *all* potential problems
+ * caused by callback routines behaving badly (moving or destroying
+ * mobjs). The idea is to get a snapshot of all the objects being
+ * iterated before any callbacks are called. The hardcoded limit is
+ * a drag, but I'd like to see you iterating 2048 mobjs/lines in one block.
+ */
+#define MAXLINKED           2048
+#define DO_LINKS(it, end)   for(it = linkstore; it < end; it++) \
+                                if(!func(*it, data)) return false;
+
     void* linkstore[MAXLINKED];
     void** end = linkstore, **it;
     nodeindex_t nix;
@@ -626,32 +546,18 @@ boolean P_MobjSectorsIterator(const mobj_t* mo,
 
     DO_LINKS(it, end);
     return true;
+
+#undef MAXLINKED
+#undef DO_LINKS
 }
 
-boolean P_LineMobjsIterator(linedef_t* line, boolean (*func) (mobj_t*, void*), void* data)
+boolean P_LineMobjsIterator(linedef_t* lineDef, boolean (*func) (mobj_t*, void*), void* data)
 {
-    void* linkstore[MAXLINKED];
-    void** end = linkstore, **it;
-    nodeindex_t root, nix;
-    linknode_t* ln;
-    map_t* map;
-
-    if(!line)
-        return true;
+    if(!lineDef)
+        Con_Error("P_LineMobjsIterator: Invalid LineDef reference.");
     if(!func)
-        return true;
-
-    // @fixme LineDef should tell us which map it belongs to.
-    map = P_CurrentMap();
-
-    root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, line)->id - 1];
-    ln = map->lineNodes->nodes;
-
-    for(nix = ln[root].next; nix != root; nix = ln[nix].next)
-        *end++ = ln[nix].ptr;
-
-    DO_LINKS(it, end);
-    return true;
+        Con_Error("P_LineMobjsIterator: A callback function must be specified.");
+    return LineDef_IterateMobjs(lineDef, func, data);
 }
 
 /**
@@ -662,153 +568,13 @@ boolean P_LineMobjsIterator(linedef_t* line, boolean (*func) (mobj_t*, void*), v
  * (Lovely name; actually this is a combination of SectorMobjs and
  * a bunch of LineMobjs iterations.)
  */
-boolean P_SectorTouchingMobjsIterator(sector_t* sector,
-                                      int (*func) (void*, void*), void* data)
+boolean P_SectorTouchingMobjsIterator(sector_t* sector, int (*func) (void*, void*), void* data)
 {
-    uint i;
-    void* linkstore[MAXLINKED];
-    void** end = linkstore, **it;
-    mobj_t* mo;
-    linedef_t* li;
-    nodeindex_t root, nix;
-    map_t* map;
-
     if(!sector)
-        return true;
+        Con_Error("Sector_IterateMobjsTouching: Invalid Sector reference.");
     if(!func)
-        return true;
-
-    // First process the mobjs that obviously are in the sector.
-    for(mo = sector->mobjList; mo; mo = mo->sNext)
-    {
-        if(mo->validCount == validCount)
-            continue;
-
-        mo->validCount = validCount;
-        *end++ = mo;
-    }
-
-    // Then check the sector's lines.
-    map = P_CurrentMap();
-    for(i = 0; i < sector->lineDefCount; ++i)
-    {
-        linknode_t* ln;
-
-        li = sector->lineDefs[i];
-
-        // @fixme LineDef should tell us which map it belongs to.
-        ln = map->lineNodes->nodes;
-
-        // Iterate all mobjs on the line.
-        root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
-        for(nix = ln[root].next; nix != root; nix = ln[nix].next)
-        {
-            mo = (mobj_t *) ln[nix].ptr;
-            if(mo->validCount == validCount)
-                continue;
-
-            mo->validCount = validCount;
-            *end++ = mo;
-        }
-    }
-
-    DO_LINKS(it, end);
-    return true;
-}
-
-/**
- * Looks for lines in the given block that intercept the given trace to add
- * to the intercepts list
- * A line is crossed if its endpoints are on opposite sides of the trace.
- *
- * @return              @c true if earlyout and a solid line hit.
- */
-boolean PIT_AddLineIntercepts(linedef_t* ld, void* data)
-{
-    int s[2];
-    float frac;
-    divline_t dl;
-
-    // Avoid precision problems with two routines.
-    if(traceLOS.dX > FRACUNIT * 16 || traceLOS.dY > FRACUNIT * 16 ||
-       traceLOS.dX < -FRACUNIT * 16 || traceLOS.dY < -FRACUNIT * 16)
-    {
-        s[0] = P_PointOnDivlineSide(ld->L_v1->pos[VX],
-                                    ld->L_v1->pos[VY], &traceLOS);
-        s[1] = P_PointOnDivlineSide(ld->L_v2->pos[VX],
-                                    ld->L_v2->pos[VY], &traceLOS);
-    }
-    else
-    {
-        s[0] = P_PointOnLineDefSide(FIX2FLT(traceLOS.pos[VX]),
-                                    FIX2FLT(traceLOS.pos[VY]), ld);
-        s[1] = P_PointOnLineDefSide(FIX2FLT(traceLOS.pos[VX] + traceLOS.dX),
-                                    FIX2FLT(traceLOS.pos[VY] + traceLOS.dY), ld);
-    }
-
-    if(s[0] == s[1])
-        return true; // Line isn't crossed.
-
-    // Hit the line.
-    P_MakeDivline(ld, &dl);
-    frac = P_InterceptVector(&traceLOS, &dl);
-    if(frac < 0)
-        return true; // Behind source.
-
-    // Try to early out the check.
-    if(earlyout && frac < 1 && !LINE_BACKSIDE(ld))
-        return false; // Stop iteration.
-
-    P_AddIntercept(frac, true, ld);
-
-    return true; // Continue iteration.
-}
-
-boolean PIT_AddMobjIntercepts(mobj_t* mo, void* data)
-{
-    float x1, y1, x2, y2;
-    int s[2];
-    divline_t dl;
-    float frac;
-
-    if(mo->dPlayer && (mo->dPlayer->flags & DDPF_CAMERA))
-        return true; // $democam: ssshh, keep going, we're not here...
-
-    // Check a corner to corner crosubSectortion for hit.
-    if((traceLOS.dX ^ traceLOS.dY) > 0)
-    {
-        x1 = mo->pos[VX] - mo->radius;
-        y1 = mo->pos[VY] + mo->radius;
-
-        x2 = mo->pos[VX] + mo->radius;
-        y2 = mo->pos[VY] - mo->radius;
-    }
-    else
-    {
-        x1 = mo->pos[VX] - mo->radius;
-        y1 = mo->pos[VY] - mo->radius;
-
-        x2 = mo->pos[VX] + mo->radius;
-        y2 = mo->pos[VY] + mo->radius;
-    }
-
-    s[0] = P_PointOnDivlineSide(x1, y1, &traceLOS);
-    s[1] = P_PointOnDivlineSide(x2, y2, &traceLOS);
-    if(s[0] == s[1])
-        return true; // Line isn't crossed.
-
-    dl.pos[VX] = FLT2FIX(x1);
-    dl.pos[VY] = FLT2FIX(y1);
-    dl.dX = FLT2FIX(x2 - x1);
-    dl.dY = FLT2FIX(y2 - y1);
-
-    frac = P_InterceptVector(&traceLOS, &dl);
-    if(frac < 0)
-        return true; // Behind source.
-
-    P_AddIntercept(frac, false, mo);
-
-    return true; // Keep going.
+        Con_Error("Sector_IterateMobjsTouching: A callback function must be specified.");
+    return Sector_IterateMobjsTouching(sector, func, data);
 }
 
 static boolean pathTraverseMobjs(mobjblockmap_t* blockmap, float x1, float y1, float x2,

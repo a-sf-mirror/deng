@@ -78,7 +78,7 @@ ded_t defs; // The main definitions database.
 sprname_t* sprNames; // Sprite name list.
 state_t* states; // State list.
 ded_light_t** stateLights;
-ded_generator_t** stateGenerators;
+ded_generator_t** stateGeneratorDefs;
 mobjinfo_t* mobjInfo; // Map object info database.
 sfxinfo_t* sounds; // Sound effect list.
 
@@ -130,7 +130,7 @@ void Def_Init(void)
     sprNames = NULL; // Sprite name list.
     mobjInfo = NULL;
     states = NULL;
-    stateGenerators = NULL;
+    stateGeneratorDefs = NULL;
     stateLights = NULL;
     sounds = NULL;
     texts = NULL;
@@ -195,9 +195,9 @@ void Def_Destroy(void)
     DED_DelArray((void **) &stateOwners, &countStateOwners);
 
     // Destroy the state array, parallel LUTs.
-    if(stateGenerators)
-        M_Free(stateGenerators);
-    stateGenerators = NULL;
+    if(stateGeneratorDefs)
+        M_Free(stateGeneratorDefs);
+    stateGeneratorDefs = NULL;
     if(stateLights)
         M_Free(stateLights);
     stateLights = NULL;
@@ -960,9 +960,9 @@ void Def_Read(void)
                    defs.count.states.num);
     // Zero the parallel LUTs to the states array. These will be re-inited
     // anyway so there is no need to worry about updating any old values.
-    stateGenerators =
-        M_Realloc(stateGenerators, sizeof(*stateGenerators) * countStates.num);
-    memset(stateGenerators, 0, sizeof(*stateGenerators) * countStates.num);
+    stateGeneratorDefs =
+        M_Realloc(stateGeneratorDefs, sizeof(*stateGeneratorDefs) * countStates.num);
+    memset(stateGeneratorDefs, 0, sizeof(*stateGeneratorDefs) * countStates.num);
     stateLights =
         M_Realloc(stateLights, sizeof(*stateLights) * countStates.num);
     memset(stateLights, 0, sizeof(*stateLights) * countStates.num);
@@ -1172,20 +1172,20 @@ void Def_Read(void)
         if(pg->flags & PGF_STATE_CHAIN)
         {
             // Add to the chain.
-            pg->stateNext = stateGenerators[st];
-            stateGenerators[st] = pg;
+            pg->stateNext = stateGeneratorDefs[st];
+            stateGeneratorDefs[st] = pg;
         }
         else
         {
             // Make sure the previously built list is unlinked.
-            while(stateGenerators[st])
+            while(stateGeneratorDefs[st])
             {
-                ded_generator_t*       temp = stateGenerators[st]->stateNext;
+                ded_generator_t*       temp = stateGeneratorDefs[st]->stateNext;
 
-                stateGenerators[st]->stateNext = NULL;
-                stateGenerators[st] = temp;
+                stateGeneratorDefs[st]->stateNext = NULL;
+                stateGeneratorDefs[st] = temp;
             }
-            stateGenerators[st] = pg;
+            stateGeneratorDefs[st] = pg;
             pg->stateNext = NULL;
         }
     }

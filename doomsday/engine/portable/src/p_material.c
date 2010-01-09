@@ -350,9 +350,9 @@ byte Material_Prepare(material_snapshot_t* snapshot, material_t* mat,
         {
             ded_reflection_t* def = mat->reflection;
 
-            snapshot->shiny.minColor[CR] = def->minColor[CR];
-            snapshot->shiny.minColor[CG] = def->minColor[CG];
-            snapshot->shiny.minColor[CB] = def->minColor[CB];
+            snapshot->shinyMinColor[CR] = def->minColor[CR];
+            snapshot->shinyMinColor[CG] = def->minColor[CG];
+            snapshot->shinyMinColor[CB] = def->minColor[CB];
 
             setTexUnit(snapshot, MTU_REFLECTION, def->blendMode,
                        GL_LINEAR, shinyInst, 1, 1, 0, 0, def->shininess);

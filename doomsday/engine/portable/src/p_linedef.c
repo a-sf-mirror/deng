@@ -31,6 +31,7 @@
 #include "de_base.h"
 #include "de_refresh.h"
 #include "de_play.h"
+#include "de_misc.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -50,10 +51,117 @@
 
 // CODE --------------------------------------------------------------------
 
-float LineDef_GetLightLevelDelta(const linedef_t* l)
+float LineDef_LightLevelDelta(const linedef_t* l)
 {
     return (1.0f / 255) *
         ((l->L_v2->pos[VY] - l->L_v1->pos[VY]) / l->length * 18);
+}
+
+/**
+ * Returns a two-component float unit vector parallel to the line.
+ */
+void LineDef_UnitVector(const linedef_t* lineDef, float* unitvec)
+{
+    assert(lineDef);
+    assert(unitvec);
+    {
+    float len = M_ApproxDistancef(lineDef->dX, lineDef->dY);
+
+    if(len)
+    {
+        unitvec[VX] = lineDef->dX / len;
+        unitvec[VY] = lineDef->dY / len;
+    }
+    else
+    {
+        unitvec[VX] = unitvec[VY] = 0;
+    }
+    }
+}
+
+/**
+ * @return              Non-zero if the point is on the right side of the
+ *                      specified line.
+ */
+int LineDef_PointOnSide(const linedef_t* line, float x, float y)
+{
+    return !P_PointOnLineSide(x, y, line->L_v1->pos[VX], line->L_v1->pos[VY],
+                              line->dX, line->dY);
+}
+
+/**
+ * Considers the line to be infinite.
+ *
+ * @return              @c  0 = completely in front of the line.
+ *                      @c  1 = completely behind the line.
+ *                      @c -1 = box crosses the line.
+ */
+int LineDef_BoxOnSide2(const linedef_t* lineDef, float xl, float xh, float yl, float yh)
+{
+    assert(lineDef);
+    {
+    int a = 0, b = 0;
+
+    switch(lineDef->slopeType)
+    {
+    default: // Shut up compiler.
+      case ST_HORIZONTAL:
+        a = yh > lineDef->L_v1->pos[VY];
+        b = yl > lineDef->L_v1->pos[VY];
+        if(lineDef->dX < 0)
+        {
+            a ^= 1;
+            b ^= 1;
+        }
+        break;
+
+      case ST_VERTICAL:
+        a = xh < lineDef->L_v1->pos[VX];
+        b = xl < lineDef->L_v1->pos[VX];
+        if(lineDef->dY < 0)
+        {
+            a ^= 1;
+            b ^= 1;
+        }
+        break;
+
+      case ST_POSITIVE:
+        a = LineDef_PointOnSide(lineDef, xl, yh);
+        b = LineDef_PointOnSide(lineDef, xh, yl);
+        break;
+
+    case ST_NEGATIVE:
+        a = LineDef_PointOnSide(lineDef, xh, yh);
+        b = LineDef_PointOnSide(lineDef, xl, yl);
+        break;
+    }
+
+    if(a == b)
+        return a;
+
+    return -1;
+    }
+}
+
+int LineDef_BoxOnSide(const linedef_t* lineDef, const float* box)
+{
+    assert(box);
+    return LineDef_BoxOnSide2(lineDef, box[BOXLEFT], box[BOXRIGHT],
+                              box[BOXBOTTOM], box[BOXTOP]);
+}
+
+void LineDef_ConstructDivline(const linedef_t* lineDef, divline_t* divline)
+{
+    assert(lineDef);
+    assert(divline);
+    {
+    const vertex_t* vtx = lineDef->L_v1;
+
+    divline->pos[VX] = FLT2FIX(vtx->pos[VX]);
+    divline->pos[VY] = FLT2FIX(vtx->pos[VY]);
+    divline->dX = FLT2FIX(lineDef->dX);
+    divline->dY = FLT2FIX(lineDef->dY);
+    }
 }
 
 /**
@@ -210,4 +318,41 @@ boolean LineDef_GetProperty(const linedef_t *lin, setargs_t *args)
     }
 
     return true; // Continue iteration.
+}
+
+boolean LineDef_IterateMobjs(linedef_t* lineDef, boolean (*func) (mobj_t*, void*), void* data)
+{
+    assert(lineDef);
+    assert(func);
+    {
+/**
+ * Linkstore is list of pointers gathered when iterating stuff.
+ * This is pretty much the only way to avoid *all* potential problems
+ * caused by callback routines behaving badly (moving or destroying
+ * mobjs). The idea is to get a snapshot of all the objects being
+ * iterated before any callbacks are called. The hardcoded limit is
+ * a drag, but I'd like to see you iterating 2048 mobjs/lines in one block.
+ */
+#define MAXLINKED           2048
+#define DO_LINKS(it, end)   for(it = linkstore; it < end; it++) \
+                                if(!func(*it, data)) return false;
+
+    void* linkstore[MAXLINKED];
+    void** end = linkstore, **it;
+    nodeindex_t root, nix;
+    linknode_t* ln;
+    map_t* map = P_CurrentMap(); // @fixme LineDef should tell us which map it belongs to.
+
+    root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, lineDef)->id - 1];
+    ln = map->lineNodes->nodes;
+
+    for(nix = ln[root].next; nix != root; nix = ln[nix].next)
+        *end++ = ln[nix].ptr;
+
+    DO_LINKS(it, end);
+    return true;
+
+#undef MAXLINKED
+#undef DO_LINKS
+    }
 }

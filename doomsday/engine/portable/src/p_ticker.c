@@ -55,6 +55,9 @@
 
 // CODE --------------------------------------------------------------------
 
+/**
+ * @fixme Does not belong in this file.
+ */
 int P_MobjTicker(void* p, void* context)
 {
     uint                i;
@@ -113,14 +116,6 @@ int P_MobjTicker(void* p, void* context)
     return true; // Continue iteration.
 }
 
-boolean PIT_ClientMobjTicker(clmobj_t *cmo, void *parm)
-{
-    P_MobjTicker((thinker_t*) &cmo->mo, NULL);
-
-    // Continue iteration.
-    return true;
-}
-
 /**
  * Doomsday's own play-ticker.
  */
@@ -139,13 +134,5 @@ void P_Ticker(timespan_t time)
 
     map = P_CurrentMap();
     if(map)
-    {
-        // New ptcgens for planes?
-        P_CheckPtcPlanes(map);
-
-        Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
-
-        // Check all client mobjs.
-        Cl_MobjIterator(map, PIT_ClientMobjTicker, NULL);
-    }
+        Map_Ticker(map, time);
 }

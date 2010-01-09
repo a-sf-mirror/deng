@@ -96,7 +96,7 @@ void            DMU_SetValue(valuetype_t valueType, void* dst,
 void            DMU_GetValue(valuetype_t valueType, const void* src,
                              setargs_t* args, uint index);
 
-map_t*      P_CurrentMap(void);
+map_t*          P_CurrentMap(void);
 void            P_SetCurrentMap(map_t* map);
 
 #ifndef NDEBUG

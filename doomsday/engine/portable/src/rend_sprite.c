@@ -304,7 +304,7 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
         if(useBias)
         {
             // Evaluate the position in the light grid.
-            LG_Evaluate(P_CurrentMap(), spr->center, params->ambientColor);
+            LightGrid_Evaluate(Map_LightGrid(P_CurrentMap()), spr->center, params->ambientColor);
         }
         else
         {
@@ -691,7 +691,7 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
 
         if(useBias)
         {
-            LG_Evaluate(P_CurrentMap(), params->center, params->ambientColor);
+            LightGrid_Evaluate(Map_LightGrid(P_CurrentMap()), params->center, params->ambientColor);
         }
         else
         {
@@ -1179,7 +1179,7 @@ void Rend_RenderTexParticle(const vissprite_t* spr)
             // Also move 1 unit away from the wall to avoid the worst Z-fighting.
             M_ProjectPointOnLine(spr->center, vpos, line, 1, projected);
 
-            P_LineUnitVector(params->contact, line);
+            LineDef_UnitVector(params->contact, line);
             V2_Scale(line, params->radius);
 
             V3_Set(v1, projected[VX] - line[VX], projected[VY] - line[VY], spr->center[VZ] - params->radius);

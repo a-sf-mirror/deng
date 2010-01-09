@@ -73,12 +73,12 @@ static void Sv_IdentifySoundOrigin(map_t* map, mobj_t** origin,
     if(*origin && !(*origin)->thinker.id)
     {
         // No mobj ID => it's not a real mobj.
-        if(P_IsPolyobjOrigin(map, *origin))
+        if(Map_PolyobjForOrigin(map, *origin))
             *poly = (polyobj_t*) *origin;
         else
         {   // It wasn't a polyobj.
             // Try the sectors instead.
-            *sector = R_GetSectorForOrigin(map, *origin);
+            *sector = Map_SectorForOrigin(map, *origin);
         }
 
 #ifdef _DEBUG

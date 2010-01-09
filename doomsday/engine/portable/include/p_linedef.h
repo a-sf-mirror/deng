@@ -32,9 +32,18 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
-float           LineDef_GetLightLevelDelta(const linedef_t* l);
+float           LineDef_LightLevelDelta(const linedef_t* lineDef);
+void            LineDef_UnitVector(const linedef_t* lineDef, float* unitvec);
 
-boolean         LineDef_GetProperty(const linedef_t *lin, setargs_t *args);
-boolean         LineDef_SetProperty(linedef_t *lin, const setargs_t *args);
+int             LineDef_PointOnSide(const linedef_t* lineDef, float x, float y);
+int             LineDef_BoxOnSide(const linedef_t* lineDef, const float* tmbox);
+int             LineDef_BoxOnSide2(const linedef_t* lineDef, float xl, float xh, float yl, float yh);
+
+void            LineDef_ConstructDivline(const linedef_t* lineDef, divline_t* dl);
+
+boolean         LineDef_GetProperty(const linedef_t* lineDef, setargs_t* args);
+boolean         LineDef_SetProperty(linedef_t* lineDef, const setargs_t* args);
+
+boolean         LineDef_IterateMobjs(linedef_t* line, boolean (*func) (struct mobj_s*, void*), void* data);
 
 #endif

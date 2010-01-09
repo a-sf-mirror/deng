@@ -90,8 +90,11 @@ static void freeGeneratorPtcs(generator_t* gen)
 /**
  * Set gen->count prior to calling this function.
  */
-static void P_InitParticleGen(generator_t* gen, const ded_generator_t* def)
+void P_InitParticleGen(generator_t* gen, const ded_generator_t* def)
 {
+    assert(gen);
+    assert(def);
+    {
     int i;
 
     if(gen->count <= 0)
@@ -138,10 +141,12 @@ static void P_InitParticleGen(generator_t* gen, const ded_generator_t* def)
         particle_t* pt = &gen->ptcs[i];
         pt->gen = NULL;
     }
+    }
 }
 
-static void P_PresimParticleGen(generator_t* gen, int tics)
+void P_PresimParticleGen(generator_t* gen, int tics)
 {
+    assert(gen);
     for(; tics > 0; tics--)
         P_GeneratorThinker(gen);
 
@@ -154,44 +159,54 @@ static void P_PresimParticleGen(generator_t* gen, int tics)
  *
  * \fixme Linear allocation when in-game is not good...
  */
-generator_t* P_CreateGenerator(map_t* map)
+generator_t* P_CreateGenerator(void)
 {
-    generator_t* gen;
-
-    assert(map);
-
-    gen = Z_Calloc(sizeof(*gen), PU_STATIC, 0);
+    generator_t* gen = Z_Calloc(sizeof(*gen), PU_STATIC, 0);
     gen->thinker.function = P_GeneratorThinker;
     gen->randSeed = RNG_RandByte();
-    // Link the thinker to the list of (private) thinkers.
-    Map_AddThinker(map, &gen->thinker, false);
-
     return gen;
 }
 
 void P_DestroyGenerator(generator_t* gen)
 {
     assert(gen);
-
     freeGeneratorPtcs(gen);
+}
 
+generator_t* P_NewGenerator(map_t* map)
+{
+    generator_t* gen = P_CreateGenerator();
+    // Link the thinker to the list of (private) thinkers.
+    Map_AddThinker(map, &gen->thinker, false);
+    return gen;
+}
+
+void P_DeleteGenerator(generator_t* gen)
+{
+    assert(gen);
+    {
     // @todo generator should return the map it's linked to.
     Map_RemoveThinker(P_CurrentMap(), &gen->thinker);
+    P_DestroyGenerator(gen);
+    }
 }
 
 /**
  * Creates a new mobj-triggered particle generator based on the given
  * definition. The generator is added to the list of active ptcgens.
  */
-void P_SpawnParticleGen(const ded_generator_t* def, mobj_t* source)
+void P_SpawnParticleGen(mobj_t* source, const ded_generator_t* def)
 {
+    assert(def);
+    assert(source);
+    {
     generator_t* gen;
 
     if(isDedicated || !useParticles)
         return;
 
     // @todo source mobj should return the map it's linked to.
-    if(!(gen = P_CreateGenerator(P_CurrentMap())))
+    if(!(gen = P_NewGenerator(P_CurrentMap())))
         return;
 
 /*#if _DEBUG
@@ -219,22 +234,62 @@ Con_Message("SpawnGenerator: %s/%i (src:%s typ:%s mo:%p)\n",
 
     // Is there a need to pre-simulate?
     P_PresimParticleGen(gen, def->preSim);
+    }
+}
+
+void P_SpawnMapParticleGen(map_t* map, const ded_generator_t* def)
+{
+    generator_t* gen;
+
+    if(!(gen = P_NewGenerator(map)))
+        return; // No more generators.
+
+    // Initialize the particle generator.
+    gen->count = def->particles;
+    gen->spawnRateMultiplier = 1;
+
+    P_InitParticleGen(gen, def);
+    gen->flags |= PGF_UNTRIGGERED;
+
+    // Is there a need to pre-simulate?
+    P_PresimParticleGen(gen, def->preSim);
+}
+
+void P_SpawnTypeParticleGen(map_t* map, const ded_generator_t* def)
+{
+    generator_t* gen;
+
+    if(!(gen = P_NewGenerator(map)))
+        return; // No more generators.
+
+    // Initialize the particle generator.
+    gen->count = def->particles;
+    gen->spawnRateMultiplier = 1;
+
+    P_InitParticleGen(gen, def);
+    gen->type = def->typeNum;
+    gen->type2 = def->type2Num;
+
+    // Is there a need to pre-simulate?
+    P_PresimParticleGen(gen, def->preSim);
 }
 
 /**
  * Creates a new flat-triggered particle generator based on the given
  * definition. The generator is added to the list of active ptcgens.
  */
-static void P_SpawnPlaneParticleGen(const ded_generator_t* def, sector_t* sec,
-                                    int planeID)
+void P_SpawnPlaneParticleGen(sector_t* sec, int planeID, const ded_generator_t* def)
 {
+    assert(def);
+    assert(sec);
+    {
     generator_t* gen;
 
     if(isDedicated || !useParticles)
         return;
 
     // @todo sector should return the map it's linked to.
-    if(!(gen = P_CreateGenerator(P_CurrentMap())))
+    if(!(gen = P_NewGenerator(P_CurrentMap())))
         return;
 
     gen->count = def->particles;
@@ -255,6 +310,7 @@ static void P_SpawnPlaneParticleGen(const ded_generator_t* def, sector_t* sec,
 
     // Is there a need to pre-simulate?
     P_PresimParticleGen(gen, def->preSim);
+    }
 }
 
 /**
@@ -325,12 +381,13 @@ static void P_ParticleSound(fixed_t pos[3], ded_embsound_t* sound)
 static void P_NewParticle(generator_t* gen)
 {
     const ded_generator_t* def = gen->def;
-    particle_t*         pt;
-    int                 i;
-    fixed_t             uncertain, len;
-    angle_t             ang, ang2;
-    float*              box, inter = -1;
-    modeldef_t*         mf = 0, *nextmf = 0;
+    fixed_t uncertain, len;
+    angle_t ang, ang2;
+    float* box, inter = -1;
+    modeldef_t* mf = 0, *nextmf = 0;
+    map_t* map = P_CurrentMap(); // @todo Generator should return the map its in.
+    particle_t* pt;
+    int i;
 
     // Check for model-only generators.
     if(gen->source)
@@ -511,7 +568,7 @@ static void P_NewParticle(generator_t* gen)
             float x = (box[BOXLEFT]   + RNG_RandFloat() * (box[BOXRIGHT] - box[BOXLEFT]));
             float y = (box[BOXBOTTOM] + RNG_RandFloat() * (box[BOXTOP]   - box[BOXBOTTOM]));
 
-            subsector = R_PointInSubSector(x, y);
+            subsector = Map_PointInSubsector(map, x, y);
 
             if(subsector->sector == gen->sector)
                 break;
@@ -530,7 +587,7 @@ static void P_NewParticle(generator_t* gen)
             pt->pos[VX] = FLT2FIX(x);
             pt->pos[VY] = FLT2FIX(y);
 
-            if(R_PointInSubSector(x, y) == subsector)
+            if(Map_PointInSubsector(map, x, y) == subsector)
                 break; // This is a good place.
         }
 
@@ -556,7 +613,7 @@ static void P_NewParticle(generator_t* gen)
 
     // The other place where this gets updated is after moving over
     // a two-sided line.
-    pt->subsector = R_PointInSubSector(FIX2FLT(pt->pos[VX]), FIX2FLT(pt->pos[VY]));
+    pt->subsector = Map_PointInSubsector(map, FIX2FLT(pt->pos[VX]), FIX2FLT(pt->pos[VY]));
 
     // Play a stage sound?
     P_ParticleSound(pt->pos, &def->stages[pt->stage].sound);
@@ -617,8 +674,8 @@ boolean PIT_CheckLinePtc(linedef_t* ld, void* data)
     }
 
     // Movement must cross the line.
-    if(P_PointOnLineDefSide(FIX2FLT(tmpx1), FIX2FLT(tmpy1), ld) ==
-       P_PointOnLineDefSide(FIX2FLT(tmpx2), FIX2FLT(tmpy2), ld))
+    if(LineDef_PointOnSide(ld, FIX2FLT(tmpx1), FIX2FLT(tmpy1)) ==
+       LineDef_PointOnSide(ld, FIX2FLT(tmpx2), FIX2FLT(tmpy2)))
         return true;
 
     // We are possibly hitting something here.
@@ -770,9 +827,9 @@ static void P_MoveParticle(generator_t* gen, particle_t* pt)
     ptcstage_t* st = &gen->stages[pt->stage];
     ded_ptcstage_t* stDef = &gen->def->stages[pt->stage];
     boolean zBounce = false, hitFloor = false;
-    vec2_t point;
     fixed_t x, y, z, hardRadius = st->radius / 2;
-    map_t* map = P_CurrentMap();
+    map_t* map = P_CurrentMap(); // @todo Particle should return the map its linked in.
+    vec2_t point;
 
     // Particle rotates according to spin speed.
     P_SpinParticle(gen, pt);
@@ -1041,7 +1098,7 @@ static void P_MoveParticle(generator_t* gen, particle_t* pt)
 
     // Should we update the sector pointer?
     if(tmcross)
-        pt->subsector = R_PointInSubSector(FIX2FLT(x), FIX2FLT(y));
+        pt->subsector = Map_PointInSubsector(map, FIX2FLT(x), FIX2FLT(y));
 }
 
 /**
@@ -1066,7 +1123,7 @@ void P_GeneratorThinker(generator_t* gen)
     // Time to die?
     if(++gen->age > def->maxAge && def->maxAge >= 0)
     {
-        P_DestroyGenerator(gen);
+        P_DeleteGenerator(gen);
         return;
     }
 
@@ -1139,148 +1196,6 @@ void P_GeneratorThinker(generator_t* gen)
     }
 }
 
-typedef struct {
-    sector_t*       sector;
-    uint            planeID;
-} findplanegeneratorparams_t;
-
-static int findPlaneGenerator(void* ptr, void* context)
-{
-    generator_t* gen = (generator_t*) ptr;
-    findplanegeneratorparams_t* params = (findplanegeneratorparams_t*) context;
-
-    if(gen->thinker.function && gen->sector == params->sector &&
-       gen->planeID == params->planeID)
-        return false; // Stop iteration, we've found one!
-    return true; // Continue iteration.
-}
-
-/**
- * Returns true iff there is an active ptcgen for the given plane.
- */
-static boolean P_HasActiveGenerator(sector_t* sector, uint planeID)
-{
-    findplanegeneratorparams_t params;
-
-    params.sector = sector;
-    params.planeID = planeID;
-
-    // @todo Sector should return the map its linked to.
-    return !Map_IterateThinkers(P_CurrentMap(), (think_t) P_GeneratorThinker, ITF_PRIVATE,
-                                findPlaneGenerator, &params);
-}
-
-/**
- * Spawns new ptcgens for planes, if necessary.
- */
-void P_CheckPtcPlanes(map_t* map)
-{
-    uint i, p;
-
-    if(!map)
-        return;
-
-    if(isDedicated || !useParticles)
-        return;
-
-    // There is no need to do this on every tic.
-    if(SECONDS_TO_TICKS(gameTime) % 4)
-        return;
-
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        sector_t* sector = map->sectors[i];
-
-        for(p = 0; p < 2; ++p)
-        {
-            uint plane = p;
-            material_t* mat = sector->SP_planematerial(plane);
-            const ded_generator_t* def = Material_GetGenerator(mat);
-
-            if(!def)
-                continue;
-
-            if(def->flags & PGF_CEILING_SPAWN)
-                plane = PLN_CEILING;
-            if(def->flags & PGF_FLOOR_SPAWN)
-                plane = PLN_FLOOR;
-
-            if(!P_HasActiveGenerator(sector, plane))
-            {
-                // Spawn it!
-                P_SpawnPlaneParticleGen(def, sector, plane);
-            }
-        }
-    }
-}
-
-/**
- * Spawns all type-triggered particle generators, regardless of whether
- * the type of mobj exists in the map or not (mobjs might be dynamically
- * created).
- */
-void P_SpawnTypeParticleGens(map_t* map)
-{
-    int i;
-    ded_generator_t* def;
-    generator_t* gen;
-
-    if(isDedicated || !useParticles)
-        return;
-
-    for(i = 0, def = defs.generators; i < defs.count.generators.num; ++i, def++)
-    {
-        if(def->typeNum < 0)
-            continue;
-
-        if(!(gen = P_CreateGenerator(map)))
-            return; // No more generators.
-
-        // Initialize the particle generator.
-        gen->count = def->particles;
-        gen->spawnRateMultiplier = 1;
-
-        P_InitParticleGen(gen, def);
-        gen->type = def->typeNum;
-        gen->type2 = def->type2Num;
-
-        // Is there a need to pre-simulate?
-        P_PresimParticleGen(gen, def->preSim);
-    }
-}
-
-void P_SpawnMapParticleGens(map_t* map)
-{
-    int i;
-    ded_generator_t* def;
-    generator_t* gen;
-
-    if(isDedicated || !useParticles)
-        return;
-
-    for(i = 0, def = defs.generators; i < defs.count.generators.num; ++i, def++)
-    {
-        if(!def->map[0] || stricmp(def->map, map->mapID))
-            continue;
-
-        if(def->spawnAge > 0 && ddMapTime > def->spawnAge)
-            continue; // No longer spawning this generator.
-
-        if(!(gen = P_CreateGenerator(map)))
-            return; // No more generators.
-
-        // Initialize the particle generator.
-        gen->count = def->particles;
-        gen->spawnRateMultiplier = 1;
-
-        P_InitParticleGen(gen, def);
-        gen->flags |= PGF_UNTRIGGERED;
-
-        // Is there a need to pre-simulate?
-        P_PresimParticleGen(gen, def->preSim);
-    }
-}
-
 /**
  * A public function (games can call this directly).
  */
@@ -1302,7 +1217,7 @@ void P_SpawnDamageParticleGen(mobj_t* mo, mobj_t* inflictor, int amount)
 
         // Create it.
         // @todo mobj should return the map it's linked to.
-        if(!(gen = P_CreateGenerator(P_CurrentMap())))
+        if(!(gen = P_NewGenerator(P_CurrentMap())))
             return; // No more generators.
 
         gen->count = def->particles;

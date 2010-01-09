@@ -1029,7 +1029,7 @@ int P_Iteratep(void* ptr, uint prop, int (*callback) (void*, void*),
         switch(prop)
         {
         case DMU_MOBJS:
-            return P_SectorTouchingMobjsIterator(((objectrecord_t*) ptr)->obj,
+            return Sector_IterateMobjsTouching(((objectrecord_t*) ptr)->obj,
                                                  callback, context);
         case DMU_LINEDEF:
             {

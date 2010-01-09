@@ -42,6 +42,8 @@
 #include <math.h>
 #include <assert.h>
 
+#include "r_lgrid.h"
+
 // MACROS ------------------------------------------------------------------
 
 BEGIN_PROF_TIMERS()
@@ -81,7 +83,7 @@ static float lgDebugSize = 1.5f;
 /**
  * Registers console variables.
  */
-void LG_Register(void)
+void R_RegisterLightGrid(void)
 {
     C_VAR_INT("rend-bias-grid", &lgEnabled, 0, 0, 1);
     C_VAR_INT("rend-bias-grid-blocksize", &lgBlockSize, 0, 8, 1024);
@@ -123,54 +125,69 @@ static void addIndexBit(int x, int y, uint* bitfield, int* count,
     bitfield[index >> 5] |= (1 << (index & 0x1f));
 }
 
+lightgrid_t* P_CreateLightGrid(void)
+{
+    return Z_Calloc(sizeof(lightgrid_t), PU_STATIC, NULL);
+}
+
+void P_DestroyLightGrid(lightgrid_t* lg)
+{
+    assert(lg);
+    {
+    if(lg->inited)
+        Z_Free(lg->grid);
+    Z_Free(lg);
+    }
+}
+
 /**
  * Initialize the light map->lg.grid for the current map.
  */
-void LG_Init(map_t* map)
+void LightGrid_Init(map_t* map)
 {
-    uint                startTime;
-
+    assert(map);
+    {
 #define MSFACTORS 7
+
     typedef struct lgsamplepoint_s {
         float           pos[3];
     } lgsamplepoint_t;
+
     // Diagonal in maze arrangement of natural numbers.
     // Up to 65 samples per-block(!)
-    static int          multisample[] = {1, 5, 9, 17, 25, 37, 49, 65};
+    static int multisample[] = {1, 5, 9, 17, 25, 37, 49, 65};
 
-    float               max[3], width, height;
-    int                 i = 0, a, b, x, y, count, changedCount;
-    size_t              bitfieldSize;
-    uint*               indexBitfield = 0, *contributorBitfield = 0;
-    lgridblock_t*        block;
-    int*                sampleResults = 0, n, size, numSamples, center, best;
-    uint                s;
-    float               off[2];
-    lgsamplepoint_t*    samplePoints = 0, sample;
-
-    sector_t**          ssamples;
-    sector_t**          blkSampleSectors;
-
-    if(!map)
-        return;
+    uint startTime;
+    float max[3], width, height;
+    int i = 0, a, b, x, y, count, changedCount;
+    size_t bitfieldSize;
+    uint* indexBitfield = 0, *contributorBitfield = 0;
+    lgridblock_t* block;
+    int* sampleResults = 0, n, size, numSamples, center, best;
+    uint s;
+    float off[2];
+    lgsamplepoint_t* samplePoints = 0, sample;
+    sector_t** ssamples;
+    sector_t** blkSampleSectors;
+    lightgrid_t* lg = map->_lightGrid;
 
     if(!lgEnabled)
     {
-        map->lg.inited = false;
+        lg->inited = false;
         return;
     }
 
     startTime = Sys_GetRealTime();
-    map->lg.needsUpdate = true;
+    lg->needsUpdate = true;
 
-    // Allocate the map->lg.grid.
-    Map_Bounds(map, &map->lg.origin[0], &max[0]);
+    // Allocate the lg->grid.
+    Map_Bounds(map, &lg->origin[0], &max[0]);
 
-    width  = max[VX] - map->lg.origin[VX];
-    height = max[VY] - map->lg.origin[VY];
+    width  = max[VX] - lg->origin[VX];
+    height = max[VY] - lg->origin[VY];
 
-    map->lg.blockWidth  = ROUND(width / lgBlockSize) + 1;
-    map->lg.blockHeight = ROUND(height / lgBlockSize) + 1;
+    lg->blockWidth  = ROUND(width / lgBlockSize) + 1;
+    lg->blockHeight = ROUND(height / lgBlockSize) + 1;
 
     // Clamp the multisample factor.
     if(lgMXSample > MSFACTORS)
@@ -186,12 +203,12 @@ void LG_Init(map_t* map)
     /**
      * It would be possible to only allocate memory for the unique
      * sample results. And then select the appropriate sample in the loop
-     * for initializing the map->lg.grid instead of copying the previous results in
+     * for initializing the lg->grid instead of copying the previous results in
      * the loop for acquiring the sample points.
      *
      * Calculate with the equation (number of unique sample points):
      *
-     * ((1 + map->lg.blockHeight * lgMXSample) * (1 + map->lg.blockWidth * lgMXSample)) +
+     * ((1 + lg->blockHeight * lgMXSample) * (1 + lg->blockWidth * lgMXSample)) +
      *     (size % 2 == 0? numBlocks : 0)
      * OR
      *
@@ -205,7 +222,7 @@ void LG_Init(map_t* map)
 
     // Allocate memory for all the sample results.
     ssamples = M_Malloc(sizeof(sector_t*) *
-                        ((map->lg.blockWidth * map->lg.blockHeight) * numSamples));
+                        ((lg->blockWidth * lg->blockHeight) * numSamples));
 
     // Determine the size^2 of the samplePoint array plus its center.
     size = center = 0;
@@ -227,7 +244,7 @@ void LG_Init(map_t* map)
 
     // Construct the sample point offset array.
     // This way we can use addition only during calculation of:
-    // (map->lg.blockHeight*map->lg.blockWidth)*numSamples
+    // (lg->blockHeight*lg->blockWidth)*numSamples
 
     if(center == 0)
     {   // Zero is the center so do that first.
@@ -263,12 +280,12 @@ void LG_Init(map_t* map)
 */
 
     // Acquire the sectors at ALL the sample points.
-    for(y = 0; y < map->lg.blockHeight; ++y)
+    for(y = 0; y < lg->blockHeight; ++y)
     {
         off[VY] = y * lgBlockSize;
-        for(x = 0; x < map->lg.blockWidth; ++x)
+        for(x = 0; x < lg->blockWidth; ++x)
         {
-            int         blk = (x + y * map->lg.blockWidth);
+            int         blk = (x + y * lg->blockWidth);
             int         idx;
 
             off[VX] = x * lgBlockSize;
@@ -280,11 +297,11 @@ void LG_Init(map_t* map)
                 // of the samples for this block).
                 idx = blk * (numSamples);
 
-                sample.pos[VX] = map->lg.origin[VX] + off[VX] + samplePoints[0].pos[VX];
-                sample.pos[VY] = map->lg.origin[VY] + off[VY] + samplePoints[0].pos[VY];
+                sample.pos[VX] = lg->origin[VX] + off[VX] + samplePoints[0].pos[VX];
+                sample.pos[VY] = lg->origin[VY] + off[VY] + samplePoints[0].pos[VY];
 
-                ssamples[idx] = R_PointInSubSector(sample.pos[VX], sample.pos[VY])->sector;
-                if(!R_IsPointInSector2(sample.pos[VX], sample.pos[VY], ssamples[idx]))
+                ssamples[idx] = Map_PointInSubsector(map, sample.pos[VX], sample.pos[VY])->sector;
+                if(!Sector_PointInside2(ssamples[idx], sample.pos[VX], sample.pos[VY]))
                    ssamples[idx] = NULL;
 
                 n++; // Offset the index in the samplePoints array bellow.
@@ -319,20 +336,20 @@ void LG_Init(map_t* map)
                             prevY--;
                         }
 
-                        previdx = prevA + (prevB + (prevX + prevY * map->lg.blockWidth) * size) * size;
+                        previdx = prevA + (prevB + (prevX + prevY * lg->blockWidth) * size) * size;
 
                         if(center == 0)
-                            previdx += (prevX + prevY * map->lg.blockWidth) + 1;
+                            previdx += (prevX + prevY * lg->blockWidth) + 1;
 
                         ssamples[idx] = ssamples[previdx];
                     }
                     else
                     {   // We haven't sampled this point yet.
-                        sample.pos[VX] = map->lg.origin[VX] + off[VX] + samplePoints[n].pos[VX];
-                        sample.pos[VY] = map->lg.origin[VY] + off[VY] + samplePoints[n].pos[VY];
+                        sample.pos[VX] = lg->origin[VX] + off[VX] + samplePoints[n].pos[VX];
+                        sample.pos[VY] = lg->origin[VY] + off[VY] + samplePoints[n].pos[VY];
 
-                        ssamples[idx] = R_PointInSubSector(sample.pos[VX], sample.pos[VY])->sector;
-                        if(!R_IsPointInSector2(sample.pos[VX], sample.pos[VY], ssamples[idx]))
+                        ssamples[idx] = Map_PointInSubsector(map, sample.pos[VX], sample.pos[VY])->sector;
+                        if(!Sector_PointInside2(ssamples[idx], sample.pos[VX], sample.pos[VY]))
                            ssamples[idx] = NULL;
                     }
                 }
@@ -343,31 +360,31 @@ void LG_Init(map_t* map)
     M_Free(samplePoints);
 
     // Bitfields for marking affected blocks. Make sure each bit is in a word.
-    bitfieldSize = 4 * (31 + map->lg.blockWidth * map->lg.blockHeight) / 32;
+    bitfieldSize = 4 * (31 + lg->blockWidth * lg->blockHeight) / 32;
     indexBitfield = M_Calloc(bitfieldSize);
     contributorBitfield = M_Calloc(bitfieldSize);
 
-    // \todo It would be possible to only allocate memory for the map->lg.grid
+    // \todo It would be possible to only allocate memory for the lg->grid
     // blocks that are going to be in use.
 
-    // Allocate memory for the entire map->lg.grid.
-    map->lg.grid = Z_Calloc(sizeof(lgridblock_t) * map->lg.blockWidth * map->lg.blockHeight,
+    // Allocate memory for the entire lg->grid.
+    lg->grid = Z_Calloc(sizeof(lgridblock_t) * lg->blockWidth * lg->blockHeight,
                     PU_STATIC, NULL);
 
-    Con_Message("LG_Init: %i x %i grid (%lu bytes).\n",
-                map->lg.blockWidth, map->lg.blockHeight,
-                (unsigned long) (sizeof(lgridblock_t) * map->lg.blockWidth * map->lg.blockHeight));
+    Con_Message("LightGrid_Init: %i x %i grid (%lu bytes).\n",
+                lg->blockWidth, lg->blockHeight,
+                (unsigned long) (sizeof(lgridblock_t) * lg->blockWidth * lg->blockHeight));
 
     // Allocate memory used for the collection of the sample results.
     blkSampleSectors = M_Malloc(sizeof(sector_t*) * numSamples);
     if(numSamples > 1)
         sampleResults = M_Calloc(sizeof(int) * numSamples);
 
-    // Initialize the map->lg.grid.
-    for(block = map->lg.grid, y = 0; y < map->lg.blockHeight; ++y)
+    // Initialize the lg->grid.
+    for(block = lg->grid, y = 0; y < lg->blockHeight; ++y)
     {
         off[VY] = y * lgBlockSize;
-        for(x = 0; x < map->lg.blockWidth; ++x, ++block)
+        for(x = 0; x < lg->blockWidth; ++x, ++block)
         {
             off[VX] = x * lgBlockSize;
 
@@ -380,7 +397,7 @@ void LG_Init(map_t* map)
              * described in the comments above we WOULD still require it.
              * Therefore, for now I'm making use of it to clarify the code.
              */
-            n = (x + y * map->lg.blockWidth) * numSamples;
+            n = (x + y * lg->blockWidth) * numSamples;
             for(i = 0; i < numSamples; ++i)
                 blkSampleSectors[i] = ssamples[i + n];
 
@@ -433,25 +450,25 @@ void LG_Init(map_t* map)
         memset(contributorBitfield, 0, bitfieldSize);
         count = changedCount = 0;
 
-        for(block = map->lg.grid, y = 0; y < map->lg.blockHeight; ++y)
+        for(block = lg->grid, y = 0; y < lg->blockHeight; ++y)
         {
-            for(x = 0; x < map->lg.blockWidth; ++x, ++block)
+            for(x = 0; x < lg->blockWidth; ++x, ++block)
             {
                 if(block->sector == sector)
                 {
                     // \todo Determine min/max a/b before going into the loop.
                     for(b = -2; b <= 2; ++b)
                     {
-                        if(y + b < 0 || y + b >= map->lg.blockHeight)
+                        if(y + b < 0 || y + b >= lg->blockHeight)
                             continue;
 
                         for(a = -2; a <= 2; ++a)
                         {
-                            if(x + a < 0 || x + a >= map->lg.blockWidth)
+                            if(x + a < 0 || x + a >= lg->blockWidth)
                                 continue;
 
                             addIndexBit(x + a, y + b, indexBitfield,
-                                        &changedCount, map->lg.blockWidth);
+                                        &changedCount, lg->blockWidth);
                         }
                     }
                 }
@@ -460,29 +477,29 @@ void LG_Init(map_t* map)
 
         // Determine contributor blocks. Contributors are the blocks that are
         // close enough to contribute light to affected blocks.
-        for(y = 0; y < map->lg.blockHeight; ++y)
+        for(y = 0; y < lg->blockHeight; ++y)
         {
-            for(x = 0; x < map->lg.blockWidth; ++x)
+            for(x = 0; x < lg->blockWidth; ++x)
             {
-                if(!hasIndexBit(x, y, indexBitfield, map->lg.blockWidth))
+                if(!hasIndexBit(x, y, indexBitfield, lg->blockWidth))
                     continue;
 
                 // Add the contributor blocks.
                 for(b = -2; b <= 2; ++b)
                 {
-                    if(y + b < 0 || y + b >= map->lg.blockHeight)
+                    if(y + b < 0 || y + b >= lg->blockHeight)
                         continue;
 
                     for(a = -2; a <= 2; ++a)
                     {
-                        if(x + a < 0 || x + a >= map->lg.blockWidth)
+                        if(x + a < 0 || x + a >= lg->blockWidth)
                             continue;
 
                         if(!hasIndexBit(x + a, y + b, indexBitfield,
-                                        map->lg.blockWidth))
+                                        lg->blockWidth))
                         {
                             addIndexBit(x + a, y + b, contributorBitfield,
-                                        &count, map->lg.blockWidth);
+                                        &count, lg->blockWidth);
                         }
                     }
                 }
@@ -501,12 +518,12 @@ Con_Message("  Sector %i: %i / %i\n", s, changedCount, count);
             sector->blocks = Z_Malloc(sizeof(unsigned short) * sector->blockCount,
                                       PU_STATIC, 0);
             for(x = 0, a = 0, b = changedCount;
-                x < map->lg.blockWidth * map->lg.blockHeight;
+                x < lg->blockWidth * lg->blockHeight;
                 ++x)
             {
-                if(hasIndexBit(x, 0, indexBitfield, map->lg.blockWidth))
+                if(hasIndexBit(x, 0, indexBitfield, lg->blockWidth))
                     sector->blocks[a++] = x;
-                else if(hasIndexBit(x, 0, contributorBitfield, map->lg.blockWidth))
+                else if(hasIndexBit(x, 0, contributorBitfield, lg->blockWidth))
                     sector->blocks[b++] = x;
             }
 
@@ -522,12 +539,13 @@ Con_Message("  Sector %i: %i / %i\n", s, changedCount, count);
     M_Free(indexBitfield);
     M_Free(contributorBitfield);
 
-    map->lg.inited = true;
+    lg->inited = true;
 
     // How much time did we spend?
     VERBOSE(Con_Message
-            ("LG_Init: Done in %.2f seconds.\n",
+            ("LightGrid_Init: Done in %.2f seconds.\n",
              (Sys_GetRealTime() - startTime) / 1000.0f));
+    }
 }
 
 /**
@@ -573,52 +591,38 @@ static void LG_ApplySector(lgridblock_t* block, const float* color, float level,
 /**
  * Called when a sector has changed its light level.
  */
-void LG_SectorChanged(sector_t* sector)
+void LightGrid_MarkForUpdate(lightgrid_t* lg, const unsigned short* blocks,
+                             unsigned int changedBlockCount,
+                             unsigned int blockCount)
 {
+    assert(lg);
+    {
     uint i, j;
     unsigned short n;
-    map_t* map = P_CurrentMap();
 
-    if(!map->lg.inited)
+    if(!lg->inited)
         return;
 
     // Mark changed blocks and contributors.
-    for(i = 0; i < sector->changedBlockCount; ++i)
+    for(i = 0; i < changedBlockCount; ++i)
     {
-        n = sector->blocks[i];
+        n = blocks[i];
         // The color will be recalculated.
-        if(!(map->lg.grid[n].flags & GBF_CHANGED))
-            memcpy(map->lg.grid[n].oldRGB, map->lg.grid[n].rgb, sizeof(map->lg.grid[n].oldRGB));
+        if(!(lg->grid[n].flags & GBF_CHANGED))
+            memcpy(lg->grid[n].oldRGB, lg->grid[n].rgb, sizeof(lg->grid[n].oldRGB));
 
         for(j = 0; j < 3; ++j)
-            map->lg.grid[n].rgb[j] = 0;
+            lg->grid[n].rgb[j] = 0;
 
-        map->lg.grid[n].flags |= GBF_CHANGED | GBF_CONTRIBUTOR;
+        lg->grid[n].flags |= GBF_CHANGED | GBF_CONTRIBUTOR;
     }
 
-    for(; i < sector->blockCount; ++i)
+    for(; i < blockCount; ++i)
     {
-        map->lg.grid[sector->blocks[i]].flags |= GBF_CONTRIBUTOR;
+        lg->grid[blocks[i]].flags |= GBF_CONTRIBUTOR;
     }
 
-    map->lg.needsUpdate = true;
-}
-
-/**
- * Called when a setting is changed which affects the lightgrid.
- */
-void LG_MarkAllForUpdate(cvar_t* unused)
-{
-    uint i;
-    map_t* map = P_CurrentMap();
-
-    if(!map->lg.inited)
-        return;
-
-    // Mark all blocks and contributors.
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        LG_SectorChanged(map->sectors[i]);
+    lg->needsUpdate = true;
     }
 }
 
@@ -712,8 +716,10 @@ static boolean LG_BlockNeedsUpdate(int x, int y)
  * Update the map->lg.grid by finding the strongest light source in each grid
  * block.
  */
-void LG_Update(map_t* map)
+void LightGrid_Update(lightgrid_t* lg)
 {
+    assert(lg);
+    {
     static const float factors[5 * 5] =
     {
          1.f/255,   7.f/255,  12.f/255,   7.f/255,  1.f/255,
@@ -739,15 +745,15 @@ void LG_Update(map_t* map)
     }
 #endif
 
-    if(!map || !map->lg.inited || !map->lg.needsUpdate)
+    if(!lg->inited || !lg->needsUpdate)
         return;
 
 BEGIN_PROF( PROF_GRID_UPDATE );
 
 #if 0
-    for(block = map->lg.grid, y = 0; y < map->lg.blockHeight; ++y)
+    for(block = lg->grid, y = 0; y < lg->blockHeight; ++y)
     {
-        for(x = 0; x < map->lg.blockWidth; ++x, block++)
+        for(x = 0; x < lg->blockWidth; ++x, block++)
         {
             if(LG_BlockNeedsUpdate(x, y))
             {
@@ -759,15 +765,15 @@ BEGIN_PROF( PROF_GRID_UPDATE );
                 // Mark contributors.
                 for(b = -2; b <= 2; ++b)
                 {
-                    if(y + b < 0 || y + b >= map->lg.blockHeight)
+                    if(y + b < 0 || y + b >= lg->blockHeight)
                         continue;
 
                     for(a = -2; a <= 2; ++a)
                     {
-                        if(x + a < 0 || x + a >= map->lg.blockWidth)
+                        if(x + a < 0 || x + a >= lg->blockWidth)
                             continue;
 
-                        GRID_BLOCK(map->lg.grid, map->lg.blockWidth, x + a, y + b)->flags |= GBF_CONTRIBUTOR;
+                        GRID_BLOCK(lg->grid, lg->blockWidth, x + a, y + b)->flags |= GBF_CONTRIBUTOR;
                     }
                 }
             }
@@ -779,9 +785,9 @@ BEGIN_PROF( PROF_GRID_UPDATE );
     }
 #endif
 
-    for(block = map->lg.grid, y = 0; y < map->lg.blockHeight; ++y)
+    for(block = lg->grid, y = 0; y < lg->blockHeight; ++y)
     {
-        for(x = 0; x < map->lg.blockWidth; ++x, ++block)
+        for(x = 0; x < lg->blockWidth; ++x, ++block)
         {
             boolean             isSkyFloor, isSkyCeil;
 
@@ -819,10 +825,10 @@ BEGIN_PROF( PROF_GRID_UPDATE );
             {
                 for(b = -2; b <= 2; ++b)
                 {
-                    if(x + a < 0 || y + b < 0 || x + a > map->lg.blockWidth - 1 ||
-                       y + b > map->lg.blockHeight - 1) continue;
+                    if(x + a < 0 || y + b < 0 || x + a > lg->blockWidth - 1 ||
+                       y + b > lg->blockHeight - 1) continue;
 
-                    other = GRID_BLOCK(map->lg.grid, map->lg.blockWidth, x + a, y + b);
+                    other = GRID_BLOCK(lg->grid, lg->blockWidth, x + a, y + b);
 
                     if(other->flags & GBF_CHANGED)
                     {
@@ -835,15 +841,16 @@ BEGIN_PROF( PROF_GRID_UPDATE );
     }
 
     // Clear all changed and contribution flags.
-    lastBlock = &map->lg.grid[map->lg.blockWidth * map->lg.blockHeight];
-    for(block = map->lg.grid; block != lastBlock; ++block)
+    lastBlock = &lg->grid[lg->blockWidth * lg->blockHeight];
+    for(block = lg->grid; block != lastBlock; ++block)
     {
         block->flags = 0;
     }
 
-    map->lg.needsUpdate = false;
+    lg->needsUpdate = false;
 
 END_PROF( PROF_GRID_UPDATE );
+    }
 }
 
 /**
@@ -852,27 +859,26 @@ END_PROF( PROF_GRID_UPDATE );
  * @param point         3D point.
  * @param color         Evaluated color of the point (return value).
  */
-void LG_Evaluate(map_t* map, const float* point, float* color)
+void LightGrid_Evaluate(lightgrid_t* lg, const float* point, float* color)
 {
+    assert(lg);
+    {
     int x, y;
     float dz = 0, dimming, lightLevel, delta;
     lgridblock_t* block;
 
-    if(!map)
-        return;
-
-    if(!map->lg.inited)
+    if(!lg->inited)
     {
         memset(color, 0, sizeof(float) * 3);
         return;
     }
 
-    x = ROUND((point[VX] - map->lg.origin[VX]) / lgBlockSize);
-    y = ROUND((point[VY] - map->lg.origin[VY]) / lgBlockSize);
-    x = MINMAX_OF(0, x, map->lg.blockWidth - 1);
-    y = MINMAX_OF(0, y, map->lg.blockHeight - 1);
+    x = ROUND((point[VX] - lg->origin[VX]) / lgBlockSize);
+    y = ROUND((point[VY] - lg->origin[VY]) / lgBlockSize);
+    x = MINMAX_OF(0, x, lg->blockWidth - 1);
+    y = MINMAX_OF(0, y, lg->blockHeight - 1);
 
-    block = &map->lg.grid[y * map->lg.blockWidth + x];
+    block = &lg->grid[y * lg->blockWidth + x];
 
     if(block->sector)
     {
@@ -940,13 +946,16 @@ void LG_Evaluate(map_t* map, const float* point, float* color)
     color[CR] += delta;
     color[CG] += delta;
     color[CB] += delta;
+    }
 }
 
 /**
  * Draw the map->lg.grid in 2D HUD mode.
  */
-void LG_Debug(map_t* map)
+void Rend_LightGridVisual(lightgrid_t* lg)
 {
+    assert(lg);
+    {
     static int blink = 0;
 
     lgridblock_t* block;
@@ -955,17 +964,17 @@ void LG_Debug(map_t* map)
     size_t vIdx, blockIdx;
     ddplayer_t* ddpl = (viewPlayer? &viewPlayer->shared : NULL);
 
-    if(!map || !map->lg.inited || !lgShowDebug)
+    if(!lg->inited || !lgShowDebug)
         return;
 
     if(ddpl)
     {
         blink++;
-        vx = ROUND((ddpl->mo->pos[VX] - map->lg.origin[VX]) / lgBlockSize);
-        vy = ROUND((ddpl->mo->pos[VY] - map->lg.origin[VY]) / lgBlockSize);
-        vx = MINMAX_OF(1, vx, map->lg.blockWidth - 2);
-        vy = MINMAX_OF(1, vy, map->lg.blockHeight - 2);
-        vIdx = vy * map->lg.blockWidth + vx;
+        vx = ROUND((ddpl->mo->pos[VX] - lg->origin[VX]) / lgBlockSize);
+        vy = ROUND((ddpl->mo->pos[VY] - lg->origin[VY]) / lgBlockSize);
+        vx = MINMAX_OF(1, vx, lg->blockWidth - 2);
+        vy = MINMAX_OF(1, vy, lg->blockHeight - 2);
+        vIdx = vy * lg->blockWidth + vx;
     }
 
     // Go into screen projection mode.
@@ -976,13 +985,13 @@ void LG_Debug(map_t* map)
 
     glDisable(GL_TEXTURE_2D);
 
-    for(y = 0; y < map->lg.blockHeight; ++y)
+    for(y = 0; y < lg->blockHeight; ++y)
     {
         glBegin(GL_QUADS);
-        for(x = 0; x < map->lg.blockWidth; ++x, ++block)
+        for(x = 0; x < lg->blockWidth; ++x, ++block)
         {
-            blockIdx = (map->lg.blockHeight - 1 - y) * map->lg.blockWidth + x;
-            block = &map->lg.grid[blockIdx];
+            blockIdx = (lg->blockHeight - 1 - y) * lg->blockWidth + x;
+            block = &lg->grid[blockIdx];
 
             if(ddpl && vIdx == blockIdx && (blink & 16))
             {
@@ -1008,12 +1017,13 @@ void LG_Debug(map_t* map)
     glEnable(GL_TEXTURE_2D);
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
+    }
 }
 
 D_CMD(UpdateLightGrid)
 {
     map_t* map = P_CurrentMap();
     if(map)
-        LG_MarkAllForUpdate(NULL);
+        R_MarkAllSectorsForLightGridUpdate(NULL);
     return true;
 }

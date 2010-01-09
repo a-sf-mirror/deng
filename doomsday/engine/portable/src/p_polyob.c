@@ -108,30 +108,6 @@ polyobj_t* P_GetPolyobj(uint num)
     return NULL;
 }
 
-/**
- * @return              @c true, iff this is indeed a polyobj origin.
- */
-boolean P_IsPolyobjOrigin(map_t* map, void* ddMobjBase)
-{
-    if(map)
-    {
-        uint i;
-        polyobj_t* po;
-
-        for(i = 0; i < map->numPolyObjs; ++i)
-        {
-            po = map->polyObjs[i];
-
-            if(po == ddMobjBase)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 void P_PolyobjChanged(polyobj_t* po)
 {
     uint i;
@@ -209,78 +185,77 @@ void P_PolyobjUpdateBBox(polyobj_t* po)
  * Called at the start of the map after all the structures needed for
  * refresh have been setup.
  */
-void P_MapInitPolyobjs(map_t* map)
+void P_InitPolyobj(polyobj_t* po)
 {
+    assert(po);
+    {
+    // @fixme Polyobj should return the map its linked in.
+    map_t* map = P_CurrentMap();
+    subsector_t* subsector;
+    fvertex_t avg; // Used to find a polyobj's center, and hence subsector.
     uint i;
 
-    for(i = 0; i < map->numPolyObjs; ++i)
+    for(i = 0; i < po->numSegs; ++i)
     {
-        polyobj_t* po = map->polyObjs[i];
-        subsector_t* subsector;
+        poseg_t* seg = &po->segs[i];
+        biassurface_t* bsuf = SB_CreateSurface(map);
         uint j;
-        fvertex_t avg; // Used to find a polyobj's center, and hence subsector.
 
-        for(j = 0; j < po->numSegs; ++j)
+        bsuf->size = 4;
+        bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
+            PU_STATIC, 0);
+        for(j = 0; j < bsuf->size; ++j)
+            SB_InitVertexIllum(&bsuf->illum[j]);
+
+        seg->bsuf = bsuf;
+    }
+
+    avg.pos[VX] = 0;
+    avg.pos[VY] = 0;
+
+    for(i = 0; i < po->numLineDefs; ++i)
+    {
+        linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
+        sidedef_t* side = LINE_FRONTSIDE(line);
+        surface_t* surface = &side->SW_topsurface;
+
+        side->SW_topinflags |= SUIF_NO_RADIO;
+        side->SW_middleinflags |= SUIF_NO_RADIO;
+        side->SW_bottominflags |= SUIF_NO_RADIO;
+
+        avg.pos[VX] += line->L_v1->pos[VX];
+        avg.pos[VY] += line->L_v1->pos[VY];
+
+        // Set the surface normal.
+        surface->normal[VY] = (line->L_v1->pos[VX] - line->L_v2->pos[VX]) / line->length;
+        surface->normal[VX] = (line->L_v2->pos[VY] - line->L_v1->pos[VY]) / line->length;
+        surface->normal[VZ] = 0;
+
+        // All surfaces of a sidedef have the same normal.
+        memcpy(side->SW_middlenormal, surface->normal, sizeof(surface->normal));
+        memcpy(side->SW_bottomnormal, surface->normal, sizeof(surface->normal));
+    }
+
+    avg.pos[VX] /= po->numLineDefs;
+    avg.pos[VY] /= po->numLineDefs;
+
+    if((subsector = Map_PointInSubsector(map, avg.pos[VX], avg.pos[VY])))
+    {
+        if(subsector->polyObj)
         {
-            poseg_t* seg = &po->segs[j];
-            uint k;
-            biassurface_t* bsuf = SB_CreateSurface(map);
-
-            bsuf->size = 4;
-            bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size,
-                PU_STATIC, 0);
-            for(k = 0; k < bsuf->size; ++k)
-                SB_InitVertexIllum(&bsuf->illum[k]);
-
-            seg->bsuf = bsuf;
+            Con_Message("P_MapInitPolyobjs: Warning: Multiple polyobjs in a single subsector\n"
+                        "  (face %i, sector %i). Previous polyobj overridden.\n",
+                        (int) P_ObjectRecord(DMU_SUBSECTOR, subsector)->id,
+                        (int) P_ObjectRecord(DMU_SECTOR, subsector->sector)->id);
         }
+        subsector->polyObj = po;
+        po->subsector = subsector;
+    }
 
-        avg.pos[VX] = 0;
-        avg.pos[VY] = 0;
+    P_PolyobjUnlinkLineDefs(po);
+    P_PolyobjLinkLineDefs(po);
 
-        for(j = 0; j < po->numLineDefs; ++j)
-        {
-            linedef_t* line = ((objectrecord_t*) po->lineDefs[j])->obj;
-            sidedef_t* side = LINE_FRONTSIDE(line);
-            surface_t* surface = &side->SW_topsurface;
-
-            side->SW_topinflags |= SUIF_NO_RADIO;
-            side->SW_middleinflags |= SUIF_NO_RADIO;
-            side->SW_bottominflags |= SUIF_NO_RADIO;
-
-            avg.pos[VX] += line->L_v1->pos[VX];
-            avg.pos[VY] += line->L_v1->pos[VY];
-
-            // Set the surface normal.
-            surface->normal[VY] = (line->L_v1->pos[VX] - line->L_v2->pos[VX]) / line->length;
-            surface->normal[VX] = (line->L_v2->pos[VY] - line->L_v1->pos[VY]) / line->length;
-            surface->normal[VZ] = 0;
-
-            // All surfaces of a sidedef have the same normal.
-            memcpy(side->SW_middlenormal, surface->normal, sizeof(surface->normal));
-            memcpy(side->SW_bottomnormal, surface->normal, sizeof(surface->normal));
-        }
-
-        avg.pos[VX] /= po->numLineDefs;
-        avg.pos[VY] /= po->numLineDefs;
-
-        if((subsector = R_PointInSubSector(avg.pos[VX], avg.pos[VY])))
-        {
-            if(subsector->polyObj)
-            {
-                Con_Message("P_MapInitPolyobjs: Warning: Multiple polyobjs in a single subsector\n"
-                            "  (face %i, sector %i). Previous polyobj overridden.\n",
-                            (int) P_ObjectRecord(DMU_SUBSECTOR, subsector)->id,
-                            (int) P_ObjectRecord(DMU_SECTOR, subsector->sector)->id);
-            }
-            subsector->polyObj = po;
-            po->subsector = subsector;
-        }
-
-        P_PolyobjUnlinkLineDefs(po);
-        P_PolyobjLinkLineDefs(po);
-
-        P_PolyobjChanged(po);
+    P_PolyobjChanged(po);
     }
 }
 
@@ -510,7 +485,7 @@ boolean PTR_CheckMobjBlocking(mobj_t* mo, void* data)
              tmbbox[BOXTOP]    <= params->line->bBox[BOXBOTTOM] ||
              tmbbox[BOXBOTTOM] >= params->line->bBox[BOXTOP]))
         {
-            if(P_BoxOnLineSide(tmbbox, params->line) == -1)
+            if(LineDef_BoxOnSide(params->line, tmbbox) == -1)
             {
                 if(po_callback)
                     po_callback(mo, P_ObjectRecord(DMU_LINEDEF, params->line), params->po);

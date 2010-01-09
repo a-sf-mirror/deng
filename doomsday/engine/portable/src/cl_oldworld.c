@@ -260,10 +260,11 @@ int Cl_ReadSideDelta(void)
     if(df & SIDF_LINE_FLAGS)
     {
         byte updatedFlags = Msg_ReadByte();
-        linedef_t* line = R_GetLineForSide(sid);
 
-        if(line)
+        if(sid->lineDef)
         {
+            linedef_t* line = sid->lineDef;
+
             // The delta includes the lowest byte.
             line->flags &= ~0xff;
             line->flags |= updatedFlags;

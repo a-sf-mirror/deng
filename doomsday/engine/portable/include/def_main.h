@@ -52,7 +52,7 @@ extern ded_t defs; // The main definitions database.
 extern sprname_t* sprNames; // Sprite name list.
 extern state_t* states; // State list.
 extern ded_light_t** stateLights;
-extern ded_generator_t** stateGenerators;
+extern ded_generator_t** stateGeneratorDefs;
 extern mobjinfo_t* mobjInfo; // Map object info database.
 extern sfxinfo_t* sounds; // Sound effect list.
 extern ddtext_t* texts; // Text list.

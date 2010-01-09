@@ -127,19 +127,18 @@ typedef struct generator_s {
     ptcstage_t*     stages;
 } generator_t;
 
-generator_t*    P_CreateGenerator(struct map_s* map);
+extern byte useParticles;
+
+generator_t*    P_CreateGenerator(void);
 void            P_DestroyGenerator(generator_t* gen);
 
 void            P_GeneratorThinker(generator_t* gen);
 
-void            P_SpawnMapParticleGens(struct map_s* map);
-void            P_CheckPtcPlanes(struct map_s* map);
-void            P_SpawnTypeParticleGens(struct map_s* map);
-
-void            P_SpawnParticleGen(const ded_generator_t* def, struct mobj_s* source);
-
-void            P_SpawnDamageParticleGen(struct mobj_s* mo, struct mobj_s* inflictor,
-                                         int amount);
+void            P_SpawnParticleGen(struct mobj_s* source, const ded_generator_t* def);
+void            P_SpawnPlaneParticleGen(sector_t* sec, int planeID, const ded_generator_t* def);
+void            P_SpawnDamageParticleGen(struct mobj_s* mo, struct mobj_s* inflictor, int amount);
+void            P_SpawnTypeParticleGen(struct map_s* map, const ded_generator_t* def);
+void            P_SpawnMapParticleGen(struct map_s* map, const ded_generator_t* def);
 
 float           P_GetParticleRadius(const ded_ptcstage_t* stageDef, int ptcIndex);
 float           P_GetParticleZ(const particle_t* pt);
