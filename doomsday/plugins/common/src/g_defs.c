@@ -34,12 +34,12 @@
 #  include "jdoom64.h"
 #elif __JHERETIC__
 #  include "jheretic.h"
-#  include "p_inventory.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#  include "p_inventory.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
+#endif
+
+#if __JHERETIC__ || __JHEXEN__
+#include "p_inventory.h"
 #endif
 
 // MACROS ------------------------------------------------------------------

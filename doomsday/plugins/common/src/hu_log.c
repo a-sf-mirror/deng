@@ -26,7 +26,7 @@
 /**
  * hu_log.c: Player's game message log.
  *
- * \todo Chat widget is here and should be moved.
+ * @todo Chat widget is here and should be moved.
  */
 
 // HEADER FILES ------------------------------------------------------------

@@ -33,6 +33,7 @@
 
 #include "jhexen.h"
 
+#include "gamemap.h"
 #include "am_map.h"
 #include "p_inventory.h"
 #include "p_player.h"
@@ -125,7 +126,7 @@ typedef struct iteminfo_s {
     boolean            (*giveFunc) (player_t*);
     textenum_t          pickupMsg;
     sfxenum_t           pickupSound;
-} iteminfo_t;
+} itemdef_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -225,7 +226,7 @@ int TextKeyMessages[] = {
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // Index using itemtype_t - 1;
-static const iteminfo_t items[] = {
+static const itemdef_t items[] = {
     { IT_HEALTH_VIAL, 0, pickupHealthVial, TXT_TXT_ITEMHEALTH, SFX_PICKUP_PUZZ },
     { IT_ARMOR_MESH, 0, pickupMesh, TXT_TXT_ARMOR1, SFX_PICKUP_PUZZ },
     { IT_ARMOR_SHIELD, 0, pickupShield, TXT_TXT_ARMOR2, SFX_PICKUP_PUZZ },
@@ -1123,7 +1124,7 @@ static boolean pickupBloodScourge3(player_t* plr)
 
 static boolean giveItem(player_t* plr, itemtype_t item)
 {
-    const iteminfo_t*   info = &items[item];
+    const itemdef_t*   info = &items[item];
     int                 oldPieces = plr->pieces;
 
     if(!plr)
@@ -1216,7 +1217,7 @@ void P_TouchSpecialMobj(mobj_t* special, mobj_t* toucher)
     // Identify by sprite.
     if((item = getItemTypeBySprite(special->sprite)) != IT_NONE)
     {
-        const iteminfo_t*   info = &items[item];
+        const itemdef_t*   info = &items[item];
 
         if((wasUsed = giveItem(player, item)))
         {
@@ -1308,7 +1309,8 @@ static int findActiveMinotaur(void* p, void* context)
 {
     findactiveminotaurparams_t* params =
         (findactiveminotaurparams_t*) context;
-    mobj_t*             mo = (mobj_t*) p;
+    mobj_t* mo = (mobj_t*) p;
+    gamemap_t* map = P_CurrentGameMap();
 
     if(mo->type != MT_MINOTAUR)
         return true; // Continue iteration.
@@ -1319,7 +1321,7 @@ static int findActiveMinotaur(void* p, void* context)
     if(mo->flags & MF_CORPSE)
         return true; // Continue iteration.
 
-    if((mapTime - *((unsigned int *) mo->args)) >= MAULATORTICS)
+    if((map->time - *((unsigned int *) mo->args)) >= MAULATORTICS)
         return true; // Continue iteration.
 
     if(mo->tracer->player == params->master)
@@ -1363,12 +1365,11 @@ void P_KillMobj(mobj_t* source, mobj_t* target)
         if(target->type == MT_SORCBOSS)
         {
             dummy = 0;
-            P_StartACS(target->special, 0, (byte *) &dummy, target, NULL, 0);
+            ActionScriptInterpreter_Start(ActionScriptInterpreter, 0, target->special, (byte *) &dummy, target, NULL, 0);
         }
         else
         {
-            P_ExecuteLineSpecial(target->special, target->args, NULL, 0,
-                                 target);
+            P_ExecuteLineSpecial(target->special, target->args, NULL, 0, target);
         }
     }
 
@@ -1633,12 +1634,15 @@ void P_KillMobj(mobj_t* source, mobj_t* target)
 /**
  * @return              @c true, if the player gets turned into a pig.
  */
-boolean P_MorphPlayer(player_t *player)
+boolean P_MorphPlayer(player_t* player)
 {
-    mobj_t         *pmo, *fog, *beastMo;
-    float           pos[3];
-    angle_t         angle;
-    int             oldFlags2;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* pmo, *fog, *beastMo;
+    float pos[3];
+    angle_t angle;
+    int oldFlags2;
 
     if(player->powers[PT_INVULNERABILITY])
         return false; // Immune when invulnerable.
@@ -1654,12 +1658,12 @@ boolean P_MorphPlayer(player_t *player)
     angle = pmo->angle;
     oldFlags2 = pmo->flags2;
 
-    if(!(beastMo = P_SpawnMobj3fv(MT_PIGPLAYER, pos, angle, 0)))
+    if(!(beastMo = GameMap_SpawnMobj3fv(map, MT_PIGPLAYER, pos, angle, 0)))
         return false;
 
     P_MobjChangeState(pmo, S_FREETARGMOBJ);
 
-    if((fog = P_SpawnMobj3f(MT_TFOG, pos[VX], pos[VY],
+    if((fog = GameMap_SpawnMobj3f(map, MT_TFOG, pos[VX], pos[VY],
                             pos[VZ] + TELEFOGHEIGHT, angle + ANG180, 0)))
         S_StartSound(SFX_TELEPORT, fog);
 
@@ -1680,18 +1684,22 @@ boolean P_MorphPlayer(player_t *player)
     player->plr->flags |= DDPF_FIXPOS | DDPF_FIXMOM;
     P_ActivateMorphWeapon(player);
     return true;
+    }
 }
 
-boolean P_MorphMonster(mobj_t *actor)
+boolean P_MorphMonster(mobj_t* actor)
 {
-    mobj_t*         master, *monster, *fog;
-    mobjtype_t      moType;
-    float           pos[3];
-    mobj_t          oldMonster;
-    angle_t         oldAngle;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* master, *monster, *fog;
+    mobjtype_t moType;
+    float pos[3];
+    mobj_t oldMonster;
+    angle_t oldAngle;
 
     if(actor->player)
-        return (false);
+        return false;
     if(!(actor->flags & MF_COUNTKILL))
         return false;
     if(actor->flags2 & MF2_BOSS)
@@ -1710,7 +1718,7 @@ boolean P_MorphMonster(mobj_t *actor)
         break;
     }
 
-    //// \fixme Do this properly!
+    // @fixme Do this properly!
     oldMonster = *actor;
 
     pos[VX] = actor->pos[VX];
@@ -1718,14 +1726,14 @@ boolean P_MorphMonster(mobj_t *actor)
     pos[VZ] = actor->pos[VZ];
     oldAngle = actor->angle;
 
-    if(!(monster = P_SpawnMobj3fv(MT_PIG, pos, oldMonster.angle, 0)))
+    if(!(monster = GameMap_SpawnMobj3fv(map, MT_PIG, pos, oldMonster.angle, 0)))
         return false;
 
     P_MobjRemoveFromTIDList(actor);
     P_MobjChangeState(actor, S_FREETARGMOBJ);
 
-    if((fog = P_SpawnMobj3f(MT_TFOG, pos[VX], pos[VY],
-                            pos[VZ] + TELEFOGHEIGHT, oldAngle + ANG180, 0)))
+    if((fog = GameMap_SpawnMobj3f(map, MT_TFOG, pos[VX], pos[VY],
+                                  pos[VZ] + TELEFOGHEIGHT, oldAngle + ANG180, 0)))
         S_StartSound(SFX_TELEPORT, fog);
 
     monster->special2 = moType;
@@ -1751,16 +1759,19 @@ boolean P_MorphMonster(mobj_t *actor)
     }
 
     return true;
+    }
 }
 
 void P_AutoUseHealth(player_t* player, int saveHealth)
 {
-    uint                i, count;
-    int                 plrnum = player - players;
-    int                 normalCount = P_InventoryCount(plrnum, IIT_HEALTH);
-    int                 superCount = P_InventoryCount(plrnum, IIT_SUPERHEALTH);
+    assert(player);
+    {
+    uint i, count;
+    int plrnum = player - players;
+    int normalCount = P_InventoryCount(plrnum, IIT_HEALTH);
+    int superCount = P_InventoryCount(plrnum, IIT_SUPERHEALTH);
 
-    //// \todo Do this in the inventory code?
+    // @todo Do this in the inventory code?
     if(gameSkill == SM_BABY && normalCount * 25 >= saveHealth)
     {
         // Use quartz flasks.
@@ -1802,6 +1813,7 @@ void P_AutoUseHealth(player_t* player, int saveHealth)
     }
 
     player->plr->mo->health = player->health;
+    }
 }
 
 /**
@@ -2358,8 +2370,9 @@ int P_FallingDamage(player_t *player)
 int P_PoisonDamage(player_t* player, mobj_t* source, int damage,
                    boolean playPainSound)
 {
-    int             originalHealth;
-    mobj_t*         target, *inflictor;
+    int originalHealth;
+    mobj_t* target, *inflictor;
+    gamemap_t* map = P_CurrentGameMap();
 
     target = player->plr->mo;
     originalHealth = target->health;
@@ -2402,7 +2415,7 @@ int P_PoisonDamage(player_t* player, mobj_t* source, int damage,
     target->health -= damage;
     if(target->health > 0)
     {   // Still alive, phew!
-        if(!(mapTime & 63) && playPainSound)
+        if(!(map->time & 63) && playPainSound)
         {
             statenum_t          state;
 

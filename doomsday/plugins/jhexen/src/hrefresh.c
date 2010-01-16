@@ -33,6 +33,7 @@
 
 #include "jhexen.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "f_infine.h"
 #include "r_common.h"
@@ -64,8 +65,6 @@ extern void MN_DrCenterTextA_CS(char *text, int center_x, int y);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-boolean setsizeneeded;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
@@ -76,8 +75,6 @@ boolean setsizeneeded;
  */
 void R_SetViewSize(int blocks)
 {
-    setsizeneeded = true;
-
     if(cfg.setBlocks != blocks && blocks > 10 && blocks < 13)
     {   // When going fullscreen, force a hud show event (to reset the timer).
         int                 i;
@@ -94,8 +91,9 @@ void R_DrawMapTitle(void)
     float alpha;
     int y = 12;
     const char* lname, *lauthor;
+    gamemap_t* map = P_CurrentGameMap();
 
-    if(!cfg.mapTitle || actualMapTime > 6 * 35)
+    if(!cfg.mapTitle || map->actualTime > 6 * 35)
         return;
 
     // Make the text a bit smaller.
@@ -106,10 +104,10 @@ void R_DrawMapTitle(void)
     DGL_Translatef(-160, -y, 0);
 
     alpha = 1;
-    if(actualMapTime < 35)
-        alpha = actualMapTime / 35.0f;
-    if(actualMapTime > 5 * 35)
-        alpha = 1 - (actualMapTime - 5 * 35) / 35.0f;
+    if(map->actualTime < 35)
+        alpha = map->actualTime / 35.0f;
+    if(map->actualTime > 5 * 35)
+        alpha = 1 - (map->actualTime - 5 * 35) / 35.0f;
 
     lname = P_GetMapNiceName();
     lauthor = P_GetMapAuthor(cfg.hideIWADAuthor);
@@ -164,14 +162,12 @@ static void rendPlayerView(int player)
     }
 
     // How about a bit of quake?
-    if(localQuakeHappening[player] && !P_IsPaused())
+    if(plr->viewShake && !P_IsPaused())
     {
-        int intensity = localQuakeHappening[player];
+        int intensity = plr->viewShake;
 
-        plr->viewOffset[VX] =
-            (float) ((M_Random() % (intensity << 2)) - (intensity << 1));
-        plr->viewOffset[VY] =
-            (float) ((M_Random() % (intensity << 2)) - (intensity << 1));
+        plr->viewOffset[VX] = (float) ((M_Random() % (intensity << 2)) - (intensity << 1));
+        plr->viewOffset[VY] = (float) ((M_Random() % (intensity << 2)) - (intensity << 1));
     }
     else
     {

@@ -44,6 +44,7 @@
 #  include "jstrife.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "p_xgline.h"
@@ -296,12 +297,13 @@ int destroyXSThinker(void* p, void* context)
     return true; // Continue iteration.
 }
 
-void XS_SetSectorType(struct sector_s* sec, int special)
+void XS_SetSectorType(sector_t* sec, int special)
 {
-    int                 i;
-    xsector_t*          xsec = P_ToXSector(sec);
-    xgsector_t*         xg;
-    sectortype_t*       info;
+    gamemap_t* map = P_CurrentGameMap();
+    xsector_t* xsec = P_ToXSector(sec);
+    xgsector_t* xg;
+    sectortype_t* info;
+    int i;
 
     if(XS_GetType(special))
     {
@@ -354,7 +356,7 @@ void XS_SetSectorType(struct sector_s* sec, int special)
             angle_t angle = 0;
 
             // -1 to support binary XG data with old flag values.
-            XL_TraverseLines(0, (xgDataLumps? LREF_TAGGED -1: LREF_TAGGED),
+            XL_TraverseLines(map, 0, (xgDataLumps? LREF_TAGGED -1: LREF_TAGGED),
                              info->actTag, sec, &angle,
                              NULL, XLTrav_LineAngle);
 
@@ -452,7 +454,7 @@ void XS_PlaneSound(sector_t* sec, int plane, int snd)
 
 void XS_MoverStopped(xgplanemover_t *mover, boolean done)
 {
-    xline_t    *origin = P_ToXLine(mover->origin);
+    xlinedef_t    *origin = P_ToXLine(mover->origin);
 
     XG_Dev("XS_MoverStopped: Sector %i (done=%i, origin line=%i)",
            DMU_ToIndex(mover->sector), done,
@@ -992,7 +994,7 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
     material_t*         otherMat;
     float               otherHeight;
     sector_t*           otherSec = NULL, *iter;
-    xline_t*            xline;
+    xlinedef_t*            xline;
     char                buff[50];
 
     if(refdata)
@@ -1377,25 +1379,26 @@ int C_DECL XSTrav_HighestSectorType(sector_t *sec, boolean ceiling,
     return true; // Keep looking...
 }
 
-void XS_InitMovePlane(linedef_t *line)
+void XS_InitMovePlane(linedef_t* line)
 {
-    xline_t *xline = P_ToXLine(line);
+    xlinedef_t* xline = P_ToXLine(line);
 
     // fdata keeps track of wait time.
     xline->xg->fdata = xline->xg->info.fparm[5];
     xline->xg->idata = true; // Play sound.
 };
 
-int C_DECL XSTrav_MovePlane(sector_t *sector, boolean ceiling, void *context,
-                            void *context2, mobj_t *activator)
+int C_DECL XSTrav_MovePlane(sector_t* sector, boolean ceiling, void* context,
+                            void* context2, mobj_t* activator)
 {
-    linedef_t*      line = (linedef_t *) context;
-    linetype_t*     info = (linetype_t *) context2;
+    gamemap_t* map = P_CurrentGameMap();
+    linedef_t* line = (linedef_t*) context;
+    linetype_t* info = (linetype_t*) context2;
     xgplanemover_t* mover;
-    int             st;
-    material_t*     mat;
-    xline_t*        xline = P_ToXLine(line);
-    boolean         playsound;
+    material_t* mat;
+    xlinedef_t* xline = P_ToXLine(line);
+    boolean playsound;
+    int st;
 
     playsound = xline->xg->idata;
 
@@ -1427,7 +1430,7 @@ int C_DECL XSTrav_MovePlane(sector_t *sector, boolean ceiling, void *context,
 
     // Setup the thinker and add it to the list.
     {
-    float               temp = mover->destination;
+    float temp = mover->destination;
     XS_GetPlane(line, sector, info->iparm[2], NULL, &temp, 0, 0);
     mover->destination = temp + info->fparm[2];
     }
@@ -1488,7 +1491,7 @@ int C_DECL XSTrav_MovePlane(sector_t *sector, boolean ceiling, void *context,
     if(info->iparm[11] != LPREF_NONE)
     {
         if(XL_TraversePlanes
-           (line, info->iparm[11], info->iparm[12], 0, &st, false, 0,
+           (map, line, info->iparm[11], info->iparm[12], 0, &st, false, 0,
             XSTrav_HighestSectorType))
         {
             XS_SetSectorType(sector, st);
@@ -1502,7 +1505,7 @@ int C_DECL XSTrav_MovePlane(sector_t *sector, boolean ceiling, void *context,
     if(info->iparm[13] != LPREF_NONE)
     {
         if(XL_TraversePlanes
-           (line, info->iparm[13], info->iparm[14], 0, &st, false, 0,
+           (map, line, info->iparm[13], info->iparm[14], 0, &st, false, 0,
             XSTrav_HighestSectorType))
         {   // OK, found one or more.
             mover->setSectorType = st;
@@ -1519,16 +1522,17 @@ int C_DECL XSTrav_MovePlane(sector_t *sector, boolean ceiling, void *context,
     return true; // Keep looking...
 }
 
-void XS_InitStairBuilder(linedef_t *line)
+void XS_InitStairBuilder(linedef_t* line)
 {
-    uint                i;
+    gamemap_t* map = P_CurrentGameMap();
+    uint i;
 
     for(i = 0; i < numsectors; ++i)
-        P_GetXSector(i)->blFlags = 0;
+        GameMap_XSector(map, i)->blFlags = 0;
 }
 
-boolean XS_DoBuild(sector_t *sector, boolean ceiling, linedef_t *origin,
-                   linetype_t *info, uint stepcount)
+boolean XS_DoBuild(sector_t* sector, boolean ceiling, linedef_t* origin,
+                   linetype_t* info, uint stepcount)
 {
     static float        firstheight;
 
@@ -1652,14 +1656,14 @@ int spreadBuild(void *ptr, void *context)
     return 1; // Continue iteration.
 }
 
-static void markBuiltSectors(void)
+static void markBuiltSectors(gamemap_t* map)
 {
-    uint                i;
+    uint i;
 
     // Mark the sectors of the last step as processed.
     for(i = 0; i < numsectors; ++i)
     {
-        xsector_t*          xsec = P_GetXSector(i);
+        xsector_t* xsec = GameMap_XSector(map, i);
 
         if(xsec->blFlags & BL_WAS_BUILT)
         {
@@ -1673,9 +1677,10 @@ static boolean spreadBuildToNeighborAll(linedef_t* origin, linetype_t* info,
                                         boolean picstop, boolean ceiling,
                                         material_t* myMat, int stepCount)
 {
-    uint                i;
-    boolean             result = false;
+    gamemap_t* map = P_CurrentGameMap();
     spreadbuildparams_t params;
+    boolean result = false;
+    uint i;
 
     params.baseMat = myMat;
     params.info = info;
@@ -1689,8 +1694,8 @@ static boolean spreadBuildToNeighborAll(linedef_t* origin, linetype_t* info,
 
     for(i = 0; i < numsectors; ++i)
     {
-        sector_t*           sec;
-        xsector_t*          xsec = P_GetXSector(i);
+        xsector_t* xsec = GameMap_XSector(map, i);
+        sector_t* sec;
 
         // Only spread from built sectors (spread only once!).
         if(!(xsec->blFlags & BL_BUILT) || xsec->blFlags & BL_SPREADED)
@@ -1778,9 +1783,10 @@ boolean spreadBuildToNeighborLowestIDX(linedef_t* origin, linetype_t* info,
                                        material_t* myMat, int stepcount,
                                        sector_t* foundSec)
 {
-    uint                i;
-    boolean             result = false;
+    gamemap_t* map = P_CurrentGameMap();
     findbuildneighborparams_t params;
+    boolean result = false;
+    uint i;
 
     params.baseMat = myMat;
     params.info = info;
@@ -1794,8 +1800,8 @@ boolean spreadBuildToNeighborLowestIDX(linedef_t* origin, linetype_t* info,
 
     for(i = 0; i < numsectors; ++i)
     {
-        sector_t*           sec;
-        xsector_t*          xsec = P_GetXSector(i);
+        xsector_t* xsec = GameMap_XSector(map, i);
+        sector_t* sec;
 
         // Only spread from built sectors (spread only once!).
         if(!(xsec->blFlags & BL_BUILT) || xsec->blFlags & BL_SPREADED)
@@ -1826,13 +1832,16 @@ int C_DECL XSTrav_BuildStairs(sector_t* sector, boolean ceiling,
                               void* context, void* context2,
                               mobj_t* activator)
 {
-    uint                stepCount = 0;
-    linedef_t*          origin = (linedef_t *) context;
-    linetype_t*         info = context2;
-    sector_t*           foundSec = NULL;
-    boolean             picstop = info->iparm[2] != 0;
-    boolean             spread = info->iparm[3] != 0;
-    material_t*         myMat;
+    assert(sector);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    uint stepCount = 0;
+    linedef_t* origin = (linedef_t *) context;
+    linetype_t* info = context2;
+    sector_t* foundSec = NULL;
+    boolean picstop = info->iparm[2] != 0;
+    boolean spread = info->iparm[3] != 0;
+    material_t* myMat;
 
     XG_Dev("XSTrav_BuildStairs: Sector %i, %s", DMU_ToIndex(sector),
            ceiling ? "ceiling" : "floor");
@@ -1849,11 +1858,11 @@ int C_DECL XSTrav_BuildStairs(sector_t* sector, boolean ceiling,
 
     if(spread)
     {
-        boolean             found;
+        boolean found;
 
         do
         {
-            markBuiltSectors();
+            markBuiltSectors(map);
 
             // Scan the sectors for the next ones to spread to.
             found = spreadBuildToNeighborAll(origin, info, picstop, ceiling,
@@ -1863,12 +1872,12 @@ int C_DECL XSTrav_BuildStairs(sector_t* sector, boolean ceiling,
     }
     else
     {
-        boolean             found;
+        boolean found;
 
         do
         {
             found = false;
-            markBuiltSectors();
+            markBuiltSectors(map);
 
             // Scan the sectors for the next ones to spread to.
             if(spreadBuildToNeighborLowestIDX(origin, info, picstop,
@@ -1884,6 +1893,7 @@ int C_DECL XSTrav_BuildStairs(sector_t* sector, boolean ceiling,
     }
 
     return true; // Continue searching for planes...
+    }
 }
 
 int C_DECL XSTrav_SectorSound(struct sector_s *sec, boolean ceiling,
@@ -2144,9 +2154,13 @@ int C_DECL XSTrav_MimicSector(sector_t *sector, boolean ceiling,
 int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
                            void* context2, mobj_t* thing)
 {
-    mobj_t*         mo = NULL;
-    boolean         ok = false;
-    linetype_t*     info = context2;
+    assert(sector);
+    assert(thing);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* mo = NULL;
+    boolean ok = false;
+    linetype_t* info = context2;
 
     // Don't teleport things marked noteleport!
     if(thing->flags2 & MF2_NOTELEPORT)
@@ -2174,12 +2188,12 @@ int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
 
     if(ok)
     {   // We can teleport.
-        mobj_t*         flash;
-        unsigned        an;
-        float           oldpos[3];
-        float           thfloorz, thceilz;
-        float           aboveFloor, fogDelta = 0;
-        angle_t         oldAngle;
+        mobj_t* flash;
+        unsigned an;
+        float oldpos[3];
+        float thfloorz, thceilz;
+        float aboveFloor, fogDelta = 0;
+        angle_t oldAngle;
 
         XG_Dev("XSTrav_Teleport: Sector %i, %s, %s%s", DMU_ToIndex(sector),
                 info->iparm[2]? "No Flash":"", info->iparm[3]? "Play Sound":"Silent",
@@ -2250,7 +2264,7 @@ int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
 #if __JHERETIC__
             fogDelta = ((thing->flags & MF_MISSILE)? 0 : TELEFOGHEIGHT);
 #endif
-            if((flash = P_SpawnMobj3f(MT_TFOG, oldpos[VX], oldpos[VY],
+            if((flash = GameMap_SpawnMobj3f(map, MT_TFOG, oldpos[VX], oldpos[VY],
                                       oldpos[VZ] + fogDelta,
                                       oldAngle + ANG180, 0)))
             {
@@ -2266,7 +2280,7 @@ int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
         if(!info->iparm[2])
         {
             // New position
-            if((flash = P_SpawnMobj3f(MT_TFOG,
+            if((flash = GameMap_SpawnMobj3f(map, MT_TFOG,
                                       mo->pos[VX] + 20 * FIX2FLT(finecosine[an]),
                                       mo->pos[VY] + 20 * FIX2FLT(finesine[an]),
                                       mo->pos[VZ] + fogDelta, mo->angle, 0)))
@@ -2317,10 +2331,12 @@ int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
     }
 
     return false; // Only do this once.
+    }
 }
 
-int XF_FindRewindMarker(char *func, int pos)
+int XF_FindRewindMarker(char* func, int pos)
 {
+    assert(func);
     while(pos > 0 && func[pos] != '>')
         pos--;
     if(func[pos] == '>')
@@ -2329,20 +2345,26 @@ int XF_FindRewindMarker(char *func, int pos)
     return pos;
 }
 
-int XF_GetCount(function_t * fn, int *pos)
+int XF_GetCount(function_t* fn, int* pos)
 {
-    char       *end;
-    int         count;
+    assert(fn);
+    assert(pos);
+    {
+    char* end;
+    int count;
 
     count = strtol(fn->func + *pos, &end, 10);
     *pos = end - fn->func;
 
     return count;
+    }
 }
 
-float XF_GetValue(function_t * fn, int pos)
+float XF_GetValue(function_t* fn, int pos)
 {
-    int         ch;
+    assert(fn);
+    {
+    int ch;
 
     if(fn->func[pos] == '/' || fn->func[pos] == '%')
     {
@@ -2353,6 +2375,7 @@ float XF_GetValue(function_t * fn, int pos)
     ch = tolower(fn->func[pos]);
     // A=0, Z=25.
     return (ch - 'a') / 25.0f;
+    }
 }
 
 /**
@@ -2360,11 +2383,10 @@ float XF_GetValue(function_t * fn, int pos)
  * Repeat counting is handled here.
  * Poke should be true only if fn->pos is really about to move.
  */
-int XF_FindNextPos(function_t *fn, int pos, boolean poke, sector_t *sec)
+int XF_FindNextPos(function_t* fn, int pos, boolean poke, sector_t* sec)
 {
-    int         startpos = pos;
-    int         c;
-    char       *ptr;
+    int startpos = pos, c;
+    char* ptr;
 
     if(fn->repeat > 0)
     {
@@ -2604,14 +2626,15 @@ void XS_UpdateLight(sector_t* sec)
     }
 }
 
-void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
+void XS_DoChain(sector_t* sec, int ch, int activating, void* actThing)
 {
-    xgsector_t         *xg;
-    sectortype_t       *info;
-    float               flevtime = TIC2FLT(mapTime);
-    linedef_t          *dummyLine;
-    xline_t            *xdummyLine;
-    linetype_t         *ltype;
+    gamemap_t* map = P_CurrentGameMap();
+    xgsector_t* xg;
+    sectortype_t* info;
+    float flevtime = TIC2FLT(map->time);
+    linedef_t* dummyLine;
+    xlinedef_t* xdummyLine;
+    linetype_t* ltype;
 
     xg = P_ToXSector(sec)->xg;
     info = &xg->info;
@@ -2658,8 +2681,8 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
 
     memcpy(&xdummyLine->xg->info, ltype, sizeof(*ltype));
 
-    if(act_thing)
-        xdummyLine->xg->activator = act_thing;
+    if(actThing)
+        xdummyLine->xg->activator = actThing;
     else
         xdummyLine->xg->activator = NULL;
 
@@ -2669,7 +2692,7 @@ void XS_DoChain(sector_t *sec, int ch, int activating, void *act_thing)
 
     // Send the event.
     if(XL_LineEvent((ch == XSCE_FUNCTION ? XLE_FUNC : XLE_CHAIN), 0,
-                    dummyLine, 0, act_thing))
+                    dummyLine, 0, actThing))
     {   // Success!
         if(ch < XSCE_NUM_CHAINS)
         {
@@ -3042,20 +3065,23 @@ float XS_ThrustMul(struct sector_s *sector)
  * updated. However, this is a bit messy operation, prone to errors.
  * Instead, we just disable XG...
  */
-void XS_Update(void)
+void XS_Update(gamemap_t* map)
 {
-    uint        i;
-    xsector_t  *xsec;
+    assert(map);
+    {
+    uint i;  
 
     // It's all PU_MAP memory, so we can just lose it.
     for(i = 0; i < numsectors; ++i)
     {
-        xsec = P_ToXSector(DMU_ToPtr(DMU_SECTOR, i));
+        xsector_t* xsec = GameMap_XSector(map, i);
+
         if(xsec->xg)
         {
             xsec->xg = NULL;
             xsec->special = 0;
         }
+    }
     }
 }
 
@@ -3091,14 +3117,15 @@ DEFCC(CCmdDumpXG)
  */
 DEFCC(CCmdMovePlane)
 {
-    boolean     isCeiling = !stricmp(argv[0], "moveceil");
-    boolean     isBoth = !stricmp(argv[0], "movesec");
-    boolean     isOffset = false, isCrusher = false;
-    sector_t   *sector = NULL;
-    float       units = 0, speed = FRACUNIT;
-    int         p = 0;
-    float       floorheight, ceilingheight;
-    xgplanemover_t *mover;
+    boolean isCeiling = !stricmp(argv[0], "moveceil");
+    boolean isBoth = !stricmp(argv[0], "movesec");
+    boolean isOffset = false, isCrusher = false;
+    sector_t* sector = NULL;
+    float units = 0, speed = FRACUNIT;
+    int p = 0;
+    float floorheight, ceilingheight;
+    xgplanemover_t* mover;
+    gamemap_t* map = P_CurrentGameMap();
 
     if(argc < 2)
     {
@@ -3141,7 +3168,7 @@ DEFCC(CCmdMovePlane)
 
         p = 3;
 
-        list = P_GetSectorIterListForTag(tag, false);
+        list = GameMap_SectorIterListForTag(map, tag, false);
         if(list)
         {   // Find the first sector with the tag.
             P_IterListResetIterator(list, true);

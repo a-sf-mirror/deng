@@ -455,7 +455,6 @@ typedef struct material_s { int type; } material_t;
                                         float scaley);
 
     // Audio.
-    void            S_MapChange(void);
     int             S_LocalSoundAtVolumeFrom(int sound_id,
                                              struct mobj_s* origin,
                                              float* pos, float volume);

@@ -36,6 +36,7 @@
 
 #include "jheretic.h"
 
+#include "gamemap.h"
 #include "m_argv.h"
 #include "hu_stuff.h"
 #include "hu_menu.h"
@@ -50,12 +51,6 @@
 #include "p_player.h"
 
 // MACROS ------------------------------------------------------------------
-
-#define MAXWADFILES         20
-
-// MAPDIR should be defined as the directory that holds development maps
-// for the -wart # # command
-#define MAPDIR              "\\data\\"
 
 // TYPES -------------------------------------------------------------------
 
@@ -108,21 +103,7 @@ char *borderLumps[] = {
     "bordbl" // bottom left
 };
 
-char *wadFiles[MAXWADFILES] = {
-    "heretic.wad",
-    "texture1.lmp",
-    "texture2.lmp",
-    "pnames.lmp"
-};
-
-char *baseDefault = "heretic.cfg";
-
-char exrnWADs[80];
-char exrnWADs2[80];
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static boolean devMap;
 
 // CODE --------------------------------------------------------------------
 
@@ -130,7 +111,7 @@ static boolean devMap;
  * Attempt to change the current game mode. Can only be done when not
  * actually in a level.
  *
- * \todo Doesn't actually do anything yet other than set the game mode
+ * @todo Doesn't actually do anything yet other than set the game mode
  * global vars.
  *
  * @param mode          The game mode to change to.
@@ -167,44 +148,6 @@ boolean G_SetGameMode(gamemode_t mode)
     }
 
     return true;
-}
-
-static void addFile(char *file)
-{
-    int             numWADFiles;
-    char           *new;
-
-    for(numWADFiles = 0; wadFiles[numWADFiles]; numWADFiles++);
-
-    new = malloc(strlen(file) + 1);
-    strcpy(new, file);
-    if(strlen(exrnWADs) + strlen(file) < 78)
-    {
-        if(strlen(exrnWADs))
-        {
-            strcat(exrnWADs, ", ");
-        }
-        else
-        {
-            strcpy(exrnWADs, "External Wadfiles: ");
-        }
-        strcat(exrnWADs, file);
-    }
-    else if(strlen(exrnWADs2) + strlen(file) < 79)
-    {
-        if(strlen(exrnWADs2))
-        {
-            strcat(exrnWADs2, ", ");
-        }
-        else
-        {
-            strcpy(exrnWADs2, "     ");
-            strcat(exrnWADs, ",");
-        }
-        strcat(exrnWADs2, file);
-    }
-
-    wadFiles[numWADFiles] = new;
 }
 
 /**
@@ -248,7 +191,7 @@ void G_IdentifyVersion(void)
  */
 void G_PreInit(void)
 {
-    int                 i;
+    int i;
 
     G_SetGameMode(indetermined);
 
@@ -429,9 +372,9 @@ void G_PreInit(void)
  */
 void G_PostInit(void)
 {
-    int                 e, m, p;
-    filename_t          file;
-    char                mapStr[6];
+    int p;
+    filename_t file;
+    char mapStr[6];
 
     if(W_CheckNumForName("E2M1") == -1)
         // Can't find episode 2 maps, must be the shareware WAD.
@@ -506,7 +449,7 @@ void G_PostInit(void)
     turboMul = 1.0f;
     if(p)
     {
-        int             scale = 200;
+        int scale = 200;
 
         turboParm = true;
         if(p < myargc - 1)
@@ -518,24 +461,6 @@ void G_PostInit(void)
 
         Con_Message("turbo scale: %i%%\n", scale);
         turboMul = scale / 100.f;
-    }
-
-    // -DEVMAP <episode> <map>
-    // Adds a map wad from the development directory to the wad list,
-    // and sets the start episode and the start map.
-    devMap = false;
-    p = ArgCheck("-devmap");
-    if(p && p < myargc - 2)
-    {
-        e = Argv(p + 1)[0];
-        m = Argv(p + 2)[0];
-        sprintf(file, MAPDIR "E%cM%c.wad", e, m);
-        addFile(file);
-        printf("DEVMAP: Episode %c, Map %c.\n", e, m);
-        startEpisode = e - '0';
-        startMap = m - '0';
-        autoStart = true;
-        devMap = true;
     }
 
     // Are we autostarting?
@@ -555,7 +480,7 @@ void G_PostInit(void)
     }
 
     // Check valid episode and map
-    if(autoStart || IS_NETGAME && !devMap)
+    if(autoStart || IS_NETGAME)
     {
         sprintf(mapStr, "E%d%d", startEpisode, startMap);
 
@@ -585,10 +510,7 @@ void G_Shutdown(void)
     Hu_UnloadData();
     Hu_LogShutdown();
 
-    P_DestroyIterList(spechit);
-    P_DestroyIterList(linespecials);
-    P_DestroyLineTagLists();
-    P_DestroySectorTagLists();
+    P_DestroyGameMap(P_CurrentGameMap());
     P_ShutdownInventory();
     AM_Shutdown();
     P_FreeWeaponSlots();

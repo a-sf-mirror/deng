@@ -41,10 +41,9 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
+#include "gamemap.h"
 #include "d_net.h"
 #include "g_common.h"
 #include "dmu_lib.h"
@@ -84,88 +83,7 @@ static void  checkForPushSpecial(linedef_t* line, int side, mobj_t* mobj);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-float tmBBox[4];
-mobj_t* tmThing;
-
-// If "floatOk" true, move would be ok if within "tmFloorZ - tmCeilingZ".
-boolean floatOk;
-
-float tmFloorZ;
-float tmCeilingZ;
-#if __JHEXEN__
-material_t* tmFloorMaterial;
-#endif
-
-boolean fellDown; // $dropoff_fix
-
-// The following is used to keep track of the linedefs that clip the open
-// height range e.g. PIT_CheckLine. They in turn are used with the &unstuck
-// logic and to prevent missiles from exploding against sky hack walls.
-linedef_t* ceilingLine;
-linedef_t* floorLine;
-
-mobj_t* lineTarget; // Who got hit (or NULL).
-linedef_t* blockLine; // $unstuck: blocking linedef
-
-float attackRange;
-
-#if __JHEXEN__
-mobj_t* puffSpawned;
-mobj_t* blockingMobj;
-#endif
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static float tm[3];
-#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
-static float tmHeight;
-static linedef_t* tmHitLine;
-#endif
-static float tmDropoffZ;
-static float bestSlideFrac, secondSlideFrac;
-static linedef_t* bestSlideLine, *secondSlideLine;
-
-static mobj_t* slideMo;
-
-static float tmMove[3];
-static mobj_t* shootThing;
-
-// Height if not aiming up or down.
-static float shootZ;
-
-static int lineAttackDamage;
-static float aimSlope;
-
-// slopes to top and bottom of target
-static float topSlope, bottomSlope;
-
-static mobj_t* useThing;
-
-static mobj_t* bombSource, *bombSpot;
-static int bombDamage;
-static int bombDistance;
-
-static boolean crushChange;
-static boolean noFit;
-
-static float startPos[3]; // start position for trajectory line checks
-static float endPos[3]; // end position for trajectory checks
-
-#if __JHEXEN__
-static mobj_t* tsThing;
-static boolean damageSource;
-static mobj_t* onMobj; // generic global onMobj...used for landing on pods/players
-
-static mobj_t* puzzleItemUser;
-static int puzzleItemType;
-static boolean puzzleActivated;
-#endif
-
-#if !__JHEXEN__
-static int tmUnstuck; // $unstuck: used to check unsticking
-#endif
-
-static byte* rejectMatrix = NULL; // For fast sight rejection.
 
 // CODE --------------------------------------------------------------------
 
@@ -181,9 +99,9 @@ float P_GetGravity(void)
  * Checks the reject matrix to find out if the two sectors are visible
  * from each other.
  */
-static boolean checkReject(subsector_t* a, subsector_t* b)
+static boolean checkReject(gamemap_t* map, subsector_t* a, subsector_t* b)
 {
-    if(rejectMatrix != NULL)
+    if(map->_rejectMatrix != NULL)
     {
         uint s1, s2, pnum, bytenum, bitnum;
         sector_t* sec1 = DMU_GetPtrp(a, DMU_SECTOR);
@@ -197,7 +115,7 @@ static boolean checkReject(subsector_t* a, subsector_t* b)
         bitnum = 1 << (pnum & 7);
 
         // Check in REJECT table.
-        if(rejectMatrix[bytenum] & bitnum)
+        if(map->_rejectMatrix[bytenum] & bitnum)
         {
             // Can't possibly be connected.
             return false;
@@ -218,6 +136,10 @@ static boolean checkReject(subsector_t* a, subsector_t* b)
  */
 boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
 {
+    assert(from);
+    assert(to);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     float fPos[3];
 
     // If either is unlinked, they can't see each other.
@@ -228,7 +150,7 @@ boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
         return false; // Cameramen don't exist!
 
     // Check for trivial rejection.
-    if(!checkReject(from->subsector, to->subsector))
+    if(!checkReject(map, from->subsector, to->subsector))
         return false;
 
     fPos[VX] = from->pos[VX];
@@ -239,93 +161,98 @@ boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
         fPos[VZ] += from->height + -(from->height / 4);
 
     return P_CheckLineSight(fPos, to->pos, 0, to->height, LS_PASSMIDDLE);
+    }
 }
 
 boolean PIT_StompThing(mobj_t* mo, void* data)
 {
-    int                 stompAnyway;
-    float               blockdist;
+    gamemap_t* map = P_CurrentGameMap();
+    int stompAnyway;
+    float blockdist;
 
     if(!(mo->flags & MF_SHOOTABLE))
         return true;
 
-    blockdist = mo->radius + tmThing->radius;
-    if(fabs(mo->pos[VX] - tm[VX]) >= blockdist ||
-       fabs(mo->pos[VY] - tm[VY]) >= blockdist)
+    blockdist = mo->radius + map->tmThing->radius;
+    if(fabs(mo->pos[VX] - map->tm[VX]) >= blockdist ||
+       fabs(mo->pos[VY] - map->tm[VY]) >= blockdist)
         return true; // Didn't hit it.
 
-    if(mo == tmThing)
+    if(mo == map->tmThing)
         return true; // Don't clip against self.
 
     stompAnyway = *(int*) data;
 
     // Should we stomp anyway? unless self.
-    if(mo != tmThing && stompAnyway)
+    if(mo != map->tmThing && stompAnyway)
     {
-        P_DamageMobj(mo, tmThing, tmThing, 10000, true);
+        P_DamageMobj(mo, map->tmThing, map->tmThing, 10000, true);
         return true;
     }
 
 #if __JDOOM64__
     // monsters don't stomp things
-    if(!tmThing->player)
+    if(!map->tmThing->player)
         return false;
 #elif __JDOOM__
     // Monsters don't stomp things except on a boss map.
-    if(!tmThing->player && gameMap != 30)
+    if(!map->tmThing->player && gameMap != 30)
         return false;
 #endif
 
-    if(!(tmThing->flags2 & MF2_TELESTOMP))
+    if(!(map->tmThing->flags2 & MF2_TELESTOMP))
         return false; // Not allowed to stomp things.
 
     // Do stomp damage (unless self).
-    if(mo != tmThing)
-        P_DamageMobj(mo, tmThing, tmThing, 10000, true);
+    if(mo != map->tmThing)
+        P_DamageMobj(mo, map->tmThing, map->tmThing, 10000, true);
 
     return true;
 }
 
 boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
 {
+    assert(thing);
+    {
     int stomping;
     subsector_t* newSSec;
     float box[4];
+    gamemap_t* map = P_CurrentGameMap();
 
     // Kill anything occupying the position.
-    tmThing = thing;
+    map->tmThing = thing;
     stomping = alwaysStomp;
 
-    tm[VX] = x;
-    tm[VY] = y;
+    map->tm[VX] = x;
+    map->tm[VY] = y;
 
-    tmBBox[BOXTOP]    = tm[VY] + tmThing->radius;
-    tmBBox[BOXBOTTOM] = tm[VY] - tmThing->radius;
-    tmBBox[BOXRIGHT]  = tm[VX] + tmThing->radius;
-    tmBBox[BOXLEFT]   = tm[VX] - tmThing->radius;
+    map->tmBBox[BOXTOP]    = map->tm[VY] + map->tmThing->radius;
+    map->tmBBox[BOXBOTTOM] = map->tm[VY] - map->tmThing->radius;
+    map->tmBBox[BOXRIGHT]  = map->tm[VX] + map->tmThing->radius;
+    map->tmBBox[BOXLEFT]   = map->tm[VX] - map->tmThing->radius;
 
-    newSSec = P_PointInSubSector(tm[VX], tm[VY]);
+    newSSec = P_PointInSubSector(map->tm[VX], map->tm[VY]);
 
-    ceilingLine = floorLine = NULL;
+    map->ceilingLine = map->floorLine = NULL;
 #if !__JHEXEN__
-    blockLine = NULL;
-    tmUnstuck = thing->dPlayer && thing->dPlayer->mo == thing;
+    map->blockLine = NULL;
+    map->tmUnstuck = thing->dPlayer && thing->dPlayer->mo == thing;
 #endif
 
     // The base floor / ceiling is from the subsector that contains the
     // point. Any contacted lines the step closer together will adjust them.
-    tmFloorZ = tmDropoffZ = DMU_GetFloatp(newSSec, DMU_FLOOR_HEIGHT);
-    tmCeilingZ = DMU_GetFloatp(newSSec, DMU_CEILING_HEIGHT);
+    map->tmFloorZ = map->tmDropoffZ = DMU_GetFloatp(newSSec, DMU_FLOOR_HEIGHT);
+    map->tmCeilingZ = DMU_GetFloatp(newSSec, DMU_CEILING_HEIGHT);
 #if __JHEXEN__
-    tmFloorMaterial = DMU_GetPtrp(newSSec, DMU_FLOOR_MATERIAL);
+    map->tmFloorMaterial = DMU_GetPtrp(newSSec, DMU_FLOOR_MATERIAL);
 #endif
 
-    P_EmptyIterList(spechit);
+    P_EmptyIterList(GameMap_SpecHits(map));
 
-    box[BOXLEFT]   = tmBBox[BOXLEFT]   - MAXRADIUS;
-    box[BOXRIGHT]  = tmBBox[BOXRIGHT]  + MAXRADIUS;
-    box[BOXBOTTOM] = tmBBox[BOXBOTTOM] - MAXRADIUS;
-    box[BOXTOP]    = tmBBox[BOXTOP]    + MAXRADIUS;
+    box[BOXLEFT]   = map->tmBBox[BOXLEFT]   - MAXRADIUS;
+    box[BOXRIGHT]  = map->tmBBox[BOXRIGHT]  + MAXRADIUS;
+    box[BOXBOTTOM] = map->tmBBox[BOXBOTTOM] - MAXRADIUS;
+    box[BOXTOP]    = map->tmBBox[BOXTOP]    + MAXRADIUS;
 
     // Stomp on any things contacted.
     VALIDCOUNT++;
@@ -335,10 +262,10 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
     // The move is ok, so link the thing into its new position.
     P_MobjUnsetPosition(thing);
 
-    thing->floorZ = tmFloorZ;
-    thing->ceilingZ = tmCeilingZ;
+    thing->floorZ = map->tmFloorZ;
+    thing->ceilingZ = map->tmCeilingZ;
 #if !__JHEXEN__
-    thing->dropOffZ = tmDropoffZ;
+    thing->dropOffZ = map->tmDropoffZ;
 #endif
     thing->pos[VX] = x;
     thing->pos[VY] = y;
@@ -347,6 +274,7 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
     P_MobjClearSRVO(thing);
 
     return true;
+    }
 }
 
 /**
@@ -367,23 +295,24 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
  */
 boolean PIT_CrossLine(linedef_t* ld, void* data)
 {
-    int                 flags = DMU_GetIntp(ld, DMU_FLAGS);
+    gamemap_t* map = P_CurrentGameMap();
+    int flags = DMU_GetIntp(ld, DMU_FLAGS);
 
     if((flags & DDLF_BLOCKING) ||
        (P_ToXLine(ld)->flags & ML_BLOCKMONSTERS) ||
        (!DMU_GetPtrp(ld, DMU_FRONT_SECTOR) || !DMU_GetPtrp(ld, DMU_BACK_SECTOR)))
     {
-        float               bbox[4];
+        float bbox[4];
 
         DMU_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
 
-        if(!(tmBBox[BOXLEFT]   > bbox[BOXRIGHT] ||
-             tmBBox[BOXRIGHT]  < bbox[BOXLEFT] ||
-             tmBBox[BOXTOP]    < bbox[BOXBOTTOM] ||
-             tmBBox[BOXBOTTOM] > bbox[BOXTOP]))
+        if(!(map->tmBBox[BOXLEFT]   > bbox[BOXRIGHT] ||
+             map->tmBBox[BOXRIGHT]  < bbox[BOXLEFT] ||
+             map->tmBBox[BOXTOP]    < bbox[BOXBOTTOM] ||
+             map->tmBBox[BOXBOTTOM] > bbox[BOXTOP]))
         {
-            if(DMU_PointOnLineDefSide(startPos[VX], startPos[VY], ld) !=
-               DMU_PointOnLineDefSide(endPos[VX], endPos[VY], ld))
+            if(DMU_PointOnLineDefSide(map->startPos[VX], map->startPos[VY], ld) !=
+               DMU_PointOnLineDefSide(map->endPos[VX], map->endPos[VY], ld))
                 // Line blocks trajectory.
                 return false;
         }
@@ -408,22 +337,27 @@ boolean PIT_CrossLine(linedef_t* ld, void* data)
  */
 boolean P_CheckSides(mobj_t* actor, float x, float y)
 {
-    startPos[VX] = actor->pos[VX];
-    startPos[VY] = actor->pos[VY];
-    startPos[VZ] = actor->pos[VZ];
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
 
-    endPos[VX] = x;
-    endPos[VY] = y;
-    endPos[VZ] = DDMINFLOAT; // Initialize with *something*.
+    map->startPos[VX] = actor->pos[VX];
+    map->startPos[VY] = actor->pos[VY];
+    map->startPos[VZ] = actor->pos[VZ];
+
+    map->endPos[VX] = x;
+    map->endPos[VY] = y;
+    map->endPos[VZ] = DDMINFLOAT; // Initialize with *something*.
 
     // The bounding box of the trajectory
-    tmBBox[BOXLEFT]   = (startPos[VX] < endPos[VX]? startPos[VX] : endPos[VX]);
-    tmBBox[BOXRIGHT]  = (startPos[VX] > endPos[VX]? startPos[VX] : endPos[VX]);
-    tmBBox[BOXTOP]    = (startPos[VY] > endPos[VY]? startPos[VY] : endPos[VY]);
-    tmBBox[BOXBOTTOM] = (startPos[VY] < endPos[VY]? startPos[VY] : endPos[VY]);
+    map->tmBBox[BOXLEFT]   = (map->startPos[VX] < map->endPos[VX]? map->startPos[VX] : map->endPos[VX]);
+    map->tmBBox[BOXRIGHT]  = (map->startPos[VX] > map->endPos[VX]? map->startPos[VX] : map->endPos[VX]);
+    map->tmBBox[BOXTOP]    = (map->startPos[VY] > map->endPos[VY]? map->startPos[VY] : map->endPos[VY]);
+    map->tmBBox[BOXBOTTOM] = (map->startPos[VY] < map->endPos[VY]? map->startPos[VY] : map->endPos[VY]);
 
     VALIDCOUNT++;
-    return !P_LineDefsBoxIterator(tmBBox, PIT_CrossLine, 0);
+    return !P_LineDefsBoxIterator(map->tmBBox, PIT_CrossLine, NULL);
+    }
 }
 
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
@@ -433,15 +367,14 @@ boolean P_CheckSides(mobj_t* actor, float x, float y)
  */
 static int untouched(linedef_t* ld)
 {
-    float               x, y, box[4];
-    float               bbox[4];
-    float               radius;
+    gamemap_t* map = P_CurrentGameMap();
+    float x, y, box[4], bbox[4], radius;
 
     DMU_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
 
-    x = tmThing->pos[VX];
-    y = tmThing->pos[VY];
-    radius = tmThing->radius;
+    x = map->tmThing->pos[VX];
+    y = map->tmThing->pos[VY];
+    radius = map->tmThing->radius;
 
     if(((box[BOXRIGHT]  = x + radius) <= bbox[BOXLEFT]) ||
        ((box[BOXLEFT]   = x - radius) >= bbox[BOXRIGHT]) ||
@@ -456,43 +389,44 @@ static int untouched(linedef_t* ld)
 
 boolean PIT_CheckThing(mobj_t* thing, void* data)
 {
-    int                 damage;
-    float               blockdist;
-    boolean             solid;
+    gamemap_t* map = P_CurrentGameMap();
+    int damage;
+    float blockdist;
+    boolean solid;
 #if !__JHEXEN__
-    boolean             overlap = false;
+    boolean overlap = false;
 #endif
 
     // Don't clip against self.
-    if(thing == tmThing)
+    if(thing == map->tmThing)
         return true;
 
 #if __JHEXEN__
     // Don't clip on something we are stood on.
-    if(thing == tmThing->onMobj)
+    if(thing == map->tmThing->onMobj)
         return true;
 #endif
 
     if(!(thing->flags & (MF_SOLID | MF_SPECIAL | MF_SHOOTABLE)) ||
-       P_MobjIsCamera(thing) || P_MobjIsCamera(tmThing))
+       P_MobjIsCamera(thing) || P_MobjIsCamera(map->tmThing))
         return true;
 
 #if !__JHEXEN__
     // Player only.
-    if(tmThing->player && tm[VZ] != DDMAXFLOAT &&
-       (cfg.moveCheckZ || (tmThing->flags2 & MF2_PASSMOBJ)))
+    if(map->tmThing->player && map->tm[VZ] != DDMAXFLOAT &&
+       (cfg.moveCheckZ || (map->tmThing->flags2 & MF2_PASSMOBJ)))
     {
-        if((thing->pos[VZ] > tm[VZ] + tmHeight) ||
-           (thing->pos[VZ] + thing->height < tm[VZ]))
+        if((thing->pos[VZ] > map->tm[VZ] + map->tmHeight) ||
+           (thing->pos[VZ] + thing->height < map->tm[VZ]))
             return true; // Under or over it.
 
         overlap = true;
     }
 #endif
 
-    blockdist = thing->radius + tmThing->radius;
-    if(fabs(thing->pos[VX] - tm[VX]) >= blockdist ||
-       fabs(thing->pos[VY] - tm[VY]) >= blockdist)
+    blockdist = thing->radius + map->tmThing->radius;
+    if(fabs(thing->pos[VX] - map->tm[VX]) >= blockdist ||
+       fabs(thing->pos[VY] - map->tm[VY]) >= blockdist)
         return true; // Didn't hit thing.
 
 #if __JHEXEN__
@@ -502,37 +436,37 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
 #endif
 
 #if !__JHEXEN__
-    if(!tmThing->player && (tmThing->flags2 & MF2_PASSMOBJ))
+    if(!map->tmThing->player && (map->tmThing->flags2 & MF2_PASSMOBJ))
 #else
-    blockingMobj = thing;
-    if(tmThing->flags2 & MF2_PASSMOBJ)
+    map->blockingMobj = thing;
+    if(map->tmThing->flags2 & MF2_PASSMOBJ)
 #endif
     {   // Check if a mobj passed over/under another object.
 #if __JHERETIC__
-        if((tmThing->type == MT_IMP || tmThing->type == MT_WIZARD) &&
+        if((map->tmThing->type == MT_IMP || map->tmThing->type == MT_WIZARD) &&
            (thing->type == MT_IMP || thing->type == MT_WIZARD))
         {
             return false; // Don't let imps/wizards fly over other imps/wizards.
         }
 #elif __JHEXEN__
-        if(tmThing->type == MT_BISHOP && thing->type == MT_BISHOP)
+        if(map->tmThing->type == MT_BISHOP && thing->type == MT_BISHOP)
             return false; // Don't let bishops fly over other bishops.
 #endif
 
         if(!(thing->flags & MF_SPECIAL))
         {
-            if(tmThing->pos[VZ] > thing->pos[VZ] + thing->height ||
-               tmThing->pos[VZ] + tmThing->height < thing->pos[VZ])
+            if(map->tmThing->pos[VZ] > thing->pos[VZ] + thing->height ||
+               map->tmThing->pos[VZ] + map->tmThing->height < thing->pos[VZ])
                 return true; // Over/under thing.
         }
     }
 
     // Check for skulls slamming into things.
-    if((tmThing->flags & MF_SKULLFLY) && (thing->flags & MF_SOLID))
+    if((map->tmThing->flags & MF_SKULLFLY) && (thing->flags & MF_SOLID))
     {
 #if __JHEXEN__
-        blockingMobj = NULL;
-        if(tmThing->type == MT_MINOTAUR)
+        map->blockingMobj = NULL;
+        if(map->tmThing->type == MT_MINOTAUR)
         {
             // Slamming minotaurs shouldn't move non-creatures.
             if(!(thing->flags & MF_COUNTKILL))
@@ -540,9 +474,9 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
                 return false;
             }
         }
-        else if(tmThing->type == MT_HOLY_FX)
+        else if(map->tmThing->type == MT_HOLY_FX)
         {
-            if((thing->flags & MF_SHOOTABLE) && thing != tmThing->target)
+            if((thing->flags & MF_SHOOTABLE) && thing != map->tmThing->target)
             {
                 if(IS_NETGAME && !deathmatch && thing->player)
                     return true; // don't attack other co-op players
@@ -550,14 +484,14 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
                 if((thing->flags2 & MF2_REFLECTIVE) &&
                    (thing->player || (thing->flags2 & MF2_BOSS)))
                 {
-                    tmThing->tracer = tmThing->target;
-                    tmThing->target = thing;
+                    map->tmThing->tracer = map->tmThing->target;
+                    map->tmThing->target = thing;
                     return true;
                 }
 
                 if(thing->flags & MF_COUNTKILL || thing->player)
                 {
-                    tmThing->tracer = thing;
+                    map->tmThing->tracer = thing;
                 }
 
                 if(P_Random() < 96)
@@ -567,15 +501,14 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
                     {
                         damage = 3;
                         // Ghost burns out faster when attacking players/bosses.
-                        tmThing->health -= 6;
+                        map->tmThing->health -= 6;
                     }
 
-                    P_DamageMobj(thing, tmThing, tmThing->target, damage, false);
+                    P_DamageMobj(thing, map->tmThing, map->tmThing->target, damage, false);
                     if(P_Random() < 128)
                     {
-                        P_SpawnMobj3fv(MT_HOLY_PUFF, tmThing->pos,
-                                       P_Random() << 24, 0);
-                        S_StartSound(SFX_SPIRIT_ATTACK, tmThing);
+                        GameMap_SpawnMobj3fv(map, MT_HOLY_PUFF, map->tmThing->pos, P_Random() << 24, 0);
+                        S_StartSound(SFX_SPIRIT_ATTACK, map->tmThing);
                         if((thing->flags & MF_COUNTKILL) && P_Random() < 128 &&
                            !S_IsPlaying(SFX_PUPPYBEAT, thing))
                         {
@@ -590,28 +523,28 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
                 }
 
                 if(thing->health <= 0)
-                    tmThing->tracer = NULL;
+                    map->tmThing->tracer = NULL;
             }
             return true;
         }
 #endif
 #if __JDOOM__
-        if(tmThing->damage == DDMAXINT) //// \kludge to support old save games.
-            damage = tmThing->info->damage;
+        if(map->tmThing->damage == DDMAXINT) // @kludge to support old save games.
+            damage = map->tmThing->info->damage;
         else
 #endif
-            damage = tmThing->damage;
+            damage = map->tmThing->damage;
 
         damage *= (P_Random() % 8) + 1;
-        P_DamageMobj(thing, tmThing, tmThing, damage, false);
+        P_DamageMobj(thing, map->tmThing, map->tmThing, damage, false);
 
-        tmThing->flags &= ~MF_SKULLFLY;
-        tmThing->mom[MX] = tmThing->mom[MY] = tmThing->mom[MZ] = 0;
+        map->tmThing->flags &= ~MF_SKULLFLY;
+        map->tmThing->mom[MX] = map->tmThing->mom[MY] = map->tmThing->mom[MZ] = 0;
 
 #if __JHERETIC__ || __JHEXEN__
-        P_MobjChangeState(tmThing, P_GetState(tmThing->type, SN_SEE));
+        P_MobjChangeState(map->tmThing, P_GetState(map->tmThing->type, SN_SEE));
 #else
-        P_MobjChangeState(tmThing, P_GetState(tmThing->type, SN_SPAWN));
+        P_MobjChangeState(map->tmThing, P_GetState(map->tmThing->type, SN_SPAWN));
 #endif
 
         return false; // Stop moving.
@@ -619,23 +552,23 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
 
 #if __JHEXEN__
     // Check for blasted thing running into another
-    if((tmThing->flags2 & MF2_BLASTED) && (thing->flags & MF_SHOOTABLE))
+    if((map->tmThing->flags2 & MF2_BLASTED) && (thing->flags & MF_SHOOTABLE))
     {
         if(!(thing->flags2 & MF2_BOSS) && (thing->flags & MF_COUNTKILL))
         {
-            thing->mom[MX] += tmThing->mom[MX];
-            thing->mom[MY] += tmThing->mom[MY];
+            thing->mom[MX] += map->tmThing->mom[MX];
+            thing->mom[MY] += map->tmThing->mom[MY];
 
             if(thing->dPlayer)
                 thing->dPlayer->flags |= DDPF_FIXMOM;
 
             if((thing->mom[MX] + thing->mom[MY]) > 3)
             {
-                damage = (tmThing->info->mass / 100) + 1;
-                P_DamageMobj(thing, tmThing, tmThing, damage, false);
+                damage = (map->tmThing->info->mass / 100) + 1;
+                P_DamageMobj(thing, map->tmThing, map->tmThing, damage, false);
 
                 damage = (thing->info->mass / 100) + 1;
-                P_DamageMobj(tmThing, thing, thing, damage >> 2, false);
+                P_DamageMobj(map->tmThing, thing, thing, damage >> 2, false);
             }
 
             return false;
@@ -644,7 +577,7 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
 #endif
 
     // Missiles can hit other things.
-    if(tmThing->flags & MF_MISSILE)
+    if(map->tmThing->flags & MF_MISSILE)
     {
 #if __JHEXEN__
         // Check for a non-shootable mobj.
@@ -652,55 +585,55 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
             return true;
 #else
         // Check for passing through a ghost.
-        if((thing->flags & MF_SHADOW) && (tmThing->flags2 & MF2_THRUGHOST))
+        if((thing->flags & MF_SHADOW) && (map->tmThing->flags2 & MF2_THRUGHOST))
             return true;
 #endif
 
         // See if it went over / under.
-        if(tmThing->pos[VZ] > thing->pos[VZ] + thing->height)
+        if(map->tmThing->pos[VZ] > thing->pos[VZ] + thing->height)
             return true; // Overhead.
 
-        if(tmThing->pos[VZ] + tmThing->height < thing->pos[VZ])
+        if(map->tmThing->pos[VZ] + map->tmThing->height < thing->pos[VZ])
             return true; // Underneath.
 
 #if __JHEXEN__
-        if(tmThing->flags2 & MF2_FLOORBOUNCE)
+        if(map->tmThing->flags2 & MF2_FLOORBOUNCE)
         {
-            if(tmThing->target == thing || !(thing->flags & MF_SOLID))
+            if(map->tmThing->target == thing || !(thing->flags & MF_SOLID))
                 return true;
             else
                 return false;
         }
 
-        if(tmThing->type == MT_LIGHTNING_FLOOR ||
-           tmThing->type == MT_LIGHTNING_CEILING)
+        if(map->tmThing->type == MT_LIGHTNING_FLOOR ||
+           map->tmThing->type == MT_LIGHTNING_CEILING)
         {
-            if((thing->flags & MF_SHOOTABLE) && thing != tmThing->target)
+            if((thing->flags & MF_SHOOTABLE) && thing != map->tmThing->target)
             {
                 if(thing->info->mass != DDMAXINT)
                 {
-                    thing->mom[MX] += tmThing->mom[MX] / 16;
-                    thing->mom[MY] += tmThing->mom[MY] / 16;
+                    thing->mom[MX] += map->tmThing->mom[MX] / 16;
+                    thing->mom[MY] += map->tmThing->mom[MY] / 16;
                     if(thing->dPlayer)
                         thing->dPlayer->flags |= DDPF_FIXMOM;
                 }
 
                 if((!thing->player && !(thing->flags2 & MF2_BOSS)) ||
-                   !(mapTime & 1))
+                   !(map->time & 1))
                 {
                     if(thing->type == MT_CENTAUR ||
                        thing->type == MT_CENTAURLEADER)
                     {   // Lightning does more damage to centaurs.
-                        P_DamageMobj(thing, tmThing, tmThing->target, 9, false);
+                        P_DamageMobj(thing, map->tmThing, map->tmThing->target, 9, false);
                     }
                     else
                     {
-                        P_DamageMobj(thing, tmThing, tmThing->target, 3, false);
+                        P_DamageMobj(thing, map->tmThing, map->tmThing->target, 3, false);
                     }
 
-                    if(!(S_IsPlaying(SFX_MAGE_LIGHTNING_ZAP, tmThing)))
+                    if(!(S_IsPlaying(SFX_MAGE_LIGHTNING_ZAP, map->tmThing)))
                     {
-                        S_StartSound(SFX_MAGE_LIGHTNING_ZAP, tmThing);
+                        S_StartSound(SFX_MAGE_LIGHTNING_ZAP, map->tmThing);
                     }
 
                     if((thing->flags & MF_COUNTKILL) && P_Random() < 64 &&
@@ -715,35 +648,35 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
                     }
                 }
 
-                tmThing->health--;
-                if(tmThing->health <= 0 || thing->health <= 0)
+                map->tmThing->health--;
+                if(map->tmThing->health <= 0 || thing->health <= 0)
                 {
                     return false;
                 }
 
-                if(tmThing->type == MT_LIGHTNING_FLOOR)
+                if(map->tmThing->type == MT_LIGHTNING_FLOOR)
                 {
-                    if(tmThing->lastEnemy &&
-                       !tmThing->lastEnemy->tracer)
+                    if(map->tmThing->lastEnemy &&
+                       !map->tmThing->lastEnemy->tracer)
                     {
-                        tmThing->lastEnemy->tracer = thing;
+                        map->tmThing->lastEnemy->tracer = thing;
                     }
                 }
-                else if(!tmThing->tracer)
+                else if(!map->tmThing->tracer)
                 {
-                    tmThing->tracer = thing;
+                    map->tmThing->tracer = thing;
                 }
             }
 
             return true; // Lightning zaps through all sprites.
         }
-        else if(tmThing->type == MT_LIGHTNING_ZAP)
+        else if(map->tmThing->type == MT_LIGHTNING_ZAP)
         {
             mobj_t *lmo;
 
-            if((thing->flags & MF_SHOOTABLE) && thing != tmThing->target)
+            if((thing->flags & MF_SHOOTABLE) && thing != map->tmThing->target)
             {
-                lmo = tmThing->lastEnemy;
+                lmo = map->tmThing->lastEnemy;
                 if(lmo)
                 {
                     if(lmo->type == MT_LIGHTNING_FLOOR)
@@ -759,14 +692,14 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
                         lmo->tracer = thing;
                     }
 
-                    if(!(mapTime & 3))
+                    if(!(map->time & 3))
                     {
                         lmo->health--;
                     }
                 }
             }
         }
-        else if(tmThing->type == MT_MSTAFF_FX2 && thing != tmThing->target)
+        else if(map->tmThing->type == MT_MSTAFF_FX2 && thing != map->tmThing->target)
         {
             if(!thing->player && !(thing->flags2 & MF2_BOSS))
             {
@@ -777,7 +710,7 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
                 case MT_MAGE_BOSS:
                     break;
                 default:
-                    P_DamageMobj(thing, tmThing, tmThing->target, 10, false);
+                    P_DamageMobj(thing, map->tmThing, map->tmThing->target, 10, false);
                     return true;
                     break;
                 }
@@ -787,15 +720,15 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
 
         // Don't hit same species as originator.
 #if __JDOOM__ || __JDOOM64__
-        if(tmThing->target &&
-           (tmThing->target->type == thing->type ||
-           (tmThing->target->type == MT_KNIGHT && thing->type == MT_BRUISER) ||
-           (tmThing->target->type == MT_BRUISER && thing->type == MT_KNIGHT)))
+        if(map->tmThing->target &&
+           (map->tmThing->target->type == thing->type ||
+           (map->tmThing->target->type == MT_KNIGHT && thing->type == MT_BRUISER) ||
+           (map->tmThing->target->type == MT_BRUISER && thing->type == MT_KNIGHT)))
 #else
-        if(tmThing->target && tmThing->target->type == thing->type)
+        if(map->tmThing->target && map->tmThing->target->type == thing->type)
 #endif
         {
-            if(thing == tmThing->target)
+            if(thing == map->tmThing->target)
                 return true;
 
 #if __JHEXEN__
@@ -816,7 +749,7 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
             return !(thing->flags & MF_SOLID); // Didn't do any damage.
         }
 
-        if(tmThing->flags2 & MF2_RIP)
+        if(map->tmThing->flags2 & MF2_RIP)
         {
 #if __JHEXEN__
             if(!(thing->flags & MF_NOBLOOD) &&
@@ -826,45 +759,45 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
             if(!(thing->flags & MF_NOBLOOD))
 #endif
             {   // Ok to spawn some blood.
-                P_RipperBlood(tmThing);
+                P_RipperBlood(map->tmThing);
             }
 #if __JHERETIC__
-            S_StartSound(SFX_RIPSLOP, tmThing);
+            S_StartSound(SFX_RIPSLOP, map->tmThing);
 #endif
 #if __JDOOM__
-            if(tmThing->damage == DDMAXINT) //// \kludge to support old save games.
-                damage = tmThing->info->damage;
+            if(map->tmThing->damage == DDMAXINT) //// \kludge to support old save games.
+                damage = map->tmThing->info->damage;
             else
 #endif
-                damage = tmThing->damage;
+                damage = map->tmThing->damage;
 
             damage *= (P_Random() & 3) + 2;
 
-            P_DamageMobj(thing, tmThing, tmThing->target, damage, false);
+            P_DamageMobj(thing, map->tmThing, map->tmThing->target, damage, false);
 
             if((thing->flags2 & MF2_PUSHABLE) &&
-               !(tmThing->flags2 & MF2_CANNOTPUSH))
+               !(map->tmThing->flags2 & MF2_CANNOTPUSH))
             {   // Push thing
-                thing->mom[MX] += tmThing->mom[MX] / 4;
-                thing->mom[MY] += tmThing->mom[MY] / 4;
+                thing->mom[MX] += map->tmThing->mom[MX] / 4;
+                thing->mom[MY] += map->tmThing->mom[MY] / 4;
                 if(thing->dPlayer)
                     thing->dPlayer->flags |= DDPF_FIXMOM;
             }
-            P_EmptyIterList(spechit);
+            P_EmptyIterList(GameMap_SpecHits(map));
             return true;
         }
 
         // Do damage
 #if __JDOOM__
-        if(tmThing->damage == DDMAXINT) //// \kludge to support old save games.
-            damage = tmThing->info->damage;
+        if(map->tmThing->damage == DDMAXINT) //// \kludge to support old save games.
+            damage = map->tmThing->info->damage;
         else
 #endif
-            damage = tmThing->damage;
+            damage = map->tmThing->damage;
 
         damage *= (P_Random() % 8) + 1;
 #if __JDOOM__ || __JDOOM64__
-        P_DamageMobj(thing, tmThing, tmThing->target, damage, false);
+        P_DamageMobj(thing, map->tmThing, map->tmThing->target, damage, false);
 #else
         if(damage)
         {
@@ -874,51 +807,51 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
             if(!(thing->flags & MF_NOBLOOD) &&
                !(thing->flags2 & MF2_REFLECTIVE) &&
                !(thing->flags2 & MF2_INVULNERABLE) &&
-               !(tmThing->type == MT_TELOTHER_FX1) &&
-               !(tmThing->type == MT_TELOTHER_FX2) &&
-               !(tmThing->type == MT_TELOTHER_FX3) &&
-               !(tmThing->type == MT_TELOTHER_FX4) &&
-               !(tmThing->type == MT_TELOTHER_FX5) && (P_Random() < 192))
+               !(map->tmThing->type == MT_TELOTHER_FX1) &&
+               !(map->tmThing->type == MT_TELOTHER_FX2) &&
+               !(map->tmThing->type == MT_TELOTHER_FX3) &&
+               !(map->tmThing->type == MT_TELOTHER_FX4) &&
+               !(map->tmThing->type == MT_TELOTHER_FX5) && (P_Random() < 192))
 # endif
-                P_SpawnBloodSplatter(tmThing->pos[VX], tmThing->pos[VY], tmThing->pos[VZ], thing);
+                P_SpawnBloodSplatter(map, map->tmThing->pos[VX], map->tmThing->pos[VY], map->tmThing->pos[VZ], thing);
 
-            P_DamageMobj(thing, tmThing, tmThing->target, damage, false);
+            P_DamageMobj(thing, map->tmThing, map->tmThing->target, damage, false);
         }
 #endif
         // Don't traverse anymore.
         return false;
     }
 
-    if((thing->flags2 & MF2_PUSHABLE) && !(tmThing->flags2 & MF2_CANNOTPUSH))
+    if((thing->flags2 & MF2_PUSHABLE) && !(map->tmThing->flags2 & MF2_CANNOTPUSH))
     {   // Push thing
-        thing->mom[MX] += tmThing->mom[MX] / 4;
-        thing->mom[MY] += tmThing->mom[MY] / 4;
+        thing->mom[MX] += map->tmThing->mom[MX] / 4;
+        thing->mom[MY] += map->tmThing->mom[MY] / 4;
         if(thing->dPlayer)
             thing->dPlayer->flags |= DDPF_FIXMOM;
     }
 
     // \kludge: Always treat blood as a solid.
-    if(tmThing->type == MT_BLOOD)
+    if(map->tmThing->type == MT_BLOOD)
         solid = true;
     else
         solid = (thing->flags & MF_SOLID) && !(thing->flags & MF_NOCLIP) &&
-            (tmThing->flags & MF_SOLID);
+            (map->tmThing->flags & MF_SOLID);
     // \kludge: end.
 
     // Check for special pickup.
-    if((thing->flags & MF_SPECIAL) && (tmThing->flags & MF_PICKUP))
+    if((thing->flags & MF_SPECIAL) && (map->tmThing->flags & MF_PICKUP))
     {
-        P_TouchSpecialMobj(thing, tmThing); // Can remove thing.
+        P_TouchSpecialMobj(thing, map->tmThing); // Can remove thing.
     }
 #if !__JHEXEN__
     else if(overlap && solid)
     {
         // How are we positioned?
-        if(tm[VZ] > thing->pos[VZ] + thing->height - 24)
+        if(map->tm[VZ] > thing->pos[VZ] + thing->height - 24)
         {
-            tmThing->onMobj = thing;
-            if(thing->pos[VZ] + thing->height > tmFloorZ)
-                tmFloorZ = thing->pos[VZ] + thing->height;
+            map->tmThing->onMobj = thing;
+            if(thing->pos[VZ] + thing->height > map->tmFloorZ)
+                map->tmFloorZ = thing->pos[VZ] + thing->height;
             return true;
         }
     }
@@ -932,39 +865,40 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
  */
 boolean PIT_CheckLine(linedef_t* ld, void* data)
 {
-    float               bbox[4];
-    xline_t*            xline;
+    float bbox[4];
+    xlinedef_t* xline;
+    gamemap_t* map = P_CurrentGameMap();
 
     DMU_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
 
-    if(tmBBox[BOXRIGHT]  <= bbox[BOXLEFT] ||
-       tmBBox[BOXLEFT]   >= bbox[BOXRIGHT] ||
-       tmBBox[BOXTOP]    <= bbox[BOXBOTTOM] ||
-       tmBBox[BOXBOTTOM] >= bbox[BOXTOP])
+    if(map->tmBBox[BOXRIGHT]  <= bbox[BOXLEFT] ||
+       map->tmBBox[BOXLEFT]   >= bbox[BOXRIGHT] ||
+       map->tmBBox[BOXTOP]    <= bbox[BOXBOTTOM] ||
+       map->tmBBox[BOXBOTTOM] >= bbox[BOXTOP])
         return true;
 
-    if(DMU_BoxOnLineSide(tmBBox, ld) != -1)
+    if(DMU_BoxOnLineSide(map->tmBBox, ld) != -1)
         return true;
 
     // A line has been hit
     xline = P_ToXLine(ld);
 #if !__JHEXEN__
-    tmThing->wallHit = true;
+    map->tmThing->wallHit = true;
 
     // A Hit event will be sent to special lines.
     if(xline->special)
-        tmHitLine = ld;
+        map->tmHitLine = ld;
 #endif
 
     if(!DMU_GetPtrp(ld, DMU_BACK_SECTOR)) // One sided line.
     {
 #if __JHEXEN__
-        if(tmThing->flags2 & MF2_BLASTED)
-            P_DamageMobj(tmThing, NULL, NULL, tmThing->info->mass >> 5, false);
-        checkForPushSpecial(ld, 0, tmThing);
+        if(map->tmThing->flags2 & MF2_BLASTED)
+            P_DamageMobj(map->tmThing, NULL, NULL, map->tmThing->info->mass >> 5, false);
+        checkForPushSpecial(ld, 0, map->tmThing);
         return false;
 #else
-        float               d1[2];
+        float d1[2];
 
         DMU_GetFloatpv(ld, DMU_DXY, d1);
 
@@ -980,10 +914,10 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
          * are only 8 units apart could be crossed in either order.
          */
 
-        blockLine = ld;
-        return tmUnstuck && !untouched(ld) &&
-            ((tm[VX] - tmThing->pos[VX]) * d1[1]) >
-            ((tm[VY] - tmThing->pos[VY]) * d1[0]);
+        map->blockLine = ld;
+        return map->tmUnstuck && !untouched(ld) &&
+            ((map->tm[VX] - map->tmThing->pos[VX]) * d1[1]) >
+            ((map->tm[VY] - map->tmThing->pos[VY]) * d1[0]);
 #endif
     }
 
@@ -992,56 +926,56 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
 #if __JHERETIC__
     if(!DMU_GetPtrp(ld, DMU_BACK_SECTOR)) // one sided line
     {   // One sided line
-        if(tmThing->flags & MF_MISSILE)
+        if(map->tmThing->flags & MF_MISSILE)
         {   // Missiles can trigger impact specials
             if(xline->special)
-                P_AddObjectToIterList(spechit, ld);
+                P_AddObjectToIterList(GameMap_SpecHits(map), ld);
         }
         return false;
     }
 #endif
 
-    if(!(tmThing->flags & MF_MISSILE))
+    if(!(map->tmThing->flags & MF_MISSILE))
     {
         // Explicitly blocking everything?
         if(DMU_GetIntp(ld, DMU_FLAGS) & DDLF_BLOCKING)
         {
 #if __JHEXEN__
-            if(tmThing->flags2 & MF2_BLASTED)
-                P_DamageMobj(tmThing, NULL, NULL, tmThing->info->mass >> 5, false);
-            checkForPushSpecial(ld, 0, tmThing);
+            if(map->tmThing->flags2 & MF2_BLASTED)
+                P_DamageMobj(map->tmThing, NULL, NULL, map->tmThing->info->mass >> 5, false);
+            checkForPushSpecial(ld, 0, map->tmThing);
             return false;
 #else
             // $unstuck: allow escape.
-            return tmUnstuck && !untouched(ld);
+            return map->tmUnstuck && !untouched(ld);
 #endif
         }
 
         // Block monsters only?
 #if __JHEXEN__
-        if(!tmThing->player && tmThing->type != MT_CAMERA &&
+        if(!map->tmThing->player && map->tmThing->type != MT_CAMERA &&
            (xline->flags & ML_BLOCKMONSTERS))
 #elif __JHERETIC__
-        if(!tmThing->player && tmThing->type != MT_POD &&
+        if(!map->tmThing->player && map->tmThing->type != MT_POD &&
            (xline->flags & ML_BLOCKMONSTERS))
 #else
-        if(!tmThing->player &&
+        if(!map->tmThing->player &&
             (xline->flags & ML_BLOCKMONSTERS))
 #endif
         {
 #if __JHEXEN__
-            if(tmThing->flags2 & MF2_BLASTED)
-                P_DamageMobj(tmThing, NULL, NULL, tmThing->info->mass >> 5, false);
+            if(map->tmThing->flags2 & MF2_BLASTED)
+                P_DamageMobj(map->tmThing, NULL, NULL, map->tmThing->info->mass >> 5, false);
 #endif
             return false;
         }
     }
 
 #if __JDOOM64__
-    if((tmThing->flags & MF_MISSILE))
+    if((map->tmThing->flags & MF_MISSILE))
     {
         if(xline->flags & ML_BLOCKALL) // Explicitly blocking everything.
-            return tmUnstuck && !untouched(ld);  // $unstuck: allow escape.
+            return map->tmUnstuck && !untouched(ld);  // $unstuck: allow escape.
     }
 #endif
 
@@ -1049,33 +983,33 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
     DMU_LineOpening(ld);
 
     // Adjust floor / ceiling heights.
-    if(OPENTOP < tmCeilingZ)
+    if(OPENTOP < map->tmCeilingZ)
     {
-        tmCeilingZ = OPENTOP;
-        ceilingLine = ld;
+        map->tmCeilingZ = OPENTOP;
+        map->ceilingLine = ld;
 #if !__JHEXEN__
-        blockLine = ld;
+        map->blockLine = ld;
 #endif
     }
 
-    if(OPENBOTTOM > tmFloorZ)
+    if(OPENBOTTOM > map->tmFloorZ)
     {
-        tmFloorZ = OPENBOTTOM;
-        floorLine = ld;
+        map->tmFloorZ = OPENBOTTOM;
+        map->floorLine = ld;
 #if !__JHEXEN__
-        blockLine = ld;
+        map->blockLine = ld;
 #endif
     }
 
-    if(LOWFLOOR < tmDropoffZ)
-        tmDropoffZ = LOWFLOOR;
+    if(LOWFLOOR < map->tmDropoffZ)
+        map->tmDropoffZ = LOWFLOOR;
 
     // If contacted a special line, add it to the list.
     if(P_ToXLine(ld)->special)
-        P_AddObjectToIterList(spechit, ld);
+        P_AddObjectToIterList(GameMap_SpecHits(map), ld);
 
 #if !__JHEXEN__
-    tmThing->wallHit = false;
+    map->tmThing->wallHit = false;
 #endif
     return true; // Continue iteration.
 }
@@ -1103,52 +1037,53 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
  */
 boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
 {
-    sector_t*           newSec;
-    float               box[4];
+    sector_t* newSec;
+    float box[4];
+    gamemap_t* map = P_CurrentGameMap();
 
-    tmThing = thing;
+    map->tmThing = thing;
 
 #if !__JHEXEN__
     thing->onMobj = NULL;
     thing->wallHit = false;
 
-    tmHitLine = NULL;
-    tmHeight = thing->height;
+    map->tmHitLine = NULL;
+    map->tmHeight = thing->height;
 #endif
 
-    tm[VX] = x;
-    tm[VY] = y;
-    tm[VZ] = z;
+    map->tm[VX] = x;
+    map->tm[VY] = y;
+    map->tm[VZ] = z;
 
-    tmBBox[BOXTOP]    = tm[VY] + tmThing->radius;
-    tmBBox[BOXBOTTOM] = tm[VY] - tmThing->radius;
-    tmBBox[BOXRIGHT]  = tm[VX] + tmThing->radius;
-    tmBBox[BOXLEFT]   = tm[VX] - tmThing->radius;
+    map->tmBBox[BOXTOP]    = map->tm[VY] + map->tmThing->radius;
+    map->tmBBox[BOXBOTTOM] = map->tm[VY] - map->tmThing->radius;
+    map->tmBBox[BOXRIGHT]  = map->tm[VX] + map->tmThing->radius;
+    map->tmBBox[BOXLEFT]   = map->tm[VX] - map->tmThing->radius;
 
-    newSec = DMU_GetPtrp(P_PointInSubSector(tm[VX], tm[VY]), DMU_SECTOR);
+    newSec = DMU_GetPtrp(P_PointInSubSector(map->tm[VX], map->tm[VY]), DMU_SECTOR);
 
-    ceilingLine = floorLine = NULL;
+    map->ceilingLine = map->floorLine = NULL;
 #if !__JHEXEN__
-    blockLine = NULL;
-    tmUnstuck =
+    map->blockLine = NULL;
+    map->tmUnstuck =
         ((thing->dPlayer && thing->dPlayer->mo == thing)? true : false);
 #endif
 
     // The base floor/ceiling is from the subsector that contains the point.
     // Any contacted lines the step closer together will adjust them.
-    tmFloorZ = tmDropoffZ = DMU_GetFloatp(newSec, DMU_FLOOR_HEIGHT);
-    tmCeilingZ = DMU_GetFloatp(newSec, DMU_CEILING_HEIGHT);
+    map->tmFloorZ = map->tmDropoffZ = DMU_GetFloatp(newSec, DMU_FLOOR_HEIGHT);
+    map->tmCeilingZ = DMU_GetFloatp(newSec, DMU_CEILING_HEIGHT);
 #if __JHEXEN__
-    tmFloorMaterial = DMU_GetPtrp(newSec, DMU_FLOOR_MATERIAL);
+    map->tmFloorMaterial = DMU_GetPtrp(newSec, DMU_FLOOR_MATERIAL);
 #endif
 
-    P_EmptyIterList(spechit);
+    P_EmptyIterList(GameMap_SpecHits(map));
 
 #if __JHEXEN__
-    if((tmThing->flags & MF_NOCLIP) && !(tmThing->flags & MF_SKULLFLY))
+    if((map->tmThing->flags & MF_NOCLIP) && !(map->tmThing->flags & MF_SKULLFLY))
         return true;
 #else
-    if((tmThing->flags & MF_NOCLIP))
+    if((map->tmThing->flags & MF_NOCLIP))
         return true;
 #endif
 
@@ -1156,10 +1091,10 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
     // extended by MAXRADIUS because mobj_ts are grouped into mapblocks
     // based on their origin point, and can overlap into adjacent blocks by
     // up to MAXRADIUS units.
-    box[BOXLEFT]   = tmBBox[BOXLEFT]   - MAXRADIUS;
-    box[BOXRIGHT]  = tmBBox[BOXRIGHT]  + MAXRADIUS;
-    box[BOXBOTTOM] = tmBBox[BOXBOTTOM] - MAXRADIUS;
-    box[BOXTOP]    = tmBBox[BOXTOP]    + MAXRADIUS;
+    box[BOXLEFT]   = map->tmBBox[BOXLEFT]   - MAXRADIUS;
+    box[BOXRIGHT]  = map->tmBBox[BOXRIGHT]  + MAXRADIUS;
+    box[BOXBOTTOM] = map->tmBBox[BOXBOTTOM] - MAXRADIUS;
+    box[BOXTOP]    = map->tmBBox[BOXTOP]    + MAXRADIUS;
 
     VALIDCOUNT++;
 
@@ -1167,7 +1102,7 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
     if(!P_MobjIsCamera(thing))
     {
 #if __JHEXEN__
-        blockingMobj = NULL;
+        map->blockingMobj = NULL;
 #endif
         if(!P_MobjsBoxIterator(box, PIT_CheckThing, 0))
             return false;
@@ -1181,10 +1116,10 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
 
      // Check lines.
 #if __JHEXEN__
-    if(tmThing->flags & MF_NOCLIP)
+    if(map->tmThing->flags & MF_NOCLIP)
         return true;
 
-    blockingMobj = NULL;
+    map->blockingMobj = NULL;
 #endif
 
     return P_LineDefsBoxIterator(box, PIT_CheckLine, 0);
@@ -1210,14 +1145,15 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y)
 static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 #endif
 {
-    float               oldpos[3];
-    int                 side, oldSide;
-    linedef_t*          ld;
+    float oldpos[3];
+    int side, oldSide;
+    linedef_t* ld;
+    gamemap_t* map = P_CurrentGameMap();
 
     // $dropoff_fix: fellDown.
-    floatOk = false;
+    map->floatOk = false;
 #if !__JHEXEN__
-    fellDown = false;
+    map->fellDown = false;
 #endif
 
 #if __JHEXEN__
@@ -1227,14 +1163,14 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 #endif
     {
 #if __JHEXEN__
-        if(!blockingMobj || blockingMobj->player || !thing->player)
+        if(!map->blockingMobj || map->blockingMobj->player || !thing->player)
         {
             goto pushline;
         }
-        else if(blockingMobj->pos[VZ] + blockingMobj->height - thing->pos[VZ] > 24 ||
-                (DMU_GetFloatp(blockingMobj->subsector, DMU_CEILING_HEIGHT) -
-                 (blockingMobj->pos[VZ] + blockingMobj->height) < thing->height) ||
-                (tmCeilingZ - (blockingMobj->pos[VZ] + blockingMobj->height) <
+        else if(map->blockingMobj->pos[VZ] + map->blockingMobj->height - thing->pos[VZ] > 24 ||
+                (DMU_GetFloatp(map->blockingMobj->subsector, DMU_CEILING_HEIGHT) -
+                 (map->blockingMobj->pos[VZ] + map->blockingMobj->height) < thing->height) ||
+                (map->tmCeilingZ - (map->blockingMobj->pos[VZ] + map->blockingMobj->height) <
                  thing->height))
         {
             goto pushline;
@@ -1252,32 +1188,32 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
     if(!(thing->flags & MF_NOCLIP))
     {
 #if __JHEXEN__
-        if(tmCeilingZ - tmFloorZ < thing->height)
+        if(map->tmCeilingZ - map->tmFloorZ < thing->height)
         {   // Doesn't fit.
             goto pushline;
         }
 
-        floatOk = true;
+        map->floatOk = true;
 
         if(!(thing->flags & MF_TELEPORT) &&
-           tmCeilingZ - thing->pos[VZ] < thing->height &&
+           map->tmCeilingZ - thing->pos[VZ] < thing->height &&
            thing->type != MT_LIGHTNING_CEILING && !(thing->flags2 & MF2_FLY))
         {   // Mobj must lower itself to fit.
             goto pushline;
         }
 #else
         // Possibly allow escape if otherwise stuck.
-        boolean             ret = (tmUnstuck &&
-            !(ceilingLine && untouched(ceilingLine)) &&
-            !(floorLine   && untouched(floorLine)));
+        boolean ret = (map->tmUnstuck &&
+            !(map->ceilingLine && untouched(map->ceilingLine)) &&
+            !(map->floorLine   && untouched(map->floorLine)));
 
-        if(tmCeilingZ - tmFloorZ < thing->height)
+        if(map->tmCeilingZ - map->tmFloorZ < thing->height)
             return ret; // Doesn't fit.
 
         // Mobj must lower to fit.
-        floatOk = true;
+        map->floatOk = true;
         if(!(thing->flags & MF_TELEPORT) && !(thing->flags2 & MF2_FLY) &&
-           tmCeilingZ - thing->pos[VZ] < thing->height)
+           map->tmCeilingZ - thing->pos[VZ] < thing->height)
             return ret;
 
         // Too big a step up.
@@ -1288,7 +1224,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 # endif
             )
         {
-            if(tmFloorZ - thing->pos[VZ] > 24)
+            if(map->tmFloorZ - thing->pos[VZ] > 24)
             {
 # if __JHERETIC__
                 CheckMissileImpact(thing);
@@ -1297,7 +1233,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
             }
         }
 # if __JHERETIC__
-        if((thing->flags & MF_MISSILE) && tmFloorZ > thing->pos[VZ])
+        if((thing->flags & MF_MISSILE) && map->tmFloorZ > thing->pos[VZ])
         {
             CheckMissileImpact(thing);
         }
@@ -1305,7 +1241,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 #endif
         if(thing->flags2 & MF2_FLY)
         {
-            if(thing->pos[VZ] + thing->height > tmCeilingZ)
+            if(thing->pos[VZ] + thing->height > map->tmCeilingZ)
             {
                 thing->mom[MZ] = -8;
 #if __JHEXEN__
@@ -1314,8 +1250,8 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
                 return false;
 #endif
             }
-            else if(thing->pos[VZ] < tmFloorZ &&
-                    tmFloorZ - tmDropoffZ > 24)
+            else if(thing->pos[VZ] < map->tmFloorZ &&
+                    map->tmFloorZ - map->tmDropoffZ > 24)
             {
                 thing->mom[MZ] = 8;
 #if __JHEXEN__
@@ -1330,7 +1266,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
         if(!(thing->flags & MF_TELEPORT)
            // The Minotaur floor fire (MT_MNTRFX2) can step up any amount
            && thing->type != MT_MNTRFX2 && thing->type != MT_LIGHTNING_FLOOR &&
-           tmFloorZ - thing->pos[VZ] > 24)
+           map->tmFloorZ - thing->pos[VZ] > 24)
         {
             goto pushline;
         }
@@ -1338,7 +1274,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 
 #if __JHEXEN__
         if(!(thing->flags & (MF_DROPOFF | MF_FLOAT)) &&
-           (tmFloorZ - tmDropoffZ > 24) &&
+           (map->tmFloorZ - map->tmDropoffZ > 24) &&
            !(thing->flags2 & MF2_BLASTED))
         {   // Can't move over a dropoff unless it's been blasted.
             return false;
@@ -1355,30 +1291,30 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
             // Dropoff height limit.
             if(cfg.avoidDropoffs)
             {
-                if(tmFloorZ - tmDropoffZ > 24)
+                if(map->tmFloorZ - map->tmDropoffZ > 24)
                     return false; // Don't stand over dropoff.
             }
             else
             {
-                float                   floorZ = tmFloorZ;
+                float floorZ = map->tmFloorZ;
 
                 if(thing->onMobj)
                 {
                     // Thing is stood on something so use our z position
                     // as the floor.
-                    floorZ = (thing->pos[VZ] > tmFloorZ ?
-                        thing->pos[VZ] : tmFloorZ);
+                    floorZ = (thing->pos[VZ] > map->tmFloorZ ?
+                        thing->pos[VZ] : map->tmFloorZ);
                 }
 
                 if(!dropoff)
                 {
                    if(thing->floorZ - floorZ > 24 ||
-                      thing->dropOffZ - tmDropoffZ > 24)
+                      thing->dropOffZ - map->tmDropoffZ > 24)
                       return false;
                 }
                 else
                 {   // Set fellDown if drop > 24.
-                    fellDown = !(thing->flags & MF_NOGRAVITY) &&
+                    map->fellDown = !(thing->flags & MF_NOGRAVITY) &&
                         thing->pos[VZ] - floorZ > 24;
                 }
             }
@@ -1386,9 +1322,9 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 #endif
 
 #if __JDOOM64__
-        //// \fixme DJS - FIXME! Mother demon fire attack.
+        // @fixme DJS - FIXME! Mother demon fire attack.
         if(!(thing->flags & MF_TELEPORT) /*&& thing->type != MT_SPAWNFIRE*/
-            && tmFloorZ - thing->pos[VZ] > 24)
+            && map->tmFloorZ - thing->pos[VZ] > 24)
         { // Too big a step up
             CheckMissileImpact(thing);
             return false;
@@ -1398,8 +1334,8 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 #if __JHEXEN__
         // Must stay within a sector of a certain floor type?
         if((thing->flags2 & MF2_CANTLEAVEFLOORPIC) &&
-           (tmFloorMaterial != DMU_GetPtrp(thing->subsector, DMU_FLOOR_MATERIAL) ||
-            tmFloorZ - thing->pos[VZ] != 0))
+           (map->tmFloorMaterial != DMU_GetPtrp(thing->subsector, DMU_FLOOR_MATERIAL) ||
+            map->tmFloorZ - thing->pos[VZ] != 0))
         {
             return false;
         }
@@ -1408,7 +1344,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
 #if !__JHEXEN__
         // $dropoff: prevent falling objects from going up too many steps.
         if(!thing->player && (thing->intFlags & MIF_FALLING) &&
-           tmFloorZ - thing->pos[VZ] > (thing->mom[MX] * thing->mom[MX]) +
+           map->tmFloorZ - thing->pos[VZ] > (thing->mom[MX] * thing->mom[MX]) +
                                        (thing->mom[MY] * thing->mom[MY]))
         {
             return false;
@@ -1423,10 +1359,10 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
     oldpos[VY] = thing->pos[VY];
     oldpos[VZ] = thing->pos[VZ];
 
-    thing->floorZ = tmFloorZ;
-    thing->ceilingZ = tmCeilingZ;
+    thing->floorZ = map->tmFloorZ;
+    thing->ceilingZ = map->tmCeilingZ;
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
-    thing->dropOffZ = tmDropoffZ; // $dropoff_fix: keep track of dropoffs.
+    thing->dropOffZ = map->tmDropoffZ; // $dropoff_fix: keep track of dropoffs.
 #endif
 
     thing->pos[VX] = x;
@@ -1452,7 +1388,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
     // If any special lines were hit, do the effect.
     if(!(thing->flags & (MF_TELEPORT | MF_NOCLIP)))
     {
-        while((ld = P_PopIterList(spechit)) != NULL)
+        while((ld = P_PopIterList(GameMap_SpecHits(map))) != NULL)
         {
             // See if the line was crossed.
             if(P_ToXLine(ld)->special)
@@ -1488,13 +1424,13 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
   pushline:
     if(!(thing->flags & (MF_TELEPORT | MF_NOCLIP)))
     {
-        if(tmThing->flags2 & MF2_BLASTED)
+        if(map->tmThing->flags2 & MF2_BLASTED)
         {
-            P_DamageMobj(tmThing, NULL, NULL, tmThing->info->mass >> 5, false);
+            P_DamageMobj(map->tmThing, NULL, NULL, map->tmThing->info->mass >> 5, false);
         }
 
-        P_IterListResetIterator(spechit, false);
-        while((ld = P_IterListIterator(spechit)) != NULL)
+        P_IterListResetIterator(GameMap_SpecHits(map), false);
+        while((ld = P_IterListIterator(GameMap_SpecHits(map))) != NULL)
         {
             // See if the line was crossed.
             side = DMU_PointOnLineDefSide(thing->pos[VX], thing->pos[VY], ld);
@@ -1516,13 +1452,14 @@ boolean P_TryMove(mobj_t* thing, float x, float y, boolean dropoff,
     return P_TryMove2(thing, x, y);
 #else
     // $dropoff_fix
-    boolean             res = P_TryMove2(thing, x, y, dropoff);
+    gamemap_t* map = P_CurrentGameMap();
+    boolean res = P_TryMove2(thing, x, y, dropoff);
 
-    if(!res && tmHitLine)
+    if(!res && map->tmHitLine)
     {
         // Move not possible, see if the thing hit a line and send a Hit
         // event to it.
-        XL_HitLine(tmHitLine, DMU_PointOnLineDefSide(thing->pos[VX], thing->pos[VY], tmHitLine),
+        XL_HitLine(map->tmHitLine, DMU_PointOnLineDefSide(thing->pos[VX], thing->pos[VY], map->tmHitLine),
                    thing);
     }
 
@@ -1534,29 +1471,26 @@ boolean P_TryMove(mobj_t* thing, float x, float y, boolean dropoff,
 }
 
 /**
- * \fixme DJS - This routine has gotten way too big, split if(in->isaline)
+ * @fixme DJS - This routine has gotten way too big, split if(in->isaline)
  * to a seperate routine?
  */
 boolean PTR_ShootTraverse(intercept_t* in)
 {
-#if __JHEXEN__
-    extern mobj_t lavaInflictor;
-#endif
-
+    gamemap_t* map = P_CurrentGameMap();
     int divisor;
     float pos[3], frac, slope, dist, thingTopSlope, thingBottomSlope, cTop,
         cBottom, d[3], step, stepv[3], tracePos[3], cFloor, cCeil;
     linedef_t* li;
     mobj_t* th;
-    divline_t* trace = (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
+    divline_t* trace = (divline_t*) DD_GetVariable(DD_TRACE_ADDRESS);
     sector_t* frontSec = NULL, *backSec = NULL;
     subsector_t* contact, *originSub;
-    xline_t* xline;
+    xlinedef_t* xline;
     boolean lineWasHit;
 
     tracePos[VX] = FIX2FLT(trace->pos[VX]);
     tracePos[VY] = FIX2FLT(trace->pos[VY]);
-    tracePos[VZ] = shootZ;
+    tracePos[VZ] = map->shootZ;
 
     if(in->type == ICPT_LINE)
     {
@@ -1570,7 +1504,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
             return true; // Continue traversal.
 
         if(xline->special)
-            P_ActivateLine(li, shootThing, 0, SPAC_IMPACT);
+            P_ActivateLine(li, map->shootThing, 0, SPAC_IMPACT);
 
         if(!backSec)
             goto hitline;
@@ -1582,13 +1516,13 @@ boolean PTR_ShootTraverse(intercept_t* in)
 
         // Crosses a two sided line.
         DMU_LineOpening(li);
-        dist = attackRange * in->frac;
+        dist = map->attackRange * in->frac;
 
         if(DMU_GetFloatp(frontSec, DMU_FLOOR_HEIGHT) !=
            DMU_GetFloatp(backSec, DMU_FLOOR_HEIGHT))
         {
             slope = (OPENBOTTOM - tracePos[VZ]) / dist;
-            if(slope > aimSlope)
+            if(slope > map->aimSlope)
                 goto hitline;
         }
 
@@ -1596,7 +1530,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
            DMU_GetFloatp(backSec, DMU_CEILING_HEIGHT))
         {
             slope = (OPENTOP - tracePos[VZ]) / dist;
-            if(slope < aimSlope)
+            if(slope < map->aimSlope)
                 goto hitline;
         }
 
@@ -1607,10 +1541,10 @@ boolean PTR_ShootTraverse(intercept_t* in)
       hitline:
 
         // Position a bit closer.
-        frac = in->frac - (4 / attackRange);
+        frac = in->frac - (4 / map->attackRange);
         pos[VX] = tracePos[VX] + (FIX2FLT(trace->dX) * frac);
         pos[VY] = tracePos[VY] + (FIX2FLT(trace->dY) * frac);
-        pos[VZ] = tracePos[VZ] + (aimSlope * (frac * attackRange));
+        pos[VZ] = tracePos[VZ] + (map->aimSlope * (frac * map->attackRange));
 
         if(backSec)
         {
@@ -1703,14 +1637,14 @@ boolean PTR_ShootTraverse(intercept_t* in)
         }
 
         // Spawn bullet puffs.
-        P_SpawnPuff(pos[VX], pos[VY], pos[VZ], P_Random() << 24);
+        P_SpawnPuff(map, pos[VX], pos[VY], pos[VZ], P_Random() << 24);
 
 #if !__JHEXEN__
         if(lineWasHit && xline->special)
         {
             // Extended shoot events only happen when the bullet actually
             // hits the line.
-            XL_ShootLine(li, 0, shootThing);
+            XL_ShootLine(li, 0, map->shootThing);
         }
 /*
 if(lineWasHit)
@@ -1723,7 +1657,7 @@ if(lineWasHit)
 
     // Shot a mobj.
     th = in->d.mo;
-    if(th == shootThing)
+    if(th == map->shootThing)
         return true; // Can't shoot self.
 
     if(!(th->flags & MF_SHOOTABLE))
@@ -1731,14 +1665,14 @@ if(lineWasHit)
 
 #if __JHERETIC__
     // Check for physical attacks on a ghost.
-    if((th->flags & MF_SHADOW) && shootThing->player->readyWeapon == WT_FIRST)
+    if((th->flags & MF_SHADOW) && map->shootThing->player->readyWeapon == WT_FIRST)
         return true;
 #endif
 
     // Check angles to see if the thing can be aimed at
-    dist = attackRange * in->frac;
+    dist = map->attackRange * in->frac;
     {
-    float               dz = th->pos[VZ];
+    float dz = th->pos[VZ];
 
     if(!(th->player && (th->player->plr->flags & DDPF_CAMERA)))
         dz += th->height;
@@ -1747,57 +1681,56 @@ if(lineWasHit)
     thingTopSlope = dz / dist;
     }
 
-    if(thingTopSlope < aimSlope)
+    if(thingTopSlope < map->aimSlope)
         return true; // Shot over the thing.
 
     thingBottomSlope = (th->pos[VZ] - tracePos[VZ]) / dist;
-    if(thingBottomSlope > aimSlope)
+    if(thingBottomSlope > map->aimSlope)
         return true; // Shot under the thing.
 
     // Hit thing.
 
     // Position a bit closer.
-    frac = in->frac - (10 / attackRange);
+    frac = in->frac - (10 / map->attackRange);
 
     pos[VX] = tracePos[VX] + (FIX2FLT(trace->dX) * frac);
     pos[VY] = tracePos[VY] + (FIX2FLT(trace->dY) * frac);
-    pos[VZ] = tracePos[VZ] + (aimSlope * (frac * attackRange));
+    pos[VZ] = tracePos[VZ] + (map->aimSlope * (frac * map->attackRange));
 
     // Spawn bullet puffs or blood spots, depending on target type.
 #if __JHERETIC__
-    if(puffType == MT_BLASTERPUFF1)
+    if(map->puffType == MT_BLASTERPUFF1)
     {   // Make blaster big puff.
-        mobj_t*             mo;
+        mobj_t* mo;
 
-        if((mo = P_SpawnMobj3fv(MT_BLASTERPUFF2, pos, P_Random() << 24, 0)))
+        if((mo = GameMap_SpawnMobj3fv(map, MT_BLASTERPUFF2, pos, P_Random() << 24, 0)))
             S_StartSound(SFX_BLSHIT, mo);
     }
     else
-        P_SpawnPuff(pos[VX], pos[VY], pos[VZ], P_Random() << 24);
+        P_SpawnPuff(map, pos[VX], pos[VY], pos[VZ], P_Random() << 24);
 #elif __JHEXEN__
-    P_SpawnPuff(pos[VX], pos[VY], pos[VZ], P_Random() << 24);
+    P_SpawnPuff(map, pos[VX], pos[VY], pos[VZ], P_Random() << 24);
 #endif
 
-    if(lineAttackDamage)
+    if(map->lineAttackDamage)
     {
-        int                 damageDone;
+        int damageDone;
 #if __JDOOM__ || __JDOOM64__
-        angle_t             attackAngle =
-            R_PointToAngle2(shootThing->pos[VX], shootThing->pos[VY],
-                            pos[VX], pos[VY]);
+        angle_t attackAngle = R_PointToAngle2(map->shootThing->pos[VX],
+            map->shootThing->pos[VY], pos[VX], pos[VY]);
 #endif
 
 #if __JHEXEN__
-        if(PuffType == MT_FLAMEPUFF2)
+        if(map->puffType == MT_FLAMEPUFF2)
         {   // Cleric FlameStrike does fire damage.
-            damageDone = P_DamageMobj(th, &lavaInflictor, shootThing,
-                                      lineAttackDamage, false);
+            damageDone = P_DamageMobj(th, &map->lavaInflictor, map->shootThing,
+                                      map->lineAttackDamage, false);
         }
         else
 #endif
         {
-            damageDone = P_DamageMobj(th, shootThing, shootThing,
-                                      lineAttackDamage, false);
+            damageDone = P_DamageMobj(th, map->shootThing, map->shootThing,
+                                      map->lineAttackDamage, false);
         }
 
 #if __JHEXEN__
@@ -1809,24 +1742,24 @@ if(lineWasHit)
                 if(damageDone > 0)
                 {   // Damage was inflicted, so shed some blood.
 #if __JDOOM__ || __JDOOM64__
-                    P_SpawnBlood(pos[VX], pos[VY], pos[VZ], lineAttackDamage,
-                                 attackAngle + ANG180);
+                    P_SpawnBlood(map, pos[VX], pos[VY], pos[VZ],
+                        map->lineAttackDamage, attackAngle + ANG180);
 #else
 # if __JHEXEN__
-                    if(PuffType == MT_AXEPUFF || PuffType == MT_AXEPUFF_GLOW)
+                    if(map->puffType == MT_AXEPUFF || map->puffType == MT_AXEPUFF_GLOW)
                     {
-                        P_SpawnBloodSplatter2(pos[VX], pos[VY], pos[VZ], in->d.mo);
+                        P_SpawnBloodSplatter2(map, pos[VX], pos[VY], pos[VZ], in->d.mo);
                     }
                     else
 # endif
                     if(P_Random() < 192)
-                        P_SpawnBloodSplatter(pos[VX], pos[VY], pos[VZ], in->d.mo);
+                        P_SpawnBloodSplatter(map, pos[VX], pos[VY], pos[VZ], in->d.mo);
 #endif
                 }
             }
 #if __JDOOM__ || __JDOOM64__
             else
-                P_SpawnPuff(pos[VX], pos[VY], pos[VZ], P_Random() << 24);
+                P_SpawnPuff(map, pos[VX], pos[VY], pos[VZ], P_Random() << 24);
 #endif
         }
     }
@@ -1840,28 +1773,28 @@ if(lineWasHit)
  */
 boolean PTR_AimTraverse(intercept_t* in)
 {
-    float               slope, thingTopSlope, thingBottomSlope, dist;
-    mobj_t*             th;
-    linedef_t*          li;
-    sector_t*           backSec, *frontSec;
+    gamemap_t* map = P_CurrentGameMap();
+    float slope, thingTopSlope, thingBottomSlope, dist;
+    sector_t* backSec, *frontSec;
+    mobj_t* th;
+    linedef_t* li;
 
     if(in->type == ICPT_LINE)
     {
-        float               fFloor, bFloor;
-        float               fCeil, bCeil;
+        float fFloor, bFloor;
+        float fCeil, bCeil;
 
         li = in->d.lineDef;
 
         if(!(frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR)) ||
            !(backSec  = DMU_GetPtrp(li, DMU_BACK_SECTOR)))
         {
-            float               tracePos[3];
-            divline_t*          trace =
-                (divline_t *) DD_GetVariable(DD_TRACE_ADDRESS);
+            float tracePos[3];
+            divline_t* trace = (divline_t*) DD_GetVariable(DD_TRACE_ADDRESS);
 
             tracePos[VX] = FIX2FLT(trace->pos[VX]);
             tracePos[VY] = FIX2FLT(trace->pos[VY]);
-            tracePos[VZ] = shootZ;
+            tracePos[VZ] = map->shootZ;
 
             if(DMU_PointOnLineDefSide(tracePos[VX], tracePos[VY], li))
                 return true; // Continue traversal.
@@ -1876,7 +1809,7 @@ boolean PTR_AimTraverse(intercept_t* in)
         if(OPENBOTTOM >= OPENTOP)
             return false; // Stop.
 
-        dist = attackRange * in->frac;
+        dist = map->attackRange * in->frac;
 
         fFloor = DMU_GetFloatp(frontSec, DMU_FLOOR_HEIGHT);
         fCeil = DMU_GetFloatp(frontSec, DMU_CEILING_HEIGHT);
@@ -1886,19 +1819,19 @@ boolean PTR_AimTraverse(intercept_t* in)
 
         if(fFloor != bFloor)
         {
-            slope = (OPENBOTTOM - shootZ) / dist;
-            if(slope > bottomSlope)
-                bottomSlope = slope;
+            slope = (OPENBOTTOM - map->shootZ) / dist;
+            if(slope > map->bottomSlope)
+                map->bottomSlope = slope;
         }
 
         if(fCeil != bCeil)
         {
-            slope = (OPENTOP - shootZ) / dist;
-            if(slope < topSlope)
-                topSlope = slope;
+            slope = (OPENTOP - map->shootZ) / dist;
+            if(slope < map->topSlope)
+                map->topSlope = slope;
         }
 
-        if(topSlope <= bottomSlope)
+        if(map->topSlope <= map->bottomSlope)
             return false; // Stop.
 
         return true; // Shot continues...
@@ -1906,7 +1839,7 @@ boolean PTR_AimTraverse(intercept_t* in)
 
     // Shot a mobj.
     th = in->d.mo;
-    if(th == shootThing)
+    if(th == map->shootThing)
         return true; // Can't shoot self.
 
     if(!(th->flags & MF_SHOOTABLE))
@@ -1923,63 +1856,66 @@ boolean PTR_AimTraverse(intercept_t* in)
 #endif
 
     // Check angles to see if the thing can be aimed at.
-    dist = attackRange * in->frac;
+    dist = map->attackRange * in->frac;
     {
-    float               posZ = th->pos[VZ];
+    float posZ = th->pos[VZ];
 
     if(!(th->player && (th->player->plr->flags & DDPF_CAMERA)))
         posZ += th->height;
 
-    thingTopSlope = (posZ - shootZ) / dist;
+    thingTopSlope = (posZ - map->shootZ) / dist;
 
-    if(thingTopSlope < bottomSlope)
+    if(thingTopSlope < map->bottomSlope)
         return true; // Shot over the thing.
 
     // Too far below?
     // $addtocfg $limitautoaimZ:
 #if __JHEXEN__
-    if(posZ < shootZ - attackRange / 1.2f)
+    if(posZ < map->shootZ - map->attackRange / 1.2f)
         return true;
 #endif
     }
 
-    thingBottomSlope = (th->pos[VZ] - shootZ) / dist;
-    if(thingBottomSlope > topSlope)
+    thingBottomSlope = (th->pos[VZ] - map->shootZ) / dist;
+    if(thingBottomSlope > map->topSlope)
         return true; // Shot under the thing.
 
     // Too far above?
     // $addtocfg $limitautoaimZ:
 #if __JHEXEN__
-    if(th->pos[VZ] > shootZ + attackRange / 1.2f)
+    if(th->pos[VZ] > map->shootZ + map->attackRange / 1.2f)
         return true;
 #endif
 
     // This thing can be hit!
-    if(thingTopSlope > topSlope)
-        thingTopSlope = topSlope;
+    if(thingTopSlope > map->topSlope)
+        thingTopSlope = map->topSlope;
 
-    if(thingBottomSlope < bottomSlope)
-        thingBottomSlope = bottomSlope;
+    if(thingBottomSlope < map->bottomSlope)
+        thingBottomSlope = map->bottomSlope;
 
-    aimSlope = (thingTopSlope + thingBottomSlope) / 2;
-    lineTarget = th;
+    map->aimSlope = (thingTopSlope + thingBottomSlope) / 2;
+    map->lineTarget = th;
 
     return false; // Don't go any farther.
 }
 
-float P_AimLineAttack(mobj_t *t1, angle_t angle, float distance)
+float P_AimLineAttack(mobj_t* t1, angle_t angle, float distance)
 {
-    uint                an;
-    float               pos[2];
+    assert(t1);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    uint an;
+    float pos[2];
 
     an = angle >> ANGLETOFINESHIFT;
-    shootThing = t1;
+    map->shootThing = t1;
 
     pos[VX] = t1->pos[VX] + distance * FIX2FLT(finecosine[an]);
     pos[VY] = t1->pos[VY] + distance * FIX2FLT(finesine[an]);
 
     // Determine the z trace origin.
-    shootZ = t1->pos[VZ];
+    map->shootZ = t1->pos[VZ];
 #if __JHEXEN__
     if(t1->player &&
       (t1->player->class == PCLASS_FIGHTER ||
@@ -1990,29 +1926,29 @@ float P_AimLineAttack(mobj_t *t1, angle_t angle, float distance)
 #endif
     {
         if(!(t1->player->plr->flags & DDPF_CAMERA))
-            shootZ += (cfg.plrViewHeight - 5);
+            map->shootZ += (cfg.plrViewHeight - 5);
     }
     else
-        shootZ += (t1->height / 2) + 8;
+        map->shootZ += (t1->height / 2) + 8;
 
 #if __JDOOM__ || __JDOOM64__
-    topSlope = 60;
-    bottomSlope = -topSlope;
+    map->topSlope = 60;
+    map->bottomSlope = -map->topSlope;
 #else
-    topSlope = 100;
-    bottomSlope = -100;
+    map->topSlope = 100;
+    map->bottomSlope = -100;
 #endif
 
-    attackRange = distance;
-    lineTarget = NULL;
+    map->attackRange = distance;
+    map->lineTarget = NULL;
 
     P_PathTraverse(t1->pos[VX], t1->pos[VY], pos[VX], pos[VY],
                    PT_ADDLINEDEFS | PT_ADDMOBJS, PTR_AimTraverse);
 
-    if(lineTarget)
+    if(map->lineTarget)
     {   // While autoaiming, we accept this slope.
         if(!t1->player || !cfg.noAutoAim)
-            return aimSlope;
+            return map->aimSlope;
     }
 
     if(t1->player && cfg.noAutoAim)
@@ -2022,6 +1958,7 @@ float P_AimLineAttack(mobj_t *t1, angle_t angle, float distance)
     }
 
     return 0;
+    }
 }
 
 /**
@@ -2030,18 +1967,21 @@ float P_AimLineAttack(mobj_t *t1, angle_t angle, float distance)
 void P_LineAttack(mobj_t* t1, angle_t angle, float distance, float slope,
                   int damage)
 {
-    uint                an;
-    float               targetPos[2];
+    assert(t1);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    uint an;
+    float targetPos[2];
 
     an = angle >> ANGLETOFINESHIFT;
-    shootThing = t1;
-    lineAttackDamage = damage;
+    map->shootThing = t1;
+    map->lineAttackDamage = damage;
 
     targetPos[VX] = t1->pos[VX] + distance * FIX2FLT(finecosine[an]);
     targetPos[VY] = t1->pos[VY] + distance * FIX2FLT(finesine[an]);
 
     // Determine the z trace origin.
-    shootZ = t1->pos[VZ];
+    map->shootZ = t1->pos[VZ];
 #if __JHEXEN__
     if(t1->player &&
       (t1->player->class == PCLASS_FIGHTER ||
@@ -2052,20 +1992,20 @@ void P_LineAttack(mobj_t* t1, angle_t angle, float distance, float slope,
 #endif
     {
         if(!(t1->player->plr->flags & DDPF_CAMERA))
-            shootZ += cfg.plrViewHeight - 5;
+            map->shootZ += cfg.plrViewHeight - 5;
     }
     else
-        shootZ += (t1->height / 2) + 8;
+        map->shootZ += (t1->height / 2) + 8;
 
-    shootZ -= t1->floorClip;
-    attackRange = distance;
-    aimSlope = slope;
+    map->shootZ -= t1->floorClip;
+    map->attackRange = distance;
+    map->aimSlope = slope;
 
     if(P_PathTraverse(t1->pos[VX], t1->pos[VY], targetPos[VX], targetPos[VY],
                       PT_ADDLINEDEFS | PT_ADDMOBJS, PTR_ShootTraverse))
     {
 #if __JHEXEN__
-        switch(PuffType)
+        switch(map->puffType)
         {
         case MT_PUNCHPUFF:
             S_StartSound(SFX_FIGHTER_PUNCH_MISS, t1);
@@ -2078,14 +2018,15 @@ void P_LineAttack(mobj_t* t1, angle_t angle, float distance, float slope,
             break;
 
         case MT_FLAMEPUFF:
-            P_SpawnPuff(targetPos[VX], targetPos[VY],
-                        shootZ + (slope * distance), P_Random() << 24);
+            P_SpawnPuff(map, targetPos[VX], targetPos[VY],
+                        map->shootZ + (slope * distance), P_Random() << 24);
             break;
 
         default:
             break;
         }
 #endif
+    }
     }
 }
 
@@ -2094,7 +2035,8 @@ void P_LineAttack(mobj_t* t1, angle_t angle, float distance, float slope,
  */
 boolean PIT_RadiusAttack(mobj_t* thing, void* data)
 {
-    float               dx, dy, dz, dist;
+    gamemap_t* map = P_CurrentGameMap();
+    float dx, dy, dz, dist;
 
     if(!(thing->flags & MF_SHOOTABLE))
         return true;
@@ -2114,13 +2056,13 @@ boolean PIT_RadiusAttack(mobj_t* thing, void* data)
 #endif
 
 #if __JHEXEN__
-    if(!damageSource && thing == bombSource) // Don't damage the source of the explosion.
+    if(!map->damageSource && thing == map->bombSource) // Don't damage the source of the explosion.
         return true;
 #endif
 
-    dx = fabs(thing->pos[VX] - bombSpot->pos[VX]);
-    dy = fabs(thing->pos[VY] - bombSpot->pos[VY]);
-    dz = fabs(thing->pos[VZ] - bombSpot->pos[VZ]);
+    dx = fabs(thing->pos[VX] - map->bombSpot->pos[VX]);
+    dy = fabs(thing->pos[VY] - map->bombSpot->pos[VY]);
+    dz = fabs(thing->pos[VZ] - map->bombSpot->pos[VZ]);
 
     dist = (dx > dy? dx : dy);
 
@@ -2137,20 +2079,19 @@ boolean PIT_RadiusAttack(mobj_t* thing, void* data)
     if(dist < 0)
         dist = 0;
 
-    if(dist >= bombDistance)
+    if(dist >= map->bombDistance)
         return true; // Out of range.
 
     // Must be in direct path.
-    if(P_CheckSight(thing, bombSpot))
+    if(P_CheckSight(thing, map->bombSpot))
     {
-        int                 damage;
+        int damage = (map->bombDamage * (map->bombDistance - dist) / map->bombDistance) + 1;
 
-        damage = (bombDamage * (bombDistance - dist) / bombDistance) + 1;
 #if __JHEXEN__
         if(thing->player)
             damage /= 4;
 #endif
-        P_DamageMobj(thing, bombSpot, bombSource, damage, false);
+        P_DamageMobj(thing, map->bombSpot, map->bombSource, damage, false);
     }
 
     return true;
@@ -2166,8 +2107,8 @@ void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage, int distance,
 void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage, int distance)
 #endif
 {
-    float               dist;
-    float               box[4];
+    gamemap_t* map = P_CurrentGameMap();
+    float dist, box[4];
 
     dist = distance + MAXRADIUS;
 
@@ -2176,19 +2117,19 @@ void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage, int distance)
     box[BOXBOTTOM] = spot->pos[VY] - dist;
     box[BOXTOP]    = spot->pos[VY] + dist;
 
-    bombSpot = spot;
-    bombDamage = damage;
-    bombDistance = distance;
+    map->bombSpot = spot;
+    map->bombDamage = damage;
+    map->bombDistance = distance;
 
 #if __JHERETIC__
     if(spot->type == MT_POD && spot->target)
-        bombSource = spot->target;
+        map->bombSource = spot->target;
     else
 #endif
-        bombSource = source;
+        map->bombSource = source;
 
 #if __JHEXEN__
-    damageSource = canDamageSource;
+    map->damageSource = canDamageSource;
 #endif
     VALIDCOUNT++;
     P_MobjsBoxIterator(box, PIT_RadiusAttack, 0);
@@ -2196,8 +2137,9 @@ void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage, int distance)
 
 boolean PTR_UseTraverse(intercept_t* in)
 {
-    int                 side;
-    xline_t*            xline;
+    gamemap_t* map = P_CurrentGameMap();
+    xlinedef_t* xline;
+    int side;
 
     if(in->type != ICPT_LINE)
         return true; // Continue iteration.
@@ -2209,21 +2151,19 @@ boolean PTR_UseTraverse(intercept_t* in)
         DMU_LineOpening(in->d.lineDef);
         if(OPENRANGE <= 0)
         {
-            if(useThing->player)
-                S_StartSound(PCLASS_INFO(useThing->player->class)->failUseSound,
-                             useThing);
+            if(map->useThing->player)
+                S_StartSound(PCLASS_INFO(map->useThing->player->class)->failUseSound, map->useThing);
 
             return false; // Can't use through a wall.
         }
 
 #if __JHEXEN__
-        if(useThing->player)
+        if(map->useThing->player)
         {
-            float       pheight = useThing->pos[VZ] + useThing->height/2;
+            float pheight = map->useThing->pos[VZ] + map->useThing->height/2;
 
             if((OPENTOP < pheight) || (OPENBOTTOM > pheight))
-                S_StartSound(PCLASS_INFO(useThing->player->class)->failUseSound,
-                             useThing);
+                S_StartSound(PCLASS_INFO(map->useThing->player->class)->failUseSound, map->useThing);
         }
 #endif
         // Not a special line, but keep checking.
@@ -2231,8 +2171,7 @@ boolean PTR_UseTraverse(intercept_t* in)
     }
 
     side = 0;
-    if(1 == DMU_PointOnLineDefSide(useThing->pos[VX], useThing->pos[VY],
-                              in->d.lineDef))
+    if(1 == DMU_PointOnLineDefSide(map->useThing->pos[VX], map->useThing->pos[VY], in->d.lineDef))
         side = 1;
 
 #if __JHERETIC__ || __JHEXEN__ || __JSTRIFE__
@@ -2240,7 +2179,7 @@ boolean PTR_UseTraverse(intercept_t* in)
         return false;       // don't use back side
 #endif
 
-    P_ActivateLine(in->d.lineDef, useThing, side, SPAC_USE);
+    P_ActivateLine(in->d.lineDef, map->useThing, side, SPAC_USE);
 
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
     // Can use multiple line specials in a row with the PassThru flag.
@@ -2258,9 +2197,12 @@ boolean PTR_UseTraverse(intercept_t* in)
  */
 void P_UseLines(player_t* player)
 {
-    uint                an;
-    float               pos[3];
-    mobj_t*             mo;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    uint an;
+    float pos[3];
+    mobj_t* mo;
 
     if(IS_CLIENT)
     {
@@ -2272,7 +2214,7 @@ void P_UseLines(player_t* player)
         return;
     }
 
-    useThing = mo = player->plr->mo;
+    map->useThing = mo = player->plr->mo;
 
     an = mo->angle >> ANGLETOFINESHIFT;
 
@@ -2285,6 +2227,7 @@ void P_UseLines(player_t* player)
 
     P_PathTraverse(mo->pos[VX], mo->pos[VY], pos[VX], pos[VY],
                    PT_ADDLINEDEFS, PTR_UseTraverse);
+    }
 }
 
 /**
@@ -2300,7 +2243,8 @@ void P_UseLines(player_t* player)
  */
 static boolean P_ThingHeightClip(mobj_t* thing)
 {
-    boolean             onfloor;
+    gamemap_t* map = P_CurrentGameMap();
+    boolean onfloor;
 
     if(P_MobjIsCamera(thing))
         return false; // Don't height clip cameras.
@@ -2308,10 +2252,10 @@ static boolean P_ThingHeightClip(mobj_t* thing)
     onfloor = (thing->pos[VZ] == thing->floorZ)? true : false;
     P_CheckPosition3fv(thing, thing->pos);
 
-    thing->floorZ = tmFloorZ;
-    thing->ceilingZ = tmCeilingZ;
+    thing->floorZ = map->tmFloorZ;
+    thing->ceilingZ = map->tmCeilingZ;
 #if !__JHEXEN__
-    thing->dropOffZ = tmDropoffZ; // $dropoff_fix: remember dropoffs.
+    thing->dropOffZ = map->tmDropoffZ; // $dropoff_fix: remember dropoffs.
 #endif
 
     if(onfloor)
@@ -2352,27 +2296,28 @@ static boolean P_ThingHeightClip(mobj_t* thing)
  */
 static void P_HitSlideLine(linedef_t* ld)
 {
-    int                 side;
-    unsigned int        an;
-    angle_t             lineAngle, moveAngle, deltaAngle;
-    float               moveLen, newLen, d1[2];
-    slopetype_t         slopeType = DMU_GetIntp(ld, DMU_SLOPE_TYPE);
+    gamemap_t* map = P_CurrentGameMap();
+    int side;
+    unsigned int an;
+    angle_t lineAngle, moveAngle, deltaAngle;
+    float moveLen, newLen, d1[2];
+    slopetype_t slopeType = DMU_GetIntp(ld, DMU_SLOPE_TYPE);
 
     if(slopeType == ST_HORIZONTAL)
     {
-        tmMove[MY] = 0;
+        map->tmMove[MY] = 0;
         return;
     }
     else if(slopeType == ST_VERTICAL)
     {
-        tmMove[MX] = 0;
+        map->tmMove[MX] = 0;
         return;
     }
 
-    side = DMU_PointOnLineDefSide(slideMo->pos[VX], slideMo->pos[VY], ld);
+    side = DMU_PointOnLineDefSide(map->slideMo->pos[VX], map->slideMo->pos[VY], ld);
     DMU_GetFloatpv(ld, DMU_DXY, d1);
     lineAngle = R_PointToAngle2(0, 0, d1[0], d1[1]);
-    moveAngle = R_PointToAngle2(0, 0, tmMove[MX], tmMove[MY]) + 10;
+    moveAngle = R_PointToAngle2(0, 0, map->tmMove[MX], map->tmMove[MY]) + 10;
 
     if(side == 1)
         lineAngle += ANG180;
@@ -2380,18 +2325,19 @@ static void P_HitSlideLine(linedef_t* ld)
     if(deltaAngle > ANG180)
         deltaAngle += ANG180;
 
-    moveLen = P_ApproxDistance(tmMove[MX], tmMove[MY]);
+    moveLen = P_ApproxDistance(map->tmMove[MX], map->tmMove[MY]);
     an = deltaAngle >> ANGLETOFINESHIFT;
     newLen = moveLen * FIX2FLT(finecosine[an]);
 
     an = lineAngle >> ANGLETOFINESHIFT;
-    tmMove[MX] = newLen * FIX2FLT(finecosine[an]);
-    tmMove[MY] = newLen * FIX2FLT(finesine[an]);
+    map->tmMove[MX] = newLen * FIX2FLT(finecosine[an]);
+    map->tmMove[MY] = newLen * FIX2FLT(finesine[an]);
 }
 
 boolean PTR_SlideTraverse(intercept_t* in)
 {
-    linedef_t*          li;
+    gamemap_t* map = P_CurrentGameMap();
+    linedef_t* li;
 
     if(in->type != ICPT_LINE)
         Con_Error("PTR_SlideTraverse: Not a line?");
@@ -2400,7 +2346,7 @@ boolean PTR_SlideTraverse(intercept_t* in)
 
     if(!DMU_GetPtrp(li, DMU_FRONT_SECTOR) || !DMU_GetPtrp(li, DMU_BACK_SECTOR))
     {
-        if(DMU_PointOnLineDefSide(slideMo->pos[VX], slideMo->pos[VY], li))
+        if(DMU_PointOnLineDefSide(map->slideMo->pos[VX], map->slideMo->pos[VY], li))
             return true; // Don't hit the back side.
 
         goto isblocking;
@@ -2413,13 +2359,13 @@ boolean PTR_SlideTraverse(intercept_t* in)
 
     DMU_LineOpening(li); // Set OPENRANGE, OPENTOP, OPENBOTTOM...
 
-    if(OPENRANGE < slideMo->height)
+    if(OPENRANGE < map->slideMo->height)
         goto isblocking; // Doesn't fit.
 
-    if(OPENTOP - slideMo->pos[VZ] < slideMo->height)
+    if(OPENTOP - map->slideMo->pos[VZ] < map->slideMo->height)
         goto isblocking; // mobj is too high.
 
-    if(OPENBOTTOM - slideMo->pos[VZ] > 24)
+    if(OPENBOTTOM - map->slideMo->pos[VZ] > 24)
         goto isblocking; // Too big a step up.
 
     // This line doesn't block movement.
@@ -2427,19 +2373,19 @@ boolean PTR_SlideTraverse(intercept_t* in)
 
     // The line does block movement, see if it is closer than best so far.
   isblocking:
-    if(in->frac < bestSlideFrac)
+    if(in->frac < map->bestSlideFrac)
     {
-        secondSlideFrac = bestSlideFrac;
-        secondSlideLine = bestSlideLine;
-        bestSlideFrac = in->frac;
-        bestSlideLine = li;
+        map->secondSlideFrac = map->bestSlideFrac;
+        map->secondSlideLine = map->bestSlideLine;
+        map->bestSlideFrac = in->frac;
+        map->bestSlideLine = li;
     }
 
     return false; // Stop.
 }
 
 /**
- * \fixme The momx / momy move is bad, so try to slide along a wall.
+ * @fixme The momx / momy move is bad, so try to slide along a wall.
  * Find the first line hit, move flush to it, and slide along it
  *
  * This is a kludgy mess.
@@ -2448,9 +2394,12 @@ boolean PTR_SlideTraverse(intercept_t* in)
  */
 void P_SlideMove(mobj_t* mo)
 {
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     int hitcount = 3;
 
-    slideMo = mo;
+    map->slideMo = mo;
 
     do
     {
@@ -2486,7 +2435,7 @@ void P_SlideMove(mobj_t* mo)
             trailpos[VY] += mo->radius;
         }
 
-        bestSlideFrac = 1;
+        map->bestSlideFrac = 1;
 
         P_PathTraverse(leadpos[VX], leadpos[VY],
                        leadpos[VX] + mo->mom[MX], leadpos[VY] + mo->mom[MY],
@@ -2499,7 +2448,7 @@ void P_SlideMove(mobj_t* mo)
                        PT_ADDLINEDEFS, PTR_SlideTraverse);
 
         // Move up to the wall.
-        if(bestSlideFrac == 1)
+        if(map->bestSlideFrac == 1)
         {
             // The move must have hit the middle, so stairstep.
           stairstep:
@@ -2548,11 +2497,11 @@ void P_SlideMove(mobj_t* mo)
         }
 
         // Fudge a bit to make sure it doesn't hit.
-        bestSlideFrac -= (1.0f / 32);
-        if(bestSlideFrac > 0)
+        map->bestSlideFrac -= (1.0f / 32);
+        if(map->bestSlideFrac > 0)
         {
-            newPos[VX] = mo->mom[MX] * bestSlideFrac;
-            newPos[VY] = mo->mom[MY] * bestSlideFrac;
+            newPos[VX] = mo->mom[MX] * map->bestSlideFrac;
+            newPos[VY] = mo->mom[MY] * map->bestSlideFrac;
             newPos[VZ] = DDMAXFLOAT; // Just initialize with *something*.
 
             // $dropoff_fix: Allow objects to drop off ledges
@@ -2568,28 +2517,27 @@ void P_SlideMove(mobj_t* mo)
 
         // Now continue along the wall.
         // First calculate remainder.
-        bestSlideFrac = 1 - (bestSlideFrac + (1.0f / 32));
-        if(bestSlideFrac > 1)
-            bestSlideFrac = 1;
-        if(bestSlideFrac <= 0)
+        map->bestSlideFrac = 1 - (map->bestSlideFrac + (1.0f / 32));
+        if(map->bestSlideFrac > 1)
+            map->bestSlideFrac = 1;
+        if(map->bestSlideFrac <= 0)
             break;
 
-        tmMove[MX] = mo->mom[MX] * bestSlideFrac;
-        tmMove[MY] = mo->mom[MY] * bestSlideFrac;
+        map->tmMove[MX] = mo->mom[MX] * map->bestSlideFrac;
+        map->tmMove[MY] = mo->mom[MY] * map->bestSlideFrac;
 
-        P_HitSlideLine(bestSlideLine); // Clip the move.
+        P_HitSlideLine(map->bestSlideLine); // Clip the move.
 
-        mo->mom[MX] = tmMove[MX];
-        mo->mom[MY] = tmMove[MY];
+        mo->mom[MX] = map->tmMove[MX];
+        mo->mom[MY] = map->tmMove[MY];
 
     // $dropoff_fix: Allow objects to drop off ledges:
 #if __JHEXEN__
-    } while(!P_TryMove(mo, mo->pos[VX] + tmMove[MX],
-                           mo->pos[VY] + tmMove[MY]));
+    } while(!P_TryMove(mo, mo->pos[VX] + map->tmMove[MX], mo->pos[VY] + map->tmMove[MY]));
 #else
-    } while(!P_TryMove(mo, mo->pos[VX] + tmMove[MX],
-                           mo->pos[VY] + tmMove[MY], true, true));
+    } while(!P_TryMove(mo, mo->pos[VX] + map->tmMove[MX], mo->pos[VY] + map->tmMove[MY], true, true));
 #endif
+    }
 }
 
 /**
@@ -2609,8 +2557,9 @@ void P_SlideMove(mobj_t* mo)
  */
 int PIT_ChangeSector(void* ptr, void* data)
 {
-    mobj_t*             thing = (mobj_t*) ptr;
-    mobj_t*             mo;
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* thing = (mobj_t*) ptr;
+    mobj_t* mo;
 
     if(P_ThingHeightClip(thing))
         return true; // Keep checking...
@@ -2668,8 +2617,8 @@ int PIT_ChangeSector(void* ptr, void* data)
     if(!(thing->flags & MF_SHOOTABLE))
         return true; // Keep checking...
 
-    noFit = true;
-    if(crushChange > 0 && !(mapTime & 3))
+    map->noFit = true;
+    if(map->crushChange > 0 && !(map->time & 3))
     {
         P_DamageMobj(thing, NULL, NULL, 10, false);
 #if __JDOOM__ || __JDOOM64__
@@ -2680,7 +2629,7 @@ int PIT_ChangeSector(void* ptr, void* data)
 #endif
         {
             // Spray blood in a random direction.
-            if((mo = P_SpawnMobj3f(MT_BLOOD, thing->pos[VX], thing->pos[VY],
+            if((mo = GameMap_SpawnMobj3f(map, MT_BLOOD, thing->pos[VX], thing->pos[VY],
                                    thing->pos[VZ] + (thing->height /2),
                                    P_Random() << 24, 0)))
             {
@@ -2699,13 +2648,18 @@ int PIT_ChangeSector(void* ptr, void* data)
  */
 boolean P_ChangeSector(sector_t* sector, boolean crunch)
 {
-    noFit = false;
-    crushChange = crunch;
+    assert(sector);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+
+    map->noFit = false;
+    map->crushChange = crunch;
 
     VALIDCOUNT++;
     DMU_Iteratep(sector, DMU_MOBJS, PIT_ChangeSector, 0);
 
-    return noFit;
+    return map->noFit;
+    }
 }
 
 /**
@@ -2745,18 +2699,19 @@ boolean P_TestMobjLocation(mobj_t* mobj)
 #if __JDOOM64__ || __JHERETIC__
 static void CheckMissileImpact(mobj_t* mobj)
 {
-    int                 size;
-    linedef_t*          ld;
+    gamemap_t* map = P_CurrentGameMap();
+    int size;
+    linedef_t* ld;
 
     if(!mobj->target || !mobj->target->player ||
        !(mobj->flags & MF_MISSILE))
         return;
 
-    if(!(size = P_IterListSize(spechit)))
+    if(!(size = P_IterListSize(GameMap_SpecHits(map))))
         return;
 
-    P_IterListResetIterator(spechit, false);
-    while((ld = P_IterListIterator(spechit)) != NULL)
+    P_IterListResetIterator(GameMap_SpecHits(map), false);
+    while((ld = P_IterListIterator(GameMap_SpecHits(map))) != NULL)
         P_ActivateLine(ld, mobj->target, 0, SPAC_IMPACT);
 }
 #endif
@@ -2764,32 +2719,32 @@ static void CheckMissileImpact(mobj_t* mobj)
 #if __JHEXEN__
 boolean PIT_ThrustStompThing(mobj_t* thing, void* data)
 {
-    float               blockdist;
+    gamemap_t* map = P_CurrentGameMap();
+    float blockdist;
 
     if(!(thing->flags & MF_SHOOTABLE))
         return true;
-
-    blockdist = thing->radius + tsThing->radius;
-    if(fabs(thing->pos[VX] - tsThing->pos[VX]) >= blockdist ||
-       fabs(thing->pos[VY] - tsThing->pos[VY]) >= blockdist ||
-       (thing->pos[VZ] > tsThing->pos[VZ] + tsThing->height))
-        return true; // Didn't hit it.
-
-    if(thing == tsThing)
+    if(thing == map->tsThing)
         return true; // Don't clip against self.
 
-    P_DamageMobj(thing, tsThing, tsThing, 10001, false);
-    tsThing->args[1] = 1; // Mark thrust thing as bloody.
+    blockdist = thing->radius + map->tsThing->radius;
+    if(fabs(thing->pos[VX] - map->tsThing->pos[VX]) >= blockdist ||
+       fabs(thing->pos[VY] - map->tsThing->pos[VY]) >= blockdist ||
+       (thing->pos[VZ] > map->tsThing->pos[VZ] + map->tsThing->height))
+        return true; // Didn't hit it.
+
+    P_DamageMobj(thing, map->tsThing, map->tsThing, 10001, false);
+    map->tsThing->args[1] = 1; // Mark thrust thing as bloody.
 
     return true;
 }
 
 void PIT_ThrustSpike(mobj_t* actor)
 {
-    float               bbox[4];
-    float               radius;
+    gamemap_t* map = P_CurrentGameMap();
+    float bbox[4], radius;
 
-    tsThing = actor;
+    map->tsThing = actor;
     radius = actor->info->radius + MAXRADIUS;
 
     bbox[BOXLEFT]   = bbox[BOXRIGHT] = actor->pos[VX];
@@ -2807,32 +2762,36 @@ void PIT_ThrustSpike(mobj_t* actor)
 
 boolean PIT_CheckOnmobjZ(mobj_t* thing, void* data)
 {
-    float               blockdist;
+    gamemap_t* map = P_CurrentGameMap();
+    float blockdist;
 
     if(!(thing->flags & (MF_SOLID | MF_SPECIAL | MF_SHOOTABLE)))
         return true; // Can't hit thing.
 
-    blockdist = thing->radius + tmThing->radius;
-    if(fabs(thing->pos[VX] - tm[VX]) >= blockdist ||
-       fabs(thing->pos[VY] - tm[VY]) >= blockdist)
-        return true; // Didn't hit thing.
-
-    if(thing == tmThing)
+    if(thing == map->tmThing)
         return true; // Don't clip against self.
 
-    if(tmThing->pos[VZ] > thing->pos[VZ] + thing->height)
-        return true;
-    else if(tmThing->pos[VZ] + tmThing->height < thing->pos[VZ])
+    blockdist = thing->radius + map->tmThing->radius;
+    if(fabs(thing->pos[VX] - map->tm[VX]) >= blockdist ||
+       fabs(thing->pos[VY] - map->tm[VY]) >= blockdist)
+        return true; // Didn't hit thing.
+
+    if(map->tmThing->pos[VZ] > thing->pos[VZ] + thing->height)
+        return true; // Over thing.
+    else if(map->tmThing->pos[VZ] + map->tmThing->height < thing->pos[VZ])
         return true; // Under thing.
 
     if(thing->flags & MF_SOLID)
-        onMobj = thing;
+        map->onMobj = thing;
 
     return !(thing->flags & MF_SOLID);
 }
 
 mobj_t* P_CheckOnMobj(mobj_t* thing)
 {
+    assert(thing);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     subsector_t* newSSec;
     float pos[3], box[4];
     mobj_t oldMo;
@@ -2841,35 +2800,35 @@ mobj_t* P_CheckOnMobj(mobj_t* thing)
     pos[VY] = thing->pos[VY];
     pos[VZ] = thing->pos[VZ];
 
-    tmThing = thing;
+    map->tmThing = thing;
 
-    //// \fixme Do this properly!
-    oldMo = *thing; // Save the old mobj before the fake z movement.
+    // @fixme Do this properly!
+    memcpy(&oldMo, thing, sizeof(oldMo)); // Save the old mobj before the fake z movement.
 
-    P_FakeZMovement(tmThing);
+    P_FakeZMovement(map->tmThing);
 
-    tm[VX] = pos[VX];
-    tm[VY] = pos[VY];
-    tm[VZ] = pos[VZ];
+    map->tm[VX] = pos[VX];
+    map->tm[VY] = pos[VY];
+    map->tm[VZ] = pos[VZ];
 
-    tmBBox[BOXTOP]    = pos[VY] + tmThing->radius;
-    tmBBox[BOXBOTTOM] = pos[VY] - tmThing->radius;
-    tmBBox[BOXRIGHT]  = pos[VX] + tmThing->radius;
-    tmBBox[BOXLEFT]   = pos[VX] - tmThing->radius;
+    map->tmBBox[BOXTOP]    = pos[VY] + map->tmThing->radius;
+    map->tmBBox[BOXBOTTOM] = pos[VY] - map->tmThing->radius;
+    map->tmBBox[BOXRIGHT]  = pos[VX] + map->tmThing->radius;
+    map->tmBBox[BOXLEFT]   = pos[VX] - map->tmThing->radius;
 
     newSSec = P_PointInSubSector(pos[VX], pos[VY]);
-    ceilingLine = floorLine = NULL;
+    map->ceilingLine = map->floorLine = NULL;
 
     // The base floor/ceiling is from the subsector that contains the
     // point. Any contacted lines the step closer together will adjust them.
 
-    tmFloorZ = tmDropoffZ = DMU_GetFloatp(newSSec, DMU_FLOOR_HEIGHT);
-    tmCeilingZ = DMU_GetFloatp(newSSec, DMU_CEILING_HEIGHT);
-    tmFloorMaterial = DMU_GetPtrp(newSSec, DMU_FLOOR_MATERIAL);
+    map->tmFloorZ = map->tmDropoffZ = DMU_GetFloatp(newSSec, DMU_FLOOR_HEIGHT);
+    map->tmCeilingZ = DMU_GetFloatp(newSSec, DMU_CEILING_HEIGHT);
+    map->tmFloorMaterial = DMU_GetPtrp(newSSec, DMU_FLOOR_MATERIAL);
 
-    P_EmptyIterList(spechit);
+    P_EmptyIterList(GameMap_SpecHits(map));
 
-    if(tmThing->flags & MF_NOCLIP)
+    if(map->tmThing->flags & MF_NOCLIP)
         return NULL;
 
     // Check things first, possibly picking things up the bounding box is
@@ -2877,21 +2836,22 @@ mobj_t* P_CheckOnMobj(mobj_t* thing)
     // based on their origin point, and can overlap into adjacent blocks by
     // up to MAXRADIUS.
 
-    box[BOXLEFT]   = tmBBox[BOXLEFT]   - MAXRADIUS;
-    box[BOXRIGHT]  = tmBBox[BOXRIGHT]  + MAXRADIUS;
-    box[BOXBOTTOM] = tmBBox[BOXBOTTOM] - MAXRADIUS;
-    box[BOXTOP]    = tmBBox[BOXTOP]    + MAXRADIUS;
+    box[BOXLEFT]   = map->tmBBox[BOXLEFT]   - MAXRADIUS;
+    box[BOXRIGHT]  = map->tmBBox[BOXRIGHT]  + MAXRADIUS;
+    box[BOXBOTTOM] = map->tmBBox[BOXBOTTOM] - MAXRADIUS;
+    box[BOXTOP]    = map->tmBBox[BOXTOP]    + MAXRADIUS;
 
     VALIDCOUNT++;
     if(!P_MobjsBoxIterator(box, PIT_CheckOnmobjZ, 0))
     {
-        *tmThing = oldMo;
-        return onMobj;
+        memcpy(map->tmThing, &oldMo, sizeof(mobj_t));
+        return map->onMobj;
     }
 
-    *tmThing = oldMo;
+    memcpy(map->tmThing, &oldMo, sizeof(mobj_t));
 
     return NULL;
+    }
 }
 
 /**
@@ -2899,8 +2859,8 @@ mobj_t* P_CheckOnMobj(mobj_t* thing)
  */
 static void P_FakeZMovement(mobj_t* mo)
 {
-    float               dist;
-    float               delta;
+    gamemap_t* map = P_CurrentGameMap();
+    float dist, delta;
 
     if(P_MobjIsCamera(mo))
         return;
@@ -2924,9 +2884,9 @@ static void P_FakeZMovement(mobj_t* mo)
     }
 
     if(mo->player && (mo->flags2 & MF2_FLY) && !(mo->pos[VZ] <= mo->floorZ) &&
-       (mapTime & 2))
+       (map->time & 2))
     {
-        mo->pos[VZ] += FIX2FLT(finesine[(FINEANGLES / 20 * mapTime >> 2) & FINEMASK]);
+        mo->pos[VZ] += FIX2FLT(finesine[(FINEANGLES / 20 * map->time >> 2) & FINEMASK]);
     }
 
     // Clip movement.
@@ -2986,7 +2946,8 @@ static void checkForPushSpecial(linedef_t* line, int side, mobj_t* mobj)
 
 boolean PTR_BounceTraverse(intercept_t* in)
 {
-    linedef_t*          li;
+    gamemap_t* map = P_CurrentGameMap();
+    linedef_t* li;
 
     if(in->type != ICPT_LINE)
         Con_Error("PTR_BounceTraverse: Not a line?");
@@ -2995,7 +2956,7 @@ boolean PTR_BounceTraverse(intercept_t* in)
 
     if(!DMU_GetPtrp(li, DMU_FRONT_SECTOR) || !DMU_GetPtrp(li, DMU_BACK_SECTOR))
     {
-        if(DMU_PointOnLineDefSide(slideMo->pos[VX], slideMo->pos[VY], li))
+        if(DMU_PointOnLineDefSide(map->slideMo->pos[VX], map->slideMo->pos[VY], li))
             return true; // Don't hit the back side.
 
         goto bounceblocking;
@@ -3003,22 +2964,22 @@ boolean PTR_BounceTraverse(intercept_t* in)
 
     DMU_LineOpening(li); // Set OPENRANGE, OPENTOP, OPENBOTTOM...
 
-    if(OPENRANGE < slideMo->height)
+    if(OPENRANGE < map->slideMo->height)
         goto bounceblocking; // Doesn't fit.
 
-    if(OPENTOP - slideMo->pos[VZ] < slideMo->height)
+    if(OPENTOP - map->slideMo->pos[VZ] < map->slideMo->height)
         goto bounceblocking; // Mobj is too high...
 
     return true; // This line doesn't block movement...
 
     // the line does block movement, see if it is closer than best so far.
   bounceblocking:
-    if(in->frac < bestSlideFrac)
+    if(in->frac < map->bestSlideFrac)
     {
-        secondSlideFrac = bestSlideFrac;
-        secondSlideLine = bestSlideLine;
-        bestSlideFrac = in->frac;
-        bestSlideLine = li;
+        map->secondSlideFrac = map->bestSlideFrac;
+        map->secondSlideLine = map->bestSlideLine;
+        map->bestSlideFrac = in->frac;
+        map->bestSlideLine = li;
     }
 
     return false; // Stop.
@@ -3026,12 +2987,15 @@ boolean PTR_BounceTraverse(intercept_t* in)
 
 void P_BounceWall(mobj_t* mo)
 {
-    int                 side;
-    unsigned int        an;
-    float               moveLen, leadPos[3], d1[2];
-    angle_t             lineAngle, moveAngle, deltaAngle;
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int side;
+    unsigned int an;
+    float moveLen, leadPos[3], d1[2];
+    angle_t lineAngle, moveAngle, deltaAngle;
 
-    slideMo = mo;
+    map->slideMo = mo;
 
     // Trace along the three leading corners.
     leadPos[VX] = mo->pos[VX];
@@ -3048,16 +3012,16 @@ void P_BounceWall(mobj_t* mo)
     else
         leadPos[VY] -= mo->radius;
 
-    bestSlideFrac = 1;
+    map->bestSlideFrac = 1;
     P_PathTraverse(leadPos[VX], leadPos[VY],
                    leadPos[VX] + mo->mom[MX], leadPos[VY] + mo->mom[MY],
                    PT_ADDLINEDEFS, PTR_BounceTraverse);
 
-    if(!bestSlideLine)
-        return; // We don't want to crash.
+    if(!map->bestSlideLine)
+        return;
 
-    side = DMU_PointOnLineDefSide(mo->pos[VX], mo->pos[VY], bestSlideLine);
-    DMU_GetFloatpv(bestSlideLine, DMU_DXY, d1);
+    side = DMU_PointOnLineDefSide(mo->pos[VX], mo->pos[VY], map->bestSlideLine);
+    DMU_GetFloatpv(map->bestSlideLine, DMU_DXY, d1);
     lineAngle = R_PointToAngle2(0, 0, d1[0], d1[1]);
     if(side == 1)
         lineAngle += ANG180;
@@ -3074,6 +3038,7 @@ void P_BounceWall(mobj_t* mo)
     an = deltaAngle >> ANGLETOFINESHIFT;
     mo->mom[MX] = moveLen * FIX2FLT(finecosine[an]);
     mo->mom[MY] = moveLen * FIX2FLT(finesine[an]);
+    }
 }
 
 boolean PTR_PuzzleItemTraverse(intercept_t* in)
@@ -3082,8 +3047,9 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
     {
     case ICPT_LINE: // Linedef.
         {
-        linedef_t*          line = in->d.lineDef;
-        xline_t*            xline = P_ToXLine(line);
+        gamemap_t* map = P_CurrentGameMap();
+        linedef_t* line = in->d.lineDef;
+        xlinedef_t* xline = P_ToXLine(line);
 
         if(xline->special != USE_PUZZLE_ITEM_SPECIAL)
         {
@@ -3091,11 +3057,11 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
 
             if(OPENRANGE <= 0)
             {
-                sfxenum_t           sound = SFX_NONE;
+                sfxenum_t sound = SFX_NONE;
 
-                if(puzzleItemUser->player)
+                if(map->puzzleItemUser->player)
                 {
-                    switch(puzzleItemUser->player->class)
+                    switch(map->puzzleItemUser->player->class)
                     {
                     case PCLASS_FIGHTER:
                         sound = SFX_PUZZLE_FAIL_FIGHTER;
@@ -3115,46 +3081,46 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
                     }
                 }
 
-                S_StartSound(sound, puzzleItemUser);
+                S_StartSound(sound, map->puzzleItemUser);
                 return false; // Can't use through a wall.
             }
 
             return true; // Continue searching...
         }
 
-        if(DMU_PointOnLineDefSide(puzzleItemUser->pos[VX],
-                                puzzleItemUser->pos[VY], line) == 1)
+        if(DMU_PointOnLineDefSide(map->puzzleItemUser->pos[VX],
+                                  map->puzzleItemUser->pos[VY], line) == 1)
             return false; // Don't use back sides.
 
-        if(puzzleItemType != xline->arg1)
+        if(map->puzzleItemType != xline->arg1)
             return false; // Item type doesn't match.
 
-        P_StartACS(xline->arg2, 0, &xline->arg3, puzzleItemUser, line, 0);
+        ActionScriptInterpreter_Start(ActionScriptInterpreter, (actionscriptid_t) xline->arg2, 0, &xline->arg3, map->puzzleItemUser, line, 0);
         xline->special = 0;
-        puzzleActivated = true;
+        map->puzzleActivated = true;
 
         return false; // Stop searching.
         }
 
     case ICPT_MOBJ: // Mobj.
         {
-        mobj_t*             mo = in->d.mo;
+        gamemap_t* map = P_CurrentGameMap();
+        mobj_t* mo = in->d.mo;
 
         if(mo->special != USE_PUZZLE_ITEM_SPECIAL)
             return true; // Wrong special...
 
-        if(puzzleItemType != mo->args[0])
+        if(map->puzzleItemType != mo->args[0])
             return true; // Item type doesn't match...
 
-        P_StartACS(mo->args[1], 0, &mo->args[2], puzzleItemUser, NULL, 0);
+        ActionScriptInterpreter_Start(ActionScriptInterpreter, (actionscriptid_t) mo->args[1], 0, &mo->args[2], map->puzzleItemUser, NULL, 0);
         mo->special = 0;
-        puzzleActivated = true;
+        map->puzzleActivated = true;
 
         return false; // Stop searching.
         }
     default:
-        Con_Error("PTR_PuzzleItemTraverse: Unknown intercept type %i.",
-                  in->type);
+        Con_Error("PTR_PuzzleItemTraverse: Unknown intercept type %i.", in->type);
     }
 
     // Unreachable.
@@ -3171,12 +3137,15 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
  */
 boolean P_UsePuzzleItem(player_t* player, int itemType)
 {
-    int                 angle;
-    float               pos1[3], pos2[3];
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int angle;
+    float pos1[3], pos2[3];
 
-    puzzleItemType = itemType;
-    puzzleItemUser = player->plr->mo;
-    puzzleActivated = false;
+    map->puzzleItemType = itemType;
+    map->puzzleItemUser = player->plr->mo;
+    map->puzzleActivated = false;
 
     angle = player->plr->mo->angle >> ANGLETOFINESHIFT;
 
@@ -3189,11 +3158,12 @@ boolean P_UsePuzzleItem(player_t* player, int itemType)
     P_PathTraverse(pos1[VX], pos1[VY], pos2[VX], pos2[VY],
                    PT_ADDLINEDEFS | PT_ADDMOBJS, PTR_PuzzleItemTraverse);
 
-    if(!puzzleActivated)
+    if(!map->puzzleActivated)
     {
         P_SetYellowMessage(player, TXT_USEPUZZLEFAILED, false);
     }
 
-    return puzzleActivated;
+    return map->puzzleActivated;
+    }
 }
 #endif

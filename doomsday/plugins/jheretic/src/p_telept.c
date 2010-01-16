@@ -31,6 +31,7 @@
 
 #include "jheretic.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "p_map.h"
@@ -55,21 +56,23 @@
 
 // CODE --------------------------------------------------------------------
 
-mobj_t* P_SpawnTeleFog(float x, float y, angle_t angle)
+mobj_t* P_SpawnTeleFog(gamemap_t* map, float x, float y, angle_t angle)
 {
-    return P_SpawnMobj3f(MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
+    assert(map);
+    return GameMap_SpawnMobj3f(map, MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
 }
 
 boolean P_Teleport(mobj_t* thing, float x, float y, angle_t angle,
                    boolean spawnFog)
 {
-    float               oldpos[3];
-    float               aboveFloor;
-    float               fogDelta;
-    player_t*           player;
-    uint                an;
-    angle_t             oldAngle;
-    mobj_t*             fog;
+    assert(thing);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    float oldpos[3], aboveFloor, fogDelta;
+    player_t* player;
+    uint an;
+    angle_t oldAngle;
+    mobj_t* fog;
 
     memcpy(oldpos, thing->pos, sizeof(oldpos));
     aboveFloor = thing->pos[VZ] - thing->floorZ;
@@ -118,13 +121,13 @@ boolean P_Teleport(mobj_t* thing, float x, float y, angle_t angle,
     {
         // Spawn teleport fog at source and destination
         fogDelta = ((thing->flags & MF_MISSILE)? 0 : TELEFOGHEIGHT);
-        if((fog = P_SpawnMobj3f(MT_TFOG, oldpos[VX], oldpos[VY],
+        if((fog = GameMap_SpawnMobj3f(map, MT_TFOG, oldpos[VX], oldpos[VY],
                                 oldpos[VZ] + fogDelta, oldAngle + ANG180, 0)))
             S_StartSound(SFX_TELEPT, fog);
 
         an = angle >> ANGLETOFINESHIFT;
 
-        if((fog = P_SpawnMobj3f(MT_TFOG,
+        if((fog = GameMap_SpawnMobj3f(map, MT_TFOG,
                                 x + 20 * FIX2FLT(finecosine[an]),
                                 y + 20 * FIX2FLT(finesine[an]),
                                 thing->pos[VZ] + fogDelta, angle + ANG180, 0)))
@@ -166,6 +169,7 @@ boolean P_Teleport(mobj_t* thing, float x, float y, angle_t angle,
 
     P_MobjClearSRVO(thing);
     return true;
+    }
 }
 
 typedef struct {
@@ -193,11 +197,11 @@ static int findMobj(void* p, void* context)
     return false; // Stop iteration.
 }
 
-static mobj_t* getTeleportDestination(short tag)
+static mobj_t* getTeleportDestination(gamemap_t* map, short tag)
 {
     iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(tag, false);
+    list = GameMap_SectorIterListForTag(map, tag, false);
     if(list)
     {
         sector_t* sec = NULL;
@@ -223,7 +227,11 @@ static mobj_t* getTeleportDestination(short tag)
 
 boolean EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
 {
-    mobj_t*             dest;
+    assert(line);
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* dest;
 
     if(mo->flags2 & MF2_NOTELEPORT)
         return false;
@@ -232,22 +240,25 @@ boolean EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
     if(side == 1)
         return false;
 
-    if((dest = getTeleportDestination(P_ToXLine(line)->tag)) != NULL)
+    if((dest = getTeleportDestination(map, P_ToXLine(line)->tag)) != NULL)
     {
-        return P_Teleport(mo, dest->pos[VX], dest->pos[VY], dest->angle,
-                          spawnFog);
+        return P_Teleport(mo, dest->pos[VX], dest->pos[VY], dest->angle, spawnFog);
     }
 
     return false;
+    }
 }
 
 #if __JHERETIC__ || __JHEXEN__
 void P_ArtiTele(player_t* player)
 {
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     const playerstart_t* start;
 
     // Get a random deathmatch start.
-    if((start = P_GetPlayerStart(0, deathmatch? -1 : 0, deathmatch)))
+    if((start = GameMap_PlayerStart(map, 0, deathmatch? -1 : 0, deathmatch)))
     {
         P_Teleport(player->plr->mo, start->pos[VX], start->pos[VY],
                    start->angle, true);
@@ -263,6 +274,7 @@ void P_ArtiTele(player_t* player)
            NetSv_Sound(NULL, SFX_WPNUP, player-players); */
         S_StartSound(SFX_WPNUP, NULL);
 #endif
+    }
     }
 }
 #endif

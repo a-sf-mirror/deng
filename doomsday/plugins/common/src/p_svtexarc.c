@@ -39,8 +39,6 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
 #include "dmu_lib.h"
@@ -62,7 +60,7 @@ typedef struct {
 } materialentry_t;
 
 typedef struct {
-    //// \todo Remove fixed limit.
+    // @todo Remove fixed limit.
     materialentry_t table[MAX_ARCHIVED_MATERIALS];
     int             count, version;
 } materialarchive_t;

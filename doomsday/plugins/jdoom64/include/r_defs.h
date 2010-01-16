@@ -34,47 +34,8 @@
 #  error "Using jDoom64 headers without __JDOOM64__"
 #endif
 
-#include "p_xg.h"
-
-#define SP_floororigheight  planes[PLN_FLOOR].origHeight
-#define SP_ceilorigheight   planes[PLN_CEILING].origHeight
-
-// Stair build flags.
-#define BL_BUILT            0x1
-#define BL_WAS_BUILT        0x2
-#define BL_SPREADED         0x4
-
-typedef struct xsector_s {
-    short           special;
-    short           tag;
-
-    // 0 = untraversed, 1,2 = sndlines -1
-    int             soundTraversed;
-
-    // thing that made a sound (or null)
-    struct mobj_s*  soundTarget;
-
-    // thinker_t for reversable actions
-    void*           specialData;
-
-    byte            blFlags; // Used during stair building.
-
-    // stone, metal, heavy, etc...
-    byte            seqType;       // NOT USED ATM
-
-    int             origID; // Original ID from the archived map format.
-
-    struct {
-        float       origHeight;
-    } planes[2];    // {floor, ceiling}
-
-    float           origLight;
-    float           origRGB[3];
-    xgsector_t*     xg;
-} xsector_t;
-
 /**
- * xline_t flags:
+ * LineDef flags:
  */
 
 #define ML_BLOCKMONSTERS        2 // Blocks monsters only.
@@ -99,35 +60,4 @@ typedef struct xsector_s {
 #define ML_PASSUSE              1024
 #define ML_BLOCKALL             2048
 
-typedef struct xline_s {
-    short           special;
-    short           tag;
-    short           flags;
-    // Has been rendered at least once and needs to appear in the map,
-    // for each player.
-    boolean         mapped[MAXPLAYERS];
-    int             validCount;
-
-    int             origID; // Original ID from the archived map format.
-
-    // jDoom64 specific:
-    short           useOn;
-
-    // Extended generalized lines.
-    xgline_t*       xg;
-} xline_t;
-
-// Our private map data structures.
-extern xsector_t* xsectors;
-extern xline_t* xlines;
-
-// If true we are in the process of setting up a map.
-extern boolean mapSetup;
-
-xline_t*        P_ToXLine(linedef_t* line);
-xsector_t*      P_ToXSector(sector_t* sector);
-xsector_t*      P_ToXSectorOfSubsector(subsector_t* subsector);
-
-xline_t*        P_GetXLine(uint index);
-xsector_t*      P_GetXSector(uint index);
 #endif

@@ -41,6 +41,8 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
+#include "dmu_lib.h"
 #include "am_map.h"
 #include "p_saveg.h"
 #include "d_net.h"
@@ -121,18 +123,18 @@ int NetCl_IsCompatible(int other, int us)
 }
 #endif
 
-void NetCl_UpdateGameState(byte *data)
+void NetCl_UpdateGameState(byte* data)
 {
-    byte                gsGameMode = 0;
-    byte                gsFlags = 0;
-    byte                gsEpisode = 0;
-    byte                gsMap = 0;
-    byte                gsDeathmatch = 0;
-    byte                gsMonsters = 0;
-    byte                gsRespawn = 0;
-    byte                gsJumping = 0;
-    byte                gsSkill = 0;
-    float               gsGravity = 0;
+    byte gsGameMode = 0;
+    byte gsFlags = 0;
+    byte gsEpisode = 0;
+    byte gsMap = 0;
+    byte gsDeathmatch = 0;
+    byte gsMonsters = 0;
+    byte gsRespawn = 0;
+    byte gsJumping = 0;
+    byte gsSkill = 0;
+    float gsGravity = 0;
 
     gsGameMode = data[0];
     gsFlags = data[1];
@@ -216,8 +218,8 @@ void NetCl_UpdateGameState(byte *data)
     // Camera init included?
     if(gsFlags & GSF_CAMERA_INIT)
     {
-        player_t   *pl = &players[CONSOLEPLAYER];
-        mobj_t     *mo;
+        player_t* pl = &players[CONSOLEPLAYER];
+        mobj_t* mo;
 
         mo = pl->plr->mo;
         if(mo)
@@ -234,8 +236,8 @@ void NetCl_UpdateGameState(byte *data)
 #else
             P_CheckPosition2f(mo, mo->pos[VX], mo->pos[VY]);
 #endif
-            mo->floorZ = tmFloorZ;
-            mo->ceilingZ = tmCeilingZ;
+            mo->floorZ = DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+            mo->ceilingZ = DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
         }
         else // mo == NULL
         {
@@ -576,7 +578,7 @@ void NetCl_UpdatePlayerState(byte *data, int plrNum)
 #if __JHEXEN__ || __JSTRIFE__
     if(flags & PSF_LOCAL_QUAKE)
     {
-        localQuakeHappening[plrNum] = NetCl_ReadByte();
+        players[plrNum].viewShake = NetCl_ReadByte();
     }
 #endif
 }
@@ -627,8 +629,17 @@ void NetCl_Intermission(byte* data)
 
         G_PrepareWIData();
 #elif __JHEXEN__
-        leaveMap = NetCl_ReadByte();
-        leavePosition = NetCl_ReadByte();
+        {
+        int leaveMap = NetCl_ReadByte();
+        int leavePosition = NetCl_ReadByte();
+
+        for(i = 0; i < MAXPLAYERS; ++i)
+        {
+            player_t* plr = &players[i];
+            plr->leaveMap = leaveMap;
+            plr->leavePosition = leavePosition;
+        }
+        }
 #endif
 
         G_ChangeGameState(GS_INTERMISSION);

@@ -36,6 +36,7 @@
 
 #include "jdoom64.h"
 
+#include "gamemap.h"
 #include "m_argv.h"
 #include "hu_stuff.h"
 #include "hu_menu.h"
@@ -243,7 +244,7 @@ void G_IdentifyVersion(void)
  */
 void G_PreInit(void)
 {
-    int                 i;
+    int i;
 
     G_SetGameMode(indetermined);
 
@@ -543,10 +544,8 @@ void G_Shutdown(void)
     Hu_UnloadData();
     Hu_LogShutdown();
 
-    P_DestroyIterList(spechit);
-    P_DestroyIterList(linespecials);
-    P_DestroyLineTagLists();
-    P_DestroySectorTagLists();
+    P_DestroyGameMap(P_CurrentGameMap());
+
     P_ShutdownInventory();
     AM_Shutdown();
     P_FreeWeaponSlots();

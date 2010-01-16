@@ -39,6 +39,7 @@
 
 #include "jheretic.h"
 
+#include "gamemap.h"
 #include "m_argv.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
@@ -53,8 +54,6 @@
 #include "d_netsv.h"
 
 // MACROS ------------------------------------------------------------------
-
-#define MAX_AMBIENT_SFX 8       // Per level
 
 // TYPES -------------------------------------------------------------------
 
@@ -90,29 +89,35 @@ static void P_ShootSpecialLine(mobj_t* thing, linedef_t* line);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-mobj_t LavaInflictor;
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-int* LevelAmbientSfx[MAX_AMBIENT_SFX];
-int* AmbSfxPtr;
-int AmbSfxCount;
-int AmbSfxTics;
-int AmbSfxVolume;
+static animdef_t anims[] = {
+    {0, "FLTWAWA3", "FLTWAWA1", MACRO_LONG(8)},
+    {0, "FLTSLUD3", "FLTSLUD1", MACRO_LONG(8)},
+    {0, "FLTTELE4", "FLTTELE1", MACRO_LONG(6)},
+    {0, "FLTFLWW3", "FLTFLWW1", MACRO_LONG(9)},
+    {0, "FLTLAVA4", "FLTLAVA1", MACRO_LONG(8)},
+    {0, "FLATHUH4", "FLATHUH1", MACRO_LONG(8)},
+    {1, "LAVAFL3",  "LAVAFL1",  MACRO_LONG(6)},
+    {1, "WATRWAL3", "WATRWAL1", MACRO_LONG(4)},
+    {-1, "\0",      "\0"}
+};
 
-int AmbSndSeqInit[] = { // Startup
+static const int AmbSndSeqInit[] = { // Startup
     afxcmd_end
 };
 
-int AmbSndSeq1[] = { // Scream
+static const int AmbSndSeq1[] = { // Scream
     afxcmd_play, SFX_AMB1,
     afxcmd_end
 };
 
-int AmbSndSeq2[] = { // Squish
+static const int AmbSndSeq2[] = { // Squish
     afxcmd_play, SFX_AMB2,
     afxcmd_end
 };
 
-int AmbSndSeq3[] = { // Drops
+static const int AmbSndSeq3[] = { // Drops
     afxcmd_play, SFX_AMB3,
     afxcmd_delay, 16,
     afxcmd_delayrand, 31,
@@ -134,7 +139,7 @@ int AmbSndSeq3[] = { // Drops
     afxcmd_end
 };
 
-int AmbSndSeq4[] = { // SlowFootSteps
+static const int AmbSndSeq4[] = { // SlowFootSteps
     afxcmd_play, SFX_AMB4,
     afxcmd_delay, 15,
     afxcmd_playrelvol, SFX_AMB11, -3,
@@ -153,7 +158,7 @@ int AmbSndSeq4[] = { // SlowFootSteps
     afxcmd_end
 };
 
-int AmbSndSeq5[] = { // Heartbeat
+static const int AmbSndSeq5[] = { // Heartbeat
     afxcmd_play, SFX_AMB5,
     afxcmd_delay, 35,
     afxcmd_play, SFX_AMB5,
@@ -164,7 +169,7 @@ int AmbSndSeq5[] = { // Heartbeat
     afxcmd_end
 };
 
-int AmbSndSeq6[] = { // Bells
+static const int AmbSndSeq6[] = { // Bells
     afxcmd_play, SFX_AMB6,
     afxcmd_delay, 17,
     afxcmd_playrelvol, SFX_AMB6, -8,
@@ -175,17 +180,17 @@ int AmbSndSeq6[] = { // Bells
     afxcmd_end
 };
 
-int AmbSndSeq7[] = { // Growl
+static const int AmbSndSeq7[] = { // Growl
     afxcmd_play, SFX_BSTSIT,
     afxcmd_end
 };
 
-int AmbSndSeq8[] = { // Magic
+static const int AmbSndSeq8[] = { // Magic
     afxcmd_play, SFX_AMB8,
     afxcmd_end
 };
 
-int AmbSndSeq9[] = { // Laughter
+static const int AmbSndSeq9[] = { // Laughter
     afxcmd_play, SFX_AMB9,
     afxcmd_delay, 16,
     afxcmd_playrelvol, SFX_AMB9, -4,
@@ -200,7 +205,7 @@ int AmbSndSeq9[] = { // Laughter
     afxcmd_end
 };
 
-int AmbSndSeq10[] = { // FastFootsteps
+static const int AmbSndSeq10[] = { // FastFootsteps
     afxcmd_play, SFX_AMB4,
     afxcmd_delay, 8,
     afxcmd_playrelvol, SFX_AMB11, -3,
@@ -219,7 +224,7 @@ int AmbSndSeq10[] = { // FastFootsteps
     afxcmd_end
 };
 
-int* AmbientSfx[] = {
+static const int* AmbientSfx[] = {
     AmbSndSeq1, // Scream
     AmbSndSeq2, // Squish
     AmbSndSeq3, // Drops
@@ -230,20 +235,6 @@ int* AmbientSfx[] = {
     AmbSndSeq8, // Magic
     AmbSndSeq9, // Laughter
     AmbSndSeq10 // FastFootsteps
-};
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static animdef_t anims[] = {
-    {0, "FLTWAWA3", "FLTWAWA1", MACRO_LONG(8)},
-    {0, "FLTSLUD3", "FLTSLUD1", MACRO_LONG(8)},
-    {0, "FLTTELE4", "FLTTELE1", MACRO_LONG(6)},
-    {0, "FLTFLWW3", "FLTFLWW1", MACRO_LONG(9)},
-    {0, "FLTLAVA4", "FLTLAVA1", MACRO_LONG(8)},
-    {0, "FLATHUH4", "FLATHUH1", MACRO_LONG(8)},
-    {1, "LAVAFL3",  "LAVAFL1",  MACRO_LONG(6)},
-    {1, "WATRWAL3", "WATRWAL1", MACRO_LONG(4)},
-    {-1, "\0",      "\0"}
 };
 
 // CODE --------------------------------------------------------------------
@@ -406,7 +397,7 @@ boolean P_ActivateLine(linedef_t *ld, mobj_t *mo, int side, int actType)
 static void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 {
     int                 ok;
-    xline_t*            xline;
+    xlinedef_t*            xline;
 
     // Extended functionality overrides old.
     if(XL_CrossLine(line, side, thing))
@@ -597,7 +588,7 @@ static void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 52:
         // EXIT!
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(thing->player? thing->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
         break;
 
     case 53:
@@ -683,7 +674,7 @@ static void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
   //case 124: // DJS - In Heretic, the secret exit is 105
     case 105:
         // Secret EXIT
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, true);
+        G_LeaveMap(thing->player? thing->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, true);
         break;
 
     // DJS - Heretic has an additional stair build special
@@ -896,7 +887,7 @@ static void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
  */
 static void P_ShootSpecialLine(mobj_t* thing, linedef_t* line)
 {
-    xline_t*            xline = P_ToXLine(line);
+    xlinedef_t*            xline = P_ToXLine(line);
 
     // Impacts that other things can activate.
     if(!thing->player)
@@ -944,8 +935,8 @@ static void P_ShootSpecialLine(mobj_t* thing, linedef_t* line)
  */
 void P_PlayerInSpecialSector(player_t* player)
 {
-    sector_t* sector =
-        DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
+    gamemap_t* map = P_CurrentGameMap();
+    sector_t* sector = DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
 
     // Falling, not all the way down yet?
     if(player->plr->mo->pos[VZ] != DMU_GetFloatp(sector, DMU_FLOOR_HEIGHT))
@@ -956,24 +947,24 @@ void P_PlayerInSpecialSector(player_t* player)
     {
     case 5:
         // LAVA DAMAGE WEAK
-        if(!(mapTime & 15))
+        if(!(map->time & 15))
         {
-            P_DamageMobj(player->plr->mo, &LavaInflictor, NULL, 5, false);
+            P_DamageMobj(player->plr->mo, &map->lavaInflictor, NULL, 5, false);
             P_HitFloor(player->plr->mo);
         }
         break;
 
     case 7:
         // SLUDGE DAMAGE
-        if(!(mapTime & 31))
+        if(!(map->time & 31))
             P_DamageMobj(player->plr->mo, NULL, NULL, 4, false);
         break;
 
     case 16:
         // LAVA DAMAGE HEAVY
-        if(!(mapTime & 15))
+        if(!(map->time & 15))
         {
-            P_DamageMobj(player->plr->mo, &LavaInflictor, NULL, 8, false);
+            P_DamageMobj(player->plr->mo, &map->lavaInflictor, NULL, 8, false);
             P_HitFloor(player->plr->mo);
         }
         break;
@@ -981,9 +972,9 @@ void P_PlayerInSpecialSector(player_t* player)
     case 4:
         // LAVA DAMAGE WEAK PLUS SCROLL EAST
         P_Thrust(player, 0, FIX2FLT(2048 * 28));
-        if(!(mapTime & 15))
+        if(!(map->time & 15))
         {
-            P_DamageMobj(player->plr->mo, &LavaInflictor, NULL, 5, false);
+            P_DamageMobj(player->plr->mo, &map->lavaInflictor, NULL, 5, false);
             P_HitFloor(player->plr->mo);
         }
         break;
@@ -1038,14 +1029,16 @@ void P_PlayerInSpecialSector(player_t* player)
 /**
  * Animate planes, scroll walls, etc.
  */
-void P_UpdateSpecials(void)
+void GameMap_UpdateSpecials(gamemap_t* map)
 {
+    assert(map);
+    {
 #define PLANE_MATERIAL_SCROLLUNIT (8.f/35*2)
 
-    uint                i;
-    float               x;
-    linedef_t*          line;
-    sidedef_t*          side;
+    linedef_t* line;
+    sidedef_t* side;
+    uint i;
+    float x;
 
     // Extended lines and sectors.
     XG_Ticker();
@@ -1113,10 +1106,10 @@ void P_UpdateSpecials(void)
     }
 
     // ANIMATE LINE SPECIALS
-    if(P_IterListSize(linespecials))
+    if(P_IterListSize(map->_linespecials))
     {
-        P_IterListResetIterator(linespecials, false);
-        while((line = P_IterListIterator(linespecials)) != NULL)
+        P_IterListResetIterator(map->_linespecials, false);
+        while((line = P_IterListIterator(map->_linespecials)) != NULL)
         {
             switch(P_ToXLine(line)->special)
             {
@@ -1152,22 +1145,25 @@ void P_UpdateSpecials(void)
     }
 
 #undef PLANE_MATERIAL_SCROLLUNIT
+    }
 }
 
 /**
  * After the map has been loaded, scan for specials that spawn thinkers.
  */
-void P_SpawnSpecials(void)
+void GameMap_SpawnSpecials(gamemap_t* map)
 {
-    uint        i;
-    linedef_t     *line;
-    xline_t    *xline;
-    iterlist_t *list;
-    sector_t   *sec;
-    xsector_t  *xsec;
+    assert(map);
+    {
+    uint i;
+    linedef_t* line;
+    xlinedef_t* xline;
+    iterlist_t* list;
+    sector_t* sec;
+    xsector_t* xsec;
 
     // Init special SECTORs.
-    P_DestroySectorTagLists();
+    GameMap_DestroySectorTagLists(map);
     for(i = 0; i < numsectors; ++i)
     {
         sec = DMU_ToPtr(DMU_SECTOR, i);
@@ -1175,7 +1171,7 @@ void P_SpawnSpecials(void)
 
         if(xsec->tag)
         {
-            list = P_GetSectorIterListForTag(xsec->tag, true);
+            list = GameMap_SectorIterListForTag(map, xsec->tag, true);
             P_AddObjectToIterList(list, sec);
         }
 
@@ -1188,7 +1184,7 @@ void P_SpawnSpecials(void)
             {
             case 9:
                 // SECRET SECTOR
-                totalSecret++;
+                map->totalSecret++;
                 break;
 
             default:
@@ -1228,7 +1224,7 @@ void P_SpawnSpecials(void)
 
         case 9:
             // SECRET SECTOR
-            totalSecret++;
+            map->totalSecret++;
             break;
 
         case 10:
@@ -1263,8 +1259,8 @@ void P_SpawnSpecials(void)
     }
 
     // Init animating line specials.
-    P_EmptyIterList(linespecials);
-    P_DestroyLineTagLists();
+    P_EmptyIterList(map->_linespecials);
+    GameMap_DestroyLineTagLists(map);
     for(i = 0; i < numlines; ++i)
     {
         line = DMU_ToPtr(DMU_LINEDEF, i);
@@ -1277,7 +1273,7 @@ void P_SpawnSpecials(void)
         case 99:
             // EFFECT FIRSTCOL SCROLL-
             // DJS - Heretic also has a backwards wall scroller.
-            P_AddObjectToIterList(linespecials, line);
+            P_AddObjectToIterList(map->_linespecials, line);
             break;
 
         default:
@@ -1286,20 +1282,23 @@ void P_SpawnSpecials(void)
 
         if(xline->tag)
         {
-           list = P_GetLineIterListForTag(xline->tag, true);
+           list = GameMap_IterListForTag(map, xline->tag, true);
            P_AddObjectToIterList(list, line);
         }
     }
 
     // Init extended generalized lines and sectors.
     XG_Init();
+    }
 }
 
-void P_InitLava(void)
+void GameMap_InitLava(gamemap_t* map)
 {
-    memset(&LavaInflictor, 0, sizeof(mobj_t));
-    LavaInflictor.type = MT_PHOENIXFX2;
-    LavaInflictor.flags2 = MF2_FIREDAMAGE | MF2_NODMGTHRUST;
+    assert(map);
+
+    memset(&map->lavaInflictor, 0, sizeof(map->lavaInflictor));
+    map->lavaInflictor.type = MT_PHOENIXFX2;
+    map->lavaInflictor.flags2 = MF2_FIREDAMAGE | MF2_NODMGTHRUST;
 }
 
 /**
@@ -1307,8 +1306,7 @@ void P_InitLava(void)
  */
 void P_PlayerInWindSector(player_t* player)
 {
-    sector_t* sector =
-        DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
+    sector_t* sector = DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
 
     static int pushTab[5] = {
         2048 * 5,
@@ -1361,97 +1359,97 @@ void P_PlayerInWindSector(player_t* player)
     P_WindThrust(player->plr->mo);
 }
 
-void P_InitAmbientSound(void)
+void GameMap_InitAmbientSfx(gamemap_t* map)
 {
-    AmbSfxCount = 0;
-    AmbSfxVolume = 0;
-    AmbSfxTics = 10 * TICSPERSEC;
-    AmbSfxPtr = AmbSndSeqInit;
+    assert(map);
+
+    map->ambientSfxCount = 0;
+    map->ambSfx.volume = 0;
+    map->ambSfx.tics = 10 * TICSPERSEC;
+    map->ambSfx.ptr = AmbSndSeqInit;
 }
 
-/**
- * Called by spawnMapThing during (P_setup):P_SetupMap.
- */
-void P_AddAmbientSfx(int sequence)
+void GameMap_AddAmbientSfx(gamemap_t* map, int sequence)
 {
-    if(AmbSfxCount == MAX_AMBIENT_SFX)
+    assert(map);
+
+    if(map->ambientSfxCount == MAX_AMBIENT_SFX)
     {
         Con_Error("Too many ambient sound sequences");
     }
-    LevelAmbientSfx[AmbSfxCount++] = AmbientSfx[sequence];
+    map->ambientSfx[map->ambientSfxCount++] = AmbientSfx[sequence];
 }
 
-/**
- * Called every tic by (P_tick):P_Ticker.
- */
-void P_AmbientSound(void)
+void GameMap_PlayAmbientSfx(gamemap_t* map)
 {
+    assert(map);
+    {
     afxcmd_t cmd;
-    int     sound;
+    int sound;
     boolean done;
 
-    // No ambient sound sequences on current level
-    if(!AmbSfxCount)
-        return;
+    if(!map->ambientSfxCount)
+        return; // No ambient sound sequences on current map.
 
-    if(--AmbSfxTics)
+    if(--map->ambSfx.tics)
         return;
 
     done = false;
     do
     {
-        cmd = *AmbSfxPtr++;
+        cmd = *map->ambSfx.ptr++;
         switch(cmd)
         {
         case afxcmd_play:
-            AmbSfxVolume = P_Random() >> 2;
-            S_StartSoundAtVolume(*AmbSfxPtr++, NULL, AmbSfxVolume / 127.0f);
+            map->ambSfx.volume = P_Random() >> 2;
+            S_StartSoundAtVolume(*map->ambSfx.ptr++, NULL, map->ambSfx.volume / 127.0f);
             break;
 
         case afxcmd_playabsvol:
-            sound = *AmbSfxPtr++;
-            AmbSfxVolume = *AmbSfxPtr++;
-            S_StartSoundAtVolume(sound, NULL, AmbSfxVolume / 127.0f);
+            sound = *map->ambSfx.ptr++;
+            map->ambSfx.volume = *map->ambSfx.ptr++;
+            S_StartSoundAtVolume(sound, NULL, map->ambSfx.volume / 127.0f);
             break;
 
         case afxcmd_playrelvol:
-            sound = *AmbSfxPtr++;
-            AmbSfxVolume += *AmbSfxPtr++;
+            sound = *map->ambSfx.ptr++;
+            map->ambSfx.volume += *map->ambSfx.ptr++;
 
-            if(AmbSfxVolume < 0)
-                AmbSfxVolume = 0;
-            else if(AmbSfxVolume > 127)
-                AmbSfxVolume = 127;
+            if(map->ambSfx.volume < 0)
+                map->ambSfx.volume = 0;
+            else if(map->ambSfx.volume > 127)
+                map->ambSfx.volume = 127;
 
-            S_StartSoundAtVolume(sound, NULL, AmbSfxVolume / 127.0f);
+            S_StartSoundAtVolume(sound, NULL, map->ambSfx.volume / 127.0f);
             break;
 
         case afxcmd_delay:
-            AmbSfxTics = *AmbSfxPtr++;
+            map->ambSfx.tics = *map->ambSfx.ptr++;
             done = true;
             break;
 
         case afxcmd_delayrand:
-            AmbSfxTics = P_Random() & (*AmbSfxPtr++);
+            map->ambSfx.tics = P_Random() & (*map->ambSfx.ptr++);
             done = true;
             break;
 
         case afxcmd_end:
-            AmbSfxTics = 6 * TICSPERSEC + P_Random();
-            AmbSfxPtr = LevelAmbientSfx[P_Random() % AmbSfxCount];
+            map->ambSfx.tics = 6 * TICSPERSEC + P_Random();
+            map->ambSfx.ptr = map->ambientSfx[P_Random() % map->ambientSfxCount];
             done = true;
             break;
 
         default:
-            Con_Error("P_AmbientSound: Unknown afxcmd %d", cmd);
+            Con_Error("GameMap_PlayAmbientSfx: Unknown afxcmd %d", cmd);
             break;
         }
     } while(done == false);
+    }
 }
 
 boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
 {
-    xline_t            *xline = P_ToXLine(line);
+    xlinedef_t* xline = P_ToXLine(line);
 
     // Switches that other things can activate.
     if(!mo->player)
@@ -1521,7 +1519,7 @@ boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
         if(cyclingMaps && mapCycleNoExit)
             break;
 
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(mo->player? mo->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
         P_ToggleSwitch(DMU_GetPtrp(line, DMU_SIDEDEF0), SFX_NONE, false, 0);
         xline->special = 0;
         break;
@@ -1618,7 +1616,7 @@ boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
         if(cyclingMaps && mapCycleNoExit)
             break;
 
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, true);
+        G_LeaveMap(mo->player? mo->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, true);
         P_ToggleSwitch(DMU_GetPtrp(line, DMU_SIDEDEF0), SFX_NONE, false, 0);
         xline->special = 0;
         break;

@@ -43,9 +43,11 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_map.h"
 #include "p_mapspec.h"
+#include "p_mapsetup.h"
 #include "p_tick.h"
 #include "p_floor.h"
 #if __JHEXEN__ || __JDOOM64__
@@ -62,30 +64,9 @@
 
 #if __JHEXEN__
 #define STAIR_SECTOR_TYPE       26
-#define STAIR_QUEUE_SIZE        32
 #endif
 
 // TYPES -------------------------------------------------------------------
-
-#if __JHEXEN__
-typedef struct stairqueue_s {
-    sector_t*       sector;
-    int             type;
-    float           height;
-} stairqueue_t;
-
-// Global vars for stair building, in a struct for neatness.
-typedef struct stairdata_s {
-    float           stepDelta;
-    int             direction;
-    float           speed;
-    material_t*     material;
-    int             startDelay;
-    int             startDelayDelta;
-    int             textureChange;
-    float           startHeight;
-} stairdata_t;
-#endif
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -94,7 +75,7 @@ typedef struct stairdata_s {
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 #if __JHEXEN__
-static void enqueueStairSector(sector_t *sec, int type, float height);
+static void enqueueStairSector(sector_t* sec, int type, float height);
 #endif
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -102,13 +83,6 @@ static void enqueueStairSector(sector_t *sec, int type, float height);
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-#if __JHEXEN__
-stairdata_t stairData;
-stairqueue_t stairQueue[STAIR_QUEUE_SIZE];
-static int stairQueueHead;
-static int stairQueueTail;
-#endif
 
 // CODE --------------------------------------------------------------------
 
@@ -313,7 +287,8 @@ result_e T_MovePlane(sector_t* sector, float speed, float dest,
  */
 void T_MoveFloor(floor_t* floor)
 {
-    result_e            res;
+    gamemap_t* map = P_CurrentGameMap();
+    result_e res;
 
 #if __JHEXEN__
     if(floor->resetDelayCount)
@@ -360,13 +335,13 @@ void T_MoveFloor(floor_t* floor)
 #endif
 
 #if !__JHEXEN__
-    if(!(mapTime & 7))
+    if(!(map->time & 7))
         S_PlaneSound(floor->sector, PLN_FLOOR, SFX_FLOORMOVE);
 #endif
 
     if(res == pastdest)
     {
-        xsector_t *xsec = P_ToXSector(floor->sector);
+        xsector_t* xsec = P_ToXSector(floor->sector);
         DMU_SetFloatp(floor->sector, DMU_FLOOR_SPEED, 0);
 
 #if __JHEXEN__
@@ -424,7 +399,7 @@ void T_MoveFloor(floor_t* floor)
         }
 #endif
 #if __JHEXEN__
-        P_TagFinished(P_ToXSector(floor->sector)->tag);
+        ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(floor->sector)->tag);
 #endif
         DD_ThinkerRemove(&floor->thinker);
     }
@@ -570,18 +545,19 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
 #endif
 {
 #if !__JHEXEN__
-    sector_t   *frontsector;
+    sector_t* frontsector;
 #endif
-    int         rtn = 0;
-    xsector_t  *xsec;
-    sector_t   *sec = NULL;
-    floor_t *floor = NULL;
-    iterlist_t *list;
+    int rtn = 0;
+    xsector_t* xsec;
+    sector_t* sec = NULL;
+    floor_t* floor = NULL;
+    iterlist_t* list;
 #if __JHEXEN__
-    int         tag = (int) args[0];
+    int tag = (int) args[0];
 #else
-    int         tag = P_ToXLine(line)->tag;
+    int tag = P_ToXLine(line)->tag;
 #endif
+    gamemap_t* map = P_CurrentGameMap();
 
 #if __JDOOM64__
     // jd64 > bitmip? wha?
@@ -595,7 +571,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
     // < d64tc
 #endif
 
-    list = P_GetSectorIterListForTag(tag, false);
+    list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)
         return rtn;
 
@@ -952,11 +928,12 @@ typedef struct {
 
 static int findSectorNeighborsForStairBuild(void* ptr, void* context)
 {
-    linedef_t*          li = (linedef_t*) ptr;
+    linedef_t* li = (linedef_t*) ptr;
+    gamemap_t* map = P_CurrentGameMap();
     findsectorneighborsforstairbuildparams_t* params =
         (findsectorneighborsforstairbuildparams_t*) context;
-    sector_t*           frontSec, *backSec;
-    xsector_t*          xsec;
+    sector_t* frontSec, *backSec;
+    xsector_t* xsec;
 
     frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR);
     if(!frontSec)
@@ -968,7 +945,7 @@ static int findSectorNeighborsForStairBuild(void* ptr, void* context)
 
     xsec = P_ToXSector(frontSec);
     if(xsec->special == params->type + STAIR_SECTOR_TYPE && !xsec->specialData &&
-       DMU_GetPtrp(frontSec, DMU_FLOOR_MATERIAL) == stairData.material &&
+       DMU_GetPtrp(frontSec, DMU_FLOOR_MATERIAL) == map->stairData.material &&
        DMU_GetIntp(frontSec, DMU_VALID_COUNT) != VALIDCOUNT)
     {
         enqueueStairSector(frontSec, params->type ^ 1, params->height);
@@ -977,7 +954,7 @@ static int findSectorNeighborsForStairBuild(void* ptr, void* context)
 
     xsec = P_ToXSector(backSec);
     if(xsec->special == params->type + STAIR_SECTOR_TYPE && !xsec->specialData &&
-       DMU_GetPtrp(backSec, DMU_FLOOR_MATERIAL) == stairData.material &&
+       DMU_GetPtrp(backSec, DMU_FLOOR_MATERIAL) == map->stairData.material &&
        DMU_GetIntp(backSec, DMU_VALID_COUNT) != VALIDCOUNT)
     {
         enqueueStairSector(backSec, params->type ^ 1, params->height);
@@ -1029,16 +1006,16 @@ int findAdjacentSectorForSpread(void* ptr, void* context)
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
 int EV_BuildStairs(linedef_t* line, stair_e type)
 {
-    int                 rtn = 0;
-    xsector_t*          xsec;
-    sector_t*           sec = NULL;
-    floor_t*            floor;
-    float               height = 0, stairsize = 0;
-    float               speed = 0;
-    iterlist_t*         list;
+    int rtn = 0;
+    xsector_t* xsec;
+    sector_t* sec = NULL;
+    floor_t* floor;
+    float height = 0, stairsize = 0, speed = 0;
+    iterlist_t* list;
     spreadsectorparams_t params;
+    gamemap_t* map = P_CurrentGameMap();
 
-    list = P_GetSectorIterListForTag(P_ToXLine(line)->tag, false);
+    list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(!list)
         return rtn;
 
@@ -1132,43 +1109,47 @@ int EV_BuildStairs(linedef_t* line, stair_e type)
 #endif
 
 #if __JHEXEN__
-static void enqueueStairSector(sector_t *sec, int type, float height)
+static void enqueueStairSector(sector_t* sec, int type, float height)
 {
-    if((stairQueueTail + 1) % STAIR_QUEUE_SIZE == stairQueueHead)
+    gamemap_t* map = P_CurrentGameMap();
+
+    if((map->stairQueueTail + 1) % STAIR_QUEUE_SIZE == map->stairQueueHead)
     {
         Con_Error("BuildStairs:  Too many branches located.\n");
     }
-    stairQueue[stairQueueTail].sector = sec;
-    stairQueue[stairQueueTail].type = type;
-    stairQueue[stairQueueTail].height = height;
+    map->stairQueue[map->stairQueueTail].sector = sec;
+    map->stairQueue[map->stairQueueTail].type = type;
+    map->stairQueue[map->stairQueueTail].height = height;
 
-    stairQueueTail = (stairQueueTail + 1) % STAIR_QUEUE_SIZE;
+    map->stairQueueTail = (map->stairQueueTail + 1) % STAIR_QUEUE_SIZE;
 }
 
-static sector_t *dequeueStairSector(int *type, float *height)
+static sector_t* dequeueStairSector(gamemap_t* map, int* type, float* height)
 {
-    sector_t           *sec;
+    sector_t* sec;
 
-    if(stairQueueHead == stairQueueTail)
+    if(map->stairQueueHead == map->stairQueueTail)
     {   // Queue is empty.
         return NULL;
     }
 
-    *type = stairQueue[stairQueueHead].type;
-    *height = stairQueue[stairQueueHead].height;
-    sec = stairQueue[stairQueueHead].sector;
-    stairQueueHead = (stairQueueHead + 1) % STAIR_QUEUE_SIZE;
+    *type = map->stairQueue[map->stairQueueHead].type;
+    *height = map->stairQueue[map->stairQueueHead].height;
+    sec = map->stairQueue[map->stairQueueHead].sector;
+
+    map->stairQueueHead = (map->stairQueueHead + 1) % STAIR_QUEUE_SIZE;
 
     return sec;
 }
 
-static void processStairSector(sector_t *sec, int type, float height,
+static void processStairSector(sector_t* sec, int type, float height,
                                stairs_e stairsType, int delay, int resetDelay)
 {
-    floor_t        *floor;
     findsectorneighborsforstairbuildparams_t params;
+    gamemap_t* map = P_CurrentGameMap();
+    floor_t* floor;
 
-    height += stairData.stepDelta;
+    height += map->stairData.stepDelta;
 
     floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
     floor->thinker.function = T_MoveFloor;
@@ -1176,18 +1157,18 @@ static void processStairSector(sector_t *sec, int type, float height,
 
     P_ToXSector(sec)->specialData = floor;
     floor->type = FT_RAISEBUILDSTEP;
-    floor->state = (stairData.direction == -1? FS_DOWN : FS_UP);
+    floor->state = (map->stairData.direction == -1? FS_DOWN : FS_UP);
     floor->sector = sec;
     floor->floorDestHeight = height;
     switch(stairsType)
     {
     case STAIRS_NORMAL:
-        floor->speed = stairData.speed;
+        floor->speed = map->stairData.speed;
         if(delay)
         {
             floor->delayTotal = delay;
-            floor->stairsDelayHeight = DMU_GetFloatp(sec, DMU_FLOOR_HEIGHT) + stairData.stepDelta;
-            floor->stairsDelayHeightDelta = stairData.stepDelta;
+            floor->stairsDelayHeight = DMU_GetFloatp(sec, DMU_FLOOR_HEIGHT) + map->stairData.stepDelta;
+            floor->stairsDelayHeightDelta = map->stairData.stepDelta;
         }
         floor->resetDelay = resetDelay;
         floor->resetDelayCount = resetDelay;
@@ -1195,8 +1176,7 @@ static void processStairSector(sector_t *sec, int type, float height,
         break;
 
     case STAIRS_SYNC:
-        floor->speed =
-            stairData.speed * ((height - stairData.startHeight) / stairData.stepDelta);
+        floor->speed = map->stairData.speed * ((height - map->stairData.startHeight) / map->stairData.stepDelta);
         floor->resetDelay = delay; //arg4
         floor->resetDelayCount = delay;
         floor->resetHeight = DMU_GetFloatp(sec, DMU_FLOOR_HEIGHT);
@@ -1222,43 +1202,45 @@ static void processStairSector(sector_t *sec, int type, float height,
  * @param direction     Positive = up. Negative = down.
  */
 #if __JHEXEN__
-int EV_BuildStairs(linedef_t* line, byte* args, int direction,
-                   stairs_e stairsType)
+int EV_BuildStairs(linedef_t* line, byte* args, int direction, stairs_e stairsType)
 {
-    float               height;
-    int                 delay;
-    int                 type;
-    int                 resetDelay;
-    sector_t*           sec = NULL, *qSec;
-    iterlist_t*         list;
+    assert(line);
+    assert(args);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    float height;
+    int delay, type, resetDelay;
+    sector_t* sec = NULL, *qSec;
+    iterlist_t* list;
 
     // Set global stairs variables
-    stairData.textureChange = 0;
-    stairData.direction = direction;
-    stairData.stepDelta = stairData.direction * (float) args[2];
-    stairData.speed = (float) args[1] * (1.0 / 8);
+    map->stairData.textureChange = 0;
+    map->stairData.direction = direction;
+    map->stairData.stepDelta = map->stairData.direction * (float) args[2];
+    map->stairData.speed = (float) args[1] * (1.0 / 8);
+
     resetDelay = (int) args[4];
     delay = (int) args[3];
+
     if(stairsType == STAIRS_PHASED)
     {
-        stairData.startDelay =
-            stairData.startDelayDelta = (int) args[3];
-        resetDelay = stairData.startDelayDelta;
+        map->stairData.startDelay = map->stairData.startDelayDelta = (int) args[3];
+        resetDelay = map->stairData.startDelayDelta;
         delay = 0;
-        stairData.textureChange = (int) args[4];
+        map->stairData.textureChange = (int) args[4];
     }
 
     VALIDCOUNT++;
 
-    list = P_GetSectorIterListForTag((int) args[0], false);
+    list = GameMap_SectorIterListForTag(map, (int) args[0], false);
     if(!list)
         return 0;
 
     P_IterListResetIterator(list, true);
     while((sec = P_IterListIterator(list)) != NULL)
     {
-        stairData.material = DMU_GetPtrp(sec, DMU_FLOOR_MATERIAL);
-        stairData.startHeight = DMU_GetFloatp(sec, DMU_FLOOR_HEIGHT);
+        map->stairData.material = DMU_GetPtrp(sec, DMU_FLOOR_MATERIAL);
+        map->stairData.startHeight = DMU_GetFloatp(sec, DMU_FLOOR_HEIGHT);
 
         // ALREADY MOVING?  IF SO, KEEP GOING...
         if(P_ToXSector(sec)->specialData)
@@ -1268,12 +1250,13 @@ int EV_BuildStairs(linedef_t* line, byte* args, int direction,
         P_ToXSector(sec)->special = 0;
     }
 
-    while((qSec = dequeueStairSector(&type, &height)) != NULL)
+    while((qSec = dequeueStairSector(map, &type, &height)) != NULL)
     {
         processStairSector(qSec, type, height, stairsType, delay, resetDelay);
     }
 
     return 1;
+    }
 }
 #endif
 
@@ -1305,8 +1288,9 @@ int EV_DoDonut(linedef_t* line)
     int rtn = 0;
     sector_t* sec, *outer, *ring;
     iterlist_t* list;
+    gamemap_t* map = P_CurrentGameMap();
 
-    list = P_GetSectorIterListForTag(P_ToXLine(line)->tag, false);
+    list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(!list)
         return rtn;
 
@@ -1388,7 +1372,7 @@ static int stopFloorCrush(void* p, void* context)
         // Completely remove the crushing floor
         SN_StopSequence(DMU_GetPtrp(floor->sector, DMU_SOUND_ORIGIN));
         P_ToXSector(floor->sector)->specialData = NULL;
-        P_TagFinished(P_ToXSector(floor->sector)->tag);
+        ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(floor->sector)->tag);
         DD_ThinkerRemove(&floor->thinker);
         (*found) = true;
     }
@@ -1408,25 +1392,28 @@ int EV_FloorCrushStop(linedef_t* line, byte* args)
 
 #if __JHEXEN__ || __JDOOM64__
 # if __JHEXEN__
-int EV_DoFloorAndCeiling(linedef_t *line, byte *args, int ftype, int ctype)
+int EV_DoFloorAndCeiling(linedef_t* line, byte *args, int ftype, int ctype)
 # else
 int EV_DoFloorAndCeiling(linedef_t* line, int ftype, int ctype)
 # endif
 {
+    gamemap_t* map = P_CurrentGameMap();
 # if __JHEXEN__
-    int                 tag = (int) args[0];
+    int tag = (int) args[0];
 # else
-    int                 tag = P_ToXLine(line)->tag;
+    int tag = P_ToXLine(line)->tag;
 # endif
-    boolean             floor, ceiling;
-    sector_t*           sec = NULL;
-    iterlist_t*         list;
+    boolean floor, ceiling;
+    sector_t* sec = NULL;
+    iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(tag, false);
+    list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)
         return 0;
 
-    /** \kludge
+    /**
+     * @note (kludge)
+     *
      * Due to the fact that sectors can only have one special thinker
      * linked at a time, this routine manually removes the link before
      * then creating a second thinker for the sector.

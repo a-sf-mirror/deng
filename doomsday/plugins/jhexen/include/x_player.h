@@ -116,11 +116,17 @@ typedef struct player_s {
     float           viewZ; // Focal origin above r.z.
     float           viewHeight; // Base height above floor for viewZ.
     float           viewHeightDelta;
+    byte            viewShake; // Intensity of view shake if @c > 0 (used for "local earthquakes").
     float           bob; // Bounded/scaled total momentum.
 
     // Target view to a mobj (NULL=disabled).
     mobj_t*         viewLock; // $democam
     int             lockFull;
+
+    // Position indicator for cooperative net-play reborn
+    int             rebornPosition;
+    int             leaveMap;
+    int             leavePosition;
 } player_t;
 
 #endif

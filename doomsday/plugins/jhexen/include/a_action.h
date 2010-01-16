@@ -33,4 +33,8 @@
 #  error "Using jHexen headers without __JHEXEN__"
 #endif
 
+#include "dd_types.h"
+
+float           P_FloatBobOffset(byte n);
+
 #endif

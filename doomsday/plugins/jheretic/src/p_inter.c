@@ -31,6 +31,7 @@
 
 #include "jheretic.h"
 
+#include "gamemap.h"
 #include "am_map.h"
 #include "d_net.h"
 #include "dmu_lib.h"
@@ -950,10 +951,13 @@ void P_KillMobj(mobj_t* source, mobj_t* target)
  */
 boolean P_MorphPlayer(player_t* player)
 {
-    mobj_t*             pmo, *fog, *chicken;
-    float               pos[3];
-    angle_t             angle;
-    int                 oldFlags2;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* pmo, *fog, *chicken;
+    float pos[3];
+    angle_t angle;
+    int oldFlags2;
 
     if(player->morphTics)
     {
@@ -975,12 +979,12 @@ boolean P_MorphPlayer(player_t* player)
     angle = pmo->angle;
     oldFlags2 = pmo->flags2;
 
-    if(!(chicken = P_SpawnMobj3fv(MT_CHICPLAYER, pos, angle, 0)))
+    if(!(chicken = GameMap_SpawnMobj3fv(map, MT_CHICPLAYER, pos, angle, 0)))
         return false;
 
     P_MobjChangeState(pmo, S_FREETARGMOBJ);
 
-    if((fog = P_SpawnMobj3f(MT_TFOG, pos[VX], pos[VY], pos[VZ] + TELEFOGHEIGHT,
+    if((fog = GameMap_SpawnMobj3f(map, MT_TFOG, pos[VX], pos[VY], pos[VZ] + TELEFOGHEIGHT,
                             angle + ANG180, 0)))
         S_StartSound(SFX_TELEPT, fog);
 
@@ -1004,15 +1008,19 @@ boolean P_MorphPlayer(player_t* player)
 
     P_ActivateMorphWeapon(player);
     return true;
+    }
 }
 
-boolean P_MorphMonster(mobj_t *actor)
+boolean P_MorphMonster(mobj_t* actor)
 {
-    mobj_t             *fog, *chicken, *target;
-    mobjtype_t          moType;
-    float               pos[3];
-    angle_t             angle;
-    int                 ghost;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* fog, *chicken, *target;
+    mobjtype_t moType;
+    float pos[3];
+    angle_t angle;
+    int ghost;
 
     if(actor->player)
         return false;
@@ -1037,11 +1045,11 @@ boolean P_MorphMonster(mobj_t *actor)
     ghost = actor->flags & MF_SHADOW;
     target = actor->target;
 
-    if((chicken = P_SpawnMobj3fv(MT_CHICKEN, pos, angle, 0)))
+    if((chicken = GameMap_SpawnMobj3fv(map, MT_CHICKEN, pos, angle, 0)))
     {
         P_MobjChangeState(actor, S_FREETARGMOBJ);
 
-        if((fog = P_SpawnMobj3f(MT_TFOG, pos[VX], pos[VY], pos[VZ] + TELEFOGHEIGHT,
+        if((fog = GameMap_SpawnMobj3f(map, MT_TFOG, pos[VX], pos[VY], pos[VZ] + TELEFOGHEIGHT,
                                 angle + ANG180, 0)))
             S_StartSound(SFX_TELEPT, fog);
 
@@ -1052,6 +1060,7 @@ boolean P_MorphMonster(mobj_t *actor)
     }
 
     return true;
+    }
 }
 
 boolean P_AutoUseChaosDevice(player_t* player)
@@ -1223,13 +1232,14 @@ int P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source,
 
         case MT_WHIRLWIND:
             {
-            int                 randVal;
+            gamemap_t* map = P_CurrentGameMap();
+            int randVal;
 
             target->angle += (P_Random() - P_Random()) << 20;
             target->mom[MX] += FIX2FLT((P_Random() - P_Random()) << 10);
             target->mom[MY] += FIX2FLT((P_Random() - P_Random()) << 10);
 
-            if((mapTime & 16) && !(target->flags2 & MF2_BOSS))
+            if((map->time & 16) && !(target->flags2 & MF2_BOSS))
             {
                 randVal = P_Random();
                 if(randVal > 160)
@@ -1244,7 +1254,7 @@ int P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source,
                 }
             }
 
-            if(!(mapTime & 7))
+            if(!(map->time & 7))
             {
                 return P_DamageMobj(target, NULL, NULL, 3, false);
             }

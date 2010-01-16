@@ -36,21 +36,15 @@
 
 #if __JDOOM__
 #  include "jdoom.h"
-#  include "g_common.h"
 #elif __JDOOM64__
 #  include "jdoom64.h"
-#  include "g_common.h"
 #elif __JHERETIC__
 #  include "jheretic.h"
-#  include "g_common.h"
-#  include "r_common.h"
-#  include "p_inventory.h"
 #elif __JHEXEN__
-#  include <math.h>
 #  include "jhexen.h"
-#  include "p_inventory.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_player.h"
 #include "p_tick.h" // for P_IsPaused()
@@ -58,12 +52,15 @@
 #include "d_net.h"
 #include "p_player.h"
 #include "p_map.h"
+#include "p_mapsetup.h"
 #include "p_user.h"
 #include "g_common.h"
+#include "r_common.h"
 #include "am_map.h"
 #include "hu_log.h"
 #if __JHERETIC__ || __JHEXEN__
 #include "hu_inventory.h"
+#include "p_inventory.h"
 #endif
 
 // MACROS ------------------------------------------------------------------
@@ -485,7 +482,7 @@ void P_DeathThink(player_t* player)
     angle_t angle;
 #endif
     angle_t delta;
-    int     lookDelta;
+    int lookDelta;
 
     if(player->rebornWait > 0)
         player->rebornWait--;
@@ -509,8 +506,10 @@ void P_DeathThink(player_t* player)
         {
             if(player->plr->lookDir < 60)
             {
+                gamemap_t* map = P_CurrentGameMap();
+
                 lookDelta = (60 - player->plr->lookDir) / 8;
-                if(lookDelta < 1 && (mapTime & 1))
+                if(lookDelta < 1 && (map->time & 1))
                 {
                     lookDelta = 1;
                 }
@@ -708,18 +707,18 @@ void P_MorphThink(player_t *player)
 # endif
 }
 
-/**
- * \todo Need to replace this as it comes straight from Hexen.
- */
-boolean P_UndoPlayerMorph(player_t *player)
+boolean P_UndoPlayerMorph(player_t* player)
 {
-    mobj_t*             fog = 0, *mo = 0, *pmo = 0;
-    float               pos[3];
-    unsigned int        an;
-    angle_t             angle;
-    int                 playerNum;
-    weapontype_t        weapon;
-    int                 oldFlags, oldFlags2, oldBeast;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* fog = 0, *mo = 0, *pmo = 0;
+    float pos[3];
+    unsigned int an;
+    angle_t angle;
+    int playerNum;
+    weapontype_t weapon;
+    int oldFlags, oldFlags2, oldBeast;
 
 # if __JHEXEN__
     player->update |= PSF_MORPH_TIME | PSF_POWERS | PSF_HEALTH;
@@ -741,10 +740,10 @@ boolean P_UndoPlayerMorph(player_t *player)
 
     playerNum = P_GetPlayerNum(player);
 # if __JHEXEN__
-    mo = P_SpawnMobj3fv(PCLASS_INFO(cfg.playerClass[playerNum])->mobjType,
+    mo = GameMap_SpawnMobj3fv(map, PCLASS_INFO(cfg.playerClass[playerNum])->mobjType,
                         pos, angle, 0);
 # else
-    mo = P_SpawnMobj3fv(MT_PLAYER, pos, angle, 0);
+    mo = GameMap_SpawnMobj3fv(map, MT_PLAYER, pos, angle, 0);
 # endif
 
     if(!mo)
@@ -753,7 +752,7 @@ boolean P_UndoPlayerMorph(player_t *player)
     if(P_TestMobjLocation(mo) == false)
     {   // Didn't fit
         P_MobjRemove(mo, false);
-        if((mo = P_SpawnMobj3fv(oldBeast, pos, angle, 0)))
+        if((mo = GameMap_SpawnMobj3fv(map, oldBeast, pos, angle, 0)))
         {
             mo->health = player->health;
             mo->special1 = weapon;
@@ -809,7 +808,7 @@ boolean P_UndoPlayerMorph(player_t *player)
     an = angle >> ANGLETOFINESHIFT;
 // REWRITE ME - I MATCH HEXEN UNTIL HERE
 
-    if((fog = P_SpawnMobj3f(MT_TFOG,
+    if((fog = GameMap_SpawnMobj3f(map, MT_TFOG,
                             pos[VX] + 20 * FIX2FLT(finecosine[an]),
                             pos[VY] + 20 * FIX2FLT(finesine[an]),
                             pos[VZ] + TELEFOGHEIGHT, angle + ANG180, 0)))
@@ -826,6 +825,7 @@ boolean P_UndoPlayerMorph(player_t *player)
     player->plr->flags |= DDPF_FIXPOS | DDPF_FIXMOM;
 
     return true;
+    }
 }
 #endif
 
@@ -834,7 +834,7 @@ boolean P_UndoPlayerMorph(player_t *player)
  * This routine does all the thinking for the console player during
  * netgames.
  *
- * FIXME: This should be removed in favor of the regular P_PlayerThink, which
+ * @fixme: This should be removed in favor of the regular P_PlayerThink, which
  *        is supposed to handle all thinking regardless of whether it's a client
  *        or a server doing the thinking.
  */
@@ -1094,12 +1094,10 @@ void P_PlayerThinkMorph(player_t *player)
 #endif
 }
 
-/**
- * \todo Need to replace this as it comes straight from Hexen.
- */
 void P_PlayerThinkMove(player_t *player)
 {
-    mobj_t             *plrmo = player->plr->mo;
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* plrmo = player->plr->mo;
 
     // Move around.
     // Reactiontime is used to prevent movement for a bit after a teleport.
@@ -1109,14 +1107,13 @@ void P_PlayerThinkMove(player_t *player)
 
 #if __JHEXEN__
         plrmo = player->plr->mo;
-        if(player->powers[PT_SPEED] && !(mapTime & 1) &&
+        if(player->powers[PT_SPEED] && !(map->time & 1) &&
            P_ApproxDistance(plrmo->mom[MX], plrmo->mom[MY]) > 12)
         {
-            mobj_t*             speedMo;
-            int                 playerNum;
+            mobj_t* speedMo;
+            int playerNum;
 
-            if((speedMo = P_SpawnMobj3fv(MT_PLAYER_SPEED, plrmo->pos,
-                                         plrmo->angle, 0)))
+            if((speedMo = GameMap_SpawnMobj3fv(map, MT_PLAYER_SPEED, plrmo->pos, plrmo->angle, 0)))
             {
                 playerNum = P_GetPlayerNum(player);
 
@@ -1467,6 +1464,7 @@ void P_PlayerThinkMap(player_t* player)
 void P_PlayerThinkPowers(player_t* player)
 {
     // Counters, time dependend power ups.
+    gamemap_t* map = P_CurrentGameMap();
 
 #if __JDOOM__ || __JDOOM64__
     // Strength counts up to diminish fade.
@@ -1559,7 +1557,7 @@ void P_PlayerThinkPowers(player_t* player)
                 player->plr->fixedColorMap = 1;
             }
         }
-        else if(!(mapTime & 16))  /* && player == &players[CONSOLEPLAYER]) */
+        else if(!(map->time & 16))  /* && player == &players[CONSOLEPLAYER]) */
         {
             ddplayer_t *dp = player->plr;
             int     playerNumber = player - players;
@@ -1598,7 +1596,7 @@ void P_PlayerThinkPowers(player_t* player)
     {
         if(player->class == PCLASS_CLERIC)
         {
-            if(!(mapTime & 7) && (player->plr->mo->flags & MF_SHADOW) &&
+            if(!(map->time & 7) && (player->plr->mo->flags & MF_SHADOW) &&
                !(player->plr->mo->flags2 & MF2_DONTDRAW))
             {
                 player->plr->mo->flags &= ~MF_SHADOW;
@@ -1607,7 +1605,7 @@ void P_PlayerThinkPowers(player_t* player)
                     player->plr->mo->flags2 |= MF2_DONTDRAW | MF2_NONSHOOTABLE;
                 }
             }
-            if(!(mapTime & 31))
+            if(!(map->time & 31))
             {
                 if(player->plr->mo->flags2 & MF2_DONTDRAW)
                 {
@@ -1648,7 +1646,7 @@ void P_PlayerThinkPowers(player_t* player)
         player->powers[PT_SPEED]--;
     }
 
-    if(player->poisonCount && !(mapTime & 15))
+    if(player->poisonCount && !(map->time & 15))
     {
         player->poisonCount -= 5;
         if(player->poisonCount < 0)

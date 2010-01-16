@@ -34,68 +34,82 @@
 #  error "Using jHexen headers without __JHEXEN__"
 #endif
 
-#define MAX_ACS_SCRIPT_VARS     10
-#define MAX_ACS_MAP_VARS        32
-#define MAX_ACS_WORLD_VARS      64
-#define ACS_STACK_DEPTH         32
-#define MAX_ACS_STORE           20
+typedef int actionscriptid_t;
 
-typedef enum aste_e {
-    ASTE_INACTIVE,
-    ASTE_RUNNING,
-    ASTE_SUSPENDED,
-    ASTE_WAITING_FOR_TAG,
-    ASTE_WAITING_FOR_POLY,
-    ASTE_WAITING_FOR_SCRIPT,
-    ASTE_TERMINATING
-} aste_t;
+#define MAX_SCRIPT_STORE        20
 
-typedef struct acsinfo_s {
-    int             number;
-    const int*      address;
-    int             argCount;
-    aste_t          state;
-    int             waitValue;
-} acsinfo_t;
+#define MAX_MAP_VARS            32
+#define MAX_WORLD_VARS          64
 
-typedef struct acs_s {
-    thinker_t       thinker;
-    mobj_t*         activator;
-    linedef_t*      line;
-    int             side;
-    int             number;
-    int             infoIndex;
-    int             delayCount;
-    int             stack[ACS_STACK_DEPTH];
-    int             stackPtr;
-    int             vars[MAX_ACS_SCRIPT_VARS];
-    const int*      ip;
-} acs_t;
+#define PRINT_BUFFER_SIZE       256
 
-typedef struct acsstore_s {
-    int             map; // Target map.
-    int             script; // Script number on target map.
+typedef struct {
+    const byte*     base;
+    int             numScripts;
+    struct script_info_s* scriptInfo;
+    int             numStrings;
+    char const**    strings;
+} script_bytecode_t;
+
+typedef struct {
+    int             mapId; // Target map.
+    actionscriptid_t scriptId; // Script number on target map.
     byte            args[4]; // Padded to 4 for alignment.
-} acsstore_t;
+} script_store_t;
 
-extern int ACScriptCount;
-extern const byte* ActionCodeBase;
-extern acsinfo_t* ACSInfo;
-extern int MapVars[MAX_ACS_MAP_VARS];
-extern int WorldVars[MAX_ACS_WORLD_VARS];
-extern acsstore_t ACSStore[MAX_ACS_STORE + 1]; // +1 for termination marker.
+typedef struct {
+    script_bytecode_t bytecode;
+    script_store_t  scriptStore[MAX_SCRIPT_STORE + 1]; // +1 for termination marker.
 
-void            P_LoadACScripts(int lump);
-boolean         P_StartACS(int number, int map, byte* args,
-                           mobj_t* activator, linedef_t* line, int side);
-boolean         P_StartLockedACS(linedef_t* line, byte* args, mobj_t* mo,
-                                 int side);
-boolean         P_TerminateACS(int number, int map);
-boolean         P_SuspendACS(int number, int map);
-void            T_InterpretACS(acs_t* script);
-void            P_TagFinished(int tag);
-void            P_PolyobjFinished(int po);
-void            P_ACSInitNewGame(void);
-void            P_CheckACSStore(void);
+    int             worldVars[MAX_WORLD_VARS];
+    byte            specArgs[8];
+    int             mapVars[MAX_MAP_VARS];
+
+    char            printBuffer[PRINT_BUFFER_SIZE];
+} actionscriptinterpreter_t;
+
+extern actionscriptinterpreter_t* ActionScriptInterpreter; // Singleton instance.
+
+actionscriptinterpreter_t* P_CreateActionScriptInterpreter(void);
+void            P_DestroyActionScriptInterpreter(actionscriptinterpreter_t* asi);
+
+void            ActionScriptInterpreter_Load(actionscriptinterpreter_t* asi, int map, lumpnum_t lumpNum);
+
+void            ActionScriptInterpreter_WriteWorldState(actionscriptinterpreter_t* asi);
+void            ActionScriptInterpreter_ReadWorldState(actionscriptinterpreter_t* asi);
+void            ActionScriptInterpreter_WriteMapState(actionscriptinterpreter_t* asi);
+void            ActionScriptInterpreter_ReadMapState(actionscriptinterpreter_t* asi);
+
+void            ActionScriptInterpreter_StartAll(actionscriptinterpreter_t* asi, int map);
+boolean         ActionScriptInterpreter_Start(actionscriptinterpreter_t* asi, actionscriptid_t scriptId, int map, byte* args, mobj_t* activator, linedef_t* line, int side);
+boolean         ActionScriptInterpreter_Stop(actionscriptinterpreter_t* asi, actionscriptid_t scriptId, int map);
+boolean         ActionScriptInterpreter_Suspend(actionscriptinterpreter_t* asi, actionscriptid_t scriptId, int map);
+
+void            ActionScriptInterpreter_TagFinished(actionscriptinterpreter_t* asi, int tag);
+void            ActionScriptInterpreter_PolyobjFinished(actionscriptinterpreter_t* asi, int po);
+
+/**
+ * Action Script Thinker.
+ */
+#define AST_MAX_VARS            10
+#define AST_STACK_DEPTH         32
+
+typedef struct actionscript_thinker_s {
+    thinker_t       thinker;
+    int             delayCount;
+    actionscriptid_t scriptId;
+    const int*      bytecodePos;
+    int             infoIndex;
+    int             stack[AST_STACK_DEPTH];
+    int             stackDepth;
+    int             vars[AST_MAX_VARS];
+    mobj_t*         activator;
+    linedef_t*      lineDef;
+    int             lineSide;
+} actionscript_thinker_t;
+
+void            ActionScriptThinker_Think(thinker_t* thinker);
+void            ActionScriptThinker_Write(const thinker_t* thinker);
+int             ActionScriptThinker_Read(thinker_t* thinker);
 
 #endif

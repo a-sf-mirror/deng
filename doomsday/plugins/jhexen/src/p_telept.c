@@ -31,6 +31,7 @@
 
 #include "jhexen.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_map.h"
 
@@ -54,7 +55,7 @@
 
 void P_ArtiTeleportOther(player_t* plr)
 {
-    mobj_t*             mo;
+    mobj_t* mo;
 
     if(!plr || !plr->plr->mo)
         return;
@@ -67,31 +68,31 @@ void P_ArtiTeleportOther(player_t* plr)
 
 void P_TeleportToPlayerStarts(mobj_t* mo)
 {
+    gamemap_t* map = P_CurrentGameMap();
     const playerstart_t* start;
 
     if(!mo)
         return;
 
     // Get a random player start.
-    if((start = P_GetPlayerStart(0, -1, false)))
+    if((start = GameMap_PlayerStart(map, 0, -1, false)))
     {
-        P_Teleport(mo, start->pos[VX], start->pos[VY],
-                   start->angle, true);
+        P_Teleport(mo, start->pos[VX], start->pos[VY], start->angle, true);
     }
 }
 
 void P_TeleportToDeathmatchStarts(mobj_t* mo)
 {
+    gamemap_t* map = P_CurrentGameMap();
     const playerstart_t* start;
 
     if(!mo)
         return;
 
     // First, try a random deathmatch start.
-    if((start = P_GetPlayerStart(0, -1, true)))
+    if((start = GameMap_PlayerStart(map, 0, -1, true)))
     {
-        P_Teleport(mo, start->pos[VX], start->pos[VY],
-                   start->angle, true);
+        P_Teleport(mo, start->pos[VX], start->pos[VY], start->angle, true);
     }
     else
     {
@@ -99,19 +100,23 @@ void P_TeleportToDeathmatchStarts(mobj_t* mo)
     }
 }
 
-mobj_t* P_SpawnTeleFog(float x, float y, angle_t angle)
+mobj_t* P_SpawnTeleFog(gamemap_t* map, float x, float y, angle_t angle)
 {
-    return P_SpawnMobj3f(MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
+    assert(map);
+    return GameMap_SpawnMobj3f(map, MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
 }
 
 boolean P_Teleport(mobj_t* mo, float x, float y, angle_t angle,
                    boolean useFog)
 {
-    float               oldpos[3], aboveFloor, fogDelta;
-    player_t*           player;
-    unsigned int        an;
-    angle_t             oldAngle;
-    mobj_t*             fog;
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    float oldpos[3], aboveFloor, fogDelta;
+    player_t* player;
+    unsigned int an;
+    angle_t oldAngle;
+    mobj_t* fog;
 
     memcpy(oldpos, mo->pos, sizeof(oldpos));
     oldAngle = mo->angle;
@@ -160,12 +165,12 @@ boolean P_Teleport(mobj_t* mo, float x, float y, angle_t angle,
     if(useFog)
     {
         fogDelta = (mo->flags & MF_MISSILE ? 0 : TELEFOGHEIGHT);
-        if((fog = P_SpawnMobj3f(MT_TFOG, oldpos[VX], oldpos[VY],
+        if((fog = GameMap_SpawnMobj3f(map, MT_TFOG, oldpos[VX], oldpos[VY],
                                 oldpos[VZ] + fogDelta, oldAngle + ANG180, 0)))
             S_StartSound(SFX_TELEPORT, fog);
 
         an = angle >> ANGLETOFINESHIFT;
-        if((fog = P_SpawnMobj3f(MT_TFOG,
+        if((fog = GameMap_SpawnMobj3f(map, MT_TFOG,
                                 x + 20 * FIX2FLT(finecosine[an]),
                                 y + 20 * FIX2FLT(finesine[an]),
                                 mo->pos[VZ] + fogDelta, angle + ANG180, 0)))
@@ -207,22 +212,23 @@ boolean P_Teleport(mobj_t* mo, float x, float y, angle_t angle,
     P_MobjClearSRVO(mo);
 
     return true;
+    }
 }
 
-boolean EV_Teleport(int tid, mobj_t* thing, boolean fog)
+boolean EV_Teleport(int tid, mobj_t* mo, boolean fog)
 {
-    int                 i, count, searcher;
-    mobj_t*             mo = 0;
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int i, count, searcher;
+    mobj_t* dest = 0;
 
-    if(!thing)
-        return false;
-
-    if(thing->flags2 & MF2_NOTELEPORT)
+    if(mo->flags2 & MF2_NOTELEPORT)
         return false;
 
     count = 0;
     searcher = -1;
-    while(P_FindMobjFromTID(tid, &searcher) != NULL)
+    while(P_FindMobjFromTID(map, tid, &searcher) != NULL)
         count++;
 
     if(count == 0)
@@ -232,24 +238,25 @@ boolean EV_Teleport(int tid, mobj_t* thing, boolean fog)
     searcher = -1;
     for(i = 0; i < count; ++i)
     {
-        mo = P_FindMobjFromTID(tid, &searcher);
+        dest = P_FindMobjFromTID(map, tid, &searcher);
     }
 
-    if(!mo)
+    if(!dest)
         Con_Error("Can't find teleport mapspot\n");
 
-    return P_Teleport(thing, mo->pos[VX], mo->pos[VY], mo->angle, fog);
+    return P_Teleport(mo, dest->pos[VX], dest->pos[VY], dest->angle, fog);
+    }
 }
 
 #if __JHERETIC__ || __JHEXEN__
 void P_ArtiTele(player_t* player)
 {
+    gamemap_t* map = P_CurrentGameMap();
     const playerstart_t* start;
 
-    if((start = P_GetPlayerStart(0, deathmatch? -1 : 0, deathmatch)))
+    if((start = GameMap_PlayerStart(map, 0, deathmatch? -1 : 0, deathmatch)))
     {
-        P_Teleport(player->plr->mo, start->pos[VX], start->pos[VY],
-                   start->angle, true);
+        P_Teleport(player->plr->mo, start->pos[VX], start->pos[VY], start->angle, true);
 
 #if __JHEXEN__
         if(player->morphTics)

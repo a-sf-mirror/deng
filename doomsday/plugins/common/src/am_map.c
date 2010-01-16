@@ -999,8 +999,8 @@ void AM_SetViewRotate(automapid_t id, int offOnToggle)
  */
 void AM_UpdateLinedef(automapid_t id, uint lineIdx, boolean visible)
 {
-    automapcfg_t*       mcfg;
-    xline_t*            xline;
+    automapcfg_t* mcfg;
+    xlinedef_t* xline;
 
     if(!(mcfg = getAutomapCFG(id)))
         return;
@@ -1008,7 +1008,7 @@ void AM_UpdateLinedef(automapid_t id, uint lineIdx, boolean visible)
     if(lineIdx >= numlines)
         return;
 
-    xline = P_GetXLine(lineIdx);
+    xline = P_ToXLine(DMU_ToPtr(DMU_LINEDEF, lineIdx));
 
     // Will we need to rebuild one or more display lists?
     if(xline->mapped[mcfg->followPlayer] != visible)

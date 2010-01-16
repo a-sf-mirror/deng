@@ -199,17 +199,16 @@ void WI_drawLF(void)
  */
 void WI_drawEL(void)
 {
-    int                 y = WI_TITLEY;
-    int                 mapnum;
-    char               *lname = "", *ptr;
-    ddmapinfo_t         minfo;
-    char                levid[10];
+    int y = WI_TITLEY, mapnum;
+    char* lname = "", *ptr;
+    ddmapinfo_t minfo;
+    char mapID[9];
 
-    P_GetMapLumpName(gameEpisode, wbs->next+1, levid);
+    P_GetMapLumpName(mapID, gameEpisode, wbs->next+1);
     mapnum = G_GetMapNumber(gameEpisode, wbs->next);
 
     // See if there is a level name.
-    if(Def_Get(DD_DEF_MAP_INFO, levid, &minfo) && minfo.name)
+    if(Def_Get(DD_DEF_MAP_INFO, mapID, &minfo) && minfo.name)
     {
         if(Def_Get(DD_DEF_TEXT, minfo.name, &lname) == -1)
             lname = minfo.name;

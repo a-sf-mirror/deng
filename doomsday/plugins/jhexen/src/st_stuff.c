@@ -33,6 +33,7 @@
 #include "st_lib.h"
 #include "d_net.h"
 
+#include "gamemap.h"
 #include "p_tick.h" // for P_IsPaused
 #include "am_map.h"
 #include "g_common.h"
@@ -246,11 +247,12 @@ void ST_Register(void)
 
 static void drawAnimatedIcons(hudstate_t* hud)
 {
-    int             leftoff = 0;
-    int             frame;
-    float           iconalpha = (hud->statusbarActive? 1: hud->alpha) - (1 - cfg.hudIconAlpha);
-    int             player = hud - hudStates;
-    player_t*       plr = &players[player];
+    int leftoff = 0;
+    int frame;
+    float iconalpha = (hud->statusbarActive? 1: hud->alpha) - (1 - cfg.hudIconAlpha);
+    int player = hud - hudStates;
+    player_t* plr = &players[player];
+    gamemap_t* map = P_CurrentGameMap();
 
     // If the fullscreen mana is drawn, we need to move the icons on the left
     // a bit to the right.
@@ -265,7 +267,7 @@ static void drawAnimatedIcons(hudstate_t* hud)
         if(plr->powers[PT_FLIGHT] > BLINKTHRESHOLD ||
            !(plr->powers[PT_FLIGHT] & 16))
         {
-            frame = (mapTime / 3) & 15;
+            frame = (map->time / 3) & 15;
             if(plr->plr->mo->flags2 & MF2_FLY)
             {
                 if(hud->hitCenterFrame && (frame != 15 && frame != 0))
@@ -304,7 +306,7 @@ static void drawAnimatedIcons(hudstate_t* hud)
         if(plr->powers[PT_SPEED] > BLINKTHRESHOLD ||
            !(plr->powers[PT_SPEED] & 16))
         {
-            frame = (mapTime / 3) & 15;
+            frame = (map->time / 3) & 15;
             GL_DrawPatchLitAlpha(60 + leftoff, 19, 1, iconalpha,
                                  dpSpinSpeed[frame].lump);
         }
@@ -320,7 +322,7 @@ static void drawAnimatedIcons(hudstate_t* hud)
         if(plr->powers[PT_INVULNERABILITY] > BLINKTHRESHOLD ||
            !(plr->powers[PT_INVULNERABILITY] & 16))
         {
-            frame = (mapTime / 3) & 15;
+            frame = (map->time / 3) & 15;
             GL_DrawPatchLitAlpha(260, 19, 1, iconalpha,
                                  dpSpinDefense[frame].lump);
         }
@@ -332,7 +334,7 @@ static void drawAnimatedIcons(hudstate_t* hud)
         if(plr->powers[PT_MINOTAUR] > BLINKTHRESHOLD ||
            !(plr->powers[PT_MINOTAUR] & 16))
         {
-            frame = (mapTime / 3) & 15;
+            frame = (map->time / 3) & 15;
             GL_DrawPatchLitAlpha(300, 19, 1, iconalpha,
                                  dpSpinMinotaur[frame].lump);
         }

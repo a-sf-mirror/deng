@@ -31,17 +31,6 @@
 #ifndef __COMMON_MAP_SPEC_H__
 #define __COMMON_MAP_SPEC_H__
 
-#include "p_iterlist.h"
-
-extern iterlist_t *spechit; // for crossed line specials.
-extern iterlist_t *linespecials; // for surfaces that tick eg wall scrollers.
-
-void            P_DestroyLineTagLists(void);
-iterlist_t     *P_GetLineIterListForTag(int tag, boolean createNewList);
-
-void            P_DestroySectorTagLists(void);
-iterlist_t     *P_GetSectorIterListForTag(int tag, boolean createNewList);
-
 sector_t*       P_GetNextSector(linedef_t *line, sector_t *sec);
 
 sector_t*       P_FindSectorSurroundingLowestFloor(sector_t *sec, float max, float *val);

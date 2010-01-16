@@ -29,6 +29,8 @@
 #ifndef LIBCOMMON_PLAYSETUP_H
 #define LIBCOMMON_PLAYSETUP_H
 
+#include "gamemap.h"
+
 #define numvertexes (*(uint*) P_GetVariable(DMU_VERTEX_COUNT))
 #define numsectors  (*(uint*) P_GetVariable(DMU_SECTOR_COUNT))
 #define numsubsectors (*(uint*) P_GetVariable(DMU_SUBSECTOR_COUNT))
@@ -39,12 +41,13 @@
 
 #define nummaterials (*(uint*) DD_GetVariable(DD_MATERIAL_COUNT))
 
-// If true we are in the process of setting up a map.
-extern boolean mapSetup;
+void            P_SetupForMapData(int type, uint num);
 
-void        P_SetupForMapData(int type, uint num);
+void            P_SetupMap(struct gamemap_s* map, skillmode_t skill);
+const char*     P_GetMapNiceName(void);
+const char*     P_GetMapAuthor(boolean surpressIWADAuthors);
 
-void        P_SetupMap(int episode, int map, int playermask, skillmode_t skill);
-const char* P_GetMapNiceName(void);
-const char* P_GetMapAuthor(boolean surpressIWADAuthors);
+xlinedef_t*     P_ToXLine(linedef_t* line);
+xsector_t*      P_ToXSector(sector_t* sector);
+xsector_t*      P_ToXSectorOfSubsector(subsector_t* sub);
 #endif /* LIBCOMMON_PLAYSETUP_H */

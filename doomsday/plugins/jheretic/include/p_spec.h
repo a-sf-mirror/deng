@@ -43,22 +43,17 @@
 #endif
 
 #include "h_player.h"
-#include "r_data.h"
 
 #define MO_TELEPORTMAN          14
 
 // at game start
 void            P_InitPicAnims(void);
-void            P_InitLava(void);
+void            GameMap_InitLava(struct gamemap_s* map);
 
-// at map load
-void            P_SpawnSpecials(void);
-void            P_InitAmbientSound(void);
-void            P_AddAmbientSfx(int sequence);
+void            GameMap_InitAmbientSfx(struct gamemap_s* map);
+void            GameMap_AddAmbientSfx(struct gamemap_s* map, int sequence);
 
-// every tic
-void            P_UpdateSpecials(void);
-void            P_AmbientSound(void);
+void            GameMap_PlayAmbientSfx(struct gamemap_s* map);
 
 boolean         P_ActivateLine(linedef_t* ld, mobj_t* mo, int side,
                                int activationType);

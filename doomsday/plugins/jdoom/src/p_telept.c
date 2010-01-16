@@ -31,6 +31,7 @@
 
 #include "jdoom.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "p_map.h"
@@ -55,9 +56,9 @@
 
 // CODE --------------------------------------------------------------------
 
-mobj_t* P_SpawnTeleFog(float x, float y, angle_t angle)
+mobj_t* P_SpawnTeleFog(gamemap_t* map, float x, float y, angle_t angle)
 {
-    return P_SpawnMobj3f(MT_TFOG, x, y, 0, angle, MSF_Z_FLOOR);
+    return GameMap_SpawnMobj3f(map, MT_TFOG, x, y, 0, angle, MSF_Z_FLOOR);
 }
 
 typedef struct {
@@ -85,11 +86,11 @@ static int findMobj(void* p, void* context)
     return false; // Stop iteration.
 }
 
-static mobj_t* getTeleportDestination(short tag)
+static mobj_t* getTeleportDestination(gamemap_t* map, short tag)
 {
     iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(tag, false);
+    list = GameMap_SectorIterListForTag(map, tag, false);
     if(list)
     {
         sector_t* sec = NULL;
@@ -115,6 +116,7 @@ static mobj_t* getTeleportDestination(short tag)
 
 int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
 {
+    gamemap_t* map = P_CurrentGameMap();
     mobj_t* dest;
 
     if(mo->flags2 & MF2_NOTELEPORT)
@@ -124,7 +126,7 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
     if(side == 1)
         return 0;
 
-    if((dest = getTeleportDestination(P_ToXLine(line)->tag)) != NULL)
+    if((dest = getTeleportDestination(map, P_ToXLine(line)->tag)) != NULL)
     {   // A suitable destination has been found.
         mobj_t* fog;
         uint an;
@@ -147,11 +149,11 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
         if(spawnFog)
         {
             // Spawn teleport fog at source and destination.
-            if((fog = P_SpawnMobj3fv(MT_TFOG, oldPos, oldAngle + ANG180, 0)))
+            if((fog = GameMap_SpawnMobj3fv(map, MT_TFOG, oldPos, oldAngle + ANG180, 0)))
                 S_StartSound(SFX_TELEPT, fog);
 
             an = dest->angle >> ANGLETOFINESHIFT;
-            if((fog = P_SpawnMobj3f(MT_TFOG,
+            if((fog = GameMap_SpawnMobj3f(map, MT_TFOG,
                                     dest->pos[VX] + 20 * FIX2FLT(finecosine[an]),
                                     dest->pos[VY] + 20 * FIX2FLT(finesine[an]),
                                     mo->pos[VZ], dest->angle + ANG180, 0)))

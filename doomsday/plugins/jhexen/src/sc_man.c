@@ -356,9 +356,9 @@ void SC_UnGet(void)
  * @return              Index of the first match to sc_String from the
  *                      passed array of strings, ELSE @c -1,.
  */
-int SC_MatchString(char** strings)
+int SC_MatchString(const char** strings)
 {
-    int                 i;
+    int i;
 
     for(i = 0; *strings != NULL; ++i)
     {
@@ -371,9 +371,9 @@ int SC_MatchString(char** strings)
     return -1;
 }
 
-int SC_MustMatchString(char** strings)
+int SC_MustMatchString(const char** strings)
 {
-    int                 i;
+    int i;
 
     i = SC_MatchString(strings);
     if(i == -1)
@@ -384,7 +384,7 @@ int SC_MustMatchString(char** strings)
     return i;
 }
 
-boolean SC_Compare(char* text)
+boolean SC_Compare(const char* text)
 {
     if(strcasecmp(text, sc_String) == 0)
     {

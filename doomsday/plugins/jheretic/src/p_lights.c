@@ -33,6 +33,7 @@
 
 #include "jheretic.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "p_mapspec.h"
@@ -169,12 +170,15 @@ void P_SpawnStrobeFlash(sector_t* sector, int fastOrSlow, int inSync)
 /**
  * Start strobing lights (usually from a trigger).
  */
-void EV_StartLightStrobing(linedef_t *line)
+void EV_StartLightStrobing(linedef_t* line)
 {
-    sector_t           *sec = NULL;
-    iterlist_t         *list;
+    assert(line);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    sector_t* sec = NULL;
+    iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(P_ToXLine(line)->tag, false);
+    list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(!list)
         return;
 
@@ -186,16 +190,19 @@ void EV_StartLightStrobing(linedef_t *line)
 
         P_SpawnStrobeFlash(sec, SLOWDARK, 0);
     }
+    }
 }
 
-void EV_TurnTagLightsOff(linedef_t *line)
+void EV_TurnTagLightsOff(linedef_t* line)
 {
-    sector_t           *sec = NULL;
-    iterlist_t         *list;
-    float               lightLevel;
-    float               otherLevel;
+    assert(line);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    sector_t* sec = NULL;
+    iterlist_t* list;
+    float lightLevel, otherLevel;
 
-    list = P_GetSectorIterListForTag(P_ToXLine(line)->tag, false);
+    list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(!list)
         return;
 
@@ -210,15 +217,19 @@ void EV_TurnTagLightsOff(linedef_t *line)
 
         DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, lightLevel);
     }
+    }
 }
 
-void EV_LightTurnOn(linedef_t *line, float max)
+void EV_LightTurnOn(linedef_t* line, float max)
 {
-    sector_t           *sec = NULL;
-    iterlist_t         *list;
-    float               lightLevel, otherLevel;
+    assert(line);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    sector_t* sec = NULL;
+    iterlist_t* list;
+    float lightLevel, otherLevel;
 
-    list = P_GetSectorIterListForTag(P_ToXLine(line)->tag, false);
+    list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(!list)
         return;
 
@@ -241,12 +252,13 @@ void EV_LightTurnOn(linedef_t *line, float max)
 
         DMU_SetFloatp(sec, DMU_LIGHT_LEVEL, lightLevel);
     }
+    }
 }
 
-void T_Glow(glow_t * g)
+void T_Glow(glow_t* g)
 {
-    float       lightlevel = DMU_GetFloatp(g->sector, DMU_LIGHT_LEVEL);
-    float       glowdelta = (1.0f / 255.0f) * (float) GLOWSPEED;
+    float lightlevel = DMU_GetFloatp(g->sector, DMU_LIGHT_LEVEL);
+    float glowdelta = (1.0f / 255.0f) * (float) GLOWSPEED;
 
     switch(g->direction)
     {

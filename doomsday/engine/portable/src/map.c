@@ -38,6 +38,7 @@
 #include "de_bsp.h"
 #include "de_edit.h"
 #include "de_play.h"
+#include "de_audio.h"
 
 #include "bsp_edge.h"
 #include "s_environ.h"
@@ -853,9 +854,7 @@ void Map_RemoveThinker(map_t* map, thinker_t* th)
 boolean Map_IterateThinkers(map_t* map, think_t func, byte flags,
                             int (*callback) (void* p, void*), void* context)
 {
-    if(!map)
-        return true;
-
+    assert(map);
     return Thinkers_Iterate(map->_thinkers, func, flags, callback, context);
 }
 
@@ -863,7 +862,6 @@ void Map_ThinkerSetStasis(map_t* map, thinker_t* th, boolean on)
 {
     assert(map);
     assert(th);
-
     th->inStasis = on;
 }
 
@@ -1450,13 +1448,34 @@ static void buildSubsectorBlockmap(map_t* map)
     vec2_t bounds[2], blockSize, dims;
     subsectorblockmap_t* blockmap;
 
+    // @fixme why not use map->bBox?
+    bounds[0][0] = bounds[0][1] = DDMAXFLOAT;
+    bounds[1][0] = bounds[1][1] = DDMINFLOAT;
+    for(i = 0; i < map->numSubsectors; ++i)
+    {
+        subsector_t* ssec = map->subsectors[i];
+        
+        if(ssec->bBox[0][0] < bounds[0][0])
+            bounds[0][0] = ssec->bBox[0][0];
+        if(ssec->bBox[0][1] < bounds[0][1])
+            bounds[0][1] = ssec->bBox[0][1];
+        if(ssec->bBox[1][0] > bounds[1][0])
+            bounds[1][0] = ssec->bBox[1][0];
+        if(ssec->bBox[1][1] > bounds[1][1])
+            bounds[1][1] = ssec->bBox[1][1];
+    }
+    bounds[0][0] -= BLKMARGIN;
+    bounds[0][1] -= BLKMARGIN;
+    bounds[1][0] += BLKMARGIN;
+    bounds[1][1] += BLKMARGIN;
+
     // Setup the blockmap area to enclose the whole map, plus a margin
     // (margin is needed for a map that fits entirely inside one blockmap
     // cell).
-    V2_Set(bounds[0], map->bBox[BOXLEFT] - BLKMARGIN,
+    /*V2_Set(bounds[0], map->bBox[BOXLEFT] - BLKMARGIN,
                       map->bBox[BOXBOTTOM] - BLKMARGIN);
     V2_Set(bounds[1], map->bBox[BOXRIGHT] + BLKMARGIN,
-                      map->bBox[BOXTOP] + BLKMARGIN);
+                      map->bBox[BOXTOP] + BLKMARGIN);*/
 
     // Select a good size for the blocks.
     V2_Set(blockSize, BLOCK_WIDTH, BLOCK_HEIGHT);
@@ -1919,6 +1938,9 @@ static void buildSectorLineLists(map_t* map)
         linedef_t* li = map->lineDefs[i];
         uint secIDX;
         linelink_t* link;
+
+        if(li->flags & LF_POLYOBJ)
+            continue;
 
         if(LINE_FRONTSIDE(li))
         {
@@ -2424,12 +2446,23 @@ static void finishPolyobjs(map_t* map)
 
         for(j = 0; j < po->numLineDefs; ++j)
         {
-            linedef_t* lineDef = po->lineDefs[po->lineDefs[j]->buildData.index - 1];
+            linedef_t* lineDef = map->lineDefs[po->lineDefs[j]->buildData.index - 1];
             hedge_t* hEdge;
 
             hEdge = Z_Calloc(sizeof(hedge_t), PU_STATIC, 0);
             hEdge->face = NULL;
+            hEdge->vertex = lineDef->buildData.v[0];
+            lineDef->buildData.v[0]->hEdge = hEdge;
+
             lineDef->hEdges[0] = lineDef->hEdges[1] = hEdge;
+
+            hEdge = Z_Calloc(sizeof(hedge_t), PU_STATIC, 0);
+            hEdge->face = NULL;
+            hEdge->vertex = lineDef->buildData.v[1];
+            lineDef->buildData.v[1]->hEdge = hEdge;
+
+            hEdge->twin = lineDef->hEdges[0];
+            hEdge->twin->twin = hEdge;
 
             po->lineDefs[j] = (linedef_t*) P_ObjectRecord(DMU_LINEDEF, lineDef);
         }
@@ -2948,7 +2981,7 @@ void Map_Ticker(map_t* map, timespan_t time)
     // New ptcgens for planes?
     checkPtcPlanes(map);
 
-    Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
+    Thinkers_Iterate(map->_thinkers, gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
 
     // Check all client mobjs.
     Cl_MobjIterator(map, PIT_ClientMobjTicker, NULL);
@@ -3726,6 +3759,9 @@ boolean P_LoadMap(const char* mapID)
         ded_sky_t* skyDef = NULL;
         ded_mapinfo_t* mapInfo;
         uint i;
+
+        // Initialize The Logical Sound Manager.
+        S_MapChange();
 
         // Call the game's setup routines.
         if(gx.SetupForMapData)

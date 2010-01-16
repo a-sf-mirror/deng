@@ -35,6 +35,7 @@
 
 #include "jdoom64.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "p_map.h"
@@ -60,9 +61,9 @@
 
 // CODE --------------------------------------------------------------------
 
-mobj_t* P_SpawnTeleFog(float x, float y, angle_t angle)
+mobj_t* P_SpawnTeleFog(gamemap_t* map, float x, float y, angle_t angle)
 {
-    return P_SpawnMobj3f(MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
+    return GameMap_SpawnMobj3f(map, MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
 }
 
 typedef struct {
@@ -90,11 +91,11 @@ static int findMobj(void* p, void* context)
     return false; // Stop iteration.
 }
 
-static mobj_t* getTeleportDestination(short tag)
+static mobj_t* getTeleportDestination(gamemap_t* map, short tag)
 {
     iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(tag, false);
+    list = GameMap_SectorIterListForTag(map, tag, false);
     if(list)
     {
         sector_t* sec = NULL;
@@ -120,6 +121,10 @@ static mobj_t* getTeleportDestination(short tag)
 
 int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
 {
+    assert(line);
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     mobj_t* dest;
 
     if(mo->flags2 & MF2_NOTELEPORT)
@@ -129,7 +134,7 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
     if(side == 1)
         return 0;
 
-    if((dest = getTeleportDestination(P_ToXLine(line)->tag)) != NULL)
+    if((dest = getTeleportDestination(map, P_ToXLine(line)->tag)) != NULL)
     {   // A suitable destination has been found.
         mobj_t* fog;
         uint an;
@@ -149,11 +154,11 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
         if(spawnFog)
         {
             // Spawn teleport fog at source and destination.
-            if((fog = P_SpawnMobj3fv(MT_TFOG, oldPos, oldAngle + ANG180, 0)))
+            if((fog = GameMap_SpawnMobj3fv(map, MT_TFOG, oldPos, oldAngle + ANG180, 0)))
                 S_StartSound(SFX_TELEPT, fog);
 
             an = dest->angle >> ANGLETOFINESHIFT;
-            if((fog = P_SpawnMobj3f(MT_TFOG,
+            if((fog = GameMap_SpawnMobj3f(map, MT_TFOG,
                                     dest->pos[VX] + 20 * FIX2FLT(finecosine[an]),
                                     dest->pos[VY] + 20 * FIX2FLT(finesine[an]),
                                     mo->pos[VZ], dest->angle + ANG180, 0)))
@@ -209,6 +214,7 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
     }
 
     return 0;
+    }
 }
 
 /**
@@ -217,7 +223,7 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
  * the corresponding mobjtype. Else -1.
  *
  * DJS - Added in order to cleanup EV_FadeSpawn() somewhat.
- * \todo This is still far from ideal. An MF*_* flag would be better.
+ * @todo This is still far from ideal. An MF*_* flag would be better.
  */
 static mobjtype_t isFadeSpawner(int doomEdNum)
 {
@@ -300,8 +306,9 @@ typedef struct {
 
 static int fadeSpawn(void* p, void* context)
 {
-    fadespawnparams_t*  params = (fadespawnparams_t*) context;
+    fadespawnparams_t* params = (fadespawnparams_t*) context;
     mobj_t* origin = (mobj_t*) p;
+    gamemap_t* map = P_CurrentGameMap();
     mobjtype_t spawntype;
 
     if(params->sec &&
@@ -323,7 +330,7 @@ static int fadeSpawn(void* p, void* context)
         pos[VY] += 20 * FIX2FLT(finesine[an]);
         pos[VZ] = params->spawnHeight;
 
-        if((mo = P_SpawnMobj3fv(spawntype, pos, origin->angle, 0)))
+        if((mo = GameMap_SpawnMobj3fv(map, spawntype, pos, origin->angle, 0)))
         {
             mo->translucency = 255;
             mo->spawnFadeTics = 0;
@@ -333,7 +340,7 @@ static int fadeSpawn(void* p, void* context)
             S_StartSound(SFX_ITMBK, mo);
 
             if(MOBJINFO[spawntype].flags & MF_COUNTKILL)
-                totalKills++;
+                map->totalKills++;
         }
     }
 
@@ -344,18 +351,19 @@ static int fadeSpawn(void* p, void* context)
  * d64tc
  * kaiser - This sets a thing spawn depending on thing type placed in
  *       tagged sector.
- * \todo DJS - This is not a good design. There must be a better way
+ * @todo DJS - This is not good design. There must be a better way
  *       to do this using a new thing flag (MF_NOTSPAWNONSTART?).
  */
 int EV_FadeSpawn(linedef_t* li, mobj_t* mo)
 {
-    iterlist_t*         list;
+    gamemap_t* map = P_CurrentGameMap();
+    iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(P_ToXLine(li)->tag, false);
+    list = GameMap_SectorIterListForTag(map, P_ToXLine(li)->tag, false);
     if(list)
     {
-        sector_t*           sec;
-        fadespawnparams_t   params;
+        sector_t* sec;
+        fadespawnparams_t params;
 
         params.spawnHeight = mo->pos[VZ];
 
@@ -424,14 +432,15 @@ int PIT_ChangeMobjFlags(void* p, void* context)
  * kaiser - removes things in tagged sector!
  * DJS - actually, no it doesn't at least not directly.
  *
- * \fixme: It appears the MF_TELEPORT flag has been hijacked.
+ * @fixme: It appears the MF_TELEPORT flag has been hijacked.
  */
 int EV_FadeAway(linedef_t* line, mobj_t* thing)
 {
-    sector_t*           sec = NULL;
-    iterlist_t*         list;
+    gamemap_t* map = P_CurrentGameMap();
+    sector_t* sec = NULL;
+    iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(P_ToXLine(line)->tag, false);
+    list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(list)
     {
         pit_changemobjflagsparams_t params;

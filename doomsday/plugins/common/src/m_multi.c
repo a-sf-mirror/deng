@@ -27,7 +27,7 @@
  * m_multi.c: Multiplayer Menu (for jDoom, jHeretic and jHexen).
  *
  * Contains an extension for edit fields.
- * \todo Remove unnecessary SC* declarations and other unused code.
+ * @todo Remove unnecessary SC* declarations and other unused code.
  */
 
 // HEADER FILES ------------------------------------------------------------
@@ -46,8 +46,6 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
 #include "hu_stuff.h"

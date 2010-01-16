@@ -42,6 +42,7 @@
 
 #include "jdoom64.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "hu_stuff.h"
 #include "g_common.h"
@@ -172,6 +173,9 @@ float P_MobjGetFriction(mobj_t* mo)
 
 void P_MobjMoveXY(mobj_t* mo)
 {
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     float pos[3], mom[3];
     player_t* player;
     boolean largeNegative;
@@ -244,14 +248,13 @@ void P_MobjMoveXY(mobj_t* mo)
             }
             else if(mo->flags & MF_MISSILE)
             {
-                sector_t*           backSec;
+                sector_t* backSec;
 
                 //// kludge: Prevent missiles exploding against the sky.
-                if(ceilingLine &&
-                   (backSec = DMU_GetPtrp(ceilingLine, DMU_BACK_SECTOR)))
+                if(map->ceilingLine &&
+                   (backSec = DMU_GetPtrp(map->ceilingLine, DMU_BACK_SECTOR)))
                 {
-                    material_t*         mat =
-                        DMU_GetPtrp(backSec, DMU_CEILING_MATERIAL);
+                    material_t* mat = DMU_GetPtrp(backSec, DMU_CEILING_MATERIAL);
 
                     if((DMU_GetIntp(mat, DMU_FLAGS) & MATF_SKYMASK) &&
                        mo->pos[VZ] > DMU_GetFloatp(backSec, DMU_CEILING_HEIGHT))
@@ -261,11 +264,10 @@ void P_MobjMoveXY(mobj_t* mo)
                     }
                 }
 
-                if(floorLine &&
-                   (backSec = DMU_GetPtrp(floorLine, DMU_BACK_SECTOR)))
+                if(map->floorLine &&
+                   (backSec = DMU_GetPtrp(map->floorLine, DMU_BACK_SECTOR)))
                 {
-                    material_t*         mat =
-                        DMU_GetPtrp(backSec, DMU_FLOOR_MATERIAL);
+                    material_t* mat = DMU_GetPtrp(backSec, DMU_FLOOR_MATERIAL);
 
                     if((DMU_GetIntp(mat, DMU_FLAGS) & MATF_SKYMASK) &&
                        mo->pos[VZ] < DMU_GetFloatp(backSec, DMU_FLOOR_HEIGHT))
@@ -358,6 +360,7 @@ void P_MobjMoveXY(mobj_t* mo)
             mo->mom[MY] *= friction;
         }
     }
+    }
 }
 
 /*
@@ -387,6 +390,7 @@ void P_HitFloor(mobj_t* mo)
 
 void P_MobjMoveZ(mobj_t* mo)
 {
+    gamemap_t* map = P_CurrentGameMap();
     float gravity, dist, delta;
 
     gravity = XS_Gravity(DMU_GetPtrp(mo->subsector, DMU_SECTOR));
@@ -441,9 +445,9 @@ void P_MobjMoveZ(mobj_t* mo)
 
     // Do some fly-bobbing.
     if(mo->player && (mo->flags2 & MF2_FLY) && mo->pos[VZ] > mo->floorZ &&
-       !mo->onMobj && (mapTime & 2))
+       !mo->onMobj && (map->time & 2))
     {
-        mo->pos[VZ] += FIX2FLT(finesine[(FINEANGLES / 20 * mapTime >> 2) & FINEMASK]);
+        mo->pos[VZ] += FIX2FLT(finesine[(FINEANGLES / 20 * map->time >> 2) & FINEMASK]);
     }
 
     // Clip movement. Another thing?
@@ -641,6 +645,9 @@ void P_MobjMoveZ(mobj_t* mo)
 
 void P_NightmareRespawn(mobj_t* mobj)
 {
+    assert(mobj);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     mobj_t* mo;
 
     // Something is occupying it's position?
@@ -648,18 +655,18 @@ void P_NightmareRespawn(mobj_t* mobj)
                           mobj->spawnSpot.pos[VY]))
         return; // No respwan.
 
-    if((mo = P_SpawnMobj3fv(mobj->type, mobj->spawnSpot.pos,
+    if((mo = GameMap_SpawnMobj3fv(map, mobj->type, mobj->spawnSpot.pos,
                             mobj->spawnSpot.angle, mobj->spawnSpot.flags)))
     {
         mo->reactionTime = 18;
 
         // Spawn a teleport fog at old spot.
-        if((mo = P_SpawnMobj3f(MT_TFOG, mobj->pos[VX], mobj->pos[VY], 0,
+        if((mo = GameMap_SpawnMobj3f(map, MT_TFOG, mobj->pos[VX], mobj->pos[VY], 0,
                                mobj->angle, MSF_Z_FLOOR)))
             S_StartSound(SFX_TELEPT, mo);
 
         // Spawn a teleport fog at the new spot.
-        if((mo = P_SpawnMobj3fv(MT_TFOG, mobj->spawnSpot.pos,
+        if((mo = GameMap_SpawnMobj3fv(map, MT_TFOG, mobj->spawnSpot.pos,
                                 mobj->spawnSpot.angle,
                                 mobj->spawnSpot.flags)))
             S_StartSound(SFX_TELEPT, mo);
@@ -667,6 +674,7 @@ void P_NightmareRespawn(mobj_t* mobj)
 
     // Remove the old monster.
     P_MobjRemove(mobj, true);
+    }
 }
 
 void P_MobjThinker(mobj_t *mobj)
@@ -817,6 +825,8 @@ void P_MobjThinker(mobj_t *mobj)
     }
     else if(!IS_CLIENT)
     {
+        gamemap_t* map = P_CurrentGameMap();
+
         // Check for nightmare respawn.
         if(!(mobj->flags & MF_COUNTKILL))
             return;
@@ -829,7 +839,7 @@ void P_MobjThinker(mobj_t *mobj)
         if(mobj->moveCount < 12 * 35)
             return;
 
-        if(mapTime & 31)
+        if(map->time & 31)
             return;
 
         if(P_Random() > 4)
@@ -842,13 +852,15 @@ void P_MobjThinker(mobj_t *mobj)
 /**
  * Spawns a mobj of "type" at the specified position.
  */
-mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
-                      angle_t angle, int spawnFlags)
+mobj_t* GameMap_SpawnMobj3f(gamemap_t* map, mobjtype_t type, float x, float y,
+    float z, angle_t angle, int spawnFlags)
 {
-    mobj_t*             mo;
-    mobjinfo_t*         info;
-    float               space;
-    int                 ddflags = 0;
+    assert(map);
+    {
+    mobj_t* mo;
+    mobjinfo_t* info;
+    float space;
+    int ddflags = 0;
 
     if(type < MT_FIRST || type >= Get(DD_NUMMOBJTYPES))
     {
@@ -902,8 +914,7 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     mo->flags2 = info->flags2;
     mo->flags3 = info->flags3;
     mo->damage = info->damage;
-    mo->health =
-        info->spawnHealth * (IS_NETGAME ? cfg.netMobHealthModifier : 1);
+    mo->health = info->spawnHealth * (IS_NETGAME ? cfg.netMobHealthModifier : 1);
     mo->moveDir = DI_NODIR;
 
     mo->reactionTime = info->reactionTime;
@@ -978,18 +989,21 @@ mobj_t* P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
     mo->spawnSpot.flags = spawnFlags;
 
     return mo;
+    }
 }
 
-mobj_t* P_SpawnMobj3fv(mobjtype_t type, const float pos[3], angle_t angle,
-                       int spawnFlags)
+mobj_t* GameMap_SpawnMobj3fv(gamemap_t* map, mobjtype_t type, const float pos[3],
+    angle_t angle, int spawnFlags)
 {
-    return P_SpawnMobj3f(type, pos[VX], pos[VY], pos[VZ], angle, spawnFlags);
+    return GameMap_SpawnMobj3f(map, type, pos[VX], pos[VY], pos[VZ], angle, spawnFlags);
 }
 
-mobj_t* P_SpawnCustomPuff(mobjtype_t type, float x, float y, float z,
-                          angle_t angle)
+mobj_t* P_SpawnCustomPuff(gamemap_t* map, mobjtype_t type, float x,
+    float y, float z, angle_t angle)
 {
-    mobj_t*             mo;
+    assert(map);
+    {
+    mobj_t* mo;
 
     // Clients do not spawn puffs.
     if(IS_CLIENT)
@@ -997,7 +1011,7 @@ mobj_t* P_SpawnCustomPuff(mobjtype_t type, float x, float y, float z,
 
     z += FIX2FLT((P_Random() - P_Random()) << 10);
 
-    if((mo = P_SpawnMobj3f(type, x, y, z, angle, 0)))
+    if((mo = GameMap_SpawnMobj3f(map, type, x, y, z, angle, 0)))
     {
         mo->mom[MZ] = FIX2FLT(FRACUNIT);
         mo->tics -= P_Random() & 3;
@@ -1008,24 +1022,30 @@ mobj_t* P_SpawnCustomPuff(mobjtype_t type, float x, float y, float z,
     }
 
     return mo;
+    }
 }
 
-void P_SpawnPuff(float x, float y, float z, angle_t angle)
+void P_SpawnPuff(gamemap_t* map, float x, float y, float z, angle_t angle)
 {
-    mobj_t*             th =
-        P_SpawnCustomPuff(MT_PUFF, x, y, z, angle);
+    assert(map);
+    {
+    mobj_t* th = P_SpawnCustomPuff(map, MT_PUFF, x, y, z, angle);
 
     // Don't make punches spark on the wall.
-    if(th && attackRange == MELEERANGE)
+    if(th && map->attackRange == MELEERANGE)
         P_MobjChangeState(th, S_PUFF3);
+    }
 }
 
-void P_SpawnBlood(float x, float y, float z, int damage, angle_t angle)
+void P_SpawnBlood(gamemap_t* map, float x, float y, float z, int damage,
+                  angle_t angle)
 {
-    mobj_t*             mo;
+    assert(map);
+    {
+    mobj_t* mo;
 
     z += FIX2FLT((P_Random() - P_Random()) << 10);
-    if((mo = P_SpawnMobj3f(MT_BLOOD, x, y, z, angle, 0)))
+    if((mo = GameMap_SpawnMobj3f(map, MT_BLOOD, x, y, z, angle, 0)))
     {
         mo->mom[MZ] = 2;
         mo->tics -= P_Random() & 3;
@@ -1037,6 +1057,7 @@ void P_SpawnBlood(float x, float y, float z, int damage, angle_t angle)
             P_MobjChangeState(mo, S_BLOOD2);
         else if(damage < 9)
             P_MobjChangeState(mo, S_BLOOD3);
+    }
     }
 }
 
@@ -1082,13 +1103,14 @@ boolean P_CheckMissileSpawn(mobj_t *th)
  */
 mobj_t* P_SpawnMissile(mobjtype_t type, mobj_t* source, mobj_t* dest)
 {
-    float               pos[3];
-    mobj_t*             th = 0;
-    unsigned int        an;
-    angle_t             angle = 0;
-    float               dist = 0;
-    float               slope = 0;
-    float               spawnZOff = 0;
+    assert(source);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    float pos[3];
+    mobj_t* th = 0;
+    unsigned int an;
+    angle_t angle = 0;
+    float dist = 0, slope = 0, spawnZOff = 0;
 
     memcpy(pos, source->pos, sizeof(pos));
 
@@ -1098,22 +1120,21 @@ mobj_t* P_SpawnMissile(mobjtype_t type, mobj_t* source, mobj_t* dest)
         angle = source->angle;
         slope = P_AimLineAttack(source, angle, 16 * 64);
         if(!cfg.noAutoAim)
-            if(!lineTarget)
+            if(!map->lineTarget)
             {
                 angle += 1 << 26;
                 slope = P_AimLineAttack(source, angle, 16 * 64);
 
-                if(!lineTarget)
+                if(!map->lineTarget)
                 {
                     angle -= 2 << 26;
                     slope = P_AimLineAttack(source, angle, 16 * 64);
                 }
 
-                if(!lineTarget)
+                if(!map->lineTarget)
                 {
                     angle = source->angle;
-                    slope =
-                        tan(LOOKDIR2RAD(source->dPlayer->lookDir)) / 1.2f;
+                    slope = tan(LOOKDIR2RAD(source->dPlayer->lookDir)) / 1.2f;
                 }
             }
 
@@ -1138,7 +1159,7 @@ mobj_t* P_SpawnMissile(mobjtype_t type, mobj_t* source, mobj_t* dest)
             angle += (P_Random() - P_Random()) << 20;
     }
 
-    if(!(th = P_SpawnMobj3fv(type, pos, angle, 0)))
+    if(!(th = GameMap_SpawnMobj3fv(map, type, pos, angle, 0)))
         return NULL;
 
     if(th->info->seeSound)
@@ -1181,22 +1202,25 @@ mobj_t* P_SpawnMissile(mobjtype_t type, mobj_t* source, mobj_t* dest)
         return th;
 
     return NULL;
+    }
 }
 
 /**
  * d64tc
  * DJS - It would appear this routine has been stolen from HEXEN and then
  *       butchered...
- * FIXME: Make sure this still works correctly.
+ * @fixme Make sure this still works correctly.
  */
-mobj_t* P_SPMAngle(mobjtype_t type, mobj_t *source, angle_t sourceAngle)
+mobj_t* P_SPMAngle(mobjtype_t type, mobj_t* source, angle_t sourceAngle)
 {
-    mobj_t             *th;
-    uint                an;
-    angle_t             angle;
-    float               pos[3], slope, spawnZOff;
-    float               fangle =
-        LOOKDIR2RAD(source->player->plr->lookDir), movfactor = 1;
+    assert(source);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* th;
+    uint an;
+    angle_t angle;
+    float pos[3], slope, spawnZOff;
+    float fangle = LOOKDIR2RAD(source->player->plr->lookDir), movfactor = 1;
 
     pos[VX] = source->pos[VX];
     pos[VY] = source->pos[VY];
@@ -1205,17 +1229,17 @@ mobj_t* P_SPMAngle(mobjtype_t type, mobj_t *source, angle_t sourceAngle)
     // See which target is to be aimed at.
     angle = sourceAngle;
     slope = P_AimLineAttack(source, angle, 16 * 64);
-    if(!lineTarget)
+    if(!map->lineTarget)
     {
         angle += 1 << 26;
         slope = P_AimLineAttack(source, angle, 16 * 64);
-        if(!lineTarget)
+        if(!map->lineTarget)
         {
             angle -= 2 << 26;
             slope = P_AimLineAttack(source, angle, 16 * 64);
         }
 
-        if(!lineTarget)
+        if(!map->lineTarget)
         {
             angle = sourceAngle;
 
@@ -1225,15 +1249,14 @@ mobj_t* P_SPMAngle(mobjtype_t type, mobj_t *source, angle_t sourceAngle)
     }
 
     if(!P_MobjIsCamera(source->player->plr->mo))
-        spawnZOff = cfg.plrViewHeight - 9 +
-                        source->player->plr->lookDir / 173;
+        spawnZOff = cfg.plrViewHeight - 9 + source->player->plr->lookDir / 173;
     else
         spawnZOff = 0;
 
     pos[VZ] += spawnZOff;
     pos[VZ] -= source->floorClip;
 
-    if((th = P_SpawnMobj3fv(type, pos, angle, 0)))
+    if((th = GameMap_SpawnMobj3fv(map, type, pos, angle, 0)))
     {
         th->target = source;
         an = angle >> ANGLETOFINESHIFT;
@@ -1248,18 +1271,23 @@ mobj_t* P_SPMAngle(mobjtype_t type, mobj_t *source, angle_t sourceAngle)
     }
 
     return th;
+    }
 }
 
 /**
  * d64tc
  */
 mobj_t* P_SpawnMotherMissile(mobjtype_t type, float x, float y, float z,
-                             mobj_t *source, mobj_t *dest)
+                             mobj_t* source, mobj_t* dest)
 {
-    mobj_t             *th;
-    uint                an;
-    angle_t             angle;
-    float               dist;
+    assert(source);
+    assert(dest);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* th;
+    uint an;
+    angle_t angle;
+    float dist;
 
     z -= source->floorClip;
 
@@ -1269,7 +1297,7 @@ mobj_t* P_SpawnMotherMissile(mobjtype_t type, float x, float y, float z,
         angle += (P_Random() - P_Random()) << 21;
     }
 
-    if(!(th = P_SpawnMobj3f(type, x, y, z, angle, 0)))
+    if(!(th = GameMap_SpawnMobj3f(map, type, x, y, z, angle, 0)))
         return NULL;
 
     if(th->info->seeSound)
@@ -1289,4 +1317,5 @@ mobj_t* P_SpawnMotherMissile(mobjtype_t type, float x, float y, float z,
 
     P_CheckMissileSpawn(th);
     return th;
+    }
 }

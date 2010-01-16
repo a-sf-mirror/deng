@@ -32,24 +32,9 @@
 #  error "Using jDoom headers without __JDOOM__"
 #endif
 
-/**
- * Global state of boss brain.
- */
-typedef struct braindata_s {
-    int             easy;
-    int             targetOn;
-} braindata_t;
+void        P_SpawnBrainTargets(struct gamemap_s* map);
 
-extern braindata_t brain;
-extern mobj_t **brainTargets;
-extern int numBrainTargets;
-extern int numBrainTargetsAlloc;
-
-extern boolean bossKilled;
-
-void        P_SpawnBrainTargets(void);
-
-void        P_NoiseAlert(mobj_t *target, mobj_t *emmiter);
+void        P_NoiseAlert(mobj_t* target, mobj_t* emmiter);
 int         P_Massacre(void);
 
 #endif

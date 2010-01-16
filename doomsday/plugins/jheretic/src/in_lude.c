@@ -31,6 +31,7 @@
 
 #include "jheretic.h"
 
+#include "gamemap.h"
 #include "hu_stuff.h"
 #include "d_net.h"
 #include "am_map.h"
@@ -235,12 +236,13 @@ void IN_Stop(void)
  */
 void IN_InitStats(void)
 {
-    signed int          slaughterfrags;
+    signed int slaughterfrags;
 
-    int                 i, j;
-    int                 posNum;
-    int                 slaughterCount;
-    int                 teamCount, team;
+    int i, j;
+    int posNum;
+    int slaughterCount;
+    int teamCount, team;
+    gamemap_t* map = P_CurrentGameMap();
 
     // Init team info.
     if(IS_NETGAME)
@@ -257,7 +259,7 @@ void IN_InitStats(void)
         }
     }
 
-    time = mapTime / 35;
+    time = map->time / 35;
     hours = time / 3600;
     time -= hours * 3600;
     minutes = time / 60;
@@ -278,23 +280,25 @@ void IN_InitStats(void)
         {
             if(players[i].plr->inGame)
             {
-                if(totalKills)
+                gamemap_t* map = P_CurrentGameMap();
+
+                if(map->totalKills)
                 {
-                    j = players[i].killCount * 100 / totalKills;
+                    j = players[i].killCount * 100 / map->totalKills;
                     if(j > killPercent[playerTeam[i]])
                         killPercent[playerTeam[i]] = j;
                 }
 
-                if(totalItems)
+                if(map->totalItems)
                 {
-                    j = players[i].itemCount * 100 / totalItems;
+                    j = players[i].itemCount * 100 / map->totalItems;
                     if(j > bonusPercent[playerTeam[i]])
                         bonusPercent[playerTeam[i]] = j;
                 }
 
-                if(totalSecret)
+                if(map->totalSecret)
                 {
-                    j = players[i].secretCount * 100 / totalSecret;
+                    j = players[i].secretCount * 100 / map->totalSecret;
                     if(j > secretPercent[playerTeam[i]])
                         secretPercent[playerTeam[i]] = j;
                 }
@@ -681,10 +685,11 @@ void IN_DrawYAH(void)
 
 void IN_DrawSingleStats(void)
 {
-    static int          sounds;
+    static int sounds;
 
-    int                 x;
-    char               *levelname;
+    gamemap_t* map = P_CurrentGameMap();
+    char* levelname;
+    int x;
 
     levelname = P_GetShortMapName(gameEpisode, gameMap);
 
@@ -718,7 +723,7 @@ void IN_DrawSingleStats(void)
     IN_DrawNumber(players[CONSOLEPLAYER].killCount, 200, 65, 3,
                   defFontRGB[0], defFontRGB[1], defFontRGB[2], 1);
     IN_DrawShadowChar(248, 65, '/', GF_FONTB);
-    IN_DrawNumber(totalKills, 248, 65, 3, defFontRGB[0], defFontRGB[1],
+    IN_DrawNumber(map->totalKills, 248, 65, 3, defFontRGB[0], defFontRGB[1],
                   defFontRGB[2], 1);
 
     if(interTime < 60)
@@ -733,7 +738,7 @@ void IN_DrawSingleStats(void)
     IN_DrawNumber(players[CONSOLEPLAYER].itemCount, 200, 90, 3,
                   defFontRGB[0], defFontRGB[1], defFontRGB[2], 1);
     IN_DrawShadowChar(248, 90, '/', GF_FONTB);
-    IN_DrawNumber(totalItems, 248, 90, 3, defFontRGB[0], defFontRGB[1],
+    IN_DrawNumber(map->totalItems, 248, 90, 3, defFontRGB[0], defFontRGB[1],
                   defFontRGB[2], 1);
 
     if(interTime < 90)
@@ -748,7 +753,7 @@ void IN_DrawSingleStats(void)
     IN_DrawNumber(players[CONSOLEPLAYER].secretCount, 200, 115, 3,
                   defFontRGB[0], defFontRGB[1], defFontRGB[2], 1);
     IN_DrawShadowChar(248, 115, '/', GF_FONTB);
-    IN_DrawNumber(totalSecret, 248, 115, 3, defFontRGB[0], defFontRGB[1],
+    IN_DrawNumber(map->totalSecret, 248, 115, 3, defFontRGB[0], defFontRGB[1],
                   defFontRGB[2], 1);
 
     if(interTime < 150)

@@ -30,6 +30,7 @@
 
 #include "jheretic.h"
 
+#include "gamemap.h"
 #include "d_net.h"
 #include "st_lib.h"
 #include "hu_stuff.h"
@@ -510,14 +511,15 @@ void ST_updateWidgets(int player)
 
 void ST_Ticker(void)
 {
-    int                 i;
+    int i;
 
     Hu_InventoryTicker();
 
     for(i = 0; i < MAXPLAYERS; ++i)
     {
-        player_t*           plr = &players[i];
-        hudstate_t*         hud = &hudStates[i];
+        player_t* plr = &players[i];
+        hudstate_t* hud = &hudStates[i];
+        gamemap_t* map = P_CurrentGameMap();
 
         if(!(plr->plr->inGame && (plr->plr->flags & DDPF_LOCAL)))
             continue;
@@ -526,7 +528,7 @@ void ST_Ticker(void)
 
         if(!P_IsPaused())
         {
-            int                 delta, curHealth;
+            int delta, curHealth;
 
             if(cfg.hudTimer == 0)
             {
@@ -543,7 +545,7 @@ void ST_Ticker(void)
             if(hud->currentInvItemFlash > 0)
                 hud->currentInvItemFlash--;
 
-            if(mapTime & 1)
+            if(map->time & 1)
             {
                 hud->chainWiggle = P_Random() & 1;
             }
@@ -771,25 +773,26 @@ void ST_HUDUnHide(int player, hueevent_t ev)
 
 static void drawIcons(int player)
 {
-    int                 frame;
-    float               iconAlpha = cfg.hudIconAlpha;
-    float               textAlpha = cfg.hudColor[3];
-    hudstate_t*         hud = &hudStates[player];
-    player_t*           plr = &players[player];
+    int frame;
+    float iconAlpha = cfg.hudIconAlpha;
+    float textAlpha = cfg.hudColor[3];
+    hudstate_t* hud = &hudStates[player];
+    player_t* plr = &players[player];
+    gamemap_t* map = P_CurrentGameMap();
 
     Draw_BeginZoom(cfg.hudScale, 2, 2);
 
     // Flight icons
     if(plr->powers[PT_FLIGHT])
     {
-        int     offset = (cfg.hudShown[HUD_AMMO] && cfg.screenBlocks > 10 &&
+        int offset = (cfg.hudShown[HUD_AMMO] && cfg.screenBlocks > 10 &&
                           plr->readyWeapon > 0 &&
                           plr->readyWeapon < 7) ? 43 : 0;
 
         if(plr->powers[PT_FLIGHT] > BLINKTHRESHOLD ||
            !(plr->powers[PT_FLIGHT] & 16))
         {
-            frame = (mapTime / 3) & 15;
+            frame = (map->time / 3) & 15;
             if(plr->plr->mo->flags2 & MF2_FLY)
             {
                 if(hud->hitCenterFrame && (frame != 15 && frame != 0))
@@ -831,7 +834,7 @@ static void drawIcons(int player)
         if(cfg.tomeCounter || plr->powers[PT_WEAPONLEVEL2] > BLINKTHRESHOLD
            || !(plr->powers[PT_WEAPONLEVEL2] & 16))
         {
-            frame = (mapTime / 3) & 15;
+            frame = (map->time / 3) & 15;
             if(cfg.tomeCounter && plr->powers[PT_WEAPONLEVEL2] < 35)
             {
                 DGL_Color4f(1, 1, 1, plr->powers[PT_WEAPONLEVEL2] / 35.0f);

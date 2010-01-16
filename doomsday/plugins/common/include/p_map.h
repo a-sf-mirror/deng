@@ -29,27 +29,6 @@
 #ifndef __COMMON_P_LOCAL__
 #define __COMMON_P_LOCAL__
 
-extern float attackRange;
-
-// If "floatOk" true, move would be ok if within "tmFloorZ - tmCeilingZ".
-extern boolean floatOk;
-extern float tmFloorZ;
-extern float tmCeilingZ;
-extern material_t* tmFloorMaterial;
-
-extern linedef_t* ceilingLine, *floorLine;
-extern linedef_t* blockLine;
-extern mobj_t* lineTarget; // Who got hit (or NULL).
-extern mobj_t* tmThing;
-
-#if __JHEXEN__
-extern mobj_t* puffSpawned;
-extern mobj_t* blockingMobj;
-#endif
-
-extern float tmBBox[];
-extern boolean fellDown;
-
 boolean         P_CheckSight(const mobj_t* from, const mobj_t* to);
 
 boolean         P_CheckPosition2f(mobj_t* thing, float x, float y);

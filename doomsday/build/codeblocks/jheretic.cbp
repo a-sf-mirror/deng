@@ -98,6 +98,7 @@
 		<Unit filename="..\..\plugins\common\include\g_common.h" />
 		<Unit filename="..\..\plugins\common\include\g_controls.h" />
 		<Unit filename="..\..\plugins\common\include\g_update.h" />
+		<Unit filename="..\..\plugins\common\include\gamemap.h" />
 		<Unit filename="..\..\plugins\common\include\hu_inventory.h" />
 		<Unit filename="..\..\plugins\common\include\hu_lib.h" />
 		<Unit filename="..\..\plugins\common\include\hu_log.h" />
@@ -146,6 +147,7 @@
 		<Unit filename="..\..\plugins\common\src\g_controls.c" />
 		<Unit filename="..\..\plugins\common\src\g_game.c" />
 		<Unit filename="..\..\plugins\common\src\g_update.c" />
+		<Unit filename="..\..\plugins\common\src\gamemap.c" />
 		<Unit filename="..\..\plugins\common\src\hu_inventory.c" />
 		<Unit filename="..\..\plugins\common\src\hu_lib.c" />
 		<Unit filename="..\..\plugins\common\src\hu_log.c" />
@@ -219,8 +221,6 @@
 		<Unit filename="..\..\plugins\jheretic\include\p_sound.h" />
 		<Unit filename="..\..\plugins\jheretic\include\p_spec.h" />
 		<Unit filename="..\..\plugins\jheretic\include\p_telept.h" />
-		<Unit filename="..\..\plugins\jheretic\include\r_data.h" />
-		<Unit filename="..\..\plugins\jheretic\include\r_defs.h" />
 		<Unit filename="..\..\plugins\jheretic\include\r_local.h" />
 		<Unit filename="..\..\plugins\jheretic\include\resource.h" />
 		<Unit filename="..\..\plugins\jheretic\include\st_stuff.h" />

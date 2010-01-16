@@ -22,9 +22,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor,
  * Boston, MA  02110-1301  USA
  *
- * \bug Not 64bit clean: In function 'SV_ReadMobj': cast to pointer from integer of different size
- * \bug Not 64bit clean: In function 'P_v19_UnArchivePlayers': cast from pointer to integer of different size
- * \bug Not 64bit clean: In function 'P_v19_UnArchiveThinkers': cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'SV_ReadMobj': cast to pointer from integer of different size
+ * @fixme Not 64bit clean: In function 'P_v19_UnArchivePlayers': cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'P_v19_UnArchiveThinkers': cast from pointer to integer of different size
  */
 
 /**
@@ -35,6 +35,7 @@
 
 #include "jdoom.h"
 
+#include "gamemap.h"
 #include "p_map.h"
 #include "p_mapsetup.h"
 #include "p_tick.h"
@@ -380,7 +381,7 @@ void P_v19_UnArchiveWorld(void)
     sector_t           *sec;
     xsector_t          *xsec;
     linedef_t          *line;
-    xline_t            *xline;
+    xlinedef_t            *xline;
 
     get = (short *) savePtr;
 
@@ -852,9 +853,10 @@ void P_v19_UnArchiveSpecials(void)
 
 boolean SV_v19_LoadGame(const char* savename)
 {
-    int                 i, a, b, c;
-    size_t              length;
-    char                vcheck[VERSIONSIZE];
+    gamemap_t* map = P_CurrentGameMap();
+    int i, a, b, c;
+    size_t length;
+    char vcheck[VERSIONSIZE];
 
     if(!(length = M_ReadFile(savename, &saveBuffer)))
         return false;
@@ -895,7 +897,7 @@ boolean SV_v19_LoadGame(const char* savename)
     a = *savePtr++;
     b = *savePtr++;
     c = *savePtr++;
-    mapTime = (a << 16) + (b << 8) + c;
+    map->time = (a << 16) + (b << 8) + c;
 
     // Dearchive all the modifications.
     P_v19_UnArchivePlayers();

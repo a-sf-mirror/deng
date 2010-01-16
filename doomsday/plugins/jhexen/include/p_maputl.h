@@ -34,6 +34,6 @@
 
 #include "p_mobj.h"
 
-void            P_ApplyTorque(mobj_t *mo);
+void            P_ApplyTorque(mobj_t* mo);
 
 #endif

@@ -36,20 +36,15 @@
 
 #define MO_TELEPORTMAN          14
 
-void        P_InitLava(void);
+void        GameMap_InitLava(struct gamemap_s* map);
 
-void        P_SpawnSpecials(void);
-void        P_UpdateSpecials(void);
+boolean     P_ExecuteLineSpecial(int special, byte* args, linedef_t* line, int side, mobj_t* mo);
+boolean     P_StartLockedACS(linedef_t* line, byte* args, mobj_t* mo, int side);
+boolean     P_ActivateLine(linedef_t* ld, mobj_t* mo, int side, int activationType);
 
-boolean     P_ExecuteLineSpecial(int special, byte *args, linedef_t *line,
-                                 int side, mobj_t *mo);
-boolean     P_ActivateLine(linedef_t *ld, mobj_t *mo, int side,
-                           int activationType);
+void        P_PlayerInSpecialSector(player_t* plr);
+void        P_PlayerOnSpecialFloor(player_t* plr);
 
-void        P_PlayerInSpecialSector(player_t *plr);
-void        P_PlayerOnSpecialFloor(player_t *plr);
-
-void        P_AnimateSurfaces(void);
 void        P_InitLightning(void);
 void        P_ForceLightning(void);
 
@@ -65,28 +60,25 @@ typedef enum {
     STAIRS_PHASED
 } stairs_e;
 
-result_e    T_MovePlane(sector_t *sector, float speed, float dest,
-                        int crush, int floorOrCeiling, int direction);
+result_e    T_MovePlane(sector_t* sector, float speed, float dest, int crush, int floorOrCeiling, int direction);
 
-int         EV_BuildStairs(linedef_t *line, byte *args, int direction,
-                           stairs_e type);
-int         EV_FloorCrushStop(linedef_t *line, byte *args);
+int         EV_BuildStairs(linedef_t* line, byte* args, int direction, stairs_e type);
+int         EV_FloorCrushStop(linedef_t* line, byte* args);
 
 #define TELEFOGHEIGHTF          (32)
 
-boolean     P_Teleport(mobj_t *mo, float x, float y, angle_t angle,
-                       boolean useFog);
-boolean     EV_Teleport(int tid, mobj_t *thing, boolean fog);
-void        P_ArtiTele(player_t *player);
+boolean     P_Teleport(mobj_t* mo, float x, float y, angle_t angle, boolean useFog);
+boolean     EV_Teleport(int tid, mobj_t* mo, boolean fog);
+void        P_ArtiTele(player_t* player);
 
-extern mobjtype_t TranslateThingType[];
+mobjtype_t  P_MapScriptThingIdToMobjType(int thingId);
 
-boolean     EV_ThingProjectile(byte *args, boolean gravity);
-boolean     EV_ThingSpawn(byte *args, boolean fog);
-boolean     EV_ThingActivate(int tid);
-boolean     EV_ThingDeactivate(int tid);
-boolean     EV_ThingRemove(int tid);
-boolean     EV_ThingDestroy(int tid);
+boolean     EV_ThingProjectile(struct gamemap_s* map, byte* args, boolean gravity);
+boolean     EV_ThingSpawn(struct gamemap_s* map, byte* args, boolean fog);
+boolean     EV_ThingActivate(struct gamemap_s* map, int tid);
+boolean     EV_ThingDeactivate(struct gamemap_s* map, int tid);
+boolean     EV_ThingRemove(struct gamemap_s* map, int tid);
+boolean     EV_ThingDestroy(struct gamemap_s* map, int tid);
 
 void        P_InitSky(int map);
 

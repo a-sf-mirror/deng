@@ -43,8 +43,10 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapspec.h"
+#include "p_mapsetup.h"
 #include "p_start.h"
 #include "p_tick.h"
 #include "p_ceiling.h"
@@ -92,14 +94,15 @@ static void stopCeiling(ceiling_t* ceiling)
 {
     P_ToXSector(ceiling->sector)->specialData = NULL;
 #if __JHEXEN__
-    P_TagFinished(P_ToXSector(ceiling->sector)->tag);
+    ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(ceiling->sector)->tag);
 #endif
     DD_ThinkerRemove(&ceiling->thinker);
 }
 
 void T_MoveCeiling(ceiling_t* ceiling)
 {
-    result_e            res;
+    gamemap_t* map = P_CurrentGameMap();
+    result_e res;
 
     switch(ceiling->state)
     {
@@ -110,7 +113,7 @@ void T_MoveCeiling(ceiling_t* ceiling)
 
         // Play a "while-moving" sound?
 #if !__JHEXEN__
-        if(!(mapTime & 7))
+        if(!(map->time & 7))
         {
 # if __JHERETIC__
             S_PlaneSound(ceiling->sector, PLN_CEILING, SFX_CEILINGMOVE);
@@ -171,7 +174,7 @@ void T_MoveCeiling(ceiling_t* ceiling)
 
         // Play a "while-moving" sound?
 #if !__JHEXEN__
-        if(!(mapTime & 7))
+        if(!(map->time & 7))
         {
 # if __JHERETIC__
             S_PlaneSound(ceiling->sector, PLN_CEILING, SFX_CEILINGMOVE);
@@ -263,21 +266,20 @@ void T_MoveCeiling(ceiling_t* ceiling)
 }
 
 #if __JDOOM64__
-static int EV_DoCeiling2(linedef_t* line, int tag, float basespeed,
-                         ceilingtype_e type)
+static int EV_DoCeiling2(gamemap_t* map, linedef_t* line, int tag, float basespeed, ceilingtype_e type)
 #elif __JHEXEN__
-static int EV_DoCeiling2(byte* arg, int tag, float basespeed, ceilingtype_e type)
+static int EV_DoCeiling2(gamemap_t* map, byte* arg, int tag, float basespeed, ceilingtype_e type)
 #else
-static int EV_DoCeiling2(int tag, float basespeed, ceilingtype_e type)
+static int EV_DoCeiling2(gamemap_t* map, int tag, float basespeed, ceilingtype_e type)
 #endif
 {
-    int             rtn = 0;
-    xsector_t*      xsec;
-    sector_t*       sec = NULL;
-    ceiling_t*      ceiling;
-    iterlist_t*     list;
+    int rtn = 0;
+    xsector_t* xsec;
+    sector_t* sec = NULL;
+    ceiling_t* ceiling;
+    iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(tag, false);
+    list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)
         return rtn;
 
@@ -442,16 +444,23 @@ static int EV_DoCeiling2(int tag, float basespeed, ceilingtype_e type)
  * Move a ceiling up/down.
  */
 #if __JHEXEN__
-int EV_DoCeiling(linedef_t *line, byte *args, ceilingtype_e type)
+int EV_DoCeiling(linedef_t* line, byte* args, ceilingtype_e type)
 #else
-int EV_DoCeiling(linedef_t *line, ceilingtype_e type)
+int EV_DoCeiling(linedef_t* line, ceilingtype_e type)
 #endif
 {
+    assert(line);
 #if __JHEXEN__
-    return EV_DoCeiling2(args, (int) args[0], (float) args[1] * (1.0 / 8),
-                         type);
+    assert(args);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    return EV_DoCeiling2(map, args, (int) args[0], (float) args[1] * (1.0 / 8), type);
+    }
 #else
-    int         rtn = 0;
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int rtn = 0;
+
     // Reactivate in-stasis ceilings...for certain types.
     switch(type)
     {
@@ -467,10 +476,11 @@ int EV_DoCeiling(linedef_t *line, ceilingtype_e type)
         break;
     }
 # if __JDOOM64__
-    return EV_DoCeiling2(line, P_ToXLine(line)->tag, CEILSPEED, type) || rtn;
+    return EV_DoCeiling2(map, line, P_ToXLine(line)->tag, CEILSPEED, type) || rtn;
 # else
-    return EV_DoCeiling2(P_ToXLine(line)->tag, CEILSPEED, type) || rtn;
+    return EV_DoCeiling2(map, P_ToXLine(line)->tag, CEILSPEED, type) || rtn;
 # endif
+    }
 #endif
 }
 

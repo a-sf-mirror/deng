@@ -37,8 +37,6 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
 #include "p_iterlist.h"
@@ -66,9 +64,9 @@
  *
  * @return          Ptr to the new list.
  */
-iterlist_t *P_CreateIterList(void)
+iterlist_t* P_CreateIterList(void)
 {
-    iterlist_t *list = malloc(sizeof(iterlist_t));
+    iterlist_t* list = malloc(sizeof(iterlist_t));
 
     list->list = NULL;
     list->count = list->max = list->rover = 0;
@@ -82,17 +80,14 @@ iterlist_t *P_CreateIterList(void)
  *
  * @param list      Ptr to the list to be destroyed.
  */
-void P_DestroyIterList(iterlist_t *list)
+void P_DestroyIterList(iterlist_t* list)
 {
-    if(!list)
-        return;
-
+    assert(list);
     if(list->count > 0)
     {
         free(list->list);
         list->list = NULL;
     }
-
     free(list);
     list = NULL;
 }
@@ -105,19 +100,16 @@ void P_DestroyIterList(iterlist_t *list)
  * @return          The index of the object within 'list' once added,
  *                  ELSE @c -1.
  */
-int P_AddObjectToIterList(iterlist_t *list, void *obj)
+int P_AddObjectToIterList(iterlist_t* list, void* obj)
 {
-    if(!list || !obj)
-        return -1;
-
+    assert(list);
+    assert(obj);
     if(++list->count > list->max)
     {
          list->max = (list->max? list->max * 2 : 8);
          list->list = realloc(list->list, sizeof(void*) * list->max);
     }
-
     list->list[list->count - 1] = obj;
-
     return list->count - 1;
 }
 
@@ -127,15 +119,12 @@ int P_AddObjectToIterList(iterlist_t *list, void *obj)
  * @param list      Ptr to the list to be pop.
  * @return          Ptr to the next object in 'list'.
  */
-void* P_PopIterList(iterlist_t *list)
+void* P_PopIterList(iterlist_t* list)
 {
-    if(!list)
-        return NULL;
-
+    assert(list);
     if(list->count > 0)
         return list->list[--list->count];
-    else
-        return NULL;
+    return NULL;
 }
 
 /**
@@ -144,25 +133,22 @@ void* P_PopIterList(iterlist_t *list)
  * @param list      Ptr to the list to iterate.
  * @return          The next object in the iterlist.
  */
-void* P_IterListIterator(iterlist_t *list)
+void* P_IterListIterator(iterlist_t* list)
 {
-    if(!list || !list->count)
+    assert(list);
+    if(!list->count)
         return NULL;
 
     if(list->forward)
     {
         if(list->rover < list->count - 1)
             return list->list[++list->rover];
-        else
-            return NULL;
+        return NULL;
     }
-    else
-    {
-        if(list->rover > 0)
-            return list->list[--list->rover];
-        else
-            return NULL;
-    }
+
+    if(list->rover > 0)
+        return list->list[--list->rover];
+    return NULL;
 }
 
 /**
@@ -171,11 +157,9 @@ void* P_IterListIterator(iterlist_t *list)
  * @param list      Ptr to the list whoose iterator to reset.
  * @param forward   @c true = iteration will move forwards.
  */
-void P_IterListResetIterator(iterlist_t *list, boolean forward)
+void P_IterListResetIterator(iterlist_t* list, boolean forward)
 {
-    if(!list)
-        return;
-
+    assert(list);
     list->forward = forward;
     if(list->forward)
         list->rover = -1;
@@ -188,11 +172,9 @@ void P_IterListResetIterator(iterlist_t *list, boolean forward)
  *
  * @param list      Ptr to the list to empty.
  */
-void P_EmptyIterList(iterlist_t *list)
+void P_EmptyIterList(iterlist_t* list)
 {
-    if(!list)
-        return;
-
+    assert(list);
     list->count = list->max = list->rover = 0;
 }
 
@@ -202,10 +184,8 @@ void P_EmptyIterList(iterlist_t *list)
  * @param list      Ptr to the list to return the size of.
  * @return          The size of the iterlist.
  */
-int P_IterListSize(iterlist_t *list)
+int P_IterListSize(iterlist_t* list)
 {
-    if(!list)
-        return 0;
-
+    assert(list);
     return list->count;
 }

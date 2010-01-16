@@ -39,29 +39,22 @@
 #include "wi_stuff.h"
 
 extern player_t players[MAXPLAYERS];
-extern boolean secretExit;
 extern int nextMap;
 extern skillmode_t gameSkill;
 extern int gameEpisode;
 extern int gameMap;
 extern int nextMap; // If non zero this will be the next map.
-extern int totalKills, totalItems, totalSecret;
 extern boolean respawnMonsters;
-extern wbstartstruct_t wmInfo;
 extern boolean userGame;
-extern int mapStartTic;
-extern int bodyQueueSlot;
 extern boolean deathmatch;
 extern boolean paused;
 extern boolean precache;
-extern int gsvMapMusic;
+extern wbstartstruct_t wmInfo; // Params for world map / intermission.
 
 void            G_Register(void);
 void            G_CommonPreInit(void);
 void            G_CommonPostInit(void);
 void            R_InitRefresh(void);
-
-void            G_DeathMatchSpawnPlayer(int playernum);
 
 void            G_PrintMapList(void);
 boolean         G_ValidateMap(int* episode, int* map);
@@ -93,7 +86,7 @@ void            G_DemoAborted(void);
 void            G_DoReborn(int playernum);
 void            G_PlayerReborn(int player);
 
-void            G_LeaveMap(int map, int position, boolean secret);
+void            G_LeaveMap(int player, int map, int position, boolean secret);
 
 void            G_WorldDone(void);
 
@@ -106,5 +99,7 @@ void            G_PrepareWIData(void);
 
 void            G_QueueBody(mobj_t* body);
 
-void            P_GetMapLumpName(int episode, int map, char* lumpName);
+void            P_GetMapLumpName(char lumpName[9], int episode, int map);
+
+struct gamemap_s* P_CurrentGameMap(void);
 #endif

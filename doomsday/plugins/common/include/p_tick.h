@@ -22,19 +22,13 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * p_tick.h: (Common) Top-level tick stuff.
- */
+#ifndef LIBCOMMON_TICK_H
+#define LIBCOMMON_TICK_H
 
-#ifndef __P_TICK_H__
-#define __P_TICK_H__
-
-extern int mapTime;
-extern int actualMapTime;
 extern int timerGame;
 
-void    P_RunPlayers(timespan_t ticLength);
-boolean P_IsPaused(void);
-void    P_DoTick(void);
+void                P_RunPlayers(timespan_t ticLength);
+boolean             P_IsPaused(void);
+void                P_DoTick(void);
 
-#endif
+#endif /* LIBCOMMON_TICK_H */

@@ -31,6 +31,7 @@
 
 #include "jhexen.h"
 
+#include "gamemap.h"
 #include "p_map.h"
 
 // MACROS ------------------------------------------------------------------
@@ -43,143 +44,152 @@
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static boolean ActivateThing(mobj_t *mobj);
-static boolean DeactivateThing(mobj_t *mobj);
+static boolean activateMobj(mobj_t* mo);
+static boolean deactivateMobj(mobj_t* mo);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-mobjtype_t TranslateThingType[] = {
-    MT_MAPSPOT,                 // T_NONE
-    MT_CENTAUR,                 // T_CENTAUR
-    MT_CENTAURLEADER,           // T_CENTAURLEADER
-    MT_DEMON,                   // T_DEMON
-    MT_ETTIN,                   // T_ETTIN
-    MT_FIREDEMON,               // T_FIREGARGOYLE
-    MT_SERPENT,                 // T_WATERLURKER
-    MT_SERPENTLEADER,           // T_WATERLURKERLEADER
-    MT_WRAITH,                  // T_WRAITH
-    MT_WRAITHB,                 // T_WRAITHBURIED
-    MT_FIREBALL1,               // T_FIREBALL1
-    MT_MANA1,                   // T_MANA1
-    MT_MANA2,                   // T_MANA2
-    MT_SPEEDBOOTS,              // T_ITEMBOOTS
-    MT_ARTIEGG,                 // T_ITEMEGG
-    MT_ARTIFLY,                 // T_ITEMFLIGHT
-    MT_SUMMONMAULATOR,          // T_ITEMSUMMON
-    MT_TELEPORTOTHER,           // T_ITEMTPORTOTHER
-    MT_ARTITELEPORT,            // T_ITEMTELEPORT
-    MT_BISHOP,                  // T_BISHOP
-    MT_ICEGUY,                  // T_ICEGOLEM
-    MT_BRIDGE,                  // T_BRIDGE
-    MT_BOOSTARMOR,              // T_DRAGONSKINBRACERS
-    MT_HEALINGBOTTLE,           // T_ITEMHEALTHPOTION
-    MT_HEALTHFLASK,             // T_ITEMHEALTHFLASK
-    MT_ARTISUPERHEAL,           // T_ITEMHEALTHFULL
-    MT_BOOSTMANA,               // T_ITEMBOOSTMANA
-    MT_FW_AXE,                  // T_FIGHTERAXE
-    MT_FW_HAMMER,               // T_FIGHTERHAMMER
-    MT_FW_SWORD1,               // T_FIGHTERSWORD1
-    MT_FW_SWORD2,               // T_FIGHTERSWORD2
-    MT_FW_SWORD3,               // T_FIGHTERSWORD3
-    MT_CW_SERPSTAFF,            // T_CLERICSTAFF
-    MT_CW_HOLY1,                // T_CLERICHOLY1
-    MT_CW_HOLY2,                // T_CLERICHOLY2
-    MT_CW_HOLY3,                // T_CLERICHOLY3
-    MT_MW_CONE,                 // T_MAGESHARDS
-    MT_MW_STAFF1,               // T_MAGESTAFF1
-    MT_MW_STAFF2,               // T_MAGESTAFF2
-    MT_MW_STAFF3,               // T_MAGESTAFF3
-    MT_EGGFX,                   // T_MORPHBLAST
-    MT_ROCK1,                   // T_ROCK1
-    MT_ROCK2,                   // T_ROCK2
-    MT_ROCK3,                   // T_ROCK3
-    MT_DIRT1,                   // T_DIRT1
-    MT_DIRT2,                   // T_DIRT2
-    MT_DIRT3,                   // T_DIRT3
-    MT_DIRT4,                   // T_DIRT4
-    MT_DIRT5,                   // T_DIRT5
-    MT_DIRT6,                   // T_DIRT6
-    MT_ARROW,                   // T_ARROW
-    MT_DART,                    // T_DART
-    MT_POISONDART,              // T_POISONDART
-    MT_RIPPERBALL,              // T_RIPPERBALL
-    MT_SGSHARD1,                // T_STAINEDGLASS1
-    MT_SGSHARD2,                // T_STAINEDGLASS2
-    MT_SGSHARD3,                // T_STAINEDGLASS3
-    MT_SGSHARD4,                // T_STAINEDGLASS4
-    MT_SGSHARD5,                // T_STAINEDGLASS5
-    MT_SGSHARD6,                // T_STAINEDGLASS6
-    MT_SGSHARD7,                // T_STAINEDGLASS7
-    MT_SGSHARD8,                // T_STAINEDGLASS8
-    MT_SGSHARD9,                // T_STAINEDGLASS9
-    MT_SGSHARD0,                // T_STAINEDGLASS0
-    MT_PROJECTILE_BLADE,        // T_BLADE
-    MT_ICESHARD,                // T_ICESHARD
-    MT_FLAME_SMALL,             // T_FLAME_SMALL
-    MT_FLAME_LARGE,             // T_FLAME_LARGE
-    MT_ARMOR_1,                 // T_MESHARMOR
-    MT_ARMOR_2,                 // T_FALCONSHIELD
-    MT_ARMOR_3,                 // T_PLATINUMHELM
-    MT_ARMOR_4,                 // T_AMULETOFWARDING
-    MT_ARTIPOISONBAG,           // T_ITEMFLECHETTE
-    MT_ARTITORCH,               // T_ITEMTORCH
-    MT_BLASTRADIUS,             // T_ITEMREPULSION
-    MT_MANA3,                   // T_MANA3
-    MT_ARTIPUZZSKULL,           // T_PUZZSKULL
-    MT_ARTIPUZZGEMBIG,          // T_PUZZGEMBIG
-    MT_ARTIPUZZGEMRED,          // T_PUZZGEMRED
-    MT_ARTIPUZZGEMGREEN1,       // T_PUZZGEMGREEN1
-    MT_ARTIPUZZGEMGREEN2,       // T_PUZZGEMGREEN2
-    MT_ARTIPUZZGEMBLUE1,        // T_PUZZGEMBLUE1
-    MT_ARTIPUZZGEMBLUE2,        // T_PUZZGEMBLUE2
-    MT_ARTIPUZZBOOK1,           // T_PUZZBOOK1
-    MT_ARTIPUZZBOOK2,           // T_PUZZBOOK2
-    MT_KEY1,                    // T_METALKEY
-    MT_KEY2,                    // T_SMALLMETALKEY
-    MT_KEY3,                    // T_AXEKEY
-    MT_KEY4,                    // T_FIREKEY
-    MT_KEY5,                    // T_GREENKEY
-    MT_KEY6,                    // T_MACEKEY
-    MT_KEY7,                    // T_SILVERKEY
-    MT_KEY8,                    // T_RUSTYKEY
-    MT_KEY9,                    // T_HORNKEY
-    MT_KEYA,                    // T_SERPENTKEY
-    MT_WATER_DRIP,              // T_WATERDRIP
-    MT_FLAME_SMALL_TEMP,        // T_TEMPSMALLFLAME
-    MT_FLAME_SMALL,             // T_PERMSMALLFLAME
-    MT_FLAME_LARGE_TEMP,        // T_TEMPLARGEFLAME
-    MT_FLAME_LARGE,             // T_PERMLARGEFLAME
-    MT_DEMON_MASH,              // T_DEMON_MASH
-    MT_DEMON2_MASH,             // T_DEMON2_MASH
-    MT_ETTIN_MASH,              // T_ETTIN_MASH
-    MT_CENTAUR_MASH,            // T_CENTAUR_MASH
-    MT_THRUSTFLOOR_UP,          // T_THRUSTSPIKEUP
-    MT_THRUSTFLOOR_DOWN,        // T_THRUSTSPIKEDOWN
-    MT_WRAITHFX4,               // T_FLESH_DRIP1
-    MT_WRAITHFX5,               // T_FLESH_DRIP2
-    MT_WRAITHFX2                // T_SPARK_DRIP
+static const mobjtype_t mapScriptThingIdToMobjTypeXlat[] = {
+    MT_MAPSPOT,
+    MT_CENTAUR,
+    MT_CENTAURLEADER,
+    MT_DEMON,
+    MT_ETTIN,
+    MT_FIREDEMON,
+    MT_SERPENT,
+    MT_SERPENTLEADER,
+    MT_WRAITH,
+    MT_WRAITHB,
+    MT_FIREBALL1,
+    MT_MANA1,
+    MT_MANA2,
+    MT_SPEEDBOOTS,
+    MT_ARTIEGG,
+    MT_ARTIFLY,
+    MT_SUMMONMAULATOR,
+    MT_TELEPORTOTHER,
+    MT_ARTITELEPORT,
+    MT_BISHOP,
+    MT_ICEGUY,
+    MT_BRIDGE,
+    MT_BOOSTARMOR,
+    MT_HEALINGBOTTLE,
+    MT_HEALTHFLASK,
+    MT_ARTISUPERHEAL,
+    MT_BOOSTMANA,
+    MT_FW_AXE,
+    MT_FW_HAMMER,
+    MT_FW_SWORD1,
+    MT_FW_SWORD2,
+    MT_FW_SWORD3,
+    MT_CW_SERPSTAFF,
+    MT_CW_HOLY1,
+    MT_CW_HOLY2,
+    MT_CW_HOLY3,
+    MT_MW_CONE,
+    MT_MW_STAFF1,
+    MT_MW_STAFF2,
+    MT_MW_STAFF3,
+    MT_EGGFX,
+    MT_ROCK1,
+    MT_ROCK2,
+    MT_ROCK3,
+    MT_DIRT1,
+    MT_DIRT2,
+    MT_DIRT3,
+    MT_DIRT4,
+    MT_DIRT5,
+    MT_DIRT6,
+    MT_ARROW,
+    MT_DART,
+    MT_POISONDART,
+    MT_RIPPERBALL,
+    MT_SGSHARD1,
+    MT_SGSHARD2,
+    MT_SGSHARD3,
+    MT_SGSHARD4,
+    MT_SGSHARD5,
+    MT_SGSHARD6,
+    MT_SGSHARD7,
+    MT_SGSHARD8,
+    MT_SGSHARD9,
+    MT_SGSHARD0,
+    MT_PROJECTILE_BLADE,
+    MT_ICESHARD,
+    MT_FLAME_SMALL,
+    MT_FLAME_LARGE,
+    MT_ARMOR_1,
+    MT_ARMOR_2,
+    MT_ARMOR_3,
+    MT_ARMOR_4,
+    MT_ARTIPOISONBAG,
+    MT_ARTITORCH,
+    MT_BLASTRADIUS,
+    MT_MANA3,
+    MT_ARTIPUZZSKULL,
+    MT_ARTIPUZZGEMBIG,
+    MT_ARTIPUZZGEMRED,
+    MT_ARTIPUZZGEMGREEN1,
+    MT_ARTIPUZZGEMGREEN2,
+    MT_ARTIPUZZGEMBLUE1,
+    MT_ARTIPUZZGEMBLUE2,
+    MT_ARTIPUZZBOOK1,
+    MT_ARTIPUZZBOOK2,
+    MT_KEY1,
+    MT_KEY2,
+    MT_KEY3,
+    MT_KEY4,
+    MT_KEY5,
+    MT_KEY6,
+    MT_KEY7,
+    MT_KEY8,
+    MT_KEY9,
+    MT_KEYA,
+    MT_WATER_DRIP,
+    MT_FLAME_SMALL_TEMP,
+    MT_FLAME_SMALL,
+    MT_FLAME_LARGE_TEMP,
+    MT_FLAME_LARGE,
+    MT_DEMON_MASH,
+    MT_DEMON2_MASH,
+    MT_ETTIN_MASH,
+    MT_CENTAUR_MASH,
+    MT_THRUSTFLOOR_UP,
+    MT_THRUSTFLOOR_DOWN,
+    MT_WRAITHFX4,
+    MT_WRAITHFX5,
+    MT_WRAITHFX2
 };
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
-boolean EV_ThingProjectile(byte* args, boolean gravity)
+mobjtype_t P_MapScriptThingIdToMobjType(int thingId)
 {
-    uint            an;
-    int             tid, searcher;
-    angle_t         angle;
-    float           speed, vspeed;
-    mobjtype_t      moType;
-    mobj_t         *mobj, *newMobj;
-    boolean         success;
+    assert(thingId >= 0 && thingId < sizeof(mapScriptThingIdToMobjTypeXlat) / sizeof(mapScriptThingIdToMobjTypeXlat[0]));
+    return mapScriptThingIdToMobjTypeXlat[thingId];
+}
+
+boolean EV_ThingProjectile(gamemap_t* map, byte* args, boolean gravity)
+{
+    assert(map);
+    assert(args);
+    {
+    uint an;
+    int tid, searcher;
+    angle_t angle;
+    float speed, vspeed;
+    mobjtype_t moType;
+    mobj_t* mobj, *newMobj;
+    boolean success;
 
     success = false;
     searcher = -1;
     tid = args[0];
-    moType = TranslateThingType[args[1]];
+    moType = mapScriptThingIdToMobjTypeXlat[args[1]];
     if(noMonstersParm && (MOBJINFO[moType].flags & MF_COUNTKILL))
     {   // Don't spawn monsters if -nomonsters
         return false;
@@ -189,9 +199,9 @@ boolean EV_ThingProjectile(byte* args, boolean gravity)
     an = angle >> ANGLETOFINESHIFT;
     speed = FIX2FLT((int) args[3] << 13);
     vspeed = FIX2FLT((int) args[4] << 13);
-    while((mobj = P_FindMobjFromTID(tid, &searcher)) != NULL)
+    while((mobj = P_FindMobjFromTID(map, tid, &searcher)) != NULL)
     {
-        if((newMobj = P_SpawnMobj3fv(moType, mobj->pos, angle, 0)))
+        if((newMobj = GameMap_SpawnMobj3fv(map, moType, mobj->pos, angle, 0)))
         {
             if(newMobj->info->seeSound)
                 S_StartSound(newMobj->info->seeSound, newMobj);
@@ -215,32 +225,36 @@ boolean EV_ThingProjectile(byte* args, boolean gravity)
     }
 
     return success;
+    }
 }
 
-boolean EV_ThingSpawn(byte *args, boolean fog)
+boolean EV_ThingSpawn(gamemap_t* map, byte* args, boolean fog)
 {
-    int         tid, searcher;
-    angle_t     angle;
-    mobj_t     *mobj, *newMobj, *fogMobj;
-    mobjtype_t  moType;
-    boolean     success;
-    float       z;
+    assert(map);
+    assert(args);
+    {
+    int tid, searcher;
+    angle_t angle;
+    mobj_t* mobj, *newMobj, *fogMobj;
+    mobjtype_t moType;
+    boolean success;
+    float z;
 
     success = false;
     searcher = -1;
     tid = args[0];
-    moType = TranslateThingType[args[1]];
+    moType = mapScriptThingIdToMobjTypeXlat[args[1]];
     if(noMonstersParm && (MOBJINFO[moType].flags & MF_COUNTKILL))
     {   // Don't spawn monsters if -nomonsters
         return false;
     }
 
     angle = (int) args[2] << 24;
-    while((mobj = P_FindMobjFromTID(tid, &searcher)) != NULL)
+    while((mobj = P_FindMobjFromTID(map, tid, &searcher)) != NULL)
     {
         z = mobj->pos[VZ];
 
-        if((newMobj = P_SpawnMobj3fv(moType, mobj->pos, angle, 0)))
+        if((newMobj = GameMap_SpawnMobj3fv(map, moType, mobj->pos, angle, 0)))
         {
             if(P_TestMobjLocation(newMobj) == false)
             {   // Didn't fit
@@ -250,7 +264,7 @@ boolean EV_ThingSpawn(byte *args, boolean fog)
             {
                 if(fog)
                 {
-                    if((fogMobj = P_SpawnMobj3f(MT_TFOG,
+                    if((fogMobj = GameMap_SpawnMobj3f(map, MT_TFOG,
                                                 mobj->pos[VX], mobj->pos[VY],
                                                 mobj->pos[VZ] + TELEFOGHEIGHT,
                                                 angle + ANG180, 0)))
@@ -270,53 +284,62 @@ boolean EV_ThingSpawn(byte *args, boolean fog)
     }
 
     return success;
+    }
 }
 
-boolean EV_ThingActivate(int tid)
+boolean EV_ThingActivate(gamemap_t* map, int tid)
 {
-    mobj_t     *mobj;
-    int         searcher;
-    boolean     success;
+    assert(map);
+    {
+    mobj_t* mobj;
+    int searcher;
+    boolean success;
 
     success = false;
     searcher = -1;
-    while((mobj = P_FindMobjFromTID(tid, &searcher)) != NULL)
+    while((mobj = P_FindMobjFromTID(map, tid, &searcher)) != NULL)
     {
-        if(ActivateThing(mobj) == true)
+        if(activateMobj(mobj) == true)
         {
             success = true;
         }
     }
     return success;
+    }
 }
 
-boolean EV_ThingDeactivate(int tid)
+boolean EV_ThingDeactivate(gamemap_t* map, int tid)
 {
-    mobj_t      *mobj;
-    int         searcher;
-    boolean     success;
+    assert(map);
+    {
+    mobj_t* mobj;
+    int searcher;
+    boolean success;
 
     success = false;
     searcher = -1;
-    while((mobj = P_FindMobjFromTID(tid, &searcher)) != NULL)
+    while((mobj = P_FindMobjFromTID(map, tid, &searcher)) != NULL)
     {
-        if(DeactivateThing(mobj) == true)
+        if(deactivateMobj(mobj) == true)
         {
             success = true;
         }
     }
     return success;
+    }
 }
 
-boolean EV_ThingRemove(int tid)
+boolean EV_ThingRemove(gamemap_t* map, int tid)
 {
-    mobj_t      *mobj;
-    int         searcher;
-    boolean     success;
+    assert(map);
+    {
+    mobj_t* mobj;
+    int searcher;
+    boolean success;
 
     success = false;
     searcher = -1;
-    while((mobj = P_FindMobjFromTID(tid, &searcher)) != NULL)
+    while((mobj = P_FindMobjFromTID(map, tid, &searcher)) != NULL)
     {
         if(mobj->type == MT_BRIDGE)
         {
@@ -327,17 +350,20 @@ boolean EV_ThingRemove(int tid)
         success = true;
     }
     return success;
+    }
 }
 
-boolean EV_ThingDestroy(int tid)
+boolean EV_ThingDestroy(gamemap_t* map, int tid)
 {
-    mobj_t      *mobj;
-    int         searcher;
-    boolean     success;
+    assert(map);
+    {
+    mobj_t* mobj;
+    int searcher;
+    boolean success;
 
     success = false;
     searcher = -1;
-    while((mobj = P_FindMobjFromTID(tid, &searcher)) != NULL)
+    while((mobj = P_FindMobjFromTID(map, tid, &searcher)) != NULL)
     {
         if(mobj->flags & MF_SHOOTABLE)
         {
@@ -346,87 +372,88 @@ boolean EV_ThingDestroy(int tid)
         }
     }
     return success;
+    }
 }
 
-static boolean ActivateThing(mobj_t *mobj)
+static boolean activateMobj(mobj_t* mo)
 {
-    if(mobj->flags & MF_COUNTKILL)
+    if(mo->flags & MF_COUNTKILL)
     {                           // Monster
-        if(mobj->flags2 & MF2_DORMANT)
+        if(mo->flags2 & MF2_DORMANT)
         {
-            mobj->flags2 &= ~MF2_DORMANT;
-            mobj->tics = 1;
+            mo->flags2 &= ~MF2_DORMANT;
+            mo->tics = 1;
             return true;
         }
         return false;
     }
 
-    switch(mobj->type)
+    switch(mo->type)
     {
     case MT_ZTWINEDTORCH:
     case MT_ZTWINEDTORCH_UNLIT:
-        P_MobjChangeState(mobj, S_ZTWINEDTORCH_1);
-        S_StartSound(SFX_IGNITE, mobj);
+        P_MobjChangeState(mo, S_ZTWINEDTORCH_1);
+        S_StartSound(SFX_IGNITE, mo);
         break;
 
     case MT_ZWALLTORCH:
     case MT_ZWALLTORCH_UNLIT:
-        P_MobjChangeState(mobj, S_ZWALLTORCH1);
-        S_StartSound(SFX_IGNITE, mobj);
+        P_MobjChangeState(mo, S_ZWALLTORCH1);
+        S_StartSound(SFX_IGNITE, mo);
         break;
 
     case MT_ZGEMPEDESTAL:
-        P_MobjChangeState(mobj, S_ZGEMPEDESTAL2);
+        P_MobjChangeState(mo, S_ZGEMPEDESTAL2);
         break;
 
     case MT_ZWINGEDSTATUENOSKULL:
-        P_MobjChangeState(mobj, S_ZWINGEDSTATUENOSKULL2);
+        P_MobjChangeState(mo, S_ZWINGEDSTATUENOSKULL2);
         break;
 
     case MT_THRUSTFLOOR_UP:
     case MT_THRUSTFLOOR_DOWN:
-        if(mobj->args[0] == 0)
+        if(mo->args[0] == 0)
         {
-            S_StartSound(SFX_THRUSTSPIKE_LOWER, mobj);
-            mobj->flags2 &= ~MF2_DONTDRAW;
-            if(mobj->args[1])
-                P_MobjChangeState(mobj, S_BTHRUSTRAISE1);
+            S_StartSound(SFX_THRUSTSPIKE_LOWER, mo);
+            mo->flags2 &= ~MF2_DONTDRAW;
+            if(mo->args[1])
+                P_MobjChangeState(mo, S_BTHRUSTRAISE1);
             else
-                P_MobjChangeState(mobj, S_THRUSTRAISE1);
+                P_MobjChangeState(mo, S_THRUSTRAISE1);
         }
         break;
 
     case MT_ZFIREBULL:
     case MT_ZFIREBULL_UNLIT:
-        P_MobjChangeState(mobj, S_ZFIREBULL_BIRTH);
-        S_StartSound(SFX_IGNITE, mobj);
+        P_MobjChangeState(mo, S_ZFIREBULL_BIRTH);
+        S_StartSound(SFX_IGNITE, mo);
         break;
 
     case MT_ZBELL:
-        if(mobj->health > 0)
+        if(mo->health > 0)
         {
-            P_DamageMobj(mobj, NULL, NULL, 10, false); // 'ring' the bell
+            P_DamageMobj(mo, NULL, NULL, 10, false); // 'ring' the bell
         }
         break;
 
     case MT_ZCAULDRON:
     case MT_ZCAULDRON_UNLIT:
-        P_MobjChangeState(mobj, S_ZCAULDRON1);
-        S_StartSound(SFX_IGNITE, mobj);
+        P_MobjChangeState(mo, S_ZCAULDRON1);
+        S_StartSound(SFX_IGNITE, mo);
         break;
 
     case MT_FLAME_SMALL:
-        S_StartSound(SFX_IGNITE, mobj);
-        P_MobjChangeState(mobj, S_FLAME_SMALL1);
+        S_StartSound(SFX_IGNITE, mo);
+        P_MobjChangeState(mo, S_FLAME_SMALL1);
         break;
 
     case MT_FLAME_LARGE:
-        S_StartSound(SFX_IGNITE, mobj);
-        P_MobjChangeState(mobj, S_FLAME_LARGE1);
+        S_StartSound(SFX_IGNITE, mo);
+        P_MobjChangeState(mo, S_FLAME_LARGE1);
         break;
 
     case MT_BAT_SPAWNER:
-        P_MobjChangeState(mobj, S_SPAWNBATS1);
+        P_MobjChangeState(mo, S_SPAWNBATS1);
         break;
 
     default:
@@ -436,63 +463,63 @@ static boolean ActivateThing(mobj_t *mobj)
     return true;
 }
 
-static boolean DeactivateThing(mobj_t *mobj)
+static boolean deactivateMobj(mobj_t* mo)
 {
-    if(mobj->flags & MF_COUNTKILL)
+    if(mo->flags & MF_COUNTKILL)
     {                           // Monster
-        if(!(mobj->flags2 & MF2_DORMANT))
+        if(!(mo->flags2 & MF2_DORMANT))
         {
-            mobj->flags2 |= MF2_DORMANT;
-            mobj->tics = -1;
+            mo->flags2 |= MF2_DORMANT;
+            mo->tics = -1;
             return true;
         }
         return false;
     }
 
-    switch(mobj->type)
+    switch(mo->type)
     {
     case MT_ZTWINEDTORCH:
     case MT_ZTWINEDTORCH_UNLIT:
-        P_MobjChangeState(mobj, S_ZTWINEDTORCH_UNLIT);
+        P_MobjChangeState(mo, S_ZTWINEDTORCH_UNLIT);
         break;
 
     case MT_ZWALLTORCH:
     case MT_ZWALLTORCH_UNLIT:
-        P_MobjChangeState(mobj, S_ZWALLTORCH_U);
+        P_MobjChangeState(mo, S_ZWALLTORCH_U);
         break;
 
     case MT_THRUSTFLOOR_UP:
     case MT_THRUSTFLOOR_DOWN:
-        if(mobj->args[0] == 1)
+        if(mo->args[0] == 1)
         {
-            S_StartSound(SFX_THRUSTSPIKE_RAISE, mobj);
-            if(mobj->args[1])
-                P_MobjChangeState(mobj, S_BTHRUSTLOWER);
+            S_StartSound(SFX_THRUSTSPIKE_RAISE, mo);
+            if(mo->args[1])
+                P_MobjChangeState(mo, S_BTHRUSTLOWER);
             else
-                P_MobjChangeState(mobj, S_THRUSTLOWER);
+                P_MobjChangeState(mo, S_THRUSTLOWER);
         }
         break;
 
     case MT_ZFIREBULL:
     case MT_ZFIREBULL_UNLIT:
-        P_MobjChangeState(mobj, S_ZFIREBULL_DEATH);
+        P_MobjChangeState(mo, S_ZFIREBULL_DEATH);
         break;
 
     case MT_ZCAULDRON:
     case MT_ZCAULDRON_UNLIT:
-        P_MobjChangeState(mobj, S_ZCAULDRON_U);
+        P_MobjChangeState(mo, S_ZCAULDRON_U);
         break;
 
     case MT_FLAME_SMALL:
-        P_MobjChangeState(mobj, S_FLAME_SDORM1);
+        P_MobjChangeState(mo, S_FLAME_SDORM1);
         break;
 
     case MT_FLAME_LARGE:
-        P_MobjChangeState(mobj, S_FLAME_LDORM1);
+        P_MobjChangeState(mo, S_FLAME_LDORM1);
         break;
 
     case MT_BAT_SPAWNER:
-        P_MobjChangeState(mobj, S_SPAWNBATS_OFF);
+        P_MobjChangeState(mo, S_SPAWNBATS_OFF);
         break;
 
     default:

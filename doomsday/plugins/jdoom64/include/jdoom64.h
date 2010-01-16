@@ -30,6 +30,8 @@
 #ifndef __JDOOM64_CONVENIENCE_H__
 #define __JDOOM64_CONVENIENCE_H__
 
+#include <assert.h>
+
 #include "../../jdoom64/include/acfnlink.h"
 #include "../../jdoom64/include/d_api.h"
 #include "../../jdoom64/include/d_config.h"

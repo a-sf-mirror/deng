@@ -45,10 +45,9 @@
 # include "jdoom64.h"
 #elif __JHERETIC__
 #  include "jheretic.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "d_net.h"
@@ -167,7 +166,6 @@ int xgDev = 0; // Print dev messages.
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static linetype_t typebuffer;
-static char msgbuf[80];
 struct mobj_s dummyThing;
 
 /* ADD NEW XG CLASSES TO THE END - ORIGINAL INDICES MUST STAY THE SAME!!! */
@@ -453,8 +451,11 @@ void XG_Update(void)
         return;
 
     XG_ReadTypes();
-    XS_Update();
-    XL_Update();
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    XS_Update(map);
+    XL_Update(map);
+    }
 }
 
 /**
@@ -605,7 +606,7 @@ int findXLThinker(void* p, void* context)
  */
 void XL_SetLineType(linedef_t* line, int id)
 {
-    xline_t*            xline = P_ToXLine(line);
+    xlinedef_t*            xline = P_ToXLine(line);
 
     if(XL_GetType(id))
     {
@@ -651,8 +652,8 @@ void XL_SetLineType(linedef_t* line, int id)
  */
 void XL_Init(void)
 {
-    uint                i;
-    linedef_t*          line;
+    uint i;
+    linedef_t* line;
 
     memset(&dummyThing, 0, sizeof(dummyThing));
 
@@ -675,19 +676,21 @@ void XL_Init(void)
  *
  * @return              @c true, iff all callbacks return @c true.
  */
-int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
-                      void* context, boolean travsectors, mobj_t* activator,
-                      int (C_DECL *func)())
+int XL_TraversePlanes(gamemap_t* map, linedef_t* line, int refType, int ref,
+                      void* data, void* context, boolean travsectors,
+                      mobj_t* activator, int (C_DECL *func)())
 {
-    int                 tag;
-    mobj_t*             mo;
-    boolean             ok, findSecTagged;
-    sector_t*           sec, *frontSec, *backSec;
-    xsector_t*          xsec;
+    assert(map);
+    {
+    int tag;
+    mobj_t* mo;
+    boolean ok, findSecTagged;
+    sector_t* sec, *frontSec, *backSec;
+    xsector_t* xsec;
 
     if(xgDev)
     {
-        char                buff[50];
+        char buff[50];
 
         if(ref)
             sprintf(buff, ": %i", ref);
@@ -752,9 +755,9 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
     // References to multiple planes
     if(findSecTagged)
     {   // Use tagged sector lists for these (speed).
-        iterlist_t*         list;
+        iterlist_t* list;
 
-        list = P_GetSectorIterListForTag(tag, false);
+        list = GameMap_SectorIterListForTag(map, tag, false);
         if(list)
         {   // Find the first sector with the tag.
             P_IterListResetIterator(list, true);
@@ -781,7 +784,7 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
     }
     else
     {
-        uint                    i;
+        uint i;
 
         for(i = 0; i < numsectors; ++i)
         {
@@ -856,6 +859,7 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
     }
 
     return true;
+    }
 }
 
 /**
@@ -865,20 +869,23 @@ int XL_TraversePlanes(linedef_t* line, int refType, int ref, void* data,
  * @return              @c false if 'func' returns @c false, otherwise
  *                      @c true. Stops checking when false is returned.
  */
-int XL_TraverseLines(linedef_t* line, int rtype, int ref, void* data,
-                     void* context, mobj_t* activator, int (C_DECL *func)())
+int XL_TraverseLines(gamemap_t* map, linedef_t* line, int rtype, int ref,
+                     void* data, void* context, mobj_t* activator,
+                     int (C_DECL *func)())
 {
-    uint                i;
-    int                 tag;
-    int                 reftype = rtype;
-    char                buff[50];
-    linedef_t*          iter;
-    boolean             findLineTagged;
+    assert(map);
+    {
+    boolean findLineTagged;
+    int reftype = rtype;
+    char buff[50];
+    linedef_t* iter;
+    uint i;
+    int tag;
 
     // Binary XG data from DD_XGDATA uses the old flag values.
     // Add one to the ref type.
     if(xgDataLumps)
-        reftype+= 1;
+        reftype += 1;
 
     if(ref)
         sprintf(buff," : %i",ref);
@@ -912,7 +919,7 @@ int XL_TraverseLines(linedef_t* line, int rtype, int ref, void* data,
     // References to multiple lines
     if(findLineTagged)
     {   // Use tagged line lists for these (speed).
-        iterlist_t *list = P_GetLineIterListForTag(tag, false);
+        iterlist_t *list = GameMap_IterListForTag(map, tag, false);
 
         if(list)
         {
@@ -946,7 +953,7 @@ int XL_TraverseLines(linedef_t* line, int rtype, int ref, void* data,
             }
             else if(reftype == LREF_ACT_TAGGED)
             {
-                xline_t *xl = P_ToXLine(iter);
+                xlinedef_t *xl = P_ToXLine(iter);
 
                 if(xl->xg && xl->xg->info.actTag == ref)
                     if(!func(iter, true, data, context, activator))
@@ -955,6 +962,7 @@ int XL_TraverseLines(linedef_t* line, int rtype, int ref, void* data,
         }
     }
     return true;
+    }
 }
 
 /**
@@ -1128,7 +1136,8 @@ int XL_ValidateLineRef(linedef_t* line, int reftype, void* context,
 void XL_DoFunction(linetype_t* info, linedef_t* line, int sideNum,
                    mobj_t* actThing, int evType)
 {
-    xgclass_t*          xgClass = &xgClasses[info->lineClass];
+    gamemap_t* map = P_CurrentGameMap();
+    xgclass_t* xgClass = &xgClasses[info->lineClass];
 
     XG_Dev("XL_DoFunction: Line %i, side %i, activator id %i, event %s",
             DMU_ToIndex(line), sideNum, actThing ? actThing->thinker.id : 0,
@@ -1159,13 +1168,13 @@ void XL_DoFunction(linetype_t* info, linedef_t* line, int sideNum,
                 xgClass->doFunc(line, true, line, info, actThing);
                 break;
             case TRAV_LINES: // Traverse lines, executing doFunc for each
-                XL_TraverseLines(line, info->iparm[xgClass->travRef],
+                XL_TraverseLines(map, line, info->iparm[xgClass->travRef],
                                  info->iparm[xgClass->travData], line,
                                  info, actThing, xgClass->doFunc);
                 break;
             case TRAV_PLANES: // Traverse planes, executing doFunc for each
             case TRAV_SECTORS:
-                XL_TraversePlanes(line, info->iparm[xgClass->travRef],
+                XL_TraversePlanes(map, line, info->iparm[xgClass->travRef],
                                   info->iparm[xgClass->travData], line,
                                   info, xgClass->traverse == TRAV_SECTORS? true : false,
                                   actThing, xgClass->doFunc);
@@ -1179,7 +1188,7 @@ int C_DECL XLTrav_QuickActivate(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xline_t*            xline = P_ToXLine(line);
+        xlinedef_t* xline = P_ToXLine(line);
 
         if(xline->xg)
         {
@@ -1199,7 +1208,7 @@ int C_DECL XLTrav_CheckLine(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xline_t*            xline = P_ToXLine(line);
+        xlinedef_t*            xline = P_ToXLine(line);
 
         if(!xline->xg)
             return false; // Stop checking!
@@ -1221,7 +1230,7 @@ int C_DECL XLTrav_SmartActivate(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xline_t*            xline = P_ToXLine(line);
+        xlinedef_t*            xline = P_ToXLine(line);
 
         if(xline->xg)
         {
@@ -1242,7 +1251,7 @@ int C_DECL XL_DoChainSequence(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xline_t*            xline = P_ToXLine(line);
+        xlinedef_t*            xline = P_ToXLine(line);
 
         if(xline->xg)
         {
@@ -1512,7 +1521,7 @@ int C_DECL XLTrav_LineCount(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xline_t*            xline = P_ToXLine(line);
+        xlinedef_t*            xline = P_ToXLine(line);
         linetype_t*         info = context2;
 
         if(xline->xg)
@@ -1568,20 +1577,24 @@ int C_DECL XLTrav_Music(linedef_t* line, boolean dummy, void* context,
 int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
                                void* context, void* context2, mobj_t* mobj)
 {
+    assert(newLine);
+    assert(mobj);
+    {
 // Maximum units to move object to avoid hiccups.
 #define FUDGEFACTOR         10
 
-    int                 fudge = FUDGEFACTOR;
-    int                 side = 0, stepDown;
-    unsigned int        an;
-    mobj_t*             flash;
-    linedef_t*          line = (linedef_t *) context;
-    linetype_t*         info = (linetype_t *) context2;
-    vertex_t*           newV1, *newV2, *oldV1, *oldV2;
-    sector_t*           newFrontSec, *newBackSec;
-    float               newX, newY, newZ, pos, s, c;
-    float               oldLineDelta[2], newLineDelta[2];
-    angle_t             angle;
+    gamemap_t* map = P_CurrentGameMap();
+    int fudge = FUDGEFACTOR;
+    int side = 0, stepDown;
+    unsigned int an;
+    mobj_t* flash;
+    linedef_t* line = (linedef_t*) context;
+    linetype_t* info = (linetype_t*) context2;
+    vertex_t* newV1, *newV2, *oldV1, *oldV2;
+    sector_t* newFrontSec, *newBackSec;
+    float newX, newY, newZ, pos, s, c;
+    float oldLineDelta[2], newLineDelta[2];
+    angle_t angle;
 
     // Don't teleport things marked noteleport!
     if(mobj->flags2 & MF2_NOTELEPORT)
@@ -1623,8 +1636,7 @@ int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
     // Spawn flash at the old position?
     if(info->iparm[2])
     {
-        if((flash = P_SpawnMobj3fv(MT_TFOG, mobj->pos,
-                                    mobj->angle + ANG180, 0)))
+        if((flash = GameMap_SpawnMobj3fv(map, MT_TFOG, mobj->pos, mobj->angle + ANG180, 0)))
         {
             // Play a sound?
             if(info->iparm[3])
@@ -1744,7 +1756,7 @@ int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
     if(info->iparm[2])
     {
         an = mobj->angle >> ANGLETOFINESHIFT;
-        if((flash = P_SpawnMobj3f(MT_TFOG,
+        if((flash = GameMap_SpawnMobj3f(map, MT_TFOG,
                                   mobj->pos[VX] + 24 * FIX2FLT(finecosine[an]),
                                   mobj->pos[VY] + 24 * FIX2FLT(finesine[an]),
                                   mobj->pos[VZ], mobj->angle + ANG180, 0)))
@@ -1765,6 +1777,7 @@ int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
     return false; // Do this only once!
 
 #undef FUDGEFACTOR
+    }
 }
 
 int XL_ValidateMap(int val, int type)
@@ -1790,16 +1803,15 @@ int XL_ValidateMap(int val, int type)
 }
 
 int C_DECL XLTrav_LeaveMap(linedef_t* line, boolean dummy, void* context,
-                          void* context2, mobj_t* activator)
+                           void* context2, mobj_t* activator)
 {
-    int                 map = 0;
-    int                 temp = 0;
-    linetype_t*         info = context2;
+    linetype_t* info = context2;
+    int map = 0, temp = 0;
 
     // Is this a secret exit?
     if(info->iparm[0] > 0)
     {
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, true);
+        G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, true);
         return false;
     }
 
@@ -1829,7 +1841,7 @@ int C_DECL XLTrav_LeaveMap(linedef_t* line, boolean dummy, void* context,
         nextMap = map;
     }
 
-    G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, false);
+    G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
     return false; // Only do this once!
 }
 
@@ -1838,11 +1850,11 @@ int C_DECL XLTrav_DisableLine(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xline_t*            xline = P_ToXLine(line);
+        xlinedef_t*            xline = P_ToXLine(line);
 
         if(xline->xg)
         {
-            xline_t*            origLine = P_ToXLine((linedef_t*) context);
+            xlinedef_t*            origLine = P_ToXLine((linedef_t*) context);
 
             xline->xg->disabled = origLine->xg->active;
         }
@@ -1856,11 +1868,11 @@ int C_DECL XLTrav_EnableLine(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xline_t*            xline = P_ToXLine(line);
+        xlinedef_t*            xline = P_ToXLine(line);
 
         if(xline->xg)
         {
-            xline_t*            origLine = P_ToXLine((linedef_t*) context);
+            xlinedef_t*            origLine = P_ToXLine((linedef_t*) context);
 
             xline->xg->disabled = !origLine->xg->active;
         }
@@ -1877,14 +1889,15 @@ int C_DECL XLTrav_EnableLine(linedef_t* line, boolean dummy, void* context,
 boolean XL_CheckLineStatus(linedef_t* line, int reftype, int ref, int active,
                            mobj_t* activator)
 {
-    return XL_TraverseLines(line, reftype, ref, &active, 0, activator,
+    gamemap_t* map = P_CurrentGameMap();
+    return XL_TraverseLines(map, line, reftype, ref, &active, 0, activator,
                             XLTrav_CheckLine);
 }
 
 int XL_CheckMobjGone(void* p, void* context)
 {
-    int                 thingtype = *(int*) context;
-    mobj_t*             mo = (mobj_t*) p;
+    int thingtype = *(int*) context;
+    mobj_t* mo = (mobj_t*) p;
 
     if(mo->type == thingtype && mo->health > 0)
     {   // Not dead.
@@ -2019,11 +2032,12 @@ void XL_Message(mobj_t* act, char* msg, boolean global)
 void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
                      int sidenum, mobj_t* data, int evtype)
 {
-    byte                rgba[4] = { 0, 0, 0, 0 };
-    xgline_t*           xg;
-    sector_t*           frontsector;
-    mobj_t*             activator_thing = (mobj_t *) data;
-    ddmobj_base_t*      soundOrg = 0;
+    gamemap_t* map = P_CurrentGameMap();
+    byte rgba[4] = { 0, 0, 0, 0 };
+    xgline_t* xg;
+    sector_t* frontsector;
+    mobj_t* activator_thing = (mobj_t *) data;
+    ddmobj_base_t* soundOrg = 0;
 
     xg = P_ToXLine(line)->xg;
 
@@ -2077,7 +2091,7 @@ void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
     if((activating && (info->flags2 & LTF2_GROUP_ACT)) ||
        (!activating && (info->flags2 & LTF2_GROUP_DEACT)))
     {
-        XL_TraverseLines(line, LREF_LINE_TAGGED, true, &activating, 0, activator_thing,
+        XL_TraverseLines(map, line, LREF_LINE_TAGGED, true, &activating, 0, activator_thing,
                          XLTrav_SmartActivate);
     }
 
@@ -2085,7 +2099,7 @@ void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
     // the same line tag.
     if(info->flags2 & LTF2_MULTIPLE)
     {
-        XL_TraverseLines(line, LREF_LINE_TAGGED, true, &activating, 0, activator_thing,
+        XL_TraverseLines(map, line, LREF_LINE_TAGGED, true, &activating, 0, activator_thing,
                          XLTrav_QuickActivate);
     }
 
@@ -2154,22 +2168,19 @@ void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
  */
 boolean XL_CheckKeys(mobj_t* mo, int flags2, boolean doMsg, boolean doSfx)
 {
-    player_t*           act = mo->player;
+    static char msgbuf[80];
+
+    player_t* act = mo->player;
 #if __JDOOM__ || __JDOOM64__
-    int                 num = 6;
-    int*                keys = (int *) act->keys;
-    int                 badsound = SFX_OOF;
+    int num = 6;
+    int* keys = (int *) act->keys;
+    int badsound = SFX_OOF;
 #elif __JHERETIC__
-    int                 num = 3;
-    boolean*            keys = act->keys;
-    int                 badsound = SFX_PLROOF;
-#elif __JSTRIFE__
-//// \fixme FIXME!!!
-    int                 num = 3;
-    int*                keys = (int *) act->keys;
-    int                 badsound = SFX_NONE;
+    int num = 3;
+    boolean* keys = act->keys;
+    int badsound = SFX_PLROOF;
 #endif
-    int                 i;
+    int i;
 
     for(i = 0; i < num; ++i)
     {
@@ -2205,7 +2216,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
                  void* data)
 {
     int                 i;
-    xline_t*            xline;
+    xlinedef_t*            xline;
     xgline_t*           xg;
     linetype_t*         info;
     boolean             active;
@@ -2524,7 +2535,7 @@ void XL_DoChain(linedef_t* line, int chain, boolean activating,
                 mobj_t* actThing)
 {
     linedef_t*          dummyLine;
-    xline_t*            xdummyLine;
+    xlinedef_t*            xdummyLine;
 
     // We'll use a dummy line for the chain.
     dummyLine = P_AllocDummyLine();
@@ -2555,11 +2566,12 @@ void XL_DoChain(linedef_t* line, int chain, boolean activating,
  */
 void XL_Thinker(xlthinker_t* xl)
 {
-    float               levtime;
-    linedef_t*          line = xl->line;
-    xline_t*            xline;
-    xgline_t*           xg;
-    linetype_t*         info;
+    gamemap_t* map = P_CurrentGameMap();
+    float levtime;
+    linedef_t* line = xl->line;
+    xlinedef_t* xline;
+    xgline_t* xg;
+    linetype_t* info;
 
     // Clients rely on the server, they don't do XG themselves.
     if(IS_CLIENT)
@@ -2580,7 +2592,7 @@ void XL_Thinker(xlthinker_t* xl)
         return; // Disabled, do nothing.
 
     info = &xg->info;
-    levtime = TIC2FLT(mapTime);
+    levtime = TIC2FLT(map->time);
 
     // Increment time.
     if(xg->timer >= 0)
@@ -2747,21 +2759,23 @@ void XL_Thinker(xlthinker_t* xl)
  * updated. However, this is a bit messy operation, prone to errors.
  * Instead, we just disable XG...
  */
-void XL_Update(void)
+void XL_Update(gamemap_t* map)
 {
-    uint                i;
-    xline_t*            xline;
-
+    assert(map);
+    {
+    uint i;
+    
     // It's all PU_MAP memory, so we can just lose it.
     for(i = 0; i < numlines; ++i)
     {
-        xline = P_GetXLine(i);
+        xlinedef_t* xline = GameMap_XLineDef(map, i);
 
         if(xline->xg)
         {
             xline->xg = NULL;
             xline->special = 0;
         }
+    }
     }
 }
 

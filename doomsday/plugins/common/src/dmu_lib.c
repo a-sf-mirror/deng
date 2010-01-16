@@ -42,6 +42,8 @@
 #endif
 
 #include "dmu_lib.h"
+#include "gamemap.h"
+#include "p_mapsetup.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -63,7 +65,7 @@
 
 linedef_t* P_AllocDummyLine(void)
 {
-    xline_t* extra = Z_Calloc(sizeof(xline_t), PU_STATIC, 0);
+    xlinedef_t* extra = Z_Calloc(sizeof(xlinedef_t), PU_STATIC, 0);
     return DMU_AllocDummy(DMU_LINEDEF, extra);
 }
 
@@ -79,10 +81,10 @@ void P_FreeDummyLine(linedef_t* line)
  */
 void P_CopyLine(linedef_t* dest, linedef_t* src)
 {
-    int                 i, sidx;
-    sidedef_t*          sidefrom, *sideto;
-    xline_t*            xsrc = P_ToXLine(src);
-    xline_t*            xdest = P_ToXLine(dest);
+    int i, sidx;
+    sidedef_t* sidefrom, *sideto;
+    xlinedef_t* xsrc = P_ToXLine(src);
+    xlinedef_t* xdest = P_ToXLine(dest);
 
     if(src == dest)
         return; // no point copying self

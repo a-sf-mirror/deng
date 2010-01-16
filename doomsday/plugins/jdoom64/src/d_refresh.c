@@ -34,6 +34,7 @@
 
 #include "jdoom64.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "hu_stuff.h"
 #include "hu_menu.h"
@@ -158,11 +159,12 @@ boolean R_GetFilterColor(float rgba[4], int filter)
  */
 void R_DrawMapTitle(void)
 {
+    gamemap_t* map = P_CurrentGameMap();
     float alpha;
     int y = 12, mapnum;
     const char* lname, *lauthor;
 
-    if(!cfg.mapTitle || actualMapTime > 6 * 35)
+    if(!cfg.mapTitle || map->actualTime > 6 * 35)
         return;
 
     // Make the text a bit smaller.
@@ -173,10 +175,10 @@ void R_DrawMapTitle(void)
     DGL_Translatef(-160, -y, 0);
 
     alpha = 1;
-    if(actualMapTime < 35)
-        alpha = actualMapTime / 35.0f;
-    if(actualMapTime > 5 * 35)
-        alpha = 1 - (actualMapTime - 5 * 35) / 35.0f;
+    if(map->actualTime < 35)
+        alpha = map->actualTime / 35.0f;
+    if(map->actualTime > 5 * 35)
+        alpha = 1 - (map->actualTime - 5 * 35) / 35.0f;
 
     // Get the strings from Doomsday.
     lname = P_GetMapNiceName();

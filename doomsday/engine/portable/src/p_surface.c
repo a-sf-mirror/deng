@@ -400,7 +400,7 @@ boolean Surface_SetProperty(surface_t* suf, const setargs_t* args)
         {
         void*           p;
         DMU_SetValue(DDVT_PTR, &p, args, 0);
-        Surface_SetMaterial(suf, ((objectrecord_t*) p)->obj, true);
+        Surface_SetMaterial(suf, p? ((objectrecord_t*) p)->obj : NULL, true);
         }
         break;
     case DMU_OFFSET_X:

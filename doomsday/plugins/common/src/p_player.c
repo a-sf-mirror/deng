@@ -43,6 +43,7 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "d_netsv.h"
 #include "d_net.h"
@@ -693,7 +694,7 @@ weapontype_t P_PlayerFindWeapon(player_t* player, boolean prev)
  */
 void P_PlayerChangeClass(player_t* player, playerclass_t newClass)
 {
-    int                 i;
+    int i;
 
     // Don't change if morphed.
     if(player->morphTics)
@@ -714,9 +715,10 @@ void P_PlayerChangeClass(player_t* player, playerclass_t newClass)
 
     if(player->plr->mo)
     {   // Respawn the player and destroy the old mobj.
-        mobj_t*             oldMo = player->plr->mo;
+        gamemap_t* map = P_CurrentGameMap();
+        mobj_t* oldMo = player->plr->mo;
 
-        P_SpawnPlayer(player - players, newClass, oldMo->pos[VX],
+        GameMap_SpawnPlayer(map, player - players, newClass, oldMo->pos[VX],
                       oldMo->pos[VY], oldMo->pos[VZ], oldMo->angle, 0,
                       P_MobjIsCamera(oldMo));
         P_MobjRemove(oldMo, true);
@@ -798,10 +800,15 @@ void P_Thrust3D(player_t *player, angle_t angle, float lookdir,
     mo->mom[MZ] += mom[MZ];
 }
 
-int P_CameraXYMovement(mobj_t *mo)
+int P_CameraXYMovement(mobj_t* mo)
 {
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+
     if(!P_MobjIsCamera(mo))
         return false;
+
 #if __JDOOM__ || __JDOOM64__
     if(mo->flags & MF_NOCLIP ||
        // This is a very rough check! Sometimes you get stuck in things.
@@ -814,8 +821,8 @@ int P_CameraXYMovement(mobj_t *mo)
         mo->pos[VY] += mo->mom[MY];
         P_MobjSetPosition(mo);
         P_CheckPosition2f(mo, mo->pos[VX], mo->pos[VY]);
-        mo->floorZ = tmFloorZ;
-        mo->ceilingZ = tmCeilingZ;
+        mo->floorZ = DMU_GetFloatp(mo->subsector, DMU_FLOOR_HEIGHT);
+        mo->ceilingZ = DMU_GetFloatp(mo->subsector, DMU_CEILING_HEIGHT);
 
 #if __JDOOM__ || __JDOOM64__
     }
@@ -836,10 +843,13 @@ int P_CameraXYMovement(mobj_t *mo)
     }
 
     return true;
+    }
 }
 
-int P_CameraZMovement(mobj_t *mo)
+int P_CameraZMovement(mobj_t* mo)
 {
+    assert(mo);
+    {
     if(!P_MobjIsCamera(mo))
         return false;
 
@@ -858,14 +868,17 @@ int P_CameraZMovement(mobj_t *mo)
     }
 
     return true;
+    }
 }
 
 /**
  * Set appropriate parameters for a camera.
  */
-void P_PlayerThinkCamera(player_t *player)
+void P_PlayerThinkCamera(player_t* player)
 {
-    mobj_t             *mo;
+    assert(player);
+    {
+    mobj_t* mo;
 
     // If this player is not a camera, get out of here.
     if(!(player->plr->flags & DDPF_CAMERA))
@@ -925,12 +938,13 @@ void P_PlayerThinkCamera(player_t *player)
             player->plr->flags |= DDPF_INTERPITCH;
         }
     }
+    }
 }
 
 DEFCC(CCmdSetCamera)
 {
-    int                 p;
-    player_t           *player;
+    player_t* player;
+    int p;
 
     p = atoi(argv[1]);
     if(p < 0 || p >= MAXPLAYERS)
@@ -1071,9 +1085,10 @@ DEFCC(CCmdSetViewLock)
 
 DEFCC(CCmdMakeLocal)
 {
-    int                 p;
-    char                buf[20];
-    player_t           *plr;
+    gamemap_t* map = P_CurrentGameMap();
+    player_t* plr;
+    char buf[20];
+    int p;
 
     if(G_GetGameState() != GS_MAP)
     {
@@ -1099,7 +1114,7 @@ DEFCC(CCmdMakeLocal)
     plr->plr->inGame = true;
     sprintf(buf, "conlocp %i", p);
     DD_Execute(false, buf);
-    P_DealPlayerStarts(0);
+    GameMap_DealPlayerStarts(map, 0);
     return true;
 }
 
@@ -1147,6 +1162,7 @@ DEFCC(CCmdSpawnMobj)
     mobj_t* mo;
     angle_t angle;
     int spawnFlags = 0;
+    gamemap_t* map = P_CurrentGameMap();
 
     if(argc != 5 && argc != 6)
     {
@@ -1195,7 +1211,7 @@ DEFCC(CCmdSpawnMobj)
     else
         angle = 0;
 
-    if((mo = P_SpawnMobj3fv(type, pos, angle, spawnFlags)))
+    if((mo = GameMap_SpawnMobj3fv(map, type, pos, angle, spawnFlags)))
     {
 #if __JDOOM64__
         // jd64 > kaiser - another cheesy hack!!!

@@ -31,10 +31,14 @@
 
 #include "jhexen.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapspec.h"
+#include "p_mapsetup.h"
 
 // MACROS ------------------------------------------------------------------
+
+#define PHASETABLERES           64
 
 // TYPES -------------------------------------------------------------------
 
@@ -50,7 +54,7 @@
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static float phaseTable[64] = {
+static const float phaseTable[PHASETABLERES] = {
     .5, .4375, .375, .3125, .25, .1875, .125, .125,
     .0625, .0625, .0625, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -63,7 +67,7 @@ static float phaseTable[64] = {
 
 // CODE --------------------------------------------------------------------
 
-void T_Light(light_t *light)
+void T_Light(light_t* light)
 {
     if(light->count)
     {
@@ -141,21 +145,24 @@ void T_Light(light_t *light)
     }
 }
 
-boolean EV_SpawnLight(linedef_t *line, byte *arg, lighttype_t type)
+boolean EV_SpawnLight(linedef_t* line, byte* arg, lighttype_t type)
 {
-    int         arg1, arg2, arg3, arg4;
-    boolean     think = false;
-    boolean     rtn = false;
-    light_t    *light;
-    sector_t   *sec = NULL;
-    iterlist_t *list;
+    assert(arg);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int arg1, arg2, arg3, arg4;
+    boolean think = false;
+    boolean rtn = false;
+    light_t* light;
+    sector_t* sec = NULL;
+    iterlist_t* list;
 
     arg1 = (int) arg[1];
     arg2 = (int) arg[2];
     arg3 = (int) arg[3];
     arg4 = (int) arg[4];
 
-    list = P_GetSectorIterListForTag((int) arg[0], false);
+    list = GameMap_SectorIterListForTag(map, (int) arg[0], false);
     if(!list)
         return rtn;
 
@@ -252,18 +259,22 @@ boolean EV_SpawnLight(linedef_t *line, byte *arg, lighttype_t type)
     }
 
     return rtn;
+    }
 }
 
-void T_Phase(phase_t *phase)
+void T_Phase(phase_t* phase)
 {
-    phase->index = (phase->index + 1) & 63;
+    assert(phase);
+    phase->index = (phase->index + 1) & (PHASETABLERES-1);
     P_SectorSetLight(phase->sector,
                      phase->baseValue + phaseTable[phase->index]);
 }
 
 void P_SpawnPhasedLight(sector_t* sector, float base, int index)
 {
-    phase_t*            phase;
+    assert(sector);
+    {
+    phase_t* phase;
 
     phase = Z_Calloc(sizeof(*phase), PU_MAP, 0);
     phase->thinker.function = T_Phase;
@@ -272,11 +283,11 @@ void P_SpawnPhasedLight(sector_t* sector, float base, int index)
     phase->sector = sector;
     if(index == -1)
     {   // Sector->lightLevel as the index.
-        phase->index = (int) (255.0f * P_SectorLight(sector)) & 63;
+        phase->index = (int) (255.0f * P_SectorLight(sector)) & (PHASETABLERES-1);
     }
     else
     {
-        phase->index = index & 63;
+        phase->index = index & (PHASETABLERES-1);
     }
 
     phase->baseValue = base;
@@ -284,6 +295,7 @@ void P_SpawnPhasedLight(sector_t* sector, float base, int index)
                      phase->baseValue + phaseTable[phase->index]);
 
     P_ToXSector(sector)->special = 0;
+    }
 }
 
 typedef struct {
@@ -362,13 +374,13 @@ void P_SpawnLightSequence(sector_t* sector, int indexStep)
 
     {
     findlightsequencestartsectorparams_t params;
-    float               base;
-    fixed_t             index, indexDelta;
+    float base;
+    fixed_t index, indexDelta;
 
     params.sec = sector;
     count *= indexStep;
     index = 0;
-    indexDelta = FixedDiv(64 * FRACUNIT, count * FRACUNIT);
+    indexDelta = FixedDiv(PHASETABLERES * FRACUNIT, count * FRACUNIT);
     base = P_SectorLight(sector);
     do
     {

@@ -31,6 +31,8 @@
 #ifndef __JHERETIC_CONVENIENCE_H__
 #define __JHERETIC_CONVENIENCE_H__
 
+#include <assert.h>
+
 #include "../../jheretic/include/acfnlink.h"
 #include "../../jheretic/include/doomdef.h"
 #include "../../jheretic/include/dstrings.h"
@@ -60,7 +62,6 @@
 #include "../../jheretic/include/p_sound.h"
 #include "../../jheretic/include/p_spec.h"
 #include "../../jheretic/include/p_telept.h"
-#include "../../jheretic/include/r_defs.h"
 #include "../../jheretic/include/st_stuff.h"
 #include "../../jheretic/include/tables.h"
 

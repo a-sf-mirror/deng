@@ -45,6 +45,7 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "hu_menu.h"
 #include "hu_msg.h"
@@ -843,8 +844,10 @@ void HU_Start(int player)
 
 void HU_Drawer(int player)
 {
+    gamemap_t* map = P_CurrentGameMap();
+
     // Don't draw the message log while the map title is up.
-    if(!(cfg.mapTitle && actualMapTime < 6 * 35))
+    if(!(cfg.mapTitle && map->actualTime < 6 * 35))
     {
         Hu_LogDrawer(player);
     }
@@ -1457,10 +1460,10 @@ static void drawWorldTimer(void)
  */
 void HU_DrawMapCounters(void)
 {
-    player_t           *plr;
+    player_t* plr;
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
-    char                buf[40], tmp[20];
-    int                 x = 5, y = LINEHEIGHT_A * 3;
+    char buf[40], tmp[20];
+    int x = 5, y = LINEHEIGHT_A * 3;
 #endif
 
     plr = &players[DISPLAYPLAYER];
@@ -1484,16 +1487,18 @@ void HU_DrawMapCounters(void)
         // Kills.
         if(cfg.counterCheat & (CCH_KILLS | CCH_KILLS_PRCNT))
         {
+            gamemap_t* map = P_CurrentGameMap();
+
             strcpy(buf, "Kills: ");
             if(cfg.counterCheat & CCH_KILLS)
             {
-                sprintf(tmp, "%i/%i ", plr->killCount, totalKills);
+                sprintf(tmp, "%i/%i ", plr->killCount, map->totalKills);
                 strcat(buf, tmp);
             }
             if(cfg.counterCheat & CCH_KILLS_PRCNT)
             {
                 sprintf(tmp, "%s%i%%%s", (cfg.counterCheat & CCH_KILLS ? "(" : ""),
-                        totalKills ? plr->killCount * 100 / totalKills : 100,
+                        map->totalKills ? plr->killCount * 100 / map->totalKills : 100,
                         (cfg.counterCheat & CCH_KILLS ? ")" : ""));
                 strcat(buf, tmp);
             }
@@ -1506,16 +1511,18 @@ void HU_DrawMapCounters(void)
         // Items.
         if(cfg.counterCheat & (CCH_ITEMS | CCH_ITEMS_PRCNT))
         {
+            gamemap_t* map = P_CurrentGameMap();
+
             strcpy(buf, "Items: ");
             if(cfg.counterCheat & CCH_ITEMS)
             {
-                sprintf(tmp, "%i/%i ", plr->itemCount, totalItems);
+                sprintf(tmp, "%i/%i ", plr->itemCount, map->totalItems);
                 strcat(buf, tmp);
             }
             if(cfg.counterCheat & CCH_ITEMS_PRCNT)
             {
                 sprintf(tmp, "%s%i%%%s", (cfg.counterCheat & CCH_ITEMS ? "(" : ""),
-                        totalItems ? plr->itemCount * 100 / totalItems : 100,
+                        map->totalItems ? plr->itemCount * 100 / map->totalItems : 100,
                         (cfg.counterCheat & CCH_ITEMS ? ")" : ""));
                 strcat(buf, tmp);
             }
@@ -1528,16 +1535,18 @@ void HU_DrawMapCounters(void)
         // Secrets.
         if(cfg.counterCheat & (CCH_SECRET | CCH_SECRET_PRCNT))
         {
+            gamemap_t* map = P_CurrentGameMap();
+
             strcpy(buf, "Secret: ");
             if(cfg.counterCheat & CCH_SECRET)
             {
-                sprintf(tmp, "%i/%i ", plr->secretCount, totalSecret);
+                sprintf(tmp, "%i/%i ", plr->secretCount, map->totalSecret);
                 strcat(buf, tmp);
             }
             if(cfg.counterCheat & CCH_SECRET_PRCNT)
             {
                 sprintf(tmp, "%s%i%%%s", (cfg.counterCheat & CCH_SECRET ? "(" : ""),
-                        totalSecret ? plr->secretCount * 100 / totalSecret : 100,
+                        map->totalSecret ? plr->secretCount * 100 / map->totalSecret : 100,
                         (cfg.counterCheat & CCH_SECRET ? ")" : ""));
                 strcat(buf, tmp);
             }

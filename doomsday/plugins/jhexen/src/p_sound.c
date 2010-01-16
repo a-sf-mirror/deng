@@ -67,25 +67,21 @@ int S_GetSoundID(const char* name)
  */
 void S_MapMusic(void)
 {
-    int                 idx = Def_Get(DD_DEF_MUSIC, "currentmap", 0);
-    int                 cdTrack;
+    int idx = Def_Get(DD_DEF_MUSIC, "currentmap", 0);
+    int cdTrack;
 
     // Update the 'currentmap' music definition.
     Def_Set(DD_DEF_MUSIC, idx, DD_LUMP, P_GetMapSongLump(gameMap));
     cdTrack = P_GetMapCDTrack(gameMap);
     Def_Set(DD_DEF_MUSIC, idx, DD_CD_TRACK, &cdTrack);
-    if(S_StartMusic("currentmap", true))
-    {
-        // Set the game status cvar for the map music
-        gsvMapMusic = idx;
-    }
+    S_StartMusic("currentmap", true);
 }
 
 void S_ParseSndInfoLump(void)
 {
-    int                 i;
-    char                buf[80];
-    lumpnum_t           lump = W_CheckNumForName("SNDINFO");
+    lumpnum_t lump = W_CheckNumForName("SNDINFO");
+    char buf[80];
+    int i;
 
     strcpy(ArchivePath, DEFAULT_ARCHIVEPATH);
 

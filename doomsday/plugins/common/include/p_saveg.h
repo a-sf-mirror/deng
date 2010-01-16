@@ -68,6 +68,10 @@ typedef enum thinkclass_e {
     NUMTHINKERCLASSES
 } thinkerclass_t;
 
+#if __JHEXEN__
+extern int saveVersion;
+#endif
+
 void            SV_Init(void);
 void            SV_GetSaveGameFileName(char* str, int slot, size_t len);
 int             SV_GetSaveDescription(char* str, const char* filename,

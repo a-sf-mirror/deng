@@ -31,6 +31,8 @@
 #ifndef JHEXEN_CONVENIENCE_H
 #define JHEXEN_CONVENIENCE_H
 
+#include <assert.h>
+
 #include "../../jhexen/include/a_action.h"
 #include "../../jhexen/include/acfnlink.h"
 #include "../../jhexen/include/h2def.h"
@@ -58,7 +60,6 @@
 #include "../../jhexen/include/p_things.h"
 #include "../../jhexen/include/p_waggle.h"
 #include "../../jhexen/include/po_man.h"
-#include "../../jhexen/include/r_defs.h"
 #include "../../jhexen/include/r_local.h"
 #include "../../jhexen/include/s_sequence.h"
 #include "../../jhexen/include/sc_man.h"

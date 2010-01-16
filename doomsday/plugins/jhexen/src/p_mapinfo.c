@@ -37,10 +37,10 @@
 
 #define MAPINFO_SCRIPT_NAME "MAPINFO"
 
-#define UNKNOWN_MAP_NAME "DEVELOPMENT MAP"
-#define DEFAULT_SKY_NAME "SKY1"
-#define DEFAULT_SONG_LUMP "DEFSONG"
-#define DEFAULT_FADE_TABLE "COLORMAP"
+#define UNKNOWN_MAP_NAME    "DEVELOPMENT MAP"
+#define DEFAULT_SKY_NAME    "SKY1"
+#define DEFAULT_SONG_LUMP   "DEFSONG"
+#define DEFAULT_FADE_TABLE  "COLORMAP"
 
 // TYPES -------------------------------------------------------------------
 
@@ -100,7 +100,7 @@ static int qualifyMap(int map);
 static mapinfo_t MapInfo[99];
 static int mapCount;
 
-static char *mapCmdNames[] = {
+static const char* tokens[] = {
     "SKY1",
     "SKY2",
     "DOUBLESKY",
@@ -118,7 +118,8 @@ static char *mapCmdNames[] = {
     "CD_TITLE_TRACK",
     NULL
 };
-static int mapCmdIDs[] = {
+
+static const int tokenIds[] = {
     MCMD_SKY1,
     MCMD_SKY2,
     MCMD_DOUBLESKY,
@@ -158,15 +159,15 @@ static char* cdSongDefIDs[] =  // Music defs that correspond the above.
  */
 void P_InitMapInfo(void)
 {
-    int                 map, mapMax = 1, mcmdValue;
-    char                songMulch[10];
-    mapinfo_t*          info;
+    int map, mapMax = 1, mcmdValue;
+    char songMulch[10];
+    mapinfo_t* info;
 
     // Put defaults into MapInfo[0]
     info = MapInfo;
     info->cluster = 0;
     info->warpTrans = 0;
-    info->nextMap = 1;          // Always go to map 1 if not specified
+    info->nextMap = 1; // Always go to map 1 if not specified
     info->cdTrack = 1;
 
     memset(info->skyLayer1Texture, 0, sizeof(info->skyLayer1Texture));
@@ -223,12 +224,12 @@ void P_InitMapInfo(void)
         while(SC_GetString())
         {
             if(SC_Compare("MAP"))
-            {                   // Start next map definition
+            {   // Start next map definition
                 SC_UnGet();
                 break;
             }
 
-            mcmdValue = mapCmdIDs[SC_MustMatchString(mapCmdNames)];
+            mcmdValue = tokenIds[SC_MustMatchString(tokens)];
             switch(mcmdValue)
             {
             case MCMD_CLUSTER:
@@ -252,7 +253,7 @@ void P_InitMapInfo(void)
                 break;
 
             /**
-             * \note In MAPINFO sky layer indices are switched compared
+             * @note In MAPINFO sky layer indices are switched compared
              * to those used by Doomsday (i.e., the background is layer
              * 2 in MAPINFO and the foreground is layer 1).
              *
@@ -317,7 +318,7 @@ void P_InitMapInfo(void)
  */
 void P_InitMapMusicInfo(void)
 {
-    int         i;
+    int i;
 
     for(i = 0; i < 99; ++i)
     {
@@ -329,7 +330,7 @@ void P_InitMapMusicInfo(void)
 
 static void setSongCDTrack(int index, int track)
 {
-    int         cdTrack = track;
+    int cdTrack = track;
 
     // Set the internal array.
     cdNonMapTracks[index] = sc_Number;
@@ -353,7 +354,7 @@ static __inline int qualifyMap(int map)
  */
 int P_TranslateMap(int map)
 {
-    int         i;
+    int i;
 
     for(i = 1; i < 99; ++i)
     {
@@ -372,7 +373,7 @@ int P_TranslateMap(int map)
  * @param map           The map (logical number) to be changed.
  * @param lumpName      The lumpName to be set.
  */
-void P_PutMapSongLump(int map, char *lumpName)
+void P_PutMapSongLump(int map, char* lumpName)
 {
     if(map < 1 || map > mapCount)
         return;
@@ -387,7 +388,7 @@ void P_PutMapSongLump(int map, char *lumpName)
  *
  * @return              Ptr to string containing the name of the map.
  */
-char *P_GetMapName(int map)
+char* P_GetMapName(int map)
 {
     return MapInfo[qualifyMap(map)].name;
 }
@@ -472,7 +473,7 @@ const char* P_GetMapSkyLayer2Texture(int map)
  */
 float P_GetMapSkyLayer1MoveSpeed(int map)
 {
-    int                 qMap = qualifyMap(map);
+    int qMap = qualifyMap(map);
 
     return MapInfo[qMap].skyLayer1MoveSpeed;
 }
@@ -485,7 +486,7 @@ float P_GetMapSkyLayer1MoveSpeed(int map)
  */
 float P_GetMapSkyLayer1MoveAngle(int map)
 {
-    int                 qMap = qualifyMap(map);
+    int qMap = qualifyMap(map);
 
     return MapInfo[qMap].skyLayer1MoveAngle;
 }
@@ -498,7 +499,7 @@ float P_GetMapSkyLayer1MoveAngle(int map)
  */
 float P_GetMapSkyLayer2MoveSpeed(int map)
 {
-    int                 qMap = qualifyMap(map);
+    int qMap = qualifyMap(map);
 
     return MapInfo[qMap].skyLayer2MoveSpeed;
 }
@@ -511,7 +512,7 @@ float P_GetMapSkyLayer2MoveSpeed(int map)
  */
 float P_GetMapSkyLayer2MoveAngle(int map)
 {
-    int                 qMap = qualifyMap(map);
+    int qMap = qualifyMap(map);
 
     return MapInfo[qMap].skyLayer2MoveAngle;
 }
@@ -561,16 +562,14 @@ int P_GetMapFadeTable(int map)
  *                      default song lump, else a ptr to a string
  *                      containing the name of the song lump.
  */
-char *P_GetMapSongLump(int map)
+char* P_GetMapSongLump(int map)
 {
     if(!strcasecmp(MapInfo[qualifyMap(map)].songLump, DEFAULT_SONG_LUMP))
     {
         return NULL;
     }
-    else
-    {
-        return MapInfo[qualifyMap(map)].songLump;
-    }
+
+    return MapInfo[qualifyMap(map)].songLump;
 }
 
 /**

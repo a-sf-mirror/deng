@@ -36,10 +36,9 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
+#include "gamemap.h"
 #include "p_actor.h"
 #include "g_common.h"
 #include "g_controls.h"
@@ -54,7 +53,7 @@
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
-void    P_ClientSideThink(void);
+void                P_ClientSideThink(void);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
@@ -64,8 +63,6 @@ void    P_ClientSideThink(void);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int mapTime;
-int actualMapTime;
 int timerGame;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -140,48 +137,30 @@ void P_RunPlayers(timespan_t ticLength)
  */
 void P_DoTick(void)
 {
+    gamemap_t* map = P_CurrentGameMap();
+
     // If the game is paused, nothing will happen.
     if(paused)
         return;
-
-    actualMapTime++;
 
     if(!IS_CLIENT && timerGame && !paused)
     {
         if(!--timerGame)
         {
-#if __JHEXEN__ || __JSTRIFE__
-            G_LeaveMap(G_GetMapNumber(gameEpisode, P_GetMapNextMap(gameMap)),
-                         0, false);
+#if __JHEXEN__
+            G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, P_GetMapNextMap(gameMap)), 0, false);
 #else
-            G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, false);
+            G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
 #endif
         }
     }
 
+    GameMap_RunTick(map);
+
     // Pause if in menu and at least one tic has been run.
     if(!IS_NETGAME && (Hu_MenuIsActive() || Hu_IsMessageActive()) &&
-       !Get(DD_PLAYBACK) && mapTime > 1)
+       !Get(DD_PLAYBACK) && map->time > 1)
         return;
 
-    DD_RunThinkers();
-    P_UpdateSpecials();
-
-#if __JDOOM64__
-    P_ThunderSector();
-#endif
-
-    P_DoDeferredSpawns();
-
-#if __JHERETIC__
-    P_AmbientSound();
-#endif
-#if __JHEXEN__
-    P_AnimateSurfaces();
-#endif
-
     P_ClientSideThink();
-
-    // For par times, among other things.
-    mapTime++;
 }

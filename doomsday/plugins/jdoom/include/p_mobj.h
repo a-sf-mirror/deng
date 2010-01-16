@@ -218,20 +218,14 @@ typedef struct polyobj_s {
     // Doom-specific data:
 } polyobj_t;
 
-mobj_t*     P_SpawnMobj3f(mobjtype_t type, float x, float y, float z,
-                          angle_t angle, int spawnFlags);
-mobj_t*     P_SpawnMobj3fv(mobjtype_t type, const float pos[3],
-                           angle_t angle, int spawnFlags);
+mobj_t*     P_SpawnCustomPuff(struct gamemap_s* map, mobjtype_t type, float x, float y, float z, angle_t angle);
+void        P_SpawnPuff(struct gamemap_s* map, float x, float y, float z, angle_t angle);
+void        P_SpawnBlood(struct gamemap_s* map, float x, float y, float z, int damage, angle_t angle);
+mobj_t*     P_SpawnTeleFog(struct gamemap_s* map, float x, float y, angle_t angle);
 
-mobj_t*     P_SpawnCustomPuff(mobjtype_t type, float x, float y, float z,
-                              angle_t angle);
 mobj_t*     P_SpawnMissile(mobjtype_t type, mobj_t* source, mobj_t* dest);
-void        P_SpawnPuff(float x, float y, float z, angle_t angle);
-void        P_SpawnBlood(float x, float y, float z, int damage,
-                         angle_t angle);
-mobj_t*     P_SpawnTeleFog(float x, float y, angle_t angle);
 
 const terraintype_t* P_MobjGetFloorTerrainType(mobj_t* mo);
-float       P_MobjGetFriction(mobj_t *mo);
+float       P_MobjGetFriction(mobj_t* mo);
 
 #endif

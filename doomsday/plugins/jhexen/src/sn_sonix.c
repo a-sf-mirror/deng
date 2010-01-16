@@ -34,6 +34,7 @@
 
 #include "dmu_lib.h"
 #include "g_common.h"
+#include "p_mapsetup.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -80,8 +81,8 @@ static int GetSoundOffset(char* name);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-int ActiveSequences;
-seqnode_t* SequenceListHead;
+int numSequences;
+seqnode_t* sequenceListHead;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -145,7 +146,7 @@ void SN_InitSequenceScript(void)
     int*                tempDataPtr = 0;
 
     inSequence = -1;
-    ActiveSequences = 0;
+    numSequences = 0;
     for(i = 0; i < SS_MAX_SCRIPTS; ++i)
     {
         SequenceData[i] = NULL;
@@ -287,19 +288,19 @@ void SN_StartSequence(mobj_t* mobj, int sequence)
     node->stopSound = SequenceTranslate[sequence].stopSound;
     node->volume = 127; // Start at max volume
 
-    if(!SequenceListHead)
+    if(!sequenceListHead)
     {
-        SequenceListHead = node;
+        sequenceListHead = node;
         node->next = node->prev = NULL;
     }
     else
     {
-        SequenceListHead->prev = node;
-        node->next = SequenceListHead;
+        sequenceListHead->prev = node;
+        node->next = sequenceListHead;
         node->prev = NULL;
-        SequenceListHead = node;
+        sequenceListHead = node;
     }
-    ActiveSequences++;
+    numSequences++;
 }
 
 void SN_StartSequenceInSec(sector_t* sector, int seqBase)
@@ -315,7 +316,7 @@ void SN_StopSequenceInSec(sector_t* sector)
 
 void SN_StartSequenceName(mobj_t* mobj, const char* name)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < SEQ_NUMSEQ; ++i)
     {
@@ -331,7 +332,7 @@ void SN_StopSequence(mobj_t* mobj)
 {
     seqnode_t*          node;
 
-    for(node = SequenceListHead; node; node = node->next)
+    for(node = sequenceListHead; node; node = node->next)
     {
         if(node->mobj == mobj)
         {
@@ -342,9 +343,9 @@ void SN_StopSequence(mobj_t* mobj)
                                      node->volume / 127.0f);
             }
 
-            if(SequenceListHead == node)
+            if(sequenceListHead == node)
             {
-                SequenceListHead = node->next;
+                sequenceListHead = node->next;
             }
 
             if(node->prev)
@@ -358,7 +359,7 @@ void SN_StopSequence(mobj_t* mobj)
             }
 
             Z_Free(node);
-            ActiveSequences--;
+            numSequences--;
         }
     }
 }
@@ -368,12 +369,12 @@ void SN_UpdateActiveSequences(void)
     seqnode_t*          node;
     boolean             sndPlaying;
 
-    if(!ActiveSequences || paused)
+    if(!numSequences || paused)
     {   // No sequences currently playing/game is paused
         return;
     }
 
-    for(node = SequenceListHead; node; node = node->next)
+    for(node = sequenceListHead; node; node = node->next)
     {
         if(node->delayTics)
         {
@@ -471,7 +472,7 @@ void SN_StopAllSequences(void)
 {
     seqnode_t*          node;
 
-    for(node = SequenceListHead; node; node = node->next)
+    for(node = sequenceListHead; node; node = node->next)
     {
         node->stopSound = 0;    // don't play any stop sounds
         SN_StopSequence(node->mobj);
@@ -493,7 +494,7 @@ void SN_ChangeNodeData(int nodeNum, int seqOffset, int delayTics,
     seqnode_t*          node;
 
     i = 0;
-    node = SequenceListHead;
+    node = sequenceListHead;
     while(node && i < nodeNum)
     {
         node = node->next;

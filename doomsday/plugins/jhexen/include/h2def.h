@@ -385,7 +385,6 @@ void            G_CommonPostInit(void);
 int             G_GetInteger(int id);
 void*           G_GetVariable(int id);
 
-void            G_DeathMatchSpawnPlayer(int playernum);
 int             G_GetMapNumber(int episode, int map);
 void            G_InitNew(skillmode_t skill, int episode, int map);
 void            G_DeferedInitNew(skillmode_t skill, int episode, int map);
@@ -398,7 +397,7 @@ void            G_RecordDemo(skillmode_t skill, int numplayers, int episode,
                              int map, char* name);
 void            G_PlayDemo(char* name);
 void            G_TimeDemo(char* name);
-void            G_LeaveMap(int map, int position, boolean secret);
+void            G_LeaveMap(int player, int map, int position, boolean secret);
 void            G_StartNewGame(skillmode_t skill);
 void            G_StartNewInit(void);
 void            G_WorldDone(void);
@@ -413,12 +412,7 @@ boolean         G_Responder(event_t* ev);
 
 void            P_Init(void);
 
-void            P_SetupMap(int episode, int map, int playermask,
-                           skillmode_t skill);
-
-extern boolean setsizeneeded;
-
-extern int      localQuakeHappening[MAXPLAYERS];
+void            P_SetupMap(struct gamemap_s* map, skillmode_t skill);
 
 byte            P_Random(void);
 void            M_ResetRandom(void);
@@ -437,9 +431,9 @@ boolean         SC_GetNumber(void);
 void            SC_MustGetNumber(void);
 void            SC_UnGet(void);
 
-boolean         SC_Compare(char* text);
-int             SC_MatchString(char** strings);
-int             SC_MustMatchString(char** strings);
+boolean         SC_Compare(const char* text);
+int             SC_MatchString(const char** strings);
+int             SC_MustMatchString(const char** strings);
 void            SC_ScriptError(char* message);
 
 extern char* sc_String;

@@ -39,6 +39,7 @@
 
 #include "jdoom.h"
 
+#include "gamemap.h"
 #include "m_argv.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
@@ -277,7 +278,7 @@ boolean P_ActivateLine(linedef_t *ld, mobj_t *mo, int side, int actType)
 static void crossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 {
     int                 ok;
-    xline_t            *xline;
+    xlinedef_t            *xline;
 
     // Extended functionality overrides old.
     if(XL_CrossLine(line, side, thing))
@@ -465,7 +466,7 @@ static void crossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 52:
         // EXIT!
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(thing->player? thing->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
         break;
 
     case 53:
@@ -548,7 +549,7 @@ static void crossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 124:
         // Secret EXIT.
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, true);
+        G_LeaveMap(thing->player? thing->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, true);
         break;
 
     case 125:
@@ -786,6 +787,7 @@ static void shootSpecialLine(mobj_t *thing, linedef_t *line)
  */
 void P_PlayerInSpecialSector(player_t* player)
 {
+    gamemap_t* map = P_CurrentGameMap();
     sector_t* sector = DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
 
     // Falling, not all the way down yet?
@@ -799,7 +801,7 @@ void P_PlayerInSpecialSector(player_t* player)
         // HELLSLIME DAMAGE.
         if(!player->powers[PT_IRONFEET])
         {
-            if(!(mapTime & 0x1f))
+            if(!(map->time & 0x1f))
                 P_DamageMobj(player->plr->mo, NULL, NULL, 10, false);
         }
         break;
@@ -808,7 +810,7 @@ void P_PlayerInSpecialSector(player_t* player)
         // NUKAGE DAMAGE.
         if(!player->powers[PT_IRONFEET])
         {
-            if(!(mapTime & 0x1f))
+            if(!(map->time & 0x1f))
                 P_DamageMobj(player->plr->mo, NULL, NULL, 5, false);
         }
         break;
@@ -819,7 +821,7 @@ void P_PlayerInSpecialSector(player_t* player)
         // STROBE HURT
         if(!player->powers[PT_IRONFEET] || (P_Random() < 5))
         {
-            if(!(mapTime & 0x1f))
+            if(!(map->time & 0x1f))
                 P_DamageMobj(player->plr->mo, NULL, NULL, 20, false);
         }
         break;
@@ -839,11 +841,11 @@ void P_PlayerInSpecialSector(player_t* player)
         // EXIT SUPER DAMAGE! (for E1M8 finale)
         player->cheats &= ~CF_GODMODE;
 
-        if(!(mapTime & 0x1f))
+        if(!(map->time & 0x1f))
             P_DamageMobj(player->plr->mo, NULL, NULL, 20, false);
 
         if(player->health <= 10)
-            G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, false);
+            G_LeaveMap(player - players, G_GetMapNumber(gameEpisode, gameMap), 0, false);
         break;
 
     default:
@@ -854,29 +856,31 @@ void P_PlayerInSpecialSector(player_t* player)
 /**
  * Animate planes, scroll walls, etc.
  */
-void P_UpdateSpecials(void)
+void GameMap_UpdateSpecials(gamemap_t* map)
 {
-    linedef_t*          line;
-    sidedef_t*          side;
+    assert(map);
 
     // Extended lines and sectors.
     XG_Ticker();
 
     // Animate line specials.
-    if(P_IterListSize(linespecials))
+    if(P_IterListSize(map->_linespecials))
     {
-        float               x, offset;
+        linedef_t* line;
+        float x, offset;
 
-        P_IterListResetIterator(linespecials, false);
-        while((line = P_IterListIterator(linespecials)) != NULL)
+        P_IterListResetIterator(map->_linespecials, false);
+        while((line = P_IterListIterator(map->_linespecials)) != NULL)
         {
-            xline_t            *xline = P_ToXLine(line);
+            xlinedef_t* xline = P_ToXLine(line);
 
             switch(xline->special)
             {
             case 48:
             case 85:
-                side = DMU_GetPtrp(line, DMU_SIDEDEF0);
+                {
+                sidedef_t* side = DMU_GetPtrp(line, DMU_SIDEDEF0);
+
                 if(xline->special == 85)
                     offset = -1;
                 else
@@ -889,7 +893,7 @@ void P_UpdateSpecials(void)
                 x = DMU_GetFloatp(side, DMU_BOTTOM_MATERIAL_OFFSET_X);
                 DMU_SetFloatp(side, DMU_BOTTOM_MATERIAL_OFFSET_X, x += offset);
                 break;
-
+                }
             default:
                 break;
             }
@@ -900,17 +904,19 @@ void P_UpdateSpecials(void)
 /**
  * After the map has been loaded, scan for specials that spawn thinkers.
  */
-void P_SpawnSpecials(void)
+void GameMap_SpawnSpecials(gamemap_t* map)
 {
-    uint                i;
-    linedef_t*          line;
-    xline_t*            xline;
-    iterlist_t*         list;
-    sector_t*           sec;
-    xsector_t*          xsec;
+    assert(map);
+    {
+    uint i;
+    linedef_t* line;
+    xlinedef_t* xline;
+    iterlist_t* list;
+    sector_t* sec;
+    xsector_t* xsec;
 
     // Init special sectors.
-    P_DestroySectorTagLists();
+    GameMap_DestroySectorTagLists(map);
 
     for(i = 0; i < numsectors; ++i)
     {
@@ -919,7 +925,7 @@ void P_SpawnSpecials(void)
 
         if(xsec->tag)
         {
-           list = P_GetSectorIterListForTag(xsec->tag, true);
+           list = GameMap_SectorIterListForTag(map, xsec->tag, true);
            P_AddObjectToIterList(list, sec);
         }
 
@@ -931,7 +937,7 @@ void P_SpawnSpecials(void)
             switch(xsec->special)
             {
             case 9: // A secret sector.
-                totalSecret++;
+                map->totalSecret++;
                 break;
 
             default:
@@ -971,7 +977,7 @@ void P_SpawnSpecials(void)
 
         case 9:
             // SECRET SECTOR
-            totalSecret++;
+            map->totalSecret++;
             break;
 
         case 10:
@@ -1004,8 +1010,8 @@ void P_SpawnSpecials(void)
     }
 
     // Init animating line specials.
-    P_EmptyIterList(linespecials);
-    P_DestroyLineTagLists();
+    P_EmptyIterList(map->_linespecials);
+    GameMap_DestroyLineTagLists(map);
     for(i = 0; i < numlines; ++i)
     {
         line = DMU_ToPtr(DMU_LINEDEF, i);
@@ -1014,7 +1020,7 @@ void P_SpawnSpecials(void)
         switch(xline->special)
         {
         case 48: // EFFECT FIRSTCOL SCROLL+
-            P_AddObjectToIterList(linespecials, line);
+            P_AddObjectToIterList(map->_linespecials, line);
             break;
 
         default:
@@ -1023,18 +1029,19 @@ void P_SpawnSpecials(void)
 
         if(xline->tag)
         {
-           list = P_GetLineIterListForTag(xline->tag, true);
+           list = GameMap_IterListForTag(map, xline->tag, true);
            P_AddObjectToIterList(list, line);
         }
     }
 
     // Init extended generalized lines and sectors.
     XG_Init();
+    }
 }
 
 boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
 {
-    xline_t*            xline = P_ToXLine(line);
+    xlinedef_t* xline = P_ToXLine(line);
 
     // Use the back sides of VERY SPECIAL lines...
     if(side)
@@ -1130,7 +1137,7 @@ boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
 
         P_ToggleSwitch(DMU_GetPtrp(line, DMU_SIDEDEF0), SFX_SWTCHX, false, 0);
         xline->special = 0;
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(mo->player? mo->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
         break;
 
     case 14:
@@ -1246,7 +1253,7 @@ boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
 
         P_ToggleSwitch(DMU_GetPtrp(line, DMU_SIDEDEF0), SFX_NONE, false, 0);
         xline->special = 0;
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, true);
+        G_LeaveMap(mo->player? mo->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, true);
         break;
 
     case 55:

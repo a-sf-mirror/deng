@@ -227,13 +227,15 @@ static wianim_t epsd2animinfo[] = {
 static int NUMANIMS[NUMEPISODES] = {
     sizeof(epsd0animinfo) / sizeof(wianim_t),
     sizeof(epsd1animinfo) / sizeof(wianim_t),
-    sizeof(epsd2animinfo) / sizeof(wianim_t)
+    sizeof(epsd2animinfo) / sizeof(wianim_t),
+    0
 };
 
 static wianim_t *anims[NUMEPISODES] = {
     epsd0animinfo,
     epsd1animinfo,
-    epsd2animinfo
+    epsd2animinfo,
+    NULL
 };
 
 // Signals to refresh everything for one frame.
@@ -361,17 +363,16 @@ void WI_drawLF(void)
  */
 void WI_drawEL(void)
 {
-    int                 y = WI_TITLEY;
-    int                 mapNum;
-    char               *mapName = NULL;
-    ddmapinfo_t         minfo;
-    char                lumpName[10];
+    int y = WI_TITLEY, mapNum;
+    char* mapName = NULL;
+    ddmapinfo_t minfo;
+    char mapID[9];
 
     mapNum = G_GetMapNumber(gameEpisode, wbs->next);
 
     // See if there is a map name.
-    P_GetMapLumpName(gameEpisode, wbs->next+1, lumpName);
-    if(Def_Get(DD_DEF_MAP_INFO, lumpName, &minfo) && minfo.name)
+    P_GetMapLumpName(mapID, gameEpisode, wbs->next+1);
+    if(Def_Get(DD_DEF_MAP_INFO, mapID, &minfo) && minfo.name)
     {
         if(Def_Get(DD_DEF_TEXT, minfo.name, &mapName) == -1)
             mapName = minfo.name;
@@ -380,7 +381,7 @@ void WI_drawEL(void)
     // Skip the E#M# or Map #.
     if(mapName)
     {
-        char               *ptr = strchr(mapName, ':');
+        char* ptr = strchr(mapName, ':');
 
         if(ptr)
         {
@@ -402,11 +403,10 @@ void WI_drawEL(void)
                  mapName, false, ALIGN_CENTER);
 }
 
-void WI_DrawOnMapNode(int n, dpatch_t * c)
+void WI_DrawOnMapNode(int n, dpatch_t* c)
 {
-    int                 i;
-    int                 left, top, right, bottom;
-    boolean             fits = false;
+    int i, left, top, right, bottom;
+    boolean fits = false;
 
     i = 0;
     do

@@ -85,8 +85,8 @@ typedef struct seqnode_s {
     struct seqnode_s* next;
 } seqnode_t;
 
-extern int ActiveSequences;
-extern seqnode_t* SequenceListHead;
+extern int numSequences;
+extern seqnode_t* sequenceListHead;
 
 void            SN_InitSequenceScript(void);
 void            SN_StartSequence(mobj_t* mobj, int sequence);

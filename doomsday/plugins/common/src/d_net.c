@@ -42,6 +42,7 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "g_common.h"
 #include "d_net.h"
@@ -290,13 +291,16 @@ long int D_NetPlayerEvent(int plrNumber, int peType, void *data)
         D_NetMessage(CONSOLEPLAYER, msgBuff);
 
         if(IS_SERVER)
-            P_DealPlayerStarts(0);
+        {
+            gamemap_t* map = P_CurrentGameMap();
+            GameMap_DealPlayerStarts(map, 0);
+        }
     }
     // DDPE_CHAT_MESSAGE occurs when a PKT_CHAT is received.
     // Here we will only display the message (if not a local message).
     else if(peType == DDPE_CHAT_MESSAGE && plrNumber != CONSOLEPLAYER)
     {
-        int     i, num, oldecho = cfg.echoMsg;
+        int i, num, oldecho = cfg.echoMsg;
 
         // Count the number of players.
         for(i = num = 0; i < MAXPLAYERS; ++i)

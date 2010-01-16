@@ -48,9 +48,11 @@
 
 #include "jdoom64.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapspec.h"
 #include "p_map.h"
+#include "p_mapsetup.h"
 #include "p_actor.h"
 #include "p_door.h"
 #include "p_floor.h"
@@ -83,11 +85,9 @@ void C_DECL A_SpawnFly(mobj_t *mo);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-boolean bossKilled;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static mobj_t *corpseHit;
+static mobj_t* corpseHit;
 
 static float dropoffDelta[2], floorZ;
 
@@ -193,11 +193,12 @@ static boolean checkMissileRange(mobj_t *actor)
  *
  * @return              @c false, if the move is blocked.
  */
-static boolean moveMobj(mobj_t *actor, boolean dropoff)
+static boolean moveMobj(mobj_t* actor, boolean dropoff)
 {
-    float               pos[3], step[3];
-    linedef_t          *ld;
-    boolean             good;
+    gamemap_t* map = P_CurrentGameMap();
+    float pos[3], step[3];
+    linedef_t* ld;
+    boolean good;
 
     if(actor->moveDir == DI_NODIR)
         return false;
@@ -214,10 +215,10 @@ static boolean moveMobj(mobj_t *actor, boolean dropoff)
     if(!P_TryMove(actor, pos[VX], pos[VY], dropoff, false))
     {
         // Open any specials.
-        if((actor->flags & MF_FLOAT) && floatOk)
+        if((actor->flags & MF_FLOAT) && map->floatOk)
         {
             // Must adjust height.
-            if(actor->pos[VZ] < tmFloorZ)
+            if(actor->pos[VZ] < map->tmFloorZ)
                 actor->pos[VZ] += FLOATSPEED;
             else
                 actor->pos[VZ] -= FLOATSPEED;
@@ -226,12 +227,12 @@ static boolean moveMobj(mobj_t *actor, boolean dropoff)
             return true;
         }
 
-        if(!P_IterListSize(spechit))
+        if(!P_IterListSize(GameMap_SpecHits(map)))
             return false;
 
         actor->moveDir = DI_NODIR;
         good = false;
-        while((ld = P_PopIterList(spechit)) != NULL)
+        while((ld = P_PopIterList(GameMap_SpecHits(map))) != NULL)
         {
             /**
              * If the special is not a door that can be opened, return false.
@@ -253,7 +254,7 @@ static boolean moveMobj(mobj_t *actor, boolean dropoff)
              */
 
             if(P_ActivateLine(ld, actor, 0, SPAC_USE))
-                good |= ld == blockLine ? 1 : 2;
+                good |= ld == map->blockLine ? 1 : 2;
         }
 
         if(!good || cfg.monstersStuckInDoors)
@@ -268,7 +269,7 @@ static boolean moveMobj(mobj_t *actor, boolean dropoff)
     }
 
     // $dropoff_fix: fall more slowly, under gravity, if fellDown==true
-    if(!(actor->flags & MF_FLOAT) && !fellDown)
+    if(!(actor->flags & MF_FLOAT) && !map->fellDown)
     {
         if(actor->pos[VZ] > actor->floorZ)
             P_HitFloor(actor);
@@ -368,21 +369,22 @@ static void doNewChaseDir(mobj_t *actor, float deltaX, float deltaY)
  */
 static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
 {
-    sector_t*           backsector = DMU_GetPtrp(line, DMU_BACK_SECTOR);
-    float*              bbox = DMU_GetPtrp(line, DMU_BOUNDING_BOX);
+    gamemap_t* map = P_CurrentGameMap();
+    sector_t* backsector = DMU_GetPtrp(line, DMU_BACK_SECTOR);
+    float* bbox = DMU_GetPtrp(line, DMU_BOUNDING_BOX);
 
     if(backsector &&
-       tmBBox[BOXRIGHT]  > bbox[BOXLEFT] &&
-       tmBBox[BOXLEFT]   < bbox[BOXRIGHT]  &&
-       tmBBox[BOXTOP]    > bbox[BOXBOTTOM] && // Linedef must be contacted
-       tmBBox[BOXBOTTOM] < bbox[BOXTOP]    &&
-       DMU_BoxOnLineSide(tmBBox, line) == -1)
+       map->tmBBox[BOXRIGHT]  > bbox[BOXLEFT] &&
+       map->tmBBox[BOXLEFT]   < bbox[BOXRIGHT]  &&
+       map->tmBBox[BOXTOP]    > bbox[BOXBOTTOM] && // Linedef must be contacted
+       map->tmBBox[BOXBOTTOM] < bbox[BOXTOP]    &&
+       DMU_BoxOnLineSide(map->tmBBox, line) == -1)
     {
-        sector_t*           frontsector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
-        float               front = DMU_GetFloatp(frontsector, DMU_FLOOR_HEIGHT);
-        float               back = DMU_GetFloatp(backsector, DMU_FLOOR_HEIGHT);
-        float               d1[2];
-        angle_t             angle;
+        sector_t* frontsector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
+        float front = DMU_GetFloatp(frontsector, DMU_FLOOR_HEIGHT);
+        float back = DMU_GetFloatp(backsector, DMU_FLOOR_HEIGHT);
+        float d1[2];
+        angle_t angle;
 
         DMU_GetFloatpv(line, DMU_DXY, d1);
 
@@ -576,10 +578,13 @@ static int countMobjOfType(void* p, void* context)
  */
 void C_DECL A_RectSpecial(mobj_t* actor)
 {
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     countmobjoftypeparams_t params;
-    int                 sound;
-    mobj_t*             mo;
-    float               pos[3];
+    int sound;
+    mobj_t* mo;
+    float pos[3];
 
     switch(actor->info->deathSound)
     {
@@ -617,7 +622,7 @@ void C_DECL A_RectSpecial(mobj_t* actor)
     pos[VY] += FIX2FLT((P_Random() - 128) << 11);
     pos[VZ] += actor->height / 2;
 
-    if((mo = P_SpawnMobj3fv(MT_KABOOM, pos, P_Random() << 24, 0)))
+    if((mo = GameMap_SpawnMobj3fv(map, MT_KABOOM, pos, P_Random() << 24, 0)))
     {
         S_StartSound(SFX_BAREXP, mo);
         mo->mom[MX] = FIX2FLT((P_Random() - 128) << 11);
@@ -638,11 +643,12 @@ void C_DECL A_RectSpecial(mobj_t* actor)
 
     if(!params.count)
     {   // No Bitches left alive.
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4459; // jd64 was 666.
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST); // jd64 was open.
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -1413,7 +1419,7 @@ void C_DECL A_SetFloorFire(mobj_t *actor)
     pos[VY] += FIX2FLT((P_Random() - P_Random()) << 10);
     pos[VZ]  = ONFLOORZ;
 
-    if((mo = P_SpawnMobj3fv(MT_SPAWNFIRE, pos)))
+    if((mo = GameMap_SpawnMobj3fv(MT_SPAWNFIRE, pos)))
         mo->target = actor->target;
 */
 }
@@ -1423,38 +1429,43 @@ void C_DECL A_SetFloorFire(mobj_t *actor)
  */
 void C_DECL A_MotherBallExplode(mobj_t* spread)
 {
-    int                 i;
+    assert(spread);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int i;
 
     for(i = 0; i < 8; ++i)
     {
-        angle_t             angle = i * ANG45;
-        mobj_t*             shard;
+        angle_t angle = i * ANG45;
+        mobj_t* shard;
 
-        if((shard = P_SpawnMobj3fv(MT_HEADSHOT, spread->pos, angle, 0)))
+        if((shard = GameMap_SpawnMobj3fv(map, MT_HEADSHOT, spread->pos, angle, 0)))
         {
-            unsigned int        an = angle >> ANGLETOFINESHIFT;
+            unsigned int an = angle >> ANGLETOFINESHIFT;
 
             shard->target = spread->target;
             shard->mom[MX] = shard->info->speed * FIX2FLT(finecosine[an]);
             shard->mom[MY] = shard->info->speed * FIX2FLT(finesine[an]);
         }
     }
+    }
 }
 
 /**
  * d64tc: Spawns a smoke sprite during the missle attack.
  */
-void C_DECL A_RectTracerPuff(mobj_t *smoke)
+void C_DECL A_RectTracerPuff(mobj_t* smoke)
 {
-    if(!smoke)
-        return;
-
-    P_SpawnMobj3fv(MT_MOTHERPUFF, smoke->pos, P_Random() << 24, 0);
+    assert(smoke);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    GameMap_SpawnMobj3fv(map, MT_MOTHERPUFF, smoke->pos, P_Random() << 24, 0);
+    }
 }
 
-void C_DECL A_SargAttack(mobj_t *actor)
+void C_DECL A_SargAttack(mobj_t* actor)
 {
-    int                 damage;
+    int damage;
 
     if(!actor->target)
         return;
@@ -1570,19 +1581,21 @@ void C_DECL A_SkelMissile(mobj_t* actor)
 
 void C_DECL A_Tracer(mobj_t* actor)
 {
-    angle_t             exact;
-    float               dist, slope;
-    mobj_t*             dest, *th;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    angle_t exact;
+    float dist, slope;
+    mobj_t* dest, *th;
 
     if((int) GAMETIC & 3)
         return;
 
     // Spawn a puff of smoke behind the rocket.
-    P_SpawnCustomPuff(MT_ROCKETPUFF, actor->pos[VX],
-                      actor->pos[VY],
+    P_SpawnCustomPuff(map, MT_ROCKETPUFF, actor->pos[VX], actor->pos[VY],
                       actor->pos[VZ], actor->angle + ANG180);
 
-    if((th = P_SpawnMobj3f(MT_SMOKE, actor->pos[VX] - actor->mom[MX],
+    if((th = GameMap_SpawnMobj3f(map, MT_SMOKE, actor->pos[VX] - actor->mom[MX],
                            actor->pos[VY] - actor->mom[MY], actor->pos[VZ],
                            actor->angle + ANG180, 0)))
     {
@@ -1636,9 +1649,10 @@ void C_DECL A_Tracer(mobj_t* actor)
         actor->mom[MZ] -= 1 / 8;
     else
         actor->mom[MZ] += 1 / 8;
+    }
 }
 
-void C_DECL A_SkelWhoosh(mobj_t *actor)
+void C_DECL A_SkelWhoosh(mobj_t* actor)
 {
     if(!actor->target)
         return;
@@ -1762,13 +1776,16 @@ void C_DECL A_SkullAttack(mobj_t *actor)
 /**
  * PainElemental Attack: Spawn a lost soul and launch it at the target.
  */
-void C_DECL A_PainShootSkull(mobj_t *actor, angle_t angle)
+void C_DECL A_PainShootSkull(mobj_t* actor, angle_t angle)
 {
-    float               pos[3];
-    mobj_t*             newmobj;
-    uint                an;
-    float               prestep;
-    sector_t*           sec;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    float pos[3];
+    mobj_t* newmobj;
+    uint an;
+    float prestep;
+    sector_t* sec;
 
     if(cfg.maxSkulls)
     {   // Limit the number of MT_SKULL's we should spawn.
@@ -1785,8 +1802,7 @@ void C_DECL A_PainShootSkull(mobj_t *actor, angle_t angle)
 
     an = angle >> ANGLETOFINESHIFT;
 
-    prestep = 4 +
-        3 * ((actor->info->radius + MOBJINFO[MT_SKULL].radius) / 2);
+    prestep = 4 + 3 * ((actor->info->radius + MOBJINFO[MT_SKULL].radius) / 2);
 
     memcpy(pos, actor->pos, sizeof(pos));
     pos[VX] += prestep * FIX2FLT(finecosine[an]);
@@ -1805,7 +1821,7 @@ void C_DECL A_PainShootSkull(mobj_t *actor, angle_t angle)
         if(P_CheckSides(actor, pos[VX], pos[VY]))
             return;
 
-        if(!(newmobj = P_SpawnMobj3fv(MT_SKULL, pos, angle, 0)))
+        if(!(newmobj = GameMap_SpawnMobj3fv(map, MT_SKULL, pos, angle, 0)))
             return;
 
         sec = DMU_GetPtrp(newmobj->subsector, DMU_SECTOR);
@@ -1823,7 +1839,7 @@ void C_DECL A_PainShootSkull(mobj_t *actor, angle_t angle)
     }
     else
     {   // Use the original DOOM method.
-        if(!(newmobj = P_SpawnMobj3fv(MT_SKULL, pos, angle, 0)))
+        if(!(newmobj = GameMap_SpawnMobj3fv(map, MT_SKULL, pos, angle, 0)))
             return;
     }
 
@@ -1837,12 +1853,13 @@ void C_DECL A_PainShootSkull(mobj_t *actor, angle_t angle)
 
     newmobj->target = actor->target;
     A_SkullAttack(newmobj);
+    }
 }
 
 /**
  * PainElemental Attack: Spawn a lost soul and launch it at the target.
  */
-void C_DECL A_PainAttack(mobj_t *actor)
+void C_DECL A_PainAttack(mobj_t* actor)
 {
     if(!actor->target)
         return;
@@ -1881,22 +1898,23 @@ void C_DECL A_PainDie(mobj_t* actor)
  */
 void A_Rocketshootpuff(mobj_t* actor, angle_t angle)
 {
-    uint                an;
-    float               prestep;
-    float               pos[3];
-    mobj_t*             mo;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    uint an;
+    float prestep, pos[3];
+    mobj_t* mo;
 
     an = angle >> ANGLETOFINESHIFT;
 
-    prestep = 4 + 3 *
-              (actor->info->radius + MOBJINFO[MT_ROCKETPUFF].radius) / 2;
+    prestep = 4 + 3 * (actor->info->radius + MOBJINFO[MT_ROCKETPUFF].radius) / 2;
 
     memcpy(pos, actor->pos, sizeof(pos));
     pos[VX] += prestep * FIX2FLT(finecosine[an]);
     pos[VY] += prestep * FIX2FLT(finesine[an]);
     pos[VZ] += 8;
 
-    if((mo = P_SpawnMobj3fv(MT_ROCKETPUFF, pos, angle, 0)))
+    if((mo = GameMap_SpawnMobj3fv(map, MT_ROCKETPUFF, pos, angle, 0)))
     {
         // Check for movements $dropoff_fix.
         if(!P_TryMove(mo, mo->pos[VX], mo->pos[VY], false, false))
@@ -1905,11 +1923,12 @@ void A_Rocketshootpuff(mobj_t* actor, angle_t angle)
             P_DamageMobj(mo, actor, actor, 10000, false);
         }
     }
+    }
 }
 
-void C_DECL A_Scream(mobj_t *actor)
+void C_DECL A_Scream(mobj_t* actor)
 {
-    int                 sound;
+    int sound;
 
     if(actor->player)
     {
@@ -1962,18 +1981,21 @@ void C_DECL A_Scream(mobj_t *actor)
  */
 void C_DECL A_CyberDeath(mobj_t* actor)
 {
-    int                 i;
-    mobj_t*             mo;
-    float               pos[3];
-    linedef_t*          dummyLine;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     countmobjoftypeparams_t params;
+    linedef_t* dummyLine;
+    mobj_t* mo;
+    float pos[3];
+    int i;
 
     memcpy(pos, actor->pos, sizeof(pos));
     pos[VX] += FIX2FLT((P_Random() - 128) << 11);
     pos[VY] += FIX2FLT((P_Random() - 128) << 11);
     pos[VZ] += actor->height / 2;
 
-    if((mo = P_SpawnMobj3fv(MT_KABOOM, pos, P_Random() << 24, 0)))
+    if((mo = GameMap_SpawnMobj3fv(map, MT_KABOOM, pos, P_Random() << 24, 0)))
     {
         S_StartSound(SFX_BAREXP, mo);
         mo->mom[MX] = FIX2FLT((P_Random() - 128) << 11);
@@ -1990,7 +2012,7 @@ void C_DECL A_CyberDeath(mobj_t* actor)
     S_StartSound(actor->info->deathSound | DDSF_NO_ATTENUATION, NULL);
 
     // Has the boss already been killed?
-    if(bossKilled)
+    if(map->bossKilled)
         return;
 
     if((gameMap != 32) && (gameMap != 33) && (gameMap != 35))
@@ -2025,65 +2047,71 @@ void C_DECL A_CyberDeath(mobj_t* actor)
     }
     else if(gameMap == 35)
     {
-        G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
+    }
     }
 }
 
 /**
  * d64tc: Spawns a smoke sprite during the missle attack
  */
-void C_DECL A_Rocketpuff(mobj_t *actor)
+void C_DECL A_Rocketpuff(mobj_t* actor)
 {
-    if(!actor)
-        return;
-
-    P_SpawnMobj3fv(MT_ROCKETPUFF, actor->pos, P_Random() << 24, 0);
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    GameMap_SpawnMobj3fv(map, MT_ROCKETPUFF, actor->pos, P_Random() << 24, 0);
+    }
 }
 
 /**
  * d64tc
  */
-void C_DECL A_Lasersmoke(mobj_t *mo)
+void C_DECL A_Lasersmoke(mobj_t* mo)
 {
-    if(!mo)
-        return;
-
-    P_SpawnMobj3fv(MT_LASERDUST, mo->pos, P_Random() << 24, 0);
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    GameMap_SpawnMobj3fv(map, MT_LASERDUST, mo->pos, P_Random() << 24, 0);
+    }
 }
 
-void C_DECL A_XScream(mobj_t *actor)
+void C_DECL A_XScream(mobj_t* actor)
 {
     S_StartSound(SFX_SLOP, actor);
 }
 
-void C_DECL A_Pain(mobj_t *actor)
+void C_DECL A_Pain(mobj_t* actor)
 {
     if(actor->info->painSound)
         S_StartSound(actor->info->painSound, actor);
 }
 
-void C_DECL A_Fall(mobj_t *actor)
+void C_DECL A_Fall(mobj_t* actor)
 {
     // Actor is on ground, it can be walked over.
     actor->flags &= ~MF_SOLID;
 }
 
-void C_DECL A_Explode(mobj_t *mo)
+void C_DECL A_Explode(mobj_t* mo)
 {
     P_RadiusAttack(mo, mo->target, 128, 127);
 }
 
 void C_DECL A_BarrelExplode(mobj_t* actor)
 {
-    int                 i;
-    linedef_t*          dummyLine;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     countmobjoftypeparams_t params;
+    linedef_t* dummyLine;
+    int i;
 
     S_StartSound(actor->info->deathSound, actor);
     P_RadiusAttack(actor, actor->target, 128, 127);
 
     // Has the boss already been killed?
-    if(bossKilled)
+    if(map->bossKilled)
         return;
 
     if(gameMap != 1)
@@ -2115,6 +2143,7 @@ void C_DECL A_BarrelExplode(mobj_t* actor)
     EV_DoDoor(dummyLine, DT_BLAZERAISE);
 
     P_FreeDummyLine(dummyLine);
+    }
 }
 
 /**
@@ -2125,11 +2154,14 @@ void C_DECL A_BarrelExplode(mobj_t* actor)
  */
 void C_DECL A_BossDeath(mobj_t* mo)
 {
-    int                 i;
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
     countmobjoftypeparams_t params;
+    int i;
 
     // Has the boss already been killed?
-    if(bossKilled)
+    if(map->bossKilled)
         return;
 
     if(gameMap != 30)
@@ -2156,7 +2188,8 @@ void C_DECL A_BossDeath(mobj_t* mo)
         return;
     }
 
-    G_LeaveMap(G_GetMapNumber(gameEpisode, gameMap), 0, false);
+    G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
+    }
 }
 
 void C_DECL A_Hoof(mobj_t *mo)

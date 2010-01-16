@@ -40,6 +40,7 @@
 
 #include "jheretic.h"
 
+#include "gamemap.h"
 #include "d_net.h"
 #include "p_player.h"
 #include "p_map.h"
@@ -469,16 +470,17 @@ float bulletSlope;
 
 void R_GetWeaponBob(int player, float* x, float* y)
 {
+    gamemap_t* map = P_CurrentGameMap();
     if(x)
     {
         *x = 1 + (cfg.bobWeapon * players[player].bob) *
-            FIX2FLT(finecosine[(128 * mapTime) & FINEMASK]);
+            FIX2FLT(finecosine[(128 * map->time) & FINEMASK]);
     }
 
     if(y)
     {
         *y = 32 + (cfg.bobWeapon * players[player].bob) *
-            FIX2FLT(finesine[(128 * mapTime) & FINEMASK & (FINEANGLES / 2 - 1)]);
+            FIX2FLT(finesine[(128 * map->time) & FINEMASK & (FINEANGLES / 2 - 1)]);
     }
 }
 
@@ -859,27 +861,30 @@ void C_DECL A_Raise(player_t *player, pspdef_t *psp)
  * Sets a slope so a near miss is at aproximately the height of the
  * intended target.
  */
-void P_BulletSlope(mobj_t *mo)
+void P_BulletSlope(mobj_t* mo)
 {
-    angle_t             an = mo->angle;
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    angle_t an = mo->angle;
 
     if(!cfg.noAutoAim) // Autoaiming enabled.
     {
         // See which target is to be aimed at.
         bulletSlope = P_AimLineAttack(mo, an, 16 * 64);
-        if(!lineTarget)
+        if(!map->lineTarget)
         {
             // No target yet, look closer.
             an += 1 << 26;
             bulletSlope = P_AimLineAttack(mo, an, 16 * 64);
-            if(!lineTarget)
+            if(!map->lineTarget)
             {
                 an -= 2 << 26;
                 bulletSlope = P_AimLineAttack(mo, an, 16 * 64);
             }
         }
 
-        if(lineTarget)
+        if(map->lineTarget)
         {   // Found a target, we're done.
             return;
         }
@@ -887,65 +892,77 @@ void P_BulletSlope(mobj_t *mo)
 
     // Fall back to manual aiming by lookdir.
     bulletSlope = tan(LOOKDIR2RAD(mo->dPlayer->lookDir)) / 1.2;
+    }
 }
 
-void C_DECL A_BeakAttackPL1(player_t *player, pspdef_t *psp)
+void C_DECL A_BeakAttackPL1(player_t* player, pspdef_t* psp)
 {
-    angle_t             angle;
-    int                 damage;
-    float               slope;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    angle_t angle;
+    int damage;
+    float slope;
 
     P_ShotAmmo(player);
     damage = 1 + (P_Random() & 3);
     angle = player->plr->mo->angle;
     slope = P_AimLineAttack(player->plr->mo, angle, MELEERANGE);
 
-    puffType = MT_BEAKPUFF;
+    map->puffType = MT_BEAKPUFF;
 
     P_LineAttack(player->plr->mo, angle, MELEERANGE, slope, damage);
-    if(lineTarget)
+    if(map->lineTarget)
     {
         player->plr->mo->angle =
             R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
-                            lineTarget->pos[VX], lineTarget->pos[VY]);
+                            map->lineTarget->pos[VX], map->lineTarget->pos[VY]);
     }
 
     S_StartSoundEx(SFX_CHICPK1 + (P_Random() % 3), player->plr->mo);
     player->chickenPeck = 12;
     psp->tics -= P_Random() & 7;
+    }
 }
 
-void C_DECL A_BeakAttackPL2(player_t *player, pspdef_t *psp)
+void C_DECL A_BeakAttackPL2(player_t* player, pspdef_t* psp)
 {
-    angle_t             angle;
-    int                 damage;
-    float               slope;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    angle_t angle;
+    int damage;
+    float slope;
 
     P_ShotAmmo(player);
     damage = HITDICE(4);
     angle = player->plr->mo->angle;
     slope = P_AimLineAttack(player->plr->mo, angle, MELEERANGE);
 
-    puffType = MT_BEAKPUFF;
+    map->puffType = MT_BEAKPUFF;
 
     P_LineAttack(player->plr->mo, angle, MELEERANGE, slope, damage);
-    if(lineTarget)
+    if(map->lineTarget)
     {
         player->plr->mo->angle =
             R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
-                            lineTarget->pos[VX], lineTarget->pos[VY]);
+                            map->lineTarget->pos[VX], map->lineTarget->pos[VY]);
     }
 
     S_StartSoundEx(SFX_CHICPK1 + (P_Random() % 3), player->plr->mo);
     player->chickenPeck = 12;
     psp->tics -= P_Random() & 3;
+    }
 }
 
-void C_DECL A_StaffAttackPL1(player_t *player, pspdef_t *psp)
+void C_DECL A_StaffAttackPL1(player_t* player, pspdef_t* psp)
 {
-    angle_t             angle;
-    int                 damage;
-    float               slope;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    angle_t angle;
+    int damage;
+    float slope;
 
     P_ShotAmmo(player);
     damage = 5 + (P_Random() & 15);
@@ -953,23 +970,27 @@ void C_DECL A_StaffAttackPL1(player_t *player, pspdef_t *psp)
     angle += (P_Random() - P_Random()) << 18;
     slope = P_AimLineAttack(player->plr->mo, angle, MELEERANGE);
 
-    puffType = MT_STAFFPUFF;
+    map->puffType = MT_STAFFPUFF;
 
     P_LineAttack(player->plr->mo, angle, MELEERANGE, slope, damage);
-    if(lineTarget)
+    if(map->lineTarget)
     {
         // Turn to face target.
         player->plr->mo->angle =
             R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
-                            lineTarget->pos[VX], lineTarget->pos[VY]);
+                            map->lineTarget->pos[VX], map->lineTarget->pos[VY]);
+    }
     }
 }
 
-void C_DECL A_StaffAttackPL2(player_t *player, pspdef_t *psp)
+void C_DECL A_StaffAttackPL2(player_t* player, pspdef_t* psp)
 {
-    angle_t             angle;
-    int                 damage;
-    float               slope;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    angle_t angle;
+    int damage;
+    float slope;
 
     P_ShotAmmo(player);
     damage = 18 + (P_Random() & 63);
@@ -978,23 +999,27 @@ void C_DECL A_StaffAttackPL2(player_t *player, pspdef_t *psp)
 
     slope = P_AimLineAttack(player->plr->mo, angle, MELEERANGE);
 
-    puffType = MT_STAFFPUFF2;
+    map->puffType = MT_STAFFPUFF2;
 
     P_LineAttack(player->plr->mo, angle, MELEERANGE, slope, damage);
-    if(lineTarget)
+    if(map->lineTarget)
     {
         // Turn to face target.
         player->plr->mo->angle =
             R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
-                            lineTarget->pos[VX], lineTarget->pos[VY]);
+                            map->lineTarget->pos[VX], map->lineTarget->pos[VY]);
+    }
     }
 }
 
-void C_DECL A_FireBlasterPL1(player_t *player, pspdef_t *psp)
+void C_DECL A_FireBlasterPL1(player_t* player, pspdef_t* psp)
 {
-    mobj_t             *mo;
-    angle_t             angle;
-    int                 damage;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* mo;
+    angle_t angle;
+    int damage;
 
     mo = player->plr->mo;
     S_StartSoundEx(SFX_GLDHIT, mo);
@@ -1008,14 +1033,16 @@ void C_DECL A_FireBlasterPL1(player_t *player, pspdef_t *psp)
         angle += (P_Random() - P_Random()) << 18;
     }
 
-    puffType = MT_BLASTERPUFF1;
+    map->puffType = MT_BLASTERPUFF1;
 
     P_LineAttack(mo, angle, MISSILERANGE, bulletSlope, damage);
     S_StartSoundEx(SFX_BLSSHT, mo);
+    }
 }
 
 void C_DECL A_FireBlasterPL2(player_t* player, pspdef_t* psp)
 {
+    assert(player);
 
     P_ShotAmmo(player);
     S_StartSoundEx(SFX_BLSSHT, player->plr->mo);
@@ -1025,11 +1052,14 @@ void C_DECL A_FireBlasterPL2(player_t* player, pspdef_t* psp)
     P_SpawnMissile(MT_BLASTERFX1, player->plr->mo, NULL, true);
 }
 
-void C_DECL A_FireGoldWandPL1(player_t *player, pspdef_t *psp)
+void C_DECL A_FireGoldWandPL1(player_t* player, pspdef_t* psp)
 {
-    mobj_t             *mo;
-    angle_t             angle;
-    int                 damage;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* mo;
+    angle_t angle;
+    int damage;
 
     mo = player->plr->mo;
     P_ShotAmmo(player);
@@ -1044,17 +1074,22 @@ void C_DECL A_FireGoldWandPL1(player_t *player, pspdef_t *psp)
     {
         angle += (P_Random() - P_Random()) << 18;
     }
-    puffType = MT_GOLDWANDPUFF1;
+
+    map->puffType = MT_GOLDWANDPUFF1;
     P_LineAttack(mo, angle, MISSILERANGE, bulletSlope, damage);
+    }
 }
 
-void C_DECL A_FireGoldWandPL2(player_t *player, pspdef_t *psp)
+void C_DECL A_FireGoldWandPL2(player_t* player, pspdef_t* psp)
 {
-    int                 i;
-    mobj_t             *mo;
-    angle_t             angle;
-    int                 damage;
-    float               momZ;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* mo;
+    angle_t angle;
+    int damage;
+    float momZ;
+    int i;
 
     mo = player->plr->mo;
     P_ShotAmmo(player);
@@ -1062,7 +1097,7 @@ void C_DECL A_FireGoldWandPL2(player_t *player, pspdef_t *psp)
     if(IS_CLIENT)
         return;
 
-    puffType = MT_GOLDWANDPUFF2;
+    map->puffType = MT_GOLDWANDPUFF2;
     P_BulletSlope(mo);
     momZ = MOBJINFO[MT_GOLDWANDFX2].speed * bulletSlope;
 
@@ -1076,12 +1111,16 @@ void C_DECL A_FireGoldWandPL2(player_t *player, pspdef_t *psp)
         P_LineAttack(mo, angle, MISSILERANGE, bulletSlope, damage);
         angle += ((ANG45 / 8) * 2) / 4;
     }
+    }
 }
 
-void C_DECL A_FireMacePL1B(player_t *player, pspdef_t *psp)
+void C_DECL A_FireMacePL1B(player_t* player, pspdef_t* psp)
 {
-    mobj_t             *pmo, *ball;
-    uint                an;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* pmo, *ball;
+    uint an;
 
     if(!P_CheckAmmo(player))
         return;
@@ -1091,7 +1130,7 @@ void C_DECL A_FireMacePL1B(player_t *player, pspdef_t *psp)
         return;
 
     pmo = player->plr->mo;
-    if((ball = P_SpawnMobj3f(MT_MACEFX2, pmo->pos[VX], pmo->pos[VY],
+    if((ball = GameMap_SpawnMobj3f(map, MT_MACEFX2, pmo->pos[VX], pmo->pos[VY],
                              pmo->pos[VZ] - pmo->floorClip + 28,
                              pmo->angle, 0)))
     {
@@ -1108,6 +1147,7 @@ void C_DECL A_FireMacePL1B(player_t *player, pspdef_t *psp)
 
         P_CheckMissileSpawn(ball);
         S_StartSound(SFX_LOBSHT, ball);
+    }
     }
 }
 
@@ -1187,9 +1227,11 @@ void C_DECL A_MaceBallImpact(mobj_t *ball)
     }
 }
 
-void C_DECL A_MaceBallImpact2(mobj_t *ball)
+void C_DECL A_MaceBallImpact2(mobj_t* ball)
 {
-
+    assert(ball);
+    {
+    gamemap_t* map = P_CurrentGameMap();
 
     if(ball->pos[VZ] <= ball->floorZ && P_HitFloor(ball))
     {   // Landed in some sort of liquid.
@@ -1205,13 +1247,13 @@ void C_DECL A_MaceBallImpact2(mobj_t *ball)
     }
     else
     {   // Bounce
-        mobj_t*             tiny;
-        unsigned int        an;
+        mobj_t* tiny;
+        unsigned int an;
 
         ball->mom[MZ] = FIX2FLT(FLT2FIX(ball->mom[MZ] * 192) >> 8);
         P_MobjChangeState(ball, P_GetState(ball->type, SN_SPAWN));
 
-        if((tiny = P_SpawnMobj3fv(MT_MACEFX3, ball->pos, ball->angle + ANG90, 0)))
+        if((tiny = GameMap_SpawnMobj3fv(map, MT_MACEFX3, ball->pos, ball->angle + ANG90, 0)))
         {
             tiny->target = ball->target;
             an = tiny->angle >> ANGLETOFINESHIFT;
@@ -1223,7 +1265,7 @@ void C_DECL A_MaceBallImpact2(mobj_t *ball)
             P_CheckMissileSpawn(tiny);
         }
 
-        if((tiny = P_SpawnMobj3fv(MT_MACEFX3, ball->pos, ball->angle - ANG90, 0)))
+        if((tiny = GameMap_SpawnMobj3fv(map, MT_MACEFX3, ball->pos, ball->angle - ANG90, 0)))
         {
             tiny->target = ball->target;
             an = tiny->angle >> ANGLETOFINESHIFT;
@@ -1236,11 +1278,15 @@ void C_DECL A_MaceBallImpact2(mobj_t *ball)
             P_CheckMissileSpawn(tiny);
         }
     }
+    }
 }
 
-void C_DECL A_FireMacePL2(player_t *player, pspdef_t *psp)
+void C_DECL A_FireMacePL2(player_t* player, pspdef_t* psp)
 {
-    mobj_t             *mo;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* mo;
 
     P_ShotAmmo(player);
     S_StartSoundEx(SFX_LOBSHT, player->plr->mo);
@@ -1255,17 +1301,21 @@ void C_DECL A_FireMacePL2(player_t *player, pspdef_t *psp)
         mo->mom[MZ] =
             2 + FIX2FLT(((int) player->plr->lookDir) << (FRACBITS - 5));
 
-        if(lineTarget)
-            mo->tracer = lineTarget;
+        if(map->lineTarget)
+            mo->tracer = map->lineTarget;
+    }
     }
 }
 
-void C_DECL A_DeathBallImpact(mobj_t *ball)
+void C_DECL A_DeathBallImpact(mobj_t* ball)
 {
-    int                 i;
-    mobj_t             *target;
-    angle_t             angle;
-    boolean             newAngle;
+    assert(ball);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* target;
+    angle_t angle;
+    boolean newAngle;
+    int i;
 
     if(ball->pos[VZ] <= ball->floorZ && P_HitFloor(ball))
     {   // Landed in some sort of liquid.
@@ -1297,11 +1347,11 @@ void C_DECL A_DeathBallImpact(mobj_t *ball)
             for(i = 0; i < 16; ++i)
             {
                 P_AimLineAttack(ball, angle, 10 * 64);
-                if(lineTarget && ball->target != lineTarget)
+                if(map->lineTarget && ball->target != map->lineTarget)
                 {
-                    ball->tracer = lineTarget;
+                    ball->tracer = map->lineTarget;
                     angle = R_PointToAngle2(ball->pos[VX], ball->pos[VY],
-                                            lineTarget->pos[VX], lineTarget->pos[VY]);
+                                            map->lineTarget->pos[VX], map->lineTarget->pos[VY]);
                     newAngle = true;
                     break;
                 }
@@ -1312,7 +1362,7 @@ void C_DECL A_DeathBallImpact(mobj_t *ball)
 
         if(newAngle)
         {
-            uint                an = angle >> ANGLETOFINESHIFT;
+            uint an = angle >> ANGLETOFINESHIFT;
 
             ball->angle = angle;
             ball->mom[MX] = ball->info->speed * FIX2FLT(finecosine[an]);
@@ -1328,19 +1378,23 @@ void C_DECL A_DeathBallImpact(mobj_t *ball)
         ball->flags2 &= ~MF2_LOGRAV;
         S_StartSound(SFX_PHOHIT, ball);
     }
+    }
 }
 
 void C_DECL A_SpawnRippers(mobj_t* actor)
 {
-    int                 i;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int i;
 
     for(i = 0; i < 8; ++i)
     {
-        angle_t             angle = i * ANG45;
-        uint                an;
-        mobj_t*             ripper;
+        angle_t angle = i * ANG45;
+        mobj_t* ripper;
+        uint an;
 
-        if((ripper = P_SpawnMobj3fv(MT_RIPPER, actor->pos, angle, 0)))
+        if((ripper = GameMap_SpawnMobj3fv(map, MT_RIPPER, actor->pos, angle, 0)))
         {
             ripper->target = actor->target;
             an = angle >> ANGLETOFINESHIFT;
@@ -1349,6 +1403,7 @@ void C_DECL A_SpawnRippers(mobj_t* actor)
 
             P_CheckMissileSpawn(ripper);
         }
+    }
     }
 }
 
@@ -1384,16 +1439,19 @@ void C_DECL A_FireCrossbowPL2(player_t* player, pspdef_t* psp)
 
 void C_DECL A_BoltSpark(mobj_t* bolt)
 {
-    mobj_t*             spark;
+    assert(bolt);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* spark;
 
     if(P_Random() > 50)
     {
-        if((spark = P_SpawnMobj3fv(MT_CRBOWFX4, bolt->pos, P_Random() << 24,
-                                   0)))
+        if((spark = GameMap_SpawnMobj3fv(map, MT_CRBOWFX4, bolt->pos, P_Random() << 24, 0)))
         {
             spark->pos[VX] += FIX2FLT((P_Random() - P_Random()) << 10);
             spark->pos[VY] += FIX2FLT((P_Random() - P_Random()) << 10);
         }
+    }
     }
 }
 
@@ -1424,7 +1482,10 @@ void C_DECL A_FireSkullRodPL1(player_t* player, pspdef_t* psp)
  */
 void C_DECL A_FireSkullRodPL2(player_t* player, pspdef_t* psp)
 {
-    mobj_t*             mo;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* mo;
 
     P_ShotAmmo(player);
     if(IS_CLIENT)
@@ -1438,28 +1499,32 @@ void C_DECL A_FireSkullRodPL2(player_t* player, pspdef_t* psp)
     // even if it exploded immediately.
     if(IS_NETGAME)
     {   // Multi-player game.
-        missileMobj->special2 = P_GetPlayerNum(player);
+        map->missileMobj->special2 = P_GetPlayerNum(player);
     }
     else
     {   // Always use red missiles in single player games.
-        missileMobj->special2 = 2;
+        map->missileMobj->special2 = 2;
     }
 
-    if(lineTarget)
-        missileMobj->tracer = lineTarget;
+    if(map->lineTarget)
+        map->missileMobj->tracer = map->lineTarget;
 
-    S_StartSound(SFX_HRNPOW, missileMobj);
+    S_StartSound(SFX_HRNPOW, map->missileMobj);
+    }
 }
 
-void C_DECL A_SkullRodPL2Seek(mobj_t *actor)
+void C_DECL A_SkullRodPL2Seek(mobj_t* actor)
 {
+    assert(actor);
     P_SeekerMissile(actor, ANGLE_1 * 10, ANGLE_1 * 30);
 }
 
-void C_DECL A_AddPlayerRain(mobj_t *actor)
+void C_DECL A_AddPlayerRain(mobj_t* actor)
 {
-    int                 playerNum;
-    player_t           *player;
+    assert(actor);
+    {
+    int playerNum;
+    player_t* player;
 
     playerNum = IS_NETGAME ? actor->special2 : 0;
     if(!players[playerNum].plr->inGame)
@@ -1502,14 +1567,18 @@ void C_DECL A_AddPlayerRain(mobj_t *actor)
     {
         player->rain1 = actor;
     }
+    }
 }
 
-void C_DECL A_SkullRodStorm(mobj_t *actor)
+void C_DECL A_SkullRodStorm(mobj_t* actor)
 {
-    float               pos[3];
-    mobj_t             *mo;
-    int                 playerNum;
-    player_t           *player;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    float pos[3];
+    mobj_t* mo;
+    int playerNum;
+    player_t* player;
 
     if(actor->special3-- == 0)
     {
@@ -1547,8 +1616,7 @@ void C_DECL A_SkullRodStorm(mobj_t *actor)
     pos[VX] = actor->pos[VX] + ((P_Random() & 127) - 64);
     pos[VY] = actor->pos[VY] + ((P_Random() & 127) - 64);
 
-    if((mo = P_SpawnMobj3f(MT_RAINPLR1 + actor->special2, pos[VX], pos[VY],
-                           0, P_Random() << 24, MSF_Z_CEIL)))
+    if((mo = GameMap_SpawnMobj3f(map, MT_RAINPLR1 + actor->special2, pos[VX], pos[VY], 0, P_Random() << 24, MSF_Z_CEIL)))
     {
         mo->flags |= MF_BRIGHTSHADOW;
         mo->target = actor->target;
@@ -1563,6 +1631,7 @@ void C_DECL A_SkullRodStorm(mobj_t *actor)
         S_StartSound(SFX_RAMRAIN, actor);
 
     actor->special1++;
+    }
 }
 
 void C_DECL A_RainImpact(mobj_t *actor)
@@ -1600,12 +1669,15 @@ void C_DECL A_FirePhoenixPL1(player_t* player, pspdef_t* psp)
 
 void C_DECL A_PhoenixPuff(mobj_t* actor)
 {
-    mobj_t*             puff;
-    uint                an;
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* puff;
+    uint an;
 
     P_SeekerMissile(actor, ANGLE_1 * 5, ANGLE_1 * 10);
 
-    if((puff = P_SpawnMobj3fv(MT_PHOENIXPUFF, actor->pos, actor->angle + ANG90, 0)))
+    if((puff = GameMap_SpawnMobj3fv(map, MT_PHOENIXPUFF, actor->pos, actor->angle + ANG90, 0)))
     {
         an = puff->angle >> ANGLETOFINESHIFT;
         puff->mom[MX] = 1.3 * FIX2FLT(finecosine[an]);
@@ -1613,16 +1685,17 @@ void C_DECL A_PhoenixPuff(mobj_t* actor)
         puff->mom[MZ] = 0;
     }
 
-    if((puff = P_SpawnMobj3fv(MT_PHOENIXPUFF, actor->pos, actor->angle - ANG90, 0)))
+    if((puff = GameMap_SpawnMobj3fv(map, MT_PHOENIXPUFF, actor->pos, actor->angle - ANG90, 0)))
     {
         an = puff->angle >> ANGLETOFINESHIFT;
         puff->mom[MX] = 1.3 * FIX2FLT(finecosine[an]);
         puff->mom[MY] = 1.3 * FIX2FLT(finesine[an]);
         puff->mom[MZ] = 0;
+    }
     }
 }
 
-void C_DECL A_InitPhoenixPL2(player_t *player, pspdef_t *psp)
+void C_DECL A_InitPhoenixPL2(player_t* player, pspdef_t* psp)
 {
     player->flameCount = FLAME_THROWER_TICS;
 }
@@ -1630,12 +1703,15 @@ void C_DECL A_InitPhoenixPL2(player_t *player, pspdef_t *psp)
 /**
  * Flame thrower effect.
  */
-void C_DECL A_FirePhoenixPL2(player_t *player, pspdef_t *psp)
+void C_DECL A_FirePhoenixPL2(player_t* player, pspdef_t* psp)
 {
-    mobj_t             *mo, *pmo;
-    angle_t             angle;
-    uint                an;
-    float               pos[3], slope;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* mo, *pmo;
+    angle_t angle;
+    uint an;
+    float pos[3], slope;
 
     if(IS_CLIENT)
         return;
@@ -1658,7 +1734,7 @@ void C_DECL A_FirePhoenixPL2(player_t *player, pspdef_t *psp)
 
     slope = sin(LOOKDIR2RAD(player->plr->lookDir)) / 1.2;
 
-    if((mo = P_SpawnMobj3fv(MT_PHOENIXFX2, pos, angle, 0)))
+    if((mo = GameMap_SpawnMobj3fv(map, MT_PHOENIXFX2, pos, angle, 0)))
     {
         mo->target = pmo;
         an = mo->angle >> ANGLETOFINESHIFT;
@@ -1666,12 +1742,13 @@ void C_DECL A_FirePhoenixPL2(player_t *player, pspdef_t *psp)
         mo->mom[MY] = pmo->mom[MY] + mo->info->speed * FIX2FLT(finesine[an]);
         mo->mom[MZ] = mo->info->speed * slope;
 
-        if(!player->refire || !(mapTime % 38))
+        if(!player->refire || !(map->time % 38))
         {
             S_StartSoundEx(SFX_PHOPOW, player->plr->mo);
         }
 
         P_CheckMissileSpawn(mo);
+    }
     }
 }
 
@@ -1690,11 +1767,14 @@ void C_DECL A_FloatPuff(mobj_t *puff)
     puff->mom[MZ] += 1.8f;
 }
 
-void C_DECL A_GauntletAttack(player_t *player, pspdef_t *psp)
+void C_DECL A_GauntletAttack(player_t* player, pspdef_t* psp)
 {
-    angle_t             angle;
-    int                 damage, randVal;
-    float               slope, dist;
+    assert(player);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    angle_t angle;
+    int damage, randVal;
+    float slope, dist;
 
     P_ShotAmmo(player);
     psp->pos[VX] = ((P_Random() & 3) - 2);
@@ -1705,19 +1785,19 @@ void C_DECL A_GauntletAttack(player_t *player, pspdef_t *psp)
         damage = HITDICE(2);
         dist = 4 * MELEERANGE;
         angle += (P_Random() - P_Random()) << 17;
-        puffType = MT_GAUNTLETPUFF2;
+        map->puffType = MT_GAUNTLETPUFF2;
     }
     else
     {
         damage = HITDICE(2);
         dist = MELEERANGE + 1;
         angle += (P_Random() - P_Random()) << 18;
-        puffType = MT_GAUNTLETPUFF1;
+        map->puffType = MT_GAUNTLETPUFF1;
     }
 
     slope = P_AimLineAttack(player->plr->mo, angle, dist);
     P_LineAttack(player->plr->mo, angle, dist, slope, damage);
-    if(!lineTarget)
+    if(!map->lineTarget)
     {
         if(P_Random() > 64)
         {
@@ -1754,7 +1834,7 @@ void C_DECL A_GauntletAttack(player_t *player, pspdef_t *psp)
 
     // Turn to face target.
     angle = R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
-                            lineTarget->pos[VX], lineTarget->pos[VY]);
+                            map->lineTarget->pos[VX], map->lineTarget->pos[VY]);
     if(angle - player->plr->mo->angle > ANG180)
     {
         if(angle - player->plr->mo->angle < -ANG90 / 20)
@@ -1770,6 +1850,7 @@ void C_DECL A_GauntletAttack(player_t *player, pspdef_t *psp)
             player->plr->mo->angle += ANG90 / 20;
     }
     player->plr->mo->flags |= MF_JUSTATTACKED;
+    }
 }
 
 void C_DECL A_Light0(player_t *player, pspdef_t *psp)
@@ -1842,24 +1923,28 @@ void P_MovePsprites(player_t *player)
 
 void C_DECL A_FireBomb(mobj_t* mo)
 {
-    uint            an;
-    mobj_t*         bomb;
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* bomb;
+    float pos[3];
+    uint an;
 
     if(!mo->player)
         return;
 
     an = mo->angle >> ANGLETOFINESHIFT;
+    pos[VX] = mo->pos[VX] + 24 * FIX2FLT(finecosine[an]);
+    pos[VY] = mo->pos[VY] + 24 * FIX2FLT(finesine[an]);
+    pos[VZ] = mo->pos[VZ] - mo->floorClip + 15;
 
-    if((bomb = P_SpawnMobj3f(MT_FIREBOMB,
-                             mo->pos[VX] + 24 * FIX2FLT(finecosine[an]),
-                             mo->pos[VY] + 24 * FIX2FLT(finesine[an]),
-                             mo->pos[VZ] - mo->floorClip + 15,
-                             mo->angle, 0)))
+    if((bomb = GameMap_SpawnMobj3fv(map, MT_FIREBOMB, pos, mo->angle, 0)))
     {
         bomb->target = mo;
     }
 
     didUseItem = true;
+    }
 }
 
 void C_DECL A_TombOfPower(mobj_t* mo)

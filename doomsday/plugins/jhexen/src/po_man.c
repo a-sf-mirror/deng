@@ -95,7 +95,7 @@ void T_RotatePoly(polyevent_t* pe)
                 po->specialData = NULL;
 
             PO_StopSequence(po);
-            P_PolyobjFinished(po->tag);
+            ActionScriptInterpreter_PolyobjFinished(ActionScriptInterpreter, po->tag);
             DD_ThinkerRemove(&pe->thinker);
             po->angleSpeed = 0;
         }
@@ -226,7 +226,7 @@ void T_MovePoly(polyevent_t* pe)
                 po->specialData = NULL;
 
             PO_StopSequence(po);
-            P_PolyobjFinished(po->tag);
+            ActionScriptInterpreter_PolyobjFinished(ActionScriptInterpreter, po->tag);
             DD_ThinkerRemove(&pe->thinker);
             po->speed = 0;
         }
@@ -365,7 +365,7 @@ void T_PolyDoor(polydoor_t* pd)
                     if(po->specialData == pd)
                         po->specialData = NULL;
 
-                    P_PolyobjFinished(po->tag);
+                    ActionScriptInterpreter_PolyobjFinished(ActionScriptInterpreter, po->tag);
                     DD_ThinkerRemove(&pd->thinker);
                 }
             }
@@ -417,7 +417,7 @@ void T_PolyDoor(polydoor_t* pd)
                     if(po->specialData == pd)
                         po->specialData = NULL;
 
-                    P_PolyobjFinished(po->tag);
+                    ActionScriptInterpreter_PolyobjFinished(ActionScriptInterpreter, po->tag);
                     DD_ThinkerRemove(&pd->thinker);
                 }
             }
@@ -559,7 +559,7 @@ static int getPolyobjMirror(uint poly)
     return 0;
 }
 
-static void thrustMobj(struct mobj_s* mo, void* lineDefPtr, void* pop)
+void PO_ThrustMobj(struct mobj_s* mo, void* lineDefPtr, void* pop)
 {
     polyobj_t* po = (polyobj_t*) pop;
     uint thrustAn;
@@ -614,58 +614,6 @@ static void thrustMobj(struct mobj_s* mo, void* lineDefPtr, void* pop)
         if(!P_CheckPosition2f(mo, mo->pos[VX] + thrustX, mo->pos[VY] + thrustY))
         {
             P_DamageMobj(mo, NULL, NULL, 3, false);
-        }
-    }
-}
-
-/**
- * Initialize all polyobjects in the current map.
- */
-void PO_InitForMap(void)
-{
-    uint i;
-
-    Con_Message("PO_InitForMap: Initializing polyobjects.\n");
-
-    // thrustMobj will handle polyobj <-> mobj interaction.
-    P_SetPolyobjCallback(thrustMobj);
-    for(i = 0; i < numpolyobjs; ++i)
-    {
-        uint j;
-        const mapspot_t* spot;
-        polyobj_t* po;
-
-        po = P_GetPolyobj(i | 0x80000000);
-
-        // Init game-specific properties.
-        po->specialData = NULL;
-
-        // Find the mapspot associated with this polyobj.
-        j = 0;
-        spot = NULL;
-        while(j < numMapSpots && !spot)
-        {
-            if((mapSpots[j].doomEdNum == PO_SPAWN_DOOMEDNUM ||
-                mapSpots[j].doomEdNum == PO_SPAWNCRUSH_DOOMEDNUM) &&
-               mapSpots[j].angle == po->tag)
-            {   // Polyobj mapspot.
-                spot = &mapSpots[j];
-            }
-            else
-            {
-                j++;
-            }
-        }
-
-        if(spot)
-        {
-            po->crush = (spot->doomEdNum == PO_SPAWNCRUSH_DOOMEDNUM? 1 : 0);
-            P_PolyobjMove(po, -po->pos[VX] + spot->pos[VX],
-                              -po->pos[VY] + spot->pos[VY]);
-        }
-        else
-        {
-            Con_Message("PO_InitForMap: Warning, missing mapspot for poly %i.", i);
         }
     }
 }

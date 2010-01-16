@@ -44,6 +44,7 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "p_tick.h"
 #include "p_inventory.h"
 
@@ -301,10 +302,11 @@ void Hu_InventoryDraw(int player, int x, int y, float alpha,
 #define BORDER              1
 
     const hud_inventory_t* inv;
-    player_t*           plr;
-    uint                i, from, to, idx, slot, first, selected,
-                        numVisSlots, maxVisSlots, startSlot, endSlot;
-    float               invScale, lightDelta;
+    player_t* plr;
+    uint i, from, to, idx, slot, first, selected;
+    uint numVisSlots, maxVisSlots, startSlot, endSlot;
+    float invScale, lightDelta;
+    gamemap_t* map = P_CurrentGameMap();
 
     if(alpha <= 0)
         return;
@@ -328,8 +330,8 @@ void Hu_InventoryDraw(int player, int x, int y, float alpha,
     {
 #define EXTRA_SCALE         .75f
 
-    float               availWidth = SCREENWIDTH - 50 * 2,
-                        width = (numVisSlots * ST_INVSLOTWIDTH) * EXTRA_SCALE;
+    float availWidth = SCREENWIDTH - 50 * 2;
+    float width = (numVisSlots * ST_INVSLOTWIDTH) * EXTRA_SCALE;
 
     if(width > availWidth)
         invScale = availWidth / width;
@@ -429,7 +431,7 @@ Draw_BeginZoom(invScale, x, y + ST_INVENTORYHEIGHT);
                                  y + ARROW_YOFFSET,
 #endif
                                  1, iconAlpha,
-                                 dpInvPageLeft[!(mapTime & 4)? 1 : 0].lump);
+                                 dpInvPageLeft[!(map->time & 4)? 1 : 0].lump);
         }
 
         if(cfg.inventoryWrap || inv->numUsedSlots - first > numVisSlots)
@@ -442,7 +444,7 @@ Draw_BeginZoom(invScale, x, y + ST_INVENTORYHEIGHT);
                                  y + ARROW_YOFFSET,
 #endif
                                  1, iconAlpha,
-                                 dpInvPageRight[!(mapTime & 4)? 1 : 0].lump);
+                                 dpInvPageRight[!(map->time & 4)? 1 : 0].lump);
         }
 
 #undef ARROW_XOFFSET
@@ -459,9 +461,9 @@ void Hu_InventoryDraw2(int player, int x, int y, float alpha)
 #define BORDER          1
 
     const hud_inventory_t* inv;
-    player_t*           plr;
-    uint                i, idx, slot, from, to, first, cursor, startSlot,
-                        endSlot;
+    player_t* plr;
+    uint i, idx, slot, from, to, first, cursor, startSlot, endSlot;
+    gamemap_t* map = P_CurrentGameMap();
 
     if(alpha <= 0)
         return;
@@ -529,7 +531,7 @@ void Hu_InventoryDraw2(int player, int x, int y, float alpha)
                                  x - 12, y - 1,
 #endif
                                  1, alpha,
-                                 dpInvPageLeft[!(mapTime & 4)? 1 : 0].lump);
+                                 dpInvPageLeft[!(map->time & 4)? 1 : 0].lump);
 
         // Draw more right indicator.
         if(cfg.inventoryWrap || inv->numUsedSlots - first > NUMVISINVSLOTS)
@@ -540,7 +542,7 @@ void Hu_InventoryDraw2(int player, int x, int y, float alpha)
                                  y - 1,
 #endif
                                  1, alpha,
-                                 dpInvPageRight[!(mapTime & 4)? 1 : 0].lump);
+                                 dpInvPageRight[!(map->time & 4)? 1 : 0].lump);
     }
 
 #undef BORDER

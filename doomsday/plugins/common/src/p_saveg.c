@@ -25,13 +25,13 @@
 /**
  * p_saveg.c: Save Game I/O
  *
- * \bug Not 64bit clean: In function 'SV_ReadPlayer': cast from pointer to integer of different size
- * \bug Not 64bit clean: In function 'SV_WriteMobj': cast from pointer to integer of different size
- * \bug Not 64bit clean: In function 'RestoreMobj': cast from pointer to integer of different size
- * \bug Not 64bit clean: In function 'SV_ReadMobj': cast to pointer from integer of different size
- * \bug Not 64bit clean: In function 'P_UnArchiveThinkers': cast from pointer to integer of different size
- * \bug Not 64bit clean: In function 'P_UnArchiveBrain': cast to pointer from integer of different size, cast from pointer to integer of different size
- * \bug Not 64bit clean: In function 'P_UnArchiveSoundTargets': cast to pointer from integer of different size, cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'SV_ReadPlayer': cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'SV_WriteMobj': cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'RestoreMobj': cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'SV_ReadMobj': cast to pointer from integer of different size
+ * @fixme Not 64bit clean: In function 'P_UnArchiveThinkers': cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'P_UnArchiveBrain': cast to pointer from integer of different size, cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'P_UnArchiveSoundTargets': cast to pointer from integer of different size, cast from pointer to integer of different size
  */
 
 // HEADER FILES ------------------------------------------------------------
@@ -51,6 +51,7 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "p_saveg.h"
 #include "f_infine.h"
 #include "d_net.h"
@@ -106,7 +107,7 @@
 # define HXS_VERSION_TEXT      "HXS Ver " // Do not change me!
 # define HXS_VERSION_TEXT_LENGTH 16
 
-# define MY_SAVE_VERSION       8
+# define MY_SAVE_VERSION       9
 # define SAVESTRINGSIZE        24
 # define SAVEGAMENAME          "hex"
 # define CLIENTSAVEGAMENAME    "hexencl"
@@ -166,12 +167,12 @@ typedef enum gamearchivesegment_e {
     ASEG_MAP_HEADER, //jhexen only
     ASEG_WORLD,
     ASEG_POLYOBJS, //jhexen only
-    ASEG_MOBJS, //jhexen < ver 4 only
+    ASEG_OBSOLETE_MOBJS, //jhexen < ver 4 only
     ASEG_THINKERS,
     ASEG_SCRIPTS, //jhexen only
     ASEG_PLAYERS,
     ASEG_SOUNDS, //jhexen only
-    ASEG_MISC, //jhexen only
+    ASEG_OBSOLETE_MISC, //jhexen < ver 9 only
     ASEG_END,
     ASEG_MATERIAL_ARCHIVE,
     ASEG_MAP_HEADER2, //jhexen only
@@ -244,8 +245,6 @@ static void SV_WriteLight(const light_t* light);
 static int SV_ReadLight(light_t* light);
 static void SV_WritePhase(const phase_t* phase);
 static int SV_ReadPhase(phase_t* phase);
-static void SV_WriteScript(const acs_t* script);
-static int SV_ReadScript(acs_t* script);
 static void SV_WriteDoorPoly(const polydoor_t* polydoor);
 static int SV_ReadDoorPoly(polydoor_t* polydoor);
 static void SV_WriteMovePoly(const polyevent_t* movepoly);
@@ -299,11 +298,13 @@ filename_t savePath;         /* = "savegame\\"; */
 filename_t clientSavePath;  /* = "savegame\\client\\"; */
 #endif
 
+#if __JHEXEN__
+int saveVersion;
+#endif
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-#if __JHEXEN__
-static int saveVersion;
-#else
+#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
 static saveheader_t hdr;
 #endif
 static playerheader_t playerHeader;
@@ -375,11 +376,11 @@ static thinkerinfo_t thinkerInfo[] = {
 #if __JHEXEN__
     {
      TC_INTERPRET_ACS,
-     T_InterpretACS,
+     ActionScriptThinker_Think,
      0,
-     SV_WriteScript,
-     SV_ReadScript,
-     sizeof(acs_t)
+     ActionScriptThinker_Write,
+     ActionScriptThinker_Read,
+     sizeof(actionscript_thinker_t)
     },
     {
      TC_FLOOR_WAGGLE,
@@ -700,7 +701,7 @@ static void SV_FreeTargetPlayerList(void)
  * Called by the read code to resolve mobj ptrs from archived thing ids
  * after all thinkers have been read and spawned into the map.
  */
-mobj_t *SV_GetArchiveThing(int thingid, void *address)
+mobj_t* SV_GetArchiveThing(int thingid, void* address)
 {
 #if __JHEXEN__
     if(thingid == MOBJ_XX_PLAYER)
@@ -758,7 +759,8 @@ static playerheader_t* getPlayerHeader(void)
 
 unsigned int SV_GameID(void)
 {
-    return Sys_GetRealTime() + (mapTime << 24);
+    gamemap_t* map = P_CurrentGameMap();
+    return Sys_GetRealTime() + (map->time << 24);
 }
 
 void SV_Write(const void *data, int len)
@@ -860,9 +862,9 @@ static void CloseStreamOut(void)
     }
 }
 
-static boolean ExistingFile(char *name)
+static boolean ExistingFile(char* name)
 {
-    FILE       *fp;
+    FILE* fp;
 
     if((fp = fopen(name, "rb")) != NULL)
     {
@@ -880,8 +882,8 @@ static boolean ExistingFile(char *name)
  */
 static void ClearSaveSlot(int slot)
 {
-    int                 i;
-    filename_t          fileName;
+    int i;
+    filename_t fileName;
 
     for(i = 0; i < MAX_MAPS; ++i)
     {
@@ -895,11 +897,11 @@ static void ClearSaveSlot(int slot)
     remove(fileName);
 }
 
-static void CopyFile(char *sourceName, char *destName)
+static void CopyFile(char* sourceName, char* destName)
 {
-    size_t      length;
-    byte       *buffer;
-    LZFILE     *outf;
+    size_t length;
+    byte* buffer;
+    LZFILE* outf;
 
     length = M_ReadFile(sourceName, &buffer);
     outf = lzOpen(destName, "wp");
@@ -916,8 +918,8 @@ static void CopyFile(char *sourceName, char *destName)
  */
 static void CopySaveSlot(int sourceSlot, int destSlot)
 {
-    int                 i;
-    filename_t          sourceName, destName;
+    int i;
+    filename_t sourceName, destName;
 
     for(i = 0; i < MAX_MAPS; ++i)
     {
@@ -971,7 +973,7 @@ int SV_HxGetRebornSlot(void)
  */
 boolean SV_HxRebornSlotAvailable(void)
 {
-    filename_t          fileName;
+    filename_t fileName;
 
     dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex%d.hxs", savePath,
              REBORN_SLOT);
@@ -990,9 +992,9 @@ void SV_HxInitBaseSlot(void)
  */
 static void SV_WritePlayer(int playernum)
 {
-    int                 i, numPSprites = getPlayerHeader()->numPSprites;
-    player_t            temp, *p = &temp;
-    ddplayer_t          ddtemp, *dp = &ddtemp;
+    int i, numPSprites = getPlayerHeader()->numPSprites;
+    player_t temp, *p = &temp;
+    ddplayer_t ddtemp, *dp = &ddtemp;
 
     // Make a copy of the player.
     memcpy(p, &players[playernum], sizeof(temp));
@@ -1002,7 +1004,7 @@ static void SV_WritePlayer(int playernum)
     // Convert the psprite states.
     for(i = 0; i < numPSprites; ++i)
     {
-        pspdef_t       *pspDef = &temp.pSprites[i];
+        pspdef_t* pspDef = &temp.pSprites[i];
 
         if(pspDef->state)
         {
@@ -1012,7 +1014,7 @@ static void SV_WritePlayer(int playernum)
 
     // Version number. Increase when you make changes to the player data
     // segment format.
-    SV_WriteByte(6);
+    SV_WriteByte(7);
 
 #if __JHEXEN__
     // Class.
@@ -1021,11 +1023,16 @@ static void SV_WritePlayer(int playernum)
 
     SV_WriteLong(p->playerState);
 #if __JHEXEN__
-    SV_WriteLong(p->class);    // 2nd class...?
+    SV_WriteLong(p->class); // 2nd class...?
 #endif
     SV_WriteLong(FLT2FIX(p->viewZ));
     SV_WriteLong(FLT2FIX(p->viewHeight));
     SV_WriteLong(FLT2FIX(p->viewHeightDelta));
+#if __JHEXEN__
+    SV_WriteByte(p->viewShake);
+#else
+    SV_WriteByte(0);
+#endif
 #if !__JHEXEN__
     SV_WriteFloat(dp->lookDir);
 #endif
@@ -1193,6 +1200,14 @@ static void SV_ReadPlayer(player_t* p)
     p->viewZ = FIX2FLT(SV_ReadLong());
     p->viewHeight = FIX2FLT(SV_ReadLong());
     p->viewHeightDelta = FIX2FLT(SV_ReadLong());
+    if(ver >= 7)
+    {
+#if __JHEXEN__
+        p->viewShake = SV_ReadByte();
+#else
+        SV_ReadByte();
+#endif
+    }
 #if !__JHEXEN__
     dp->lookDir = SV_ReadFloat();
 #endif
@@ -2425,7 +2440,7 @@ static void SV_WriteLine(linedef_t* li)
     uint                i, j;
     float               rgba[4];
     lineclass_t         type;
-    xline_t*            xli = P_ToXLine(li);
+    xlinedef_t*            xli = P_ToXLine(li);
 
 #if !__JHEXEN__
     if(xli->xg)
@@ -2519,7 +2534,7 @@ static void SV_ReadLine(linedef_t *li)
     int                 ver;
     material_t*         topMaterial, *bottomMaterial, *middleMaterial;
     short               flags;
-    xline_t*            xli = P_ToXLine(li);
+    xlinedef_t*            xli = P_ToXLine(li);
 
     // A type byte?
 #if __JHEXEN__
@@ -3353,86 +3368,6 @@ static int SV_ReadPhase(phase_t* th)
     return true; // Add this thinker.
 }
 
-static void SV_WriteScript(const acs_t* th)
-{
-    uint                i;
-
-    SV_WriteByte(1); // Write a version byte.
-
-    SV_WriteLong(SV_ThingArchiveNum(th->activator));
-    SV_WriteLong(th->line ? DMU_ToIndex(th->line) : -1);
-    SV_WriteLong(th->side);
-    SV_WriteLong(th->number);
-    SV_WriteLong(th->infoIndex);
-    SV_WriteLong(th->delayCount);
-    for(i = 0; i < ACS_STACK_DEPTH; ++i)
-        SV_WriteLong(th->stack[i]);
-    SV_WriteLong(th->stackPtr);
-    for(i = 0; i < MAX_ACS_SCRIPT_VARS; ++i)
-        SV_WriteLong(th->vars[i]);
-    SV_WriteLong((int) (th->ip) - (int) ActionCodeBase);
-}
-
-static int SV_ReadScript(acs_t* th)
-{
-    int                 temp;
-    uint                i;
-
-    if(saveVersion >= 4)
-    {
-        // Note: the thinker class byte has already been read.
-        /*int ver =*/ SV_ReadByte(); // version byte.
-
-        th->activator = (mobj_t*) SV_ReadLong();
-        th->activator = SV_GetArchiveThing((int) th->activator, &th->activator);
-        temp = SV_ReadLong();
-        if(temp == -1)
-            th->line = NULL;
-        else
-            th->line = DMU_ToPtr(DMU_LINEDEF, temp);
-        th->side = SV_ReadLong();
-        th->number = SV_ReadLong();
-        th->infoIndex = SV_ReadLong();
-        th->delayCount = SV_ReadLong();
-        for(i = 0; i < ACS_STACK_DEPTH; ++i)
-            th->stack[i] = SV_ReadLong();
-        th->stackPtr = SV_ReadLong();
-        for(i = 0; i < MAX_ACS_SCRIPT_VARS; ++i)
-            th->vars[i] = SV_ReadLong();
-        th->ip = (int *) (ActionCodeBase + SV_ReadLong());
-    }
-    else
-    {
-        // Its in the old pre V4 format which serialized acs_t
-        // Padding at the start (an old thinker_t struct)
-        thinker_t   junk;
-        SV_Read(&junk, (size_t) 16);
-
-        // Start of used data members.
-        th->activator = (mobj_t*) SV_ReadLong();
-        th->activator = SV_GetArchiveThing((int) th->activator, &th->activator);
-        temp = SV_ReadLong();
-        if(temp == -1)
-            th->line = NULL;
-        else
-            th->line = DMU_ToPtr(DMU_LINEDEF, temp);
-        th->side = SV_ReadLong();
-        th->number = SV_ReadLong();
-        th->infoIndex = SV_ReadLong();
-        th->delayCount = SV_ReadLong();
-        for(i = 0; i < ACS_STACK_DEPTH; ++i)
-            th->stack[i] = SV_ReadLong();
-        th->stackPtr = SV_ReadLong();
-        for(i = 0; i < MAX_ACS_SCRIPT_VARS; ++i)
-            th->vars[i] = SV_ReadLong();
-        th->ip = (int *) (ActionCodeBase + SV_ReadLong());
-    }
-
-    th->thinker.function = T_InterpretACS;
-
-    return true; // Add this thinker.
-}
-
 static void SV_WriteDoorPoly(const polydoor_t* th)
 {
     SV_WriteByte(1); // Write a version byte.
@@ -4020,7 +3955,7 @@ static void SV_WriteMaterialChanger(const materialchanger_t* mchanger)
 
 static int SV_ReadMaterialChanger(materialchanger_t* mchanger)
 {
-    sidedef_t*          side;
+    sidedef_t* side;
     /*int ver =*/ SV_ReadByte(); // version byte.
 
     SV_ReadByte(); // Type byte.
@@ -4045,14 +3980,14 @@ static int SV_ReadMaterialChanger(materialchanger_t* mchanger)
  */
 static int archiveThinker(void* p, void* context)
 {
-    thinker_t*          th = (thinker_t*) p;
-    boolean             savePlayers = *(boolean*) context;
+    thinker_t* th = (thinker_t*) p;
+    boolean savePlayers = *(boolean*) context;
 
     // Are we archiving players?
     if(!(th->function == P_MobjThinker && ((mobj_t*) th)->player &&
        !savePlayers))
     {
-        thinkerinfo_t*      thInfo = infoForThinker(th);
+        thinkerinfo_t* thInfo = infoForThinker(th);
 
         if(!thInfo)
             return true; // This is not a thinker we need to save.
@@ -4080,7 +4015,7 @@ assert(thInfo->Write);
  * Clients do not save all data for all thinkers (the server will send
  * it to us anyway so saving it would just bloat client save games).
  *
- * \note Some thinker classes are NEVER saved by clients.
+ * @note Some thinker classes are NEVER saved by clients.
  */
 static void P_ArchiveThinkers(boolean savePlayers)
 {
@@ -4100,7 +4035,7 @@ static void P_ArchiveThinkers(boolean savePlayers)
 
 static int restoreMobjLinks(void* p, void* context)
 {
-    mobj_t*             mo = (mobj_t*) p;
+    mobj_t* mo = (mobj_t*) p;
 
     mo->target = SV_GetArchiveThing((int) mo->target, &mo->target);
     mo->onMobj = SV_GetArchiveThing((int) mo->onMobj, &mo->onMobj);
@@ -4168,16 +4103,15 @@ static int restoreMobjLinks(void* p, void* context)
  */
 static void P_UnArchiveThinkers(void)
 {
-    uint        i;
-    byte        tClass;
-    thinker_t*  th = NULL;
+    uint i;
+    byte tClass;
+    thinker_t* th = NULL;
     thinkerinfo_t* thInfo = NULL;
-    boolean     found, knownThinker;
-    boolean     inStasis;
+    boolean found, knownThinker, inStasis;
 #if __JHEXEN__
-    boolean     doSpecials = (saveVersion >= 4);
+    boolean doSpecials = (saveVersion >= 4);
 #else
-    boolean     doSpecials = (hdr.version >= 5);
+    boolean doSpecials = (hdr.version >= 5);
 #endif
 
 #if !__JHEXEN__
@@ -4190,7 +4124,7 @@ static void P_UnArchiveThinkers(void)
 
 #if __JHEXEN__
     if(saveVersion < 4)
-        AssertSegment(ASEG_MOBJS);
+        AssertSegment(ASEG_OBSOLETE_MOBJS);
     else
 #endif
         AssertSegment(ASEG_THINKERS);
@@ -4313,6 +4247,8 @@ static void P_UnArchiveThinkers(void)
     // Update references to things.
 #if __JHEXEN__
     DD_IterateThinkers(P_MobjThinker, restoreMobjLinks, NULL);
+    P_CreateTIDList(P_CurrentGameMap());
+    P_AddCreaturesToCorpseQueue();
 #else
     if(IS_SERVER)
     {
@@ -4320,7 +4256,7 @@ static void P_UnArchiveThinkers(void)
 
         for(i = 0; i < numlines; ++i)
         {
-            xline_t *xline = P_ToXLine(DMU_ToPtr(DMU_LINEDEF, i));
+            xlinedef_t* xline = P_ToXLine(DMU_ToPtr(DMU_LINEDEF, i));
             if(xline->xg)
                 xline->xg->activator =
                     SV_GetArchiveThing((int) xline->xg->activator,
@@ -4328,50 +4264,45 @@ static void P_UnArchiveThinkers(void)
         }
     }
 #endif
-
-#if __JHEXEN__
-    P_CreateTIDList();
-    P_InitCreatureCorpseQueue(true);    // true = scan for corpses
-#endif
 }
 
 #if __JDOOM__
-static void P_ArchiveBrain(void)
+static void P_ArchiveBrain(gamemap_t* map)
 {
-    int                 i;
+    int i;
 
-    SV_WriteByte(numBrainTargets);
-    SV_WriteByte(brain.targetOn);
+    SV_WriteByte(map->brain.numTargets);
+    SV_WriteByte(map->brain.targetOn);
     // Write the mobj references using the mobj archive.
-    for(i = 0; i < numBrainTargets; ++i)
-        SV_WriteShort(SV_ThingArchiveNum(brainTargets[i]));
+    for(i = 0; i < map->brain.numTargets; ++i)
+        SV_WriteShort(SV_ThingArchiveNum(map->brain.targets[i]));
 }
 
-static void P_UnArchiveBrain(void)
+static void P_UnArchiveBrain(gamemap_t* map)
 {
-    int                 i;
+    int i;
 
     if(hdr.version < 3)
         return; // No brain data before version 3.
 
-    numBrainTargets = SV_ReadByte();
-    brain.targetOn = SV_ReadByte();
-    for(i = 0; i < numBrainTargets; ++i)
+    map->brain.numTargets = SV_ReadByte();
+    map->brain.targetOn = SV_ReadByte();
+    for(i = 0; i < map->brain.numTargets; ++i)
     {
-        brainTargets[i] = (mobj_t*) (int) SV_ReadShort();
-        brainTargets[i] = SV_GetArchiveThing((int) brainTargets[i], NULL);
+        map->brain.targets[i] = (mobj_t*) (int) SV_ReadShort();
+        map->brain.targets[i] = SV_GetArchiveThing((int) map->brain.targets[i], NULL);
     }
 
     if(gameMode == commercial)
-        P_SpawnBrainTargets();
+        P_SpawnBrainTargets(map);
 }
 #endif
 
 #if !__JHEXEN__
 static void P_ArchiveSoundTargets(void)
 {
-    uint                i;
-    xsector_t*          xsec;
+    uint i;
+    xsector_t* xsec;
 
     // Write the total number.
     SV_WriteLong(numSoundTargets);
@@ -4429,8 +4360,8 @@ static void P_ArchiveSounds(void)
 
     // Save the sound sequences.
     SV_BeginSegment(ASEG_SOUNDS);
-    SV_WriteLong(ActiveSequences);
-    for(node = SequenceListHead; node; node = node->next)
+    SV_WriteLong(numSequences);
+    for(node = sequenceListHead; node; node = node->next)
     {
         SV_WriteByte(1); // Write a version byte.
 
@@ -4512,109 +4443,22 @@ static void P_UnArchiveSounds(void)
     }
 }
 
-static void P_ArchiveScripts(void)
-{
-    int         i;
-
-    SV_BeginSegment(ASEG_SCRIPTS);
-    for(i = 0; i < ACScriptCount; ++i)
-    {
-        SV_WriteShort(ACSInfo[i].state);
-        SV_WriteShort(ACSInfo[i].waitValue);
-    }
-    for(i = 0; i < MAX_ACS_MAP_VARS; ++i)
-        SV_WriteLong(MapVars[i]);
-}
-
-static void P_UnArchiveScripts(void)
-{
-    int         i;
-
-    AssertSegment(ASEG_SCRIPTS);
-    for(i = 0; i < ACScriptCount; ++i)
-    {
-        ACSInfo[i].state = SV_ReadShort();
-        ACSInfo[i].waitValue = SV_ReadShort();
-    }
-    for(i = 0; i < MAX_ACS_MAP_VARS; ++i)
-        MapVars[i] = SV_ReadLong();
-}
-
-static void P_ArchiveGlobalScriptData(void)
-{
-    int                 i;
-
-    SV_BeginSegment(ASEG_GLOBALSCRIPTDATA);
-    SV_WriteByte(2); // version byte
-
-    for(i = 0; i < MAX_ACS_WORLD_VARS; ++i)
-        SV_WriteLong(WorldVars[i]);
-
-    for(i = 0; i < MAX_ACS_STORE; ++i)
-    {
-        int                 j;
-        const acsstore_t*   store = &ACSStore[i];
-
-        SV_WriteLong(store->map);
-        SV_WriteLong(store->script);
-        for(j = 0; j < 4; ++j)
-            SV_WriteByte(store->args[j]);
-    }
-}
-
-static void P_UnArchiveGlobalScriptData(void)
-{
-    int                 i, ver = 1;
-
-    if(saveVersion >= 7)
-    {
-        AssertSegment(ASEG_GLOBALSCRIPTDATA);
-        ver = SV_ReadByte();
-    }
-
-    for(i = 0; i < MAX_ACS_WORLD_VARS; ++i)
-        WorldVars[i] = SV_ReadLong();
-
-    for(i = 0; i < MAX_ACS_STORE; ++i)
-    {
-        int                 j;
-        acsstore_t*         store = &ACSStore[i];
-
-        store->map = SV_ReadLong();
-        store->script = SV_ReadLong();
-        for(j = 0; j < 4; ++j)
-            store->args[j] = SV_ReadByte();
-    }
-
-    if(saveVersion < 7)
-        SV_Read(junkbuffer, 12); // Junk.
-}
-
-static void P_ArchiveMisc(void)
-{
-    int         ix;
-
-    SV_BeginSegment(ASEG_MISC);
-    for(ix = 0; ix < MAXPLAYERS; ++ix)
-    {
-        SV_WriteLong(localQuakeHappening[ix]);
-    }
-}
-
 static void P_UnArchiveMisc(void)
 {
-    int         ix;
+    int i;
 
-    AssertSegment(ASEG_MISC);
-    for(ix = 0; ix < MAXPLAYERS; ++ix)
+    AssertSegment(ASEG_OBSOLETE_MISC);
+    for(i = 0; i < MAXPLAYERS; ++i)
     {
-        localQuakeHappening[ix] = SV_ReadLong();
+        players[i].viewShake = SV_ReadLong();
     }
 }
 #endif
 
 static void P_ArchiveMap(boolean savePlayers)
 {
+    gamemap_t* map = P_CurrentGameMap();
+
     // Place a header marker
     SV_BeginSegment(ASEG_MAP_HEADER2);
 
@@ -4625,7 +4469,7 @@ static void P_ArchiveMap(boolean savePlayers)
     SV_WriteByte(MY_SAVE_VERSION);
 
     // Write the map timer
-    SV_WriteLong(mapTime);
+    SV_WriteLong(map->time);
 #else
     // Clear the sound target count (determined while saving sectors).
     numSoundTargets = 0;
@@ -4637,15 +4481,17 @@ static void P_ArchiveMap(boolean savePlayers)
     P_ArchiveThinkers(savePlayers);
 
 #if __JHEXEN__
-    P_ArchiveScripts();
+    SV_BeginSegment(ASEG_SCRIPTS);
+    if(ActionScriptInterpreter)
+        ActionScriptInterpreter_WriteMapState(ActionScriptInterpreter);
+
     P_ArchiveSounds();
-    P_ArchiveMisc();
 #else
     if(IS_SERVER)
     {
 # if __JDOOM__
         // Doom saves the brain data, too. (It's a part of the world.)
-        P_ArchiveBrain();
+        P_ArchiveBrain(map);
 # endif
         // Save the sound target data (prevents bug where monsters who have
         // been alerted go back to sleep when loading a save game).
@@ -4659,8 +4505,9 @@ static void P_ArchiveMap(boolean savePlayers)
 
 static void P_UnArchiveMap(void)
 {
+    gamemap_t* map = P_CurrentGameMap();
 #if __JHEXEN__
-    int                 segType = SV_ReadLong();
+    int segType = SV_ReadLong();
 
     // Determine the map version.
     if(segType == ASEG_MAP_HEADER2)
@@ -4682,22 +4529,25 @@ static void P_UnArchiveMap(void)
 
 #if __JHEXEN__
     // Read the map timer
-    mapTime = SV_ReadLong();
+    map->time = SV_ReadLong();
 #endif
 
     P_UnArchiveWorld();
     P_UnArchiveThinkers();
 
 #if __JHEXEN__
-    P_UnArchiveScripts();
+    AssertSegment(ASEG_SCRIPTS);
+    ActionScriptInterpreter_ReadMapState(ActionScriptInterpreter);
+
     P_UnArchiveSounds();
-    P_UnArchiveMisc();
+    if(saveVersion < 9)
+        P_UnArchiveMisc();
 #else
     if(IS_SERVER)
     {
 #if __JDOOM__
         // Doom saves the brain data, too. (It's a part of the world.)
-        P_UnArchiveBrain();
+        P_UnArchiveBrain(map);
 #endif
 
         // Read the sound target data (prevents bug where monsters who have
@@ -4841,11 +4691,12 @@ typedef struct savegameparam_s {
 
 int SV_SaveGameWorker(void* ptr)
 {
-    savegameparam_t*    param = ptr;
+    gamemap_t* map = P_CurrentGameMap();
+    savegameparam_t* param = ptr;
 #if __JHEXEN__
-    char                versionText[HXS_VERSION_TEXT_LENGTH];
+    char versionText[HXS_VERSION_TEXT_LENGTH];
 #else
-    int                 i;
+    int i;
 #endif
 
     VERBOSE(Con_Message("SV_SaveGame: Attempting save game to "
@@ -4880,7 +4731,9 @@ int SV_SaveGameWorker(void* ptr)
     SV_WriteByte(randomClassParm);
 
     // Write global script info
-    P_ArchiveGlobalScriptData();
+    SV_BeginSegment(ASEG_GLOBALSCRIPTDATA);
+    if(ActionScriptInterpreter)
+        ActionScriptInterpreter_WriteWorldState(ActionScriptInterpreter);
 #else
     // Write the header.
     hdr.magic = MY_SAVE_MAGIC;
@@ -4901,7 +4754,7 @@ int SV_SaveGameWorker(void* ptr)
     hdr.deathmatch = deathmatch;
     hdr.noMonsters = noMonstersParm;
     hdr.respawnMonsters = respawnMonsters;
-    hdr.mapTime = mapTime;
+    hdr.mapTime = map->time;
     hdr.gameID = SV_GameID();
     for(i = 0; i < MAXPLAYERS; i++)
         hdr.players[i] = players[i].plr->inGame;
@@ -5082,11 +4935,12 @@ static boolean readSaveHeader(saveheader_t *hdr, LZFILE *savefile)
 
 static boolean SV_LoadGame2(void)
 {
-    int         i;
-    char        buf[80];
-    boolean     loaded[MAXPLAYERS], infile[MAXPLAYERS];
+    gamemap_t* map = P_CurrentGameMap();
+    int i;
+    char buf[80];
+    boolean loaded[MAXPLAYERS], infile[MAXPLAYERS];
 #if __JHEXEN__
-    int         k;
+    int k;
 #endif
 
     // Read the header.
@@ -5104,7 +4958,9 @@ static boolean SV_LoadGame2(void)
     // Read global save data not part of the game metadata.
 #if __JHEXEN__
     // Read global script info.
-    P_UnArchiveGlobalScriptData();
+    if(saveVersion >= 7)
+        AssertSegment(ASEG_GLOBALSCRIPTDATA);
+    ActionScriptInterpreter_ReadWorldState(ActionScriptInterpreter);
 #endif
 
     // We don't want to see a briefing if we're loading a save game.
@@ -5115,7 +4971,7 @@ static boolean SV_LoadGame2(void)
 
 #if !__JHEXEN__
     // Set the time.
-    mapTime = hdr.mapTime;
+    map->time = hdr.mapTime;
 
     SV_InitThingArchive(true, true);
 #endif
@@ -5276,9 +5132,10 @@ boolean SV_LoadGame(const char* fileName)
 void SV_SaveClient(unsigned int gameID)
 {
 #if !__JHEXEN__ // unsupported in jHexen
-    filename_t          name;
-    player_t*           pl = &players[CONSOLEPLAYER];
-    mobj_t*             mo = pl->plr->mo;
+    gamemap_t* map = P_CurrentGameMap();
+    filename_t name;
+    player_t* pl = &players[CONSOLEPLAYER];
+    mobj_t* mo = pl->plr->mo;
 
     if(!IS_CLIENT || !mo)
         return;
@@ -5304,7 +5161,7 @@ void SV_SaveClient(unsigned int gameID)
     hdr.deathmatch = deathmatch;
     hdr.noMonsters = noMonstersParm;
     hdr.respawnMonsters = respawnMonsters;
-    hdr.mapTime = mapTime;
+    hdr.mapTime = map->time;
     hdr.gameID = gameID;
     SV_Write(&hdr, sizeof(hdr));
 
@@ -5330,9 +5187,10 @@ void SV_SaveClient(unsigned int gameID)
 void SV_LoadClient(unsigned int gameid)
 {
 #if !__JHEXEN__ // unsupported in jHexen
-    filename_t          name;
-    player_t*           cpl = players + CONSOLEPLAYER;
-    mobj_t*             mo = cpl->plr->mo;
+    gamemap_t* map = P_CurrentGameMap();
+    filename_t name;
+    player_t* cpl = players + CONSOLEPLAYER;
+    mobj_t* mo = cpl->plr->mo;
 
     if(!IS_CLIENT || !mo)
         return;
@@ -5368,7 +5226,7 @@ void SV_LoadClient(unsigned int gameid)
         gameEpisode = hdr.episode;
         G_InitNew(gameSkill, gameEpisode, gameMap);
     }
-    mapTime = hdr.mapTime;
+    map->time = hdr.mapTime;
 
     P_MobjUnsetPosition(mo);
     mo->pos[VX] = FIX2FLT(SV_ReadLong());
@@ -5516,17 +5374,17 @@ void SV_MapTeleport(int map, int position)
     targetPlayerMobj = NULL;
     for(i = 0; i < MAXPLAYERS; ++i)
     {
-        uint                j;
+        gamemap_t* map = P_CurrentGameMap();
+        uint j;
 
         if(!players[i].plr->inGame)
-        {
             continue;
-        }
 
         memcpy(&players[i], &playerBackup[i], sizeof(player_t));
+
         for(j = 0; j < NUM_INVENTORYITEM_TYPES; ++j)
         {
-            uint                k;
+            uint k;
 
             // Don't give back the wings of wrath if reborn.
             if(j == IIT_FLY && players[i].playerState == PST_REBORN)
@@ -5557,27 +5415,28 @@ void SV_MapTeleport(int map, int position)
                 }
             }
         }
+
         playerWasReborn = (players[i].playerState == PST_REBORN);
+
         if(deathmatch)
         {
             memset(players[i].frags, 0, sizeof(players[i].frags));
             players[i].plr->mo = NULL;
-            G_DeathMatchSpawnPlayer(i);
+            GameMap_SpawnPlayerDM(map, i);
         }
         else
         {
             const playerstart_t* start;
 
-            if((start = P_GetPlayerStart(position, i, false)))
+            if((start = GameMap_PlayerStart(map, position, i, false)))
             {
-                P_SpawnPlayer(i, cfg.playerClass[i], start->pos[VX],
+                GameMap_SpawnPlayer(map, i, cfg.playerClass[i], start->pos[VX],
                               start->pos[VY], start->pos[VZ], start->angle,
                               start->spawnFlags, false);
             }
             else
             {
-                P_SpawnPlayer(i, cfg.playerClass[i], 0, 0, 0, 0,
-                              MSF_Z_FLOOR, true);
+                GameMap_SpawnPlayer(map, i, cfg.playerClass[i], 0, 0, 0, 0, MSF_Z_FLOOR, true);
             }
         }
 
@@ -5593,8 +5452,8 @@ void SV_MapTeleport(int map, int position)
                     players[i].weapons[j].owned = true;
                 }
             }
-            players[i].ammo[AT_BLUEMANA].owned = 25; //// \fixme values.ded
-            players[i].ammo[AT_GREENMANA].owned = 25; //// \fixme values.ded
+            players[i].ammo[AT_BLUEMANA].owned = 25; // @todo define in values.ded
+            players[i].ammo[AT_GREENMANA].owned = 25; // @todo define in values.ded
             if(bestWeapon)
             {   // Bring up the best weapon
                 players[i].pendingWeapon = bestWeapon;
@@ -5608,8 +5467,8 @@ void SV_MapTeleport(int map, int position)
     }
     randomClassParm = rClass;
 
-    //// \fixme Redirect anything targeting a player mobj
-    //// FIXME! This only supports single player games!!
+    // Redirect anything targeting a player mobj
+    // @fixme This only supports single player games!!
     if(targetPlayerAddrs)
     {
         targetplraddress_t *p;
@@ -5642,7 +5501,8 @@ void SV_MapTeleport(int map, int position)
     // Launch waiting scripts
     if(!deathmatch)
     {
-        P_CheckACSStore();
+        if(ActionScriptInterpreter)
+            ActionScriptInterpreter_StartAll(ActionScriptInterpreter, gameMap);
     }
 
     // For single play, save immediately into the reborn slot

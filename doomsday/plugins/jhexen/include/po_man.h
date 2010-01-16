@@ -69,11 +69,11 @@ enum {
     PO_SPAWNCRUSH_DOOMEDNUM
 };
 
-void        PO_InitForMap(void);
 boolean     PO_Busy(int polyobj);
 
 boolean     PO_FindAndCreatePolyobj(int tag, boolean crush, float startX,
                                     float startY);
+void        PO_ThrustMobj(struct mobj_s* mo, void* lineDefPtr, void* pop);
 
 void        T_PolyDoor(polydoor_t* pd);
 void        T_RotatePoly(polyevent_t* pe);

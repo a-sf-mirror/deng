@@ -45,9 +45,11 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_player.h"
 #include "p_mapspec.h"
+#include "p_mapsetup.h"
 #include "p_door.h"
 #if __JDOOM64__
 #  include "p_ceiling.h"
@@ -103,8 +105,8 @@
 
 void T_Door(door_t* door)
 {
-    xsector_t*          xsec;
-    result_e            res;
+    xsector_t* xsec;
+    result_e res;
 
     xsec = P_ToXSector(door->sector);
 
@@ -213,7 +215,7 @@ void T_Door(door_t* door)
             case DT_CLOSE:
                 xsec->specialData = NULL;
 #if __JHEXEN__
-                P_TagFinished(P_ToXSector(door->sector)->tag);
+                ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(door->sector)->tag);
 #endif
                 DD_ThinkerRemove(&door->thinker); // Unlink and free.
 #if __JHERETIC__
@@ -294,7 +296,7 @@ void T_Door(door_t* door)
             case DT_OPEN:
                 xsec->specialData = NULL;
 #if __JHEXEN__
-                P_TagFinished(P_ToXSector(door->sector)->tag);
+                ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(door->sector)->tag);
 #endif
                 DD_ThinkerRemove(&door->thinker); // Unlink and free.
 #if __JHERETIC__
@@ -313,15 +315,16 @@ void T_Door(door_t* door)
     }
 }
 
-static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
+static int EV_DoDoor2(gamemap_t* map, int tag, float speed, int topwait,
+                      doortype_e type)
 {
-    int         rtn = 0, sound;
-    xsector_t  *xsec;
-    sector_t   *sec = NULL;
-    door_t   *door;
-    iterlist_t *list;
+    int rtn = 0, sound;
+    xsector_t* xsec;
+    sector_t* sec = NULL;
+    door_t* door;
+    iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(tag, false);
+    list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)
         return rtn;
 
@@ -427,22 +430,30 @@ static int EV_DoDoor2(int tag, float speed, int topwait, doortype_e type)
 }
 
 #if __JHEXEN__
-int EV_DoDoor(linedef_t *line, byte *args, doortype_e type)
+int EV_DoDoor(linedef_t* line, byte* args, doortype_e type)
 {
-    return EV_DoDoor2((int) args[0], (float) args[1] * (1.0 / 8),
-                      (int) args[2], type);
+    assert(line);
+    assert(args);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    return EV_DoDoor2(map, (int) args[0], (float) args[1] * (1.0 / 8), (int) args[2], type);
+    }
 }
 #else
-int EV_DoDoor(linedef_t *line, doortype_e type)
+int EV_DoDoor(linedef_t* line, doortype_e type)
 {
-    return EV_DoDoor2(P_ToXLine(line)->tag, DOORSPEED, DOORWAIT, type);
+    assert(line);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    return EV_DoDoor2(map, P_ToXLine(line)->tag, DOORSPEED, DOORWAIT, type);
+    }
 }
 #endif
 
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
 static void sendNeedKeyMessage(player_t* p, textenum_t msgTxt, int keyNum)
 {
-    char                buf[160], *in, tmp[2];
+    char buf[160], *in, tmp[2];
 
     buf[0] = 0;
     tmp[1] = 0;
@@ -482,7 +493,7 @@ static void sendNeedKeyMessage(player_t* p, textenum_t msgTxt, int keyNum)
  */
 static boolean tryLockedDoor(linedef_t *line, player_t *p)
 {
-    xline_t *xline = P_ToXLine(line);
+    xlinedef_t *xline = P_ToXLine(line);
 
     if(!p || !xline)
         return false;
@@ -564,7 +575,7 @@ static boolean tryLockedDoor(linedef_t *line, player_t *p)
  */
 static boolean tryLockedManualDoor(linedef_t* line, mobj_t* mo)
 {
-    xline_t*            xline = P_ToXLine(line);
+    xlinedef_t*            xline = P_ToXLine(line);
     player_t*           p;
 #if !__JHEXEN__
     int                 keyNum = -1;
@@ -692,7 +703,7 @@ int EV_DoLockedDoor(linedef_t *line, doortype_e type, mobj_t *thing)
  */
 boolean EV_VerticalDoor(linedef_t* line, mobj_t* mo)
 {
-    xline_t*            xline;
+    xlinedef_t*            xline;
     xsector_t*          xsec;
     sector_t*           sec;
     door_t*             door;

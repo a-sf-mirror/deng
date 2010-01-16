@@ -24,8 +24,7 @@
 /**
  * p_inventory.c: Common code for the player's inventory.
  *
- * \note The visual representation of the inventory is handled separately,
- *       in the HUD code.
+ * @note The visual representation of the inventory is handled separately, in the HUD code.
  */
 
 #if defined(__JHERETIC__) || defined(__JHEXEN__) || defined(__JDOOM64__)

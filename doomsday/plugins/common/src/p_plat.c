@@ -43,8 +43,10 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapspec.h"
+#include "p_mapsetup.h"
 #include "p_tick.h"
 #include "p_plat.h"
 
@@ -95,7 +97,7 @@ static void stopPlat(plat_t* plat)
 {
     P_ToXSector(plat->sector)->specialData = NULL;
 #if __JHEXEN__
-    P_TagFinished(P_ToXSector(plat->sector)->tag);
+    ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(plat->sector)->tag);
 #endif
     DD_ThinkerRemove(&plat->thinker);
 }
@@ -107,7 +109,8 @@ static void stopPlat(plat_t* plat)
  */
 void T_PlatRaise(plat_t* plat)
 {
-    result_e            res;
+    result_e res;
+    gamemap_t* map = P_CurrentGameMap();
 
     switch(plat->state)
     {
@@ -117,14 +120,14 @@ void T_PlatRaise(plat_t* plat)
 
         // Play a "while-moving" sound?
 #if __JHERETIC__
-        if(!(mapTime & 31))
+        if(!(map->time & 31))
             S_PlaneSound(plat->sector, PLN_FLOOR, SFX_PLATFORMMOVE);
 #endif
 #if __JDOOM__ || __JDOOM64__
         if(plat->type == PT_RAISEANDCHANGE ||
            plat->type == PT_RAISETONEARESTANDCHANGE)
         {
-            if(!(mapTime & 7))
+            if(!(map->time & 7))
                 S_PlaneSound(plat->sector, PLN_FLOOR, SFX_PLATFORMMOVE);
         }
 #endif
@@ -212,7 +215,7 @@ void T_PlatRaise(plat_t* plat)
         {
             // Play a "while-moving" sound?
 #if __JHERETIC__
-            if(!(mapTime & 31))
+            if(!(map->time & 31))
                 S_PlaneSound(plat->sector, PLN_FLOOR, SFX_PLATFORMMOVE);
 #endif
         }
@@ -242,20 +245,21 @@ void T_PlatRaise(plat_t* plat)
 static int doPlat(linedef_t *line, int tag, byte *args, plattype_e type,
                       int amount)
 #else
-static int doPlat(linedef_t *line, int tag, plattype_e type, int amount)
+static int doPlat(linedef_t* line, int tag, plattype_e type, int amount)
 #endif
 {
-    int                 rtn = 0;
-    float               floorHeight;
-    plat_t             *plat;
-    sector_t           *sec = NULL;
+    int rtn = 0;
+    float floorHeight;
+    plat_t* plat;
+    sector_t* sec = NULL;
 #if !__JHEXEN__
-    sector_t           *frontSector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
+    sector_t* frontSector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
 #endif
-    xsector_t          *xsec;
-    iterlist_t         *list;
+    xsector_t* xsec;
+    iterlist_t* list;
+    gamemap_t* map = P_CurrentGameMap();
 
-    list = P_GetSectorIterListForTag(tag, false);
+    list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)
         return rtn;
 
@@ -468,7 +472,7 @@ int EV_DoPlat(linedef_t *line, plattype_e type, int amount)
     return doPlat(line, (int) args[0], args, type, amount);
 #else
     int                 rtn = 0;
-    xline_t*            xline = P_ToXLine(line);
+    xlinedef_t*            xline = P_ToXLine(line);
 
     // Activate all <type> plats that are in stasis.
     switch(type)

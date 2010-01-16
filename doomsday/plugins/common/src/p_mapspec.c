@@ -39,10 +39,9 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "p_mapspec.h"
@@ -51,11 +50,6 @@
 // MACROS ------------------------------------------------------------------
 
 // TYPES -------------------------------------------------------------------
-
-typedef struct taglist_s {
-    int         tag;
-    iterlist_t *list;
-} taglist_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
@@ -67,109 +61,106 @@ typedef struct taglist_s {
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-iterlist_t  *spechit; // for crossed line specials.
-iterlist_t  *linespecials; // for surfaces that tick eg wall scrollers.
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static taglist_t *lineTagLists = NULL;
-static int numLineTagLists = 0;
-
-static taglist_t *sectorTagLists = NULL;
-static int numSectorTagLists = 0;
 
 // CODE --------------------------------------------------------------------
 
-/**
- *
- */
-void P_DestroyLineTagLists(void)
+void GameMap_DestroyLineTagLists(gamemap_t* map)
 {
-    int                 i;
+    assert(map);
+    {
+    int i;
 
-    if(numLineTagLists == 0)
+    if(map->numLineTagLists == 0)
         return;
 
-    for(i = 0; i < numLineTagLists; ++i)
+    for(i = 0; i < map->numLineTagLists; ++i)
     {
-        P_EmptyIterList(lineTagLists[i].list);
-        P_DestroyIterList(lineTagLists[i].list);
+        P_EmptyIterList(map->_lineTagLists[i].list);
+        P_DestroyIterList(map->_lineTagLists[i].list);
     }
 
-    free(lineTagLists);
-    lineTagLists = NULL;
-    numLineTagLists = 0;
+    free(map->_lineTagLists);
+    map->_lineTagLists = NULL;
+    map->numLineTagLists = 0;
+    }
 }
 
-/**
- *
- */
-iterlist_t *P_GetLineIterListForTag(int tag, boolean createNewList)
+iterlist_t* GameMap_IterListForTag(gamemap_t* map, int tag, boolean createNewList)
 {
-    int                 i;
-    taglist_t          *tagList;
+    assert(map);
+    {
+    taglist_t* tagList;
+    int i;
 
     // Do we have an existing list for this tag?
-    for(i = 0; i < numLineTagLists; ++i)
-        if(lineTagLists[i].tag == tag)
-            return lineTagLists[i].list;
+    for(i = 0; i < map->numLineTagLists; ++i)
+        if(map->_lineTagLists[i].tag == tag)
+            return map->_lineTagLists[i].list;
 
     if(!createNewList)
         return NULL;
 
     // Nope, we need to allocate another.
-    numLineTagLists++;
-    lineTagLists = realloc(lineTagLists, sizeof(taglist_t) * numLineTagLists);
-    tagList = &lineTagLists[numLineTagLists - 1];
+    map->numLineTagLists++;
+    map->_lineTagLists = realloc(map->_lineTagLists, sizeof(taglist_t) * map->numLineTagLists);
+    tagList = &map->_lineTagLists[map->numLineTagLists - 1];
     tagList->tag = tag;
 
     return (tagList->list = P_CreateIterList());
+    }
 }
 
-/**
- *
- */
-void P_DestroySectorTagLists(void)
+void GameMap_DestroySectorTagLists(gamemap_t* map)
 {
-    int                 i;
+    assert(map);
+    {
+    int i;
 
-    if(numSectorTagLists == 0)
+    if(map->numSectorTagLists == 0)
         return;
 
-    for(i = 0; i < numSectorTagLists; ++i)
+    for(i = 0; i < map->numSectorTagLists; ++i)
     {
-        P_EmptyIterList(sectorTagLists[i].list);
-        P_DestroyIterList(sectorTagLists[i].list);
+        P_EmptyIterList(map->_sectorTagLists[i].list);
+        P_DestroyIterList(map->_sectorTagLists[i].list);
     }
 
-    free(sectorTagLists);
-    sectorTagLists = NULL;
-    numSectorTagLists = 0;
+    free(map->_sectorTagLists);
+    map->_sectorTagLists = NULL;
+    map->numSectorTagLists = 0;
+    }
 }
 
-/**
- *
- */
-iterlist_t *P_GetSectorIterListForTag(int tag, boolean createNewList)
+iterlist_t* GameMap_SectorIterListForTag(gamemap_t* map, int tag, boolean createNewList)
 {
-    int                 i;
-    taglist_t          *tagList;
+    assert(map);
+    {
+    taglist_t* tagList;
+    int i;
 
     // Do we have an existing list for this tag?
-    for(i = 0; i < numSectorTagLists; ++i)
-        if(sectorTagLists[i].tag == tag)
-            return sectorTagLists[i].list;
+    for(i = 0; i < map->numSectorTagLists; ++i)
+        if(map->_sectorTagLists[i].tag == tag)
+            return map->_sectorTagLists[i].list;
 
     if(!createNewList)
         return NULL;
 
     // Nope, we need to allocate another.
-    numSectorTagLists++;
-    sectorTagLists = realloc(sectorTagLists, sizeof(taglist_t) * numSectorTagLists);
-    tagList = &sectorTagLists[numSectorTagLists - 1];
+    map->numSectorTagLists++;
+    map->_sectorTagLists = realloc(map->_sectorTagLists, sizeof(taglist_t) * map->numSectorTagLists);
+    tagList = &map->_sectorTagLists[map->numSectorTagLists - 1];
     tagList->tag = tag;
 
     return (tagList->list = P_CreateIterList());
+    }
+}
+
+iterlist_t* GameMap_SpecHits(gamemap_t* map)
+{
+    assert(map);
+    return map->_spechit;
 }
 
 /**
@@ -181,9 +172,9 @@ iterlist_t *P_GetSectorIterListForTag(int tag, boolean createNewList)
  * @return              Ptr to the other sector or @c NULL if the specified
  *                      line is NOT twosided.
  */
-sector_t *P_GetNextSector(linedef_t *line, sector_t *sec)
+sector_t* P_GetNextSector(linedef_t* line, sector_t* sec)
 {
-    sector_t           *frontSec;
+    sector_t* frontSec;
 
     if(!sec || !line)
         return NULL;
@@ -646,7 +637,7 @@ int spreadSoundToNeighbors(void *ptr, void *context)
         if(OPENRANGE > 0)
         {
             sector_t           *other;
-            xline_t            *xline;
+            xlinedef_t            *xline;
 
             if(frontSec == params->baseSec)
                 other = backSec;

@@ -45,6 +45,9 @@
 #include "dmu_lib.h"
 #include "p_plat.h"
 #include "p_switch.h"
+#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
+#include "p_xgline.h"
+#endif
 
 // MACROS ------------------------------------------------------------------
 

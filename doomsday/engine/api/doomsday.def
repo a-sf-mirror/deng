@@ -40,6 +40,7 @@ NAME            "DOOMSDAY"
 ; 204 formerly TGA_Save16_rgb888
 ; 205 formerly TGA_GetSize
 ; 206 formerly GL_Update
+; 225 formerly S_MapChange
 ; 232 formerly R_SetAnimGroup
 ; 238 formerly DGL_Color2
 ; 255 formerly P_PointToBlock
@@ -441,7 +442,6 @@ EXPORTS
     GL_DrawRawScreen_CS         @235 NONAME
 
 ; Audio.
-    S_MapChange                 @225 NONAME
     S_LocalSoundAtVolumeFrom    @221 NONAME
     S_LocalSoundAtVolume        @214 NONAME
     S_LocalSound                @215 NONAME

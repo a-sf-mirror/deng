@@ -60,9 +60,6 @@
 #define MAXMORPHHEALTH      30
 #define VIEWHEIGHT          48
 
-#define FLOATBOBRES         64
-#define FLOATBOBOFFSET(n)   (FloatBobOffset[(n) < 0? 0 : (n) > FLOATBOBRES - 1? FLOATBOBRES - 1 : (n)])
-
 // Player radius for movement checking.
 #define PLAYERRADIUS        16
 
@@ -80,8 +77,6 @@
 #define BASETHRESHOLD       100 // Follow a player exlusively for 3 seconds.
 
 #define sentient(mobj)      ((mobj)->health > 0 && P_GetState((mobj)->type, SN_SEE))
-
-extern int TimerGame; // Tic countdown for deathmatch.
 
 #define thinkerCap          (*gi.thinkerCap)
 
@@ -106,16 +101,6 @@ boolean     P_UndoPlayerMorph(player_t* plr);
 #define FRICTION_HIGH       (0.5f)
 #define FRICTION_LOW        (0.97265625f)
 
-// Time interval for item respawning.
-#define SPAWNQUEUE_MAX         128
-
-extern int iquehead;
-extern int iquetail;
-
-extern mobjtype_t PuffType;
-extern mobj_t* MissileMobj;
-extern float* FloatBobOffset;
-
 void        P_Thrust(player_t* plr, angle_t angle, float move);
 void        P_ThrustMobj(mobj_t* mo, angle_t angle, float move);
 int         P_FaceMobj(mobj_t* source, mobj_t* target, angle_t* delta);
@@ -123,17 +108,16 @@ boolean     P_SeekerMissile(mobj_t* mo, angle_t thresh, angle_t turnMax);
 void        P_MobjThinker(mobj_t* mo);
 boolean     P_HealRadius(player_t* plr);
 void        P_BlastRadius(player_t* plr);
-void        P_SpawnBloodSplatter(float x, float y, float z, mobj_t* origin);
-void        P_SpawnBloodSplatter2(float x, float y, float z, mobj_t* origin);
-
-void        P_CreateTIDList(void);
+void        P_SpawnBloodSplatter(struct gamemap_s* map, float x, float y, float z, mobj_t* origin);
+void        P_SpawnBloodSplatter2(struct gamemap_s* map, float x, float y, float z, mobj_t* origin);
 
 boolean     P_MobjChangeState(mobj_t* mo, statenum_t state);
 boolean     P_SetMobjStateNF(mobj_t* mo, statenum_t state);
 
+void        P_CreateTIDList(struct gamemap_s* map);
+mobj_t*     P_FindMobjFromTID(struct gamemap_s* map, int tid, int* searchPosition);
 void        P_MobjRemoveFromTIDList(mobj_t* mo);
 void        P_MobjInsertIntoTIDList(mobj_t* mo, int tid);
-mobj_t*     P_FindMobjFromTID(int tid, int* searchPosition);
 
 boolean     P_CheckMissileSpawn(mobj_t* mo);
 float       P_MobjGetFriction(mobj_t* mo);
@@ -144,10 +128,9 @@ boolean     P_HitFloor(mobj_t* mo);
 void        P_NoiseAlert(mobj_t* target, mobj_t* emmiter);
 int         P_Massacre(void);
 boolean     P_LookForMonsters(mobj_t* mo);
-void        P_InitCreatureCorpseQueue(boolean corpseScan);
 
-#define MAXINTERCEPTS       128
-extern intercept_t intercepts[MAXINTERCEPTS], *intercept_p;
+void        P_InitCreatureCorpseQueue(struct gamemap_s* map);
+void        P_AddCreaturesToCorpseQueue(void);
 
 mobj_t*     P_RoughMonsterSearch(mobj_t* mo, int distance);
 

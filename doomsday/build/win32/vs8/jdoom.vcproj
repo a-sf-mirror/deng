@@ -845,6 +845,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\plugins\common\include\gamemap.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\plugins\common\include\hu_lib.h"
 				>
 			</File>
@@ -1034,6 +1038,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\common\src\g_update.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\plugins\common\src\gamemap.c"
 				>
 			</File>
 			<File
@@ -1330,10 +1338,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\jdoom\include\p_telept.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\plugins\jdoom\include\r_defs.h"
 				>
 			</File>
 			<File

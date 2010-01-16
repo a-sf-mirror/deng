@@ -40,12 +40,11 @@
 #  include "jdoom64.h"
 #elif __JHERETIC__
 #  include "jheretic.h"
-#  include "hu_stuff.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#  include "p_start.h"
 #endif
 
+#include "gamemap.h"
 #include "p_actor.h"
 #include "dmu_lib.h"
 #include "r_common.h"
@@ -53,6 +52,7 @@
 #include "am_map.h"
 #include "p_tick.h"
 #include "p_start.h"
+#include "hu_stuff.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -73,20 +73,12 @@ typedef struct {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void     P_ResetWorldState(void);
-static void     P_FinalizeMap(void);
+static void     P_FinalizeMap(gamemap_t* map);
 static void     P_PrintMapBanner(int episode, int map);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// Our private map data structures
-xsector_t* xsectors;
-xline_t* xlines;
-
-// If true we are in the process of setting up a map
-boolean mapSetup;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
@@ -95,7 +87,7 @@ boolean mapSetup;
 /**
  * Converts a line to an xline.
  */
-xline_t* P_ToXLine(linedef_t* line)
+xlinedef_t* P_ToXLine(linedef_t* line)
 {
     if(!line)
         return NULL;
@@ -107,7 +99,8 @@ xline_t* P_ToXLine(linedef_t* line)
     }
     else
     {
-        return &xlines[DMU_ToIndex(line)];
+        gamemap_t* map = P_CurrentGameMap();
+        return &map->_xLineDefs[DMU_ToIndex(line)];
     }
 }
 
@@ -126,7 +119,8 @@ xsector_t* P_ToXSector(sector_t* sector)
     }
     else
     {
-        return &xsectors[DMU_ToIndex(sector)];
+        gamemap_t* map = P_CurrentGameMap();
+        return &map->_xSectors[DMU_ToIndex(sector)];
     }
 }
 
@@ -149,42 +143,43 @@ xsector_t* P_ToXSectorOfSubsector(subsector_t* subsector)
     }
     else
     {
-        return &xsectors[DMU_ToIndex(sec)];
+        gamemap_t* map = P_CurrentGameMap();
+        return &map->_xSectors[DMU_ToIndex(sec)];
     }
 }
 
 /**
  * Given the index of an xline, return it.
  *
- * \note: This routine cannot be used with dummy lines!
+ * @note: This routine cannot be used with dummy lines!
  *
  * @param               Index of the xline to return.
  *
- * @return              Ptr to xline_t.
+ * @return              Ptr to xlinedef_t.
  */
-xline_t* P_GetXLine(uint index)
+xlinedef_t* GameMap_XLineDef(gamemap_t* map, uint index)
 {
+    assert(map);
     if(index >= numlines)
         return NULL;
-
-    return &xlines[index];
+    return &map->_xLineDefs[index];
 }
 
 /**
  * Given the index of an xsector, return it.
  *
- * \note: This routine cannot be used with dummy sectors!
+ * @note: This routine cannot be used with dummy sectors!
  *
  * @param               Index of the xsector to return.
  *
  * @return              Ptr to xsector_t.
  */
-xsector_t* P_GetXSector(uint index)
+xsector_t* GameMap_XSector(gamemap_t* map, uint index)
 {
+    assert(map);
     if(index >= numsectors)
         return NULL;
-
-    return &xsectors[index];
+    return &map->_xSectors[index];
 }
 
 /**
@@ -201,18 +196,23 @@ void P_SetupForMapData(int type, uint num)
     switch(type)
     {
     case DMU_SECTOR:
+        {
+        gamemap_t* map = P_CurrentGameMap();
         if(num > 0)
-            xsectors = Z_Calloc(num * sizeof(xsector_t), PU_MAP, 0);
+            map->_xSectors = Z_Calloc(num * sizeof(xsector_t), PU_MAP, 0);
         else
-            xsectors = NULL;
+            map->_xSectors = NULL;
         break;
-
+        }
     case DMU_LINEDEF:
+        {
+        gamemap_t* map = P_CurrentGameMap();
         if(num > 0)
-            xlines = Z_Calloc(num * sizeof(xline_t), PU_MAP, 0);
+            map->_xLineDefs = Z_Calloc(num * sizeof(xlinedef_t), PU_MAP, 0);
         else
-            xlines = NULL;
+            map->_xLineDefs = NULL;
         break;
+        }
 
     default:
         break;
@@ -396,13 +396,13 @@ static boolean checkMapSpotSpawnFlags(const mapspot_t* spot)
     return true;
 }
 
-static void P_LoadMapObjs(void)
+static void P_LoadMapObjs(gamemap_t* map)
 {
-    uint                i;
+    uint i;
 
     for(i = 0; i < numlines; ++i)
     {
-        xline_t*            xl = &xlines[i];
+        xlinedef_t* xl = &map->_xLineDefs[i];
 
         xl->origID = P_GetObjectRecordInt(MO_XLINEDEF, i, MO_ORIGINALID);
         xl->flags = P_GetObjectRecordShort(MO_XLINEDEF, i, MO_FLAGS);
@@ -425,8 +425,7 @@ static void P_LoadMapObjs(void)
 
     for(i = 0; i < numsectors; ++i)
     {
-        sector_t*           sec = DMU_ToPtr(DMU_SECTOR, i);
-        xsector_t*          xsec = &xsectors[i];
+        xsector_t* xsec = &map->_xSectors[i];
 
         xsec->origID = P_GetObjectRecordInt(MO_XSECTOR, i, MO_ORIGINALID);
         xsec->special = P_GetObjectRecordShort(MO_XSECTOR, i, MO_TYPE);
@@ -460,17 +459,16 @@ static void P_LoadMapObjs(void)
 #endif
     }
 
-    numMapSpots = P_NumObjectRecords(MO_THING);
+    map->numSpawnSpots = P_NumObjectRecords(MO_THING);
 
-    if(numMapSpots > 0)
-        mapSpots =
-            Z_Malloc(numMapSpots * sizeof(mapspot_t), PU_MAP, 0);
+    if(map->numSpawnSpots > 0)
+        map->_spawnSpots = Z_Malloc(map->numSpawnSpots * sizeof(mapspot_t), PU_MAP, 0);
     else
-        mapSpots = NULL;
+        map->_spawnSpots = NULL;
 
-    for(i = 0; i < numMapSpots; ++i)
+    for(i = 0; i < map->numSpawnSpots; ++i)
     {
-        mapspot_t*        spot = &mapSpots[i];
+        mapspot_t* spot = &map->_spawnSpots[i];
 
         spot->pos[VX] = P_GetObjectRecordFloat(MO_THING, i, MO_X);
         spot->pos[VY] = P_GetObjectRecordFloat(MO_THING, i, MO_Y);
@@ -494,7 +492,7 @@ static void P_LoadMapObjs(void)
         // Ambient sound origin?
         if(spot->doomEdNum >= 1200 && spot->doomEdNum < 1300)
         {
-            P_AddAmbientSfx(spot->doomEdNum - 1200);
+            GameMap_AddAmbientSfx(map, spot->doomEdNum - 1200);
             continue;
         }
 #elif __JHEXEN__
@@ -516,7 +514,7 @@ static void P_LoadMapObjs(void)
         {
         default: // A spot that should auto-spawn one (or more) mobjs.
             {
-            mobjtype_t          type;
+            mobjtype_t type;
 
             if(!checkMapSpotSpawnFlags(spot))
                 continue;
@@ -524,15 +522,14 @@ static void P_LoadMapObjs(void)
             // Find which type to spawn.
             if((type = P_DoomEdNumToMobjType(spot->doomEdNum)) != MT_NONE)
             {   // A known type; spawn it!
-                mobj_t*             mo;
+                mobj_t* mo;
 /*#if _DEBUG
 Con_Message("spawning x:[%g, %g, %g] angle:%i ednum:%i flags:%i\n",
             spot->pos[VX], spot->pos[VY], spot->pos[VZ], spot->angle,
             spot->doomedNum, spot->flags);
 #endif*/
 
-                if((mo = P_SpawnMobj3fv(type, spot->pos, spot->angle,
-                                        spot->flags)))
+                if((mo = GameMap_SpawnMobj3fv(map, type, spot->pos, spot->angle, spot->flags)))
                 {
                     if(mo->tics > 0)
                         mo->tics = 1 + (P_Random() % mo->tics);
@@ -554,9 +551,9 @@ Con_Message("spawning x:[%g, %g, %g] angle:%i ednum:%i flags:%i\n",
 
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
                     if(mo->flags & MF_COUNTKILL)
-                        totalKills++;
+                        map->totalKills++;
                     if(mo->flags & MF_COUNTITEM)
-                        totalItems++;
+                        map->totalItems++;
 #endif
                 }
             }
@@ -569,8 +566,8 @@ Con_Message("spawning x:[%g, %g, %g] angle:%i ednum:%i flags:%i\n",
             break;
             }
         case 11: // Player start (deathmatch).
-            P_CreatePlayerStart(0, 0, true, spot->pos[VX], spot->pos[VY],
-                                spot->pos[VZ], spot->angle, spot->flags);
+            GameMap_AddPlayerStart(map, 0, 0, true, spot->pos[VX], spot->pos[VY],
+                                   spot->pos[VZ], spot->angle, spot->flags);
             break;
 
         case 1: // Player starts 1 through 4.
@@ -579,25 +576,25 @@ Con_Message("spawning x:[%g, %g, %g] angle:%i ednum:%i flags:%i\n",
         case 4:
             {
 #if __JHEXEN__
-            byte                entryPoint = spot->arg1;
+            byte entryPoint = spot->arg1;
 #else
-            byte                entryPoint = 0;
+            byte entryPoint = 0;
 #endif
 
-            P_CreatePlayerStart(spot->doomEdNum, entryPoint, false,
-                                spot->pos[VX], spot->pos[VY], spot->pos[VZ],
-                                spot->angle, spot->flags);
+            GameMap_AddPlayerStart(map, spot->doomEdNum, entryPoint, false,
+                                   spot->pos[VX], spot->pos[VY], spot->pos[VZ],
+                                   spot->angle, spot->flags);
             break;
             }
 
 #if __JHERETIC__
         case 56: // Boss spot.
-            P_AddBossSpot(spot->pos[VX], spot->pos[VY], spot->angle);
+            GameMap_AddBossSpot(map, spot->pos[VX], spot->pos[VY], spot->angle);
             break;
 
         case 2002:
             if(gameMode != shareware)
-                P_AddMaceSpot(spot->pos[VX], spot->pos[VY], spot->angle);
+                GameMap_AddMaceSpot(map, spot->pos[VX], spot->pos[VY], spot->angle);
             break;
 #endif
 
@@ -606,9 +603,9 @@ Con_Message("spawning x:[%g, %g, %g] angle:%i ednum:%i flags:%i\n",
         case 9101:
         case 9102:
         case 9103:
-            P_CreatePlayerStart(5 + spot->doomEdNum - 9100, spot->arg1,
-                                false, spot->pos[VX], spot->pos[VY],
-                                spot->pos[VZ], spot->angle, spot->flags);
+            GameMap_AddPlayerStart(map, 5 + spot->doomEdNum - 9100, spot->arg1,
+                                   false, spot->pos[VX], spot->pos[VY],
+                                   spot->pos[VZ], spot->angle, spot->flags);
             break;
 #endif
         }
@@ -616,10 +613,10 @@ Con_Message("spawning x:[%g, %g, %g] angle:%i ednum:%i flags:%i\n",
 
     if(deathmatch)
     {
-        int                 i;
-        uint                numDMStarts = P_GetNumPlayerStarts(true),
-                            playerCount = 0;
-
+        uint numDMStarts = GameMap_NumPlayerStarts(map, true);
+        uint playerCount = 0;
+        int i;
+        
         for(i = 0; i < MAXPLAYERS; ++i)
         {
             if(players[i].plr->inGame)
@@ -635,46 +632,46 @@ Con_Message("spawning x:[%g, %g, %g] angle:%i ednum:%i flags:%i\n",
 }
 
 /**
- * \todo This should be done in the map converter plugin, not here.
+ * @todo This should be done in the map converter plugin, not here.
  */
-static void interpretLinedefFlags(void)
+static void interpretLinedefFlags(gamemap_t* map)
 {
 #define ML_BLOCKING             1 // Solid, is an obstacle.
 #define ML_TWOSIDED             4 // Backside will not be present at all if not two sided.
 #define ML_DONTPEGTOP           8 // Upper texture unpegged.
 #define ML_DONTPEGBOTTOM        16 // Lower texture unpegged.
 #if __JDOOM64__
-# define MLT_MIRRORH             64 // Mirror textures horizontally.
-# define MLT_MIRRORV             128 // Mirror textures vertically.
+#define MLT_MIRRORH             64 // Mirror textures horizontally.
+#define MLT_MIRRORV             128 // Mirror textures vertically.
 #endif
-    uint                i;
+    uint i;
 
     // Interpret the archived map linedef flags and update accordingly.
     for(i = 0; i < numlines; ++i)
     {
-        int                 flags = 0;
-        xline_t*            xline = &xlines[i];
+        xlinedef_t* xline = &map->_xLineDefs[i];
+        int flags = 0;
 
         /**
          * Zero unused flags if ML_INVALID is set.
          *
-         * \attention "This has been found to be necessary because of errors
-         *  in Ultimate DOOM's E2M7, where around 1000 linedefs have
-         *  the value 0xFE00 masked into the flags value.
-         *  There could potentially be many more maps with this problem,
-         *  as it is well-known that Hellmaker wads set all bits in
-         *  mapthings that it does not understand."
-         *  Thanks to Quasar for the heads up.
+         * @note "This has been found to be necessary because of errors
+         * in Ultimate DOOM's E2M7, where around 1000 linedefs have
+         * the value 0xFE00 masked into the flags value.
+         * There could potentially be many more maps with this problem,
+         * as it is well-known that Hellmaker wads set all bits in
+         * mapthings that it does not understand."
+         * Thanks to Quasar for the heads up.
          */
 #if !__JHEXEN__
         /**
-         * \fixme This applies only to DOOM format maps but the game doesn't
+         * @fixme This applies only to DOOM format maps but the game doesn't
          * know what format the map is in (and shouldn't really) but the
          * engine doesn't know if the game wants to do this...
          */
 # if !__JDOOM64__
         /**
-         * \attention DJS - Can't do this with Doom64TC as it has used the
+         * @note DJS - Can't do this with Doom64TC as it has used the
          * ML_INVALID bit for another purpose... doh!
          */
 
@@ -724,174 +721,282 @@ static void interpretLinedefFlags(void)
 #undef ML_DONTPEGTOP
 #undef ML_DONTPEGBOTTOM
 #if __JDOOM64__
-# undef MLT_MIRRORH
-# undef MLT_MIRRORV
+#undef MLT_MIRRORH
+#undef MLT_MIRRORV
 #endif
 }
 
+void GameMap_Precache(gamemap_t* map)
+{
+    assert(map);
+
+    // Preload graphics.
+    R_PrecacheMap();
+    R_PrecachePSprites();
+
+#if __JDOOM__
+    {
+    static const mobjtype_precachedata_t types[] = {
+        { GM_ANY,   MT_SKULL },
+        // Missiles:
+        { GM_ANY,   MT_BRUISERSHOT },
+        { GM_ANY,   MT_TROOPSHOT },
+        { GM_ANY,   MT_HEADSHOT },
+        { GM_ANY,   MT_ROCKET },
+        { GM_NOTSHAREWARE, MT_PLASMA },
+        { GM_NOTSHAREWARE, MT_BFG },
+        { GM_DOOM2, MT_ARACHPLAZ },
+        { GM_DOOM2, MT_FATSHOT },
+        // Potentially dropped weapons:
+        { GM_ANY,   MT_CLIP },
+        { GM_ANY,   MT_SHOTGUN },
+        { GM_ANY,   MT_CHAINGUN },
+        // Misc effects:
+        { GM_DOOM2, MT_FIRE },
+        { GM_ANY,   MT_TRACER },
+        { GM_ANY,   MT_SMOKE },
+        { GM_DOOM2, MT_FATSHOT },
+        { GM_ANY,   MT_BLOOD },
+        { GM_ANY,   MT_PUFF },
+        { GM_ANY,   MT_TFOG }, // Teleport FX.
+        { GM_ANY,   MT_EXTRABFG },
+        { GM_ANY,   MT_ROCKETPUFF },
+        { 0,        0}
+    };
+    uint i;
+
+    for(i = 0; types[i].type != 0; ++i)
+        if(types[i].gameModeBits & gameModeBits)
+            R_PrecacheMobjNum(types[i].type);
+
+    if(IS_NETGAME)
+        R_PrecacheMobjNum(MT_IFOG);
+    }
+#endif
+}
+
+static void loadRejectMatrix(gamemap_t* map)
+{
+    lumpnum_t lumpNum = W_GetNumForName(map->mapID) + 9 /*ML_REJECT*/;
+    if(lumpNum != -1)
+    {
+        map->_rejectMatrix = Z_Malloc(W_LumpLength(lumpNum), PU_STATIC, 0);
+        W_ReadLump(lumpNum, map->_rejectMatrix);
+    }
+}
+
 typedef struct setupmapparams_s {
-    int             episode;
-    int             map;
-    int             playerMask; // Unused?
+    gamemap_t*      map;
     skillmode_t     skill;
 } setupmapparams_t;
 
 int P_SetupMapWorker(void* ptr)
 {
-    setupmapparams_t*   param = ptr;
-    char                mapID[9];
+    const setupmapparams_t* p = ptr;
+    gamemap_t* map = p->map;
 
     // It begins...
-    mapSetup = true;
-
-    P_ResetWorldState();
+    map->inSetup = true;
 
     // Let the engine know that we are about to start setting up a map.
     R_SetupMap(DDSMM_INITIALIZE, 0);
 
-    // Initialize The Logical Sound Manager.
-    S_MapChange();
-
-#if __JHEXEN__
-    S_StartMusic("chess", true); // Waiting-for-map-load song
-#endif
-
-    P_GetMapLumpName(param->episode, param->map, mapID);
-    if(!P_LoadMap(mapID))
+    if(!P_LoadMap(map->mapID))
     {
-        Con_Error("P_SetupMap: Failed loading map \"%s\".\n", mapID);
+        return 0; // Failed.
     }
 
     DD_InitThinkers();
-    P_LoadMapObjs();
+    P_LoadMapObjs(map);
 
 #if __JDOOM__
     if(gameMode == commercial)
-        P_SpawnBrainTargets();
+        P_SpawnBrainTargets(map);
 #endif
 
 #if __JHERETIC__
-    if(maceSpotCount)
+    if(map->maceSpotCount)
     {
         // Sometimes doesn't show up if not in deathmatch.
         if(!(!deathmatch && P_Random() < 64))
         {
-            const mapspot_t*    spot =
-                &maceSpots[P_Random() % maceSpotCount];
+            const mapspot_t* spot = &map->_maceSpots[P_Random() % map->maceSpotCount];
 
-            P_SpawnMobj3f(MT_WMACE, spot->pos[VX], spot->pos[VY], 0,
+            GameMap_SpawnMobj3f(map, MT_WMACE, spot->pos[VX], spot->pos[VY], 0,
                           spot->angle, MSF_Z_FLOOR);
         }
     }
 #endif
 
 #if __JHEXEN__
-    P_CreateTIDList();
-    P_InitCreatureCorpseQueue(false); // false = do NOT scan for corpses
-    PO_InitForMap();
+    P_CreateTIDList(map);
+    P_InitCreatureCorpseQueue(map);
+    GameMap_InitPolyobjs(map);
 #endif
 
-    interpretLinedefFlags();
+    interpretLinedefFlags(map);
 
 #if __JHERETIC__
-    P_InitAmbientSound();
+    GameMap_InitAmbientSfx(map);
 #endif
 
-#if __JHEXEN__
-    Con_Message("Load ACS scripts\n");
-    // \fixme Custom map data format support
-    P_LoadACScripts(W_GetNumForName(mapID) + 11 /*ML_BEHAVIOR*/); // ACS object code
-#endif
+    // @fixme Should be handled by the map converter.
+    loadRejectMatrix(map);
 
-    P_DealPlayerStarts(0);
-    P_SpawnPlayers();
+    GameMap_DealPlayerStarts(map, 0);
+    GameMap_SpawnPlayers(map);
 
     // Set up world state.
-    P_SpawnSpecials();
+    GameMap_SpawnSpecials(map);
 
-    // Preload graphics.
     if(precache)
-    {
-#if __JDOOM__
-        static const mobjtype_precachedata_t types[] = {
-            { GM_ANY,   MT_SKULL },
-            // Missiles:
-            { GM_ANY,   MT_BRUISERSHOT },
-            { GM_ANY,   MT_TROOPSHOT },
-            { GM_ANY,   MT_HEADSHOT },
-            { GM_ANY,   MT_ROCKET },
-            { GM_NOTSHAREWARE, MT_PLASMA },
-            { GM_NOTSHAREWARE, MT_BFG },
-            { GM_DOOM2, MT_ARACHPLAZ },
-            { GM_DOOM2, MT_FATSHOT },
-            // Potentially dropped weapons:
-            { GM_ANY,   MT_CLIP },
-            { GM_ANY,   MT_SHOTGUN },
-            { GM_ANY,   MT_CHAINGUN },
-            // Misc effects:
-            { GM_DOOM2, MT_FIRE },
-            { GM_ANY,   MT_TRACER },
-            { GM_ANY,   MT_SMOKE },
-            { GM_DOOM2, MT_FATSHOT },
-            { GM_ANY,   MT_BLOOD },
-            { GM_ANY,   MT_PUFF },
-            { GM_ANY,   MT_TFOG }, // Teleport FX.
-            { GM_ANY,   MT_EXTRABFG },
-            { GM_ANY,   MT_ROCKETPUFF },
-            { 0,        0}
-        };
-        uint                i;
-#endif
+        GameMap_Precache(map);
 
-        R_PrecacheMap();
-        R_PrecachePSprites();
-
-#if __JDOOM__
-        for(i = 0; types[i].type != 0; ++i)
-            if(types[i].gameModeBits & gameModeBits)
-                R_PrecacheMobjNum(types[i].type);
-
-        if(IS_NETGAME)
-            R_PrecacheMobjNum(MT_IFOG);
-#endif
-    }
-
-    P_FinalizeMap();
+    P_FinalizeMap(map);
 
     // Someone may want to do something special now that the map has been
     // fully set up.
     R_SetupMap(DDSMM_FINALIZE, 0);
 
-    P_PrintMapBanner(param->episode, param->map);
-
     // It ends.
-    mapSetup = false;
+    map->inSetup = false;
 
     Con_BusyWorkerEnd();
-    return 0;
+    return 1; // Success.
+}
+
+boolean GameMap_Load(gamemap_t* map, skillmode_t skill)
+{
+    assert(map);
+
+    // Pre-init.
+#if __JHERETIC__ || __JHEXEN__
+    GameMap_InitLava(map);
+#endif
+
+    // Create the various line lists (spechits, anims, buttons etc).
+    map->_spechit = P_CreateIterList();
+    map->_linespecials = P_CreateIterList();
+
+#if __JDOOM__ || __JDOOM64__
+    // Only used with 666/7 specials
+    map->bossKilled = false;
+#endif
+
+#if __JDOOM__
+    // Brain info
+    map->brain.numTargets = 0;
+    map->brain.numTargetsAlloc = -1;
+    map->brain.targetOn = 0;
+    map->brain.easy = 0; // Always init easy to 0.
+#endif
+
+#if __JHERETIC__
+    map->maceSpotCount = 0;
+    map->_maceSpots = NULL;
+    map->bossSpotCount = 0;
+    map->_bossSpots = NULL;
+#endif
+
+    GameMap_PurgeDeferredSpawns(map);
+
+#if !__JHEXEN__
+    map->totalKills = map->totalItems = map->totalSecret = 0;
+#endif
+
+#if __JDOOM__ || __JDOOM64__
+    map->bodyQueueSlot = 0;
+#endif
+
+    GameMap_ClearPlayerStarts(map);
+
+    map->time = map->actualTime = 0;
+
+    // Load the map!
+    {
+    setupmapparams_t p;
+    int result;
+
+    p.map = map;
+    p.skill = skill;
+
+    // @todo Use progress bar mode and update progress during the setup.
+    result = Con_Busy(BUSYF_ACTIVITY | /*BUSYF_PROGRESS_BAR |*/ (verbose? BUSYF_CONSOLE_OUTPUT : 0),
+                      "Loading map...", P_SetupMapWorker, &p);
+
+    R_SetupMap(DDSMM_AFTER_BUSY, 0);
+    return result;
+    }
+}
+
+static void loadActionScripts(const char* mapID)
+{
+#if __JHEXEN__
+    /**
+     * @todo The map converter should convert/decompile the Hexen ACS bytecode
+     * into DE script source file(s) and then loaded here.
+     * For now we will be content to interpret the Hexen ACS bytecode.
+     */
+    lumpnum_t lumpNum = W_GetNumForName(mapID) + 11 /*ML_BEHAVIOR*/;
+    if(lumpNum != -1)
+    {
+        if(!ActionScriptInterpreter)
+            P_CreateActionScriptInterpreter();
+        ActionScriptInterpreter_Load(ActionScriptInterpreter, 0, lumpNum);
+    }
+#endif
 }
 
 /**
  * Loads map and glnode data for the requested episode and map.
  */
-void P_SetupMap(int episode, int map, int playerMask, skillmode_t skill)
+void P_SetupMap(gamemap_t* map, skillmode_t skill)
 {
-    setupmapparams_t  param;
-
-    param.episode = episode;
-    param.map = map;
-    param.playerMask = playerMask; // Unused?
-    param.skill = skill;
+    assert(map);
+    {
+    int i;
 
     DD_Executef(true, "texreset raw"); // Delete raw images to save memory.
+#if __JHEXEN__
+    S_StartMusic("chess", true); // Waiting-for-map-load song.
+#endif
+#if __JDOOM__ || __JDOOM64__
+    wmInfo.maxFrags = 0;
+    wmInfo.parTime = -1;
+#endif
 
-    // \todo Use progress bar mode and update progress during the setup.
-    Con_Busy(BUSYF_ACTIVITY | /*BUSYF_PROGRESS_BAR |*/ (verbose? BUSYF_CONSOLE_OUTPUT : 0),
-             "Loading map...", P_SetupMapWorker, &param);
+    if(!GameMap_Load(map, skill))
+        Con_Error("P_SetupMap: Failed loading \"%s\".\n", map->mapID);
+
+    loadActionScripts(map->mapID);
+
+    P_PrintMapBanner(map->episodeNum, map->mapNum);
+
+    // @todo startTic should not be set until the first player enters the map.
+    map->startTic = (int) GAMETIC;
+
+    timerGame = 0;
+    if(deathmatch)
+    {
+        int parm = ArgCheck("-timer");
+        if(parm && parm < Argc() - 1)
+            timerGame = atoi(Argv(parm + 1)) * 35 * 60;
+    }
+
+    for(i = 0; i < MAXPLAYERS; ++i)
+    {
+        automapid_t am = AM_MapForPlayer(i);
+        player_t* plr = &players[i];
+
+        plr->killCount = plr->secretCount = plr->itemCount = 0;
+        // Initial height of PointOfView; will be set by player think.
+        plr->viewZ = 1;
+
+        AM_SetCheatLevel(am, 0);
+        AM_RevealMap(am, false);
+    }
 
     AM_InitForMap();
-
-    R_SetupMap(DDSMM_AFTER_BUSY, 0);
 
 #if __JHEXEN__
     {
@@ -914,108 +1019,39 @@ void P_SetupMap(int episode, int map, int playerMask, skillmode_t skill)
     }
     }
 #endif
-}
-
-/**
- * Called during map setup when beginning to load a new map.
- */
-static void P_ResetWorldState(void)
-{
-    int                 i, parm;
-
-#if __JDOOM__ || __JDOOM64__
-    wmInfo.maxFrags = 0;
-    wmInfo.parTime = -1;
-
-    // Only used with 666/7 specials
-    bossKilled = false;
-#endif
-
-#if __JDOOM__
-    // Brain info
-    numBrainTargets = 0;
-    numBrainTargetsAlloc = -1;
-    brain.targetOn = 0;
-    brain.easy = 0; // Always init easy to 0.
-#endif
-
-#if __JHERETIC__
-    maceSpotCount = 0;
-    maceSpots = NULL;
-    bossSpotCount = 0;
-    bossSpots = NULL;
-#endif
-
-    P_PurgeDeferredSpawns();
-
-#if !__JHEXEN__
-    totalKills = totalItems = totalSecret = 0;
-#endif
-
-    timerGame = 0;
-    if(deathmatch)
-    {
-        parm = ArgCheck("-timer");
-        if(parm && parm < Argc() - 1)
-        {
-            timerGame = atoi(Argv(parm + 1)) * 35 * 60;
-        }
     }
-
-    for(i = 0; i < MAXPLAYERS; ++i)
-    {
-        player_t*           plr = &players[i];
-        automapid_t         map = AM_MapForPlayer(i);
-
-        plr->killCount = plr->secretCount = plr->itemCount = 0;
-        // Initial height of PointOfView; will be set by player think.
-        plr->viewZ = 1;
-
-        AM_SetCheatLevel(map, 0);
-        AM_RevealMap(map, false);
-    }
-
-#if __JDOOM__ || __JDOOM64__
-    bodyQueueSlot = 0;
-#endif
-
-    P_DestroyPlayerStarts();
-
-    mapTime = actualMapTime = 0;
 }
 
 /**
  * Do any map finalization including any game-specific stuff.
  */
-static void P_FinalizeMap(void)
+static void P_FinalizeMap(gamemap_t* map)
 {
 #if __JDOOM__ || __JDOOM64__
     // Adjust slime lower wall textures (a hack!).
     // This will hide the ugly green bright line that would otherwise be
     // visible due to texture repeating and interpolation.
     {
-    uint                i;
-    material_t*         mat = P_MaterialForName(MN_TEXTURES, "NUKE24");
+    uint i;
+    material_t* mat = P_MaterialForName(MN_TEXTURES, "NUKE24");
 
     for(i = 0; i < numlines; ++i)
     {
-        linedef_t*          line = DMU_ToPtr(DMU_LINEDEF, i);
-        uint                k;
+        linedef_t* line = DMU_ToPtr(DMU_LINEDEF, i);
+        uint k;
 
         for(k = 0; k < 2; ++k)
         {
-            sidedef_t*          sidedef = DMU_GetPtrp(line, k == 0? DMU_SIDEDEF0 : DMU_SIDEDEF1);
+            sidedef_t* sidedef = DMU_GetPtrp(line, k == 0? DMU_SIDEDEF0 : DMU_SIDEDEF1);
 
             if(sidedef)
             {
-                material_t*         bottomMat =
-                    DMU_GetPtrp(sidedef, DMU_BOTTOM_MATERIAL);
+                material_t* bottomMat = DMU_GetPtrp(sidedef, DMU_BOTTOM_MATERIAL);
 
                 if(bottomMat == mat &&
                    DMU_GetPtrp(sidedef, DMU_MIDDLE_MATERIAL) == NULL)
                 {
-                    float               yoff =
-                        DMU_GetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y);
+                    float yoff = DMU_GetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y);
                     DMU_SetFloatp(sidedef, DMU_BOTTOM_MATERIAL_OFFSET_Y, yoff + 1.0f);
                 }
             }
@@ -1031,9 +1067,9 @@ static void P_FinalizeMap(void)
 #endif
 
     // Do some fine tuning with mobj placement and orientation.
-    P_MoveThingsOutOfWalls();
+    P_MoveThingsOutOfWalls(map);
 #if __JHERETIC__
-    P_TurnGizmosAwayFromDoors();
+    P_TurnGizmosAwayFromDoors(map);
 #endif
 }
 
@@ -1074,7 +1110,7 @@ const char* P_GetMapAuthor(boolean surpressIWADAuthors)
     {
         char lumpName[9];
 
-        P_GetMapLumpName(gameEpisode, gameMap, lumpName);
+        P_GetMapLumpName(lumpName, gameEpisode, gameMap);
         if(W_IsFromIWAD(W_GetNumForName(lumpName)))
             return NULL;
 
@@ -1108,7 +1144,7 @@ static boolean isIWADMap(int episode, int map)
 {
     char lumpName[9];
 
-    P_GetMapLumpName(episode, map, lumpName);
+    P_GetMapLumpName(lumpName, episode, map);
     return W_IsFromIWAD(W_GetNumForName(lumpName));
 }
 #endif

@@ -31,6 +31,8 @@
 #ifndef __JDOOM_CONVENIENCE_H__
 #define __JDOOM_CONVENIENCE_H__
 
+#include <assert.h>
+
 #include "../../jdoom/include/acfnlink.h"
 #include "../../jdoom/include/d_api.h"
 #include "../../jdoom/include/d_config.h"
@@ -59,7 +61,6 @@
 #include "../../jdoom/include/p_sound.h"
 #include "../../jdoom/include/p_spec.h"
 #include "../../jdoom/include/p_telept.h"
-#include "../../jdoom/include/r_defs.h"
 #include "../../jdoom/include/st_stuff.h"
 #include "../../jdoom/include/tables.h"
 #include "../../jdoom/include/wi_stuff.h"

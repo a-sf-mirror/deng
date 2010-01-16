@@ -43,6 +43,7 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "p_tick.h"
 #include "p_actor.h"
 
@@ -59,20 +60,6 @@
 
 // TYPES -------------------------------------------------------------------
 
-typedef struct spawnqueuenode_s {
-    int             startTime;
-    int             minTics; // Minimum number of tics before respawn.
-    void          (*callback) (mobj_t* mo, void* context);
-    void*           context;
-
-    float           pos[3];
-    angle_t         angle;
-    mobjtype_t      type;
-    int             spawnFlags; // MSF_* flags
-
-    struct spawnqueuenode_s* next;
-} spawnqueuenode_t;
-
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
@@ -84,8 +71,6 @@ typedef struct spawnqueuenode_s {
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static spawnqueuenode_t* spawnQueueHead = NULL, *unusedNodes = NULL;
 
 // CODE --------------------------------------------------------------------
 
@@ -103,7 +88,10 @@ void P_SpawnTelefog(mobj_t* mo, void* context)
     mo->intFlags |= MIF_FADE;
 # elif __JDOOM__
     // Spawn the item teleport fog at the new spot.
-    P_SpawnMobj3fv(MT_IFOG, mo->pos, mo->angle, 0);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    GameMap_SpawnMobj3fv(map, MT_IFOG, mo->pos, mo->angle, 0);
+    }
 # endif
 }
 
@@ -135,7 +123,8 @@ void P_MobjRemove(mobj_t* mo, boolean noRespawn)
 # endif
            )
         {
-            P_DeferSpawnMobj3fv(RESPAWNTICS, mo->type, mo->spawnSpot.pos,
+            gamemap_t* map = P_CurrentGameMap();
+            GameMap_DeferSpawnMobj3fv(map, RESPAWNTICS, mo->type, mo->spawnSpot.pos,
                                 mo->spawnSpot.angle, mo->spawnSpot.flags,
                                 P_SpawnTelefog, NULL);
         }
@@ -159,7 +148,7 @@ void P_MobjRemove(mobj_t* mo, boolean noRespawn)
  */
 void P_MobjSetPosition(mobj_t* mo)
 {
-    int                 flags = DDLINK_BLOCKMAP;
+    int flags = DDLINK_BLOCKMAP;
 
     if(!(mo->flags & MF_NOSECTOR))
         flags |= DDLINK_SECTOR;
@@ -202,8 +191,8 @@ void P_MobjSetSRVOZ(mobj_t* mo, float stepz)
  */
 void P_MobjAngleSRVOTicker(mobj_t* mo)
 {
-    short               target, step, diff;
-    int                 lstep, hgt;
+    short target, step, diff;
+    int lstep, hgt;
 
     // Check requirements.
     if(mo->flags & MF_MISSILE || !(mo->flags & MF_COUNTKILL))
@@ -273,7 +262,7 @@ boolean P_MobjIsCamera(const mobj_t* mo)
  */
 void P_UpdateHealthBits(mobj_t* mobj)
 {
-    int                 i;
+    int i;
 
     if(mobj->info && mobj->info->spawnHealth > 0)
     {
@@ -307,8 +296,11 @@ statenum_t P_GetState(mobjtype_t type, statename_t name)
 
 void P_RipperBlood(mobj_t* actor)
 {
-    mobj_t*             mo;
-    float               pos[3];
+    assert(actor);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* mo;
+    float pos[3];
 
     pos[VX] = actor->pos[VX];
     pos[VY] = actor->pos[VY];
@@ -318,7 +310,7 @@ void P_RipperBlood(mobj_t* actor)
     pos[VY] += FIX2FLT((P_Random() - P_Random()) << 12);
     pos[VZ] += FIX2FLT((P_Random() - P_Random()) << 12);
 
-    if((mo = P_SpawnMobj3fv(MT_BLOOD, pos, actor->angle, 0)))
+    if((mo = GameMap_SpawnMobj3fv(map, MT_BLOOD, pos, actor->angle, 0)))
     {
 #if __JHERETIC__
         mo->flags |= MF_NOGRAVITY;
@@ -327,231 +319,5 @@ void P_RipperBlood(mobj_t* actor)
         mo->mom[MY] = actor->mom[MY] / 2;
         mo->tics += P_Random() & 3;
     }
-}
-
-static spawnqueuenode_t* allocateNode(void)
-{
-#define SPAWNQUEUENODE_BATCHSIZE 32
-
-    spawnqueuenode_t*   n;
-
-    if(unusedNodes)
-    {   // There are existing nodes we can re-use.
-        n = unusedNodes;
-        unusedNodes = unusedNodes->next;
-        n->next = NULL;
     }
-    else
-    {   // We need to allocate more.
-        size_t              i;
-        spawnqueuenode_t*   storage =
-            Z_Malloc(sizeof(*n) * SPAWNQUEUENODE_BATCHSIZE, PU_STATIC, 0);
-
-        // Add all but one to the unused node list.
-        for(i = 0; i < SPAWNQUEUENODE_BATCHSIZE-1; ++i)
-        {
-            n = storage++;
-            n->next = unusedNodes;
-            unusedNodes = n;
-        }
-
-        n = storage;
-    }
-
-    return n;
-
-#undef SPAWNQUEUENODE_BATCHSIZE
-}
-
-static void freeNode(spawnqueuenode_t* node, boolean recycle)
-{
-    // Find this node in the spawn queue and unlink it if found.
-    if(spawnQueueHead)
-    {
-        if(spawnQueueHead == node)
-        {
-            spawnQueueHead = spawnQueueHead->next;
-        }
-        else
-        {
-            spawnqueuenode_t*       n;
-
-            for(n = spawnQueueHead; n->next; n = n->next)
-            {
-                if(n->next == node)
-                    n->next = n->next->next;
-            }
-        }
-    }
-
-    if(recycle)
-    {   // Recycle this node for later use.
-        node->next = unusedNodes;
-        unusedNodes = node;
-        return;
-    }
-
-    Z_Free(node);
-}
-
-static spawnqueuenode_t* dequeueSpawn(void)
-{
-    spawnqueuenode_t*   n = spawnQueueHead;
-
-    if(spawnQueueHead)
-        spawnQueueHead = spawnQueueHead->next;
-
-    return n;
-}
-
-static void emptySpawnQueue(boolean recycle)
-{
-    if(spawnQueueHead)
-    {
-        spawnqueuenode_t*   n;
-
-        while((n = dequeueSpawn()))
-            freeNode(n, recycle);
-    }
-
-    spawnQueueHead = NULL;
-}
-
-static void enqueueSpawn(int minTics, mobjtype_t type, float x, float y,
-                         float z, angle_t angle, int spawnFlags,
-                         void (*callback) (mobj_t* mo, void* context),
-                         void* context)
-{
-    spawnqueuenode_t*   n = allocateNode();
-
-    n->type = type;
-    n->pos[VX] = x;
-    n->pos[VY] = y;
-    n->pos[VZ] = z;
-    n->angle = angle;
-    n->spawnFlags = spawnFlags;
-
-    n->startTime = mapTime;
-    n->minTics = minTics;
-
-    n->callback = callback;
-    n->context = context;
-
-    if(spawnQueueHead)
-    {   // Find the correct insertion point.
-        if(spawnQueueHead->next)
-        {
-            spawnqueuenode_t*   l = spawnQueueHead;
-
-            while(l->next &&
-                  l->next->minTics - (mapTime - l->next->startTime) <= minTics)
-                l = l->next;
-
-            n->next = (l->next? l->next : NULL);
-            l->next = n;
-        }
-        else
-        {   // After or before the head?
-            if(spawnQueueHead->minTics -
-               (mapTime - spawnQueueHead->startTime) <= minTics)
-            {
-                n->next = NULL;
-                spawnQueueHead->next = n;
-            }
-            else
-            {
-                n->next = spawnQueueHead;
-                spawnQueueHead = n;
-            }
-        }
-    }
-    else
-    {
-        n->next = NULL;
-        spawnQueueHead = n;
-    }
-}
-
-static mobj_t* doDeferredSpawn(void)
-{
-    mobj_t*             mo = NULL;
-
-    // Anything due to spawn?
-    if(spawnQueueHead &&
-       mapTime - spawnQueueHead->startTime >= spawnQueueHead->minTics)
-    {
-        spawnqueuenode_t*   n = dequeueSpawn();
-
-        // Spawn it.
-        if((mo = P_SpawnMobj3fv(n->type, n->pos, n->angle, n->spawnFlags)))
-        {
-            if(n->callback)
-                n->callback(mo, n->context);
-        }
-
-        freeNode(n, true);
-    }
-
-    return mo;
-}
-
-/**
- * Deferred mobj spawning until at least @minTics have passed.
- * Spawn behavior is otherwise exactly the same as an immediate spawn, via   * P_SpawnMobj*
- */
-void P_DeferSpawnMobj3f(int minTics, mobjtype_t type, float x, float y,
-                        float z, angle_t angle, int spawnFlags,
-                        void (*callback) (mobj_t* mo, void* context),
-                        void* context)
-{
-    if(minTics > 0)
-    {
-        enqueueSpawn(minTics, type, x, y, z, angle, spawnFlags, callback,
-                     context);
-    }
-    else // Spawn immediately.
-    {
-        mobj_t*             mo;
-
-        if((mo = P_SpawnMobj3f(type, x, y, z, angle, spawnFlags)))
-        {
-            if(callback)
-                callback(mo, context);
-        }
-    }
-}
-
-void P_DeferSpawnMobj3fv(int minTics, mobjtype_t type, const float pos[3],
-                         angle_t angle, int spawnFlags,
-                         void (*callback) (mobj_t* mo, void* context),
-                         void* context)
-{
-    if(minTics > 0)
-    {
-        enqueueSpawn(minTics, type, pos[VX], pos[VY], pos[VZ], angle,
-                     spawnFlags, callback, context);
-    }
-    else // Spawn immediately.
-    {
-        mobj_t*             mo;
-
-        if((mo = P_SpawnMobj3fv(type, pos, angle, spawnFlags)))
-        {
-            if(callback)
-                callback(mo, context);
-        }
-    }
-}
-
-/**
- * Called 35 times per second by P_DoTick.
- */
-void P_DoDeferredSpawns(void)
-{
-    while(doDeferredSpawn());
-}
-
-void P_PurgeDeferredSpawns(void)
-{
-    emptySpawnQueue(true);
 }

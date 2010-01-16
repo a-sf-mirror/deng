@@ -26,14 +26,15 @@
 /**
  * p_oldsvg.c:
  *
- * \bug Not 64bit clean: In function 'P_v13_UnArchivePlayers': cast from pointer to integer of different size
- * \bug Not 64bit clean: In function 'P_v13_UnArchiveThinkers': cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'P_v13_UnArchivePlayers': cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'P_v13_UnArchiveThinkers': cast from pointer to integer of different size
  */
 
 // HEADER FILES ------------------------------------------------------------
 
 #include "jheretic.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_saveg.h"
 #include "p_map.h"
@@ -390,7 +391,7 @@ void P_v13_UnArchiveWorld(void)
     sector_t*           sec;
     xsector_t*          xsec;
     linedef_t*          line;
-    xline_t*            xline;
+    xlinedef_t*            xline;
 
     get = (short *) save_p;
 
@@ -866,9 +867,10 @@ enum {
 
 boolean SV_v13_LoadGame(const char* savename)
 {
-    size_t              length;
-    int                 i, a, b, c;
-    char                vcheck[VERSIONSIZE];
+    size_t length;
+    int i, a, b, c;
+    char vcheck[VERSIONSIZE];
+    gamemap_t* map = P_CurrentGameMap();
 
     if(!(length = M_ReadFile(savename, &savebuffer)))
         return false;
@@ -899,7 +901,7 @@ boolean SV_v13_LoadGame(const char* savename)
     a = *save_p++;
     b = *save_p++;
     c = *save_p++;
-    mapTime = (a << 16) + (b << 8) + c;
+    map->time = (a << 16) + (b << 8) + c;
 
     // De-archive all the modifications.
     P_v13_UnArchivePlayers();

@@ -41,8 +41,6 @@
 #elif __JHEXEN__
 #  include "jhexen.h"
 #  include "p_inventory.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
 #include "g_controls.h"
@@ -106,19 +104,6 @@ DEFCC( CCmdPause );
 extern boolean sendpause;
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-/*
-// Binding classes (for the dynamic event responder chain)
-bindcontext_t BindClasses[] = {
-    {"map",             GBC_CLASS1,     0, 0},
-    {"mapfollowoff",    GBC_CLASS2,     0, 0},
-    {"menu",            GBC_CLASS3,     0, BCF_ABSOLUTE},
-    {"menuhotkey",      GBC_MENUHOTKEY, 1, 0},
-    {"chat",            GBC_CHAT,       0, 0},
-    {"message",         GBC_MESSAGE,    0, BCF_ABSOLUTE},
-    {NULL}
-};
-*/
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 

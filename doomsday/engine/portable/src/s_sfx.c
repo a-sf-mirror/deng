@@ -1188,13 +1188,12 @@ void Sfx_SampleFormat(int newBits, int newRate)
 }
 
 /**
- * Must be done before the map is changed (from P_SetupMap, via
- * S_MapChange).
+ * Must be done before the map is changed.
  */
 void Sfx_MapChange(void)
 {
-    int                 i;
-    sfxchannel_t*       ch;
+    sfxchannel_t* ch;
+    int i;
 
     for(i = 0, ch = channels; i < numChannels; ++i, ch++)
     {

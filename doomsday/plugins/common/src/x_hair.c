@@ -25,7 +25,7 @@
 /**
  * x_hair.c: Crosshairs, drawing and config.
  *
- * \todo Use the vector graphic routines currently in the automap here.
+ * @todo Use the vector graphic routines currently in the automap here.
  */
 
 // HEADER FILES ------------------------------------------------------------
@@ -41,8 +41,6 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
 #include "x_hair.h"

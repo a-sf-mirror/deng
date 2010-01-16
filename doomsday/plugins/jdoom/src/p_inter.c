@@ -35,6 +35,7 @@
 
 #include "jdoom.h"
 
+#include "gamemap.h"
 #include "am_map.h"
 #include "d_net.h"
 #include "dmu_lib.h"
@@ -450,6 +451,8 @@ static itemtype_t getItemTypeBySprite(spritetype_e sprite)
  */
 static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
 {
+    gamemap_t* map = P_CurrentGameMap();
+
     if(!plr)
         return false;
 
@@ -461,7 +464,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTARMOR, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -470,7 +473,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
                         armorPoints[MINMAX_OF(0, armorClass[1] - 1, 1)]))
             return false;
         P_SetMessage(plr, GOTMEGA, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -481,7 +484,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             P_PlayerGiveArmorBonus(plr, 1);
 
         P_SetMessage(plr, GOTARMBONUS, false);
-        if(!mapSetup)
+        if(!map->inSetup)
         {
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
             // Maybe unhide the HUD?
@@ -493,7 +496,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         if(!P_GiveBody(plr, 10))
             return false;
         P_SetMessage(plr, GOTSTIM, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -515,7 +518,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
 
         P_SetMessage(plr, GET_TXT(
             (oldHealth < 25)? TXT_GOTMEDINEED : TXT_GOTMEDIKIT), false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
         }
@@ -526,7 +529,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         plr->plr->mo->health = plr->health;
         plr->update |= PSF_HEALTH;
         P_SetMessage(plr, GOTHTHBONUS, false);
-        if(!mapSetup)
+        if(!map->inSetup)
         {
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
             // Maybe unhide the HUD?
@@ -541,7 +544,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         plr->plr->mo->health = plr->health;
         plr->update |= PSF_HEALTH;
         P_SetMessage(plr, GOTSUPER, false);
-        if(!mapSetup)
+        if(!map->inSetup)
         {
             S_ConsoleSound(SFX_GETPOW, NULL, plr - players);
             // Maybe unhide the HUD?
@@ -553,7 +556,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         P_GiveKey(plr, KT_BLUECARD);
         if(!plr->keys[KT_BLUECARD])
             P_SetMessage(plr, GOTBLUECARD, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
 
         if(IS_NETGAME)
@@ -564,7 +567,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         P_GiveKey(plr, KT_YELLOWCARD);
         if(!plr->keys[KT_YELLOWCARD])
             P_SetMessage(plr, GOTYELWCARD, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
 
         if(IS_NETGAME)
@@ -575,7 +578,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         P_GiveKey(plr, KT_REDCARD);
         if(!plr->keys[KT_REDCARD])
             P_SetMessage(plr, GOTREDCARD, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
 
         if(IS_NETGAME)
@@ -586,7 +589,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         P_GiveKey(plr, KT_BLUESKULL);
         if(!plr->keys[KT_BLUESKULL])
             P_SetMessage(plr, GOTBLUESKUL, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
 
         if(IS_NETGAME)
@@ -597,7 +600,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         P_GiveKey(plr, KT_YELLOWSKULL);
         if(!plr->keys[KT_YELLOWSKULL])
             P_SetMessage(plr, GOTYELWSKUL, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
 
         if(IS_NETGAME)
@@ -608,7 +611,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         P_GiveKey(plr, KT_REDSKULL);
         if(!plr->keys[KT_REDSKULL])
             P_SetMessage(plr, GOTREDSKULL, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
 
         if(IS_NETGAME)
@@ -624,7 +627,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
         P_GiveArmor(plr, armorClass[1],
                     armorPoints[MINMAX_OF(0, armorClass[1] - 1, 1)]);
         P_SetMessage(plr, GOTMSPHERE, false);
-        if(!mapSetup)
+        if(!map->inSetup)
         {
             S_ConsoleSound(SFX_GETPOW, NULL, plr - players);
             // Maybe unhide the HUD?
@@ -637,7 +640,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTINVUL, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_GETPOW, NULL, plr - players);
         break;
 
@@ -651,7 +654,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             plr->pendingWeapon = WT_FIRST;
             plr->update |= PSF_PENDING_WEAPON | PSF_READY_WEAPON;
         }
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_GETPOW, NULL, plr - players);
         break;
 
@@ -660,7 +663,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTINVIS, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_GETPOW, NULL, plr - players);
         break;
 
@@ -669,7 +672,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTSUIT, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_GETPOW, NULL, plr - players);
         break;
 
@@ -678,7 +681,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTMAP, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_GETPOW, NULL, plr - players);
         break;
 
@@ -687,13 +690,13 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTVISOR, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_GETPOW, NULL, plr - players);
         break;
 
     case IT_BACKPACK:
         P_GiveBackpack(plr);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -702,7 +705,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTCLIP, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -711,7 +714,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTCLIPBOX, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -720,7 +723,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTROCKET, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -729,7 +732,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTROCKBOX, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -738,7 +741,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTCELL, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -747,7 +750,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTCELLBOX, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -756,7 +759,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTSHELLS, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -765,7 +768,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTSHELLBOX, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
         break;
 
@@ -774,7 +777,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTBFG9000, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_WPNUP, NULL, plr - players);
         break;
 
@@ -783,7 +786,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTCHAINGUN, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_WPNUP, NULL, plr - players);
         break;
 
@@ -792,7 +795,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTCHAINSAW, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_WPNUP, NULL, plr - players);
         break;
 
@@ -801,7 +804,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTLAUNCHER, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_WPNUP, NULL, plr - players);
         break;
 
@@ -810,7 +813,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTPLASMA, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_WPNUP, NULL, plr - players);
         break;
 
@@ -819,7 +822,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTSHOTGUN, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_WPNUP, NULL, plr - players);
         break;
 
@@ -828,7 +831,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
             return false;
 
         P_SetMessage(plr, GOTSHOTGUN2, false);
-        if(!mapSetup)
+        if(!map->inSetup)
             S_ConsoleSound(SFX_WPNUP, NULL, plr - players);
         break;
 
@@ -841,9 +844,13 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
 
 void P_TouchSpecialMobj(mobj_t* special, mobj_t* toucher)
 {
-    player_t*           player;
-    float               delta;
-    itemtype_t          item;
+    assert(special);
+    assert(toucher);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    player_t* player;
+    float delta;
+    itemtype_t item;
 
     delta = special->pos[VZ] - toucher->pos[VZ];
     if(delta > toucher->height || delta < -8)
@@ -874,16 +881,18 @@ void P_TouchSpecialMobj(mobj_t* special, mobj_t* toucher)
 
     P_MobjRemove(special, false);
 
-    if(!mapSetup)
+    if(!map->inSetup)
         player->bonusCount += BONUSADD;
+    }
 }
 
-void P_KillMobj(mobj_t *source, mobj_t *target, boolean stomping)
+void P_KillMobj(mobj_t* source, mobj_t* target, boolean stomping)
 {
-    mobjtype_t          item;
-    mobj_t*             mo;
-    unsigned int        an;
-    angle_t             angle;
+    gamemap_t* map = P_CurrentGameMap();
+    mobjtype_t item;
+    mobj_t* mo;
+    unsigned int an;
+    angle_t angle;
 
     if(!target)
         return; // Nothing to kill...
@@ -981,7 +990,7 @@ void P_KillMobj(mobj_t *source, mobj_t *target, boolean stomping)
     // 3D sprites.
     angle = P_Random() << 24;
     an = angle >> ANGLETOFINESHIFT;
-    if((mo = P_SpawnMobj3f(item, target->pos[VX] + 3 * FIX2FLT(finecosine[an]),
+    if((mo = GameMap_SpawnMobj3f(map, item, target->pos[VX] + 3 * FIX2FLT(finecosine[an]),
                            target->pos[VY] + 3 * FIX2FLT(finesine[an]),
                            0, angle, MSF_Z_FLOOR)))
         mo->flags |= MF_DROPPED; // Special versions of items.

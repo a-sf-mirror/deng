@@ -32,6 +32,7 @@
 
 #include "jhexen.h"
 
+#include "gamemap.h"
 #include "hu_log.h"
 #include "hu_menu.h"
 #include "hu_msg.h"
@@ -130,7 +131,7 @@ static execopt_t execOptions[] = {
  * Attempt to change the current game mode. Can only be done when not
  * actually in a map.
  *
- * \todo Doesn't actually do anything yet other than set the game mode
+ * @todo Doesn't actually do anything yet other than set the game mode
  *  global vars.
  *
  * @param mode          The game mode to change to.
@@ -215,7 +216,10 @@ void G_DetectIWADs(void)
  */
 void G_PreInit(void)
 {
-    int                     i;
+    int i;
+
+    // PO_ThrustMobj will handle polyobj <-> mobj interaction.
+    P_SetPolyobjCallback(PO_ThrustMobj);
 
     // Calculate the various LUTs used by the playsim.
     X_CreateLUTs();
@@ -565,14 +569,18 @@ static void execOptionScripts(const char** args, int tag)
 
 void G_Shutdown(void)
 {
+    gamemap_t* map;
+
     Hu_MsgShutdown();
     Hu_UnloadData();
     Hu_LogShutdown();
 
-    P_DestroyIterList(spechit);
-    P_DestroyIterList(linespecials);
-    P_DestroyLineTagLists();
-    P_DestroySectorTagLists();
+    if((map = P_CurrentGameMap()))
+        P_DestroyGameMap(map);
+    
+    if(ActionScriptInterpreter)
+        P_DestroyActionScriptInterpreter(ActionScriptInterpreter);
+
     P_ShutdownInventory();
     AM_Shutdown();
     X_DestroyLUTs();

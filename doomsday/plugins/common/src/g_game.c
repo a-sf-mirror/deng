@@ -33,24 +33,19 @@
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
 
 #if __JDOOM__
-#  include <stdlib.h>
 #  include "jdoom.h"
 #elif __JDOOM64__
-#  include <stdlib.h>
 #  include "jdoom64.h"
 #elif __JHERETIC__
-#  include <stdio.h>
 #  include "jheretic.h"
-#  include "p_inventory.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#  include "p_inventory.h"
-#elif __JSTRIFE__
-#  include "jstrife.h"
 #endif
 
+#include "gamemap.h"
 #include "p_saveg.h"
 #include "g_controls.h"
 #include "g_eventsequence.h"
@@ -76,15 +71,12 @@
 #include "p_inventory.h"
 #include "p_spec.h"
 #if __JHERETIC__ || __JHEXEN__
-# include "hu_inventory.h"
+#  include "hu_inventory.h"
+#  include "p_inventory.h"
 #endif
 
 // MACROS ------------------------------------------------------------------
 
-#define BODYQUEUESIZE       (32)
-
-#define UNNAMEDMAP          "Unnamed"
-#define NOTAMAPNAME         "N/A"
 #define READONLYCVAR        CVF_READ_ONLY|CVF_NO_MAX|CVF_NO_MIN|CVF_NO_ARCHIVE
 
 // TYPES -------------------------------------------------------------------
@@ -169,8 +161,9 @@ int gameEpisode;
 int gameMap;
 int nextMap; // If non zero this will be the next map.
 
-#if __JDOOM__ || __JHERETIC__ || __JDOOM64__ || __JSTRIFE__
+#if __JDOOM__ || __JHERETIC__ || __JDOOM64__
 boolean respawnMonsters;
+wbstartstruct_t wmInfo; // Params for world map / intermission.
 #endif
 
 boolean paused;
@@ -179,216 +172,25 @@ boolean userGame; // Ok to save / end game.
 boolean deathmatch; // Only if started as net death.
 player_t players[MAXPLAYERS];
 
-int mapStartTic; // Game tic at map start.
-int totalKills, totalItems, totalSecret; // For intermission.
-
 boolean singledemo; // Quit after playing a demo from cmdline.
 
 boolean precache = true; // If @c true, load all graphics at start.
 
-#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
-wbstartstruct_t wmInfo; // Params for world map / intermission.
-#endif
-
 int saveGameSlot;
 char saveDescription[HU_SAVESTRINGSIZE];
 
-#if __JDOOM__ || __JDOOM64__
-mobj_t *bodyQueue[BODYQUEUESIZE];
-int bodyQueueSlot;
-#endif
-
-#if __JHEXEN__ || __JSTRIFE__
-// Position indicator for cooperative net-play reborn
-int rebornPosition;
-int leaveMap;
-int leavePosition;
-#endif
-
-boolean secretExit;
 filename_t saveName;
-
-#if __JHEXEN__ || __JSTRIFE__
-int mapHub = 0;
-#endif
-
-// vars used with game status cvars
-int gsvInMap = 0;
-int gsvCurrentMusic = 0;
-int gsvMapMusic = -1;
-
-int gsvArmor = 0;
-int gsvHealth = 0;
-
-#if !__JHEXEN__
-int gsvKills = 0;
-int gsvItems = 0;
-int gsvSecrets = 0;
-#endif
-
-int gsvCurrentWeapon;
-int gsvWeapons[NUM_WEAPON_TYPES];
-int gsvKeys[NUM_KEY_TYPES];
-int gsvAmmo[NUM_AMMO_TYPES];
-
-char *gsvMapName = NOTAMAPNAME;
-
-#if __JHERETIC__ || __JHEXEN__ || __JDOOM64__
-int gsvInvItems[NUM_INVENTORYITEM_TYPES];
-#endif
-
-#if __JHEXEN__
-int gsvWPieces[4];
-#endif
 
 static gamestate_t gameState = GS_DEMOSCREEN;
 
 cvar_t gamestatusCVars[] = {
    {"game-state", READONLYCVAR, CVT_INT, &gameState, 0, 0},
-   {"game-state-map", READONLYCVAR, CVT_INT, &gsvInMap, 0, 0},
    {"game-paused", READONLYCVAR, CVT_INT, &paused, 0, 0},
    {"game-skill", READONLYCVAR, CVT_INT, &gameSkill, 0, 0},
-
-   {"map-id", READONLYCVAR, CVT_INT, &gameMap, 0, 0},
-   {"map-name", READONLYCVAR, CVT_CHARPTR, &gsvMapName, 0, 0},
-   {"map-episode", READONLYCVAR, CVT_INT, &gameEpisode, 0, 0},
-#if __JDOOM__
-   {"map-mission", READONLYCVAR, CVT_INT, &gameMission, 0, 0},
-#endif
-#if __JHEXEN__ || __JSTRIFE__
-   {"map-hub", READONLYCVAR, CVT_INT, &mapHub, 0, 0},
-#endif
-   {"game-music", READONLYCVAR, CVT_INT, &gsvCurrentMusic, 0, 0},
-   {"map-music", READONLYCVAR, CVT_INT, &gsvMapMusic, 0, 0},
-#if !__JHEXEN__
-   {"game-stats-kills", READONLYCVAR, CVT_INT, &gsvKills, 0, 0},
-   {"game-stats-items", READONLYCVAR, CVT_INT, &gsvItems, 0, 0},
-   {"game-stats-secrets", READONLYCVAR, CVT_INT, &gsvSecrets, 0, 0},
-#endif
-
-   {"player-health", READONLYCVAR, CVT_INT, &gsvHealth, 0, 0},
-   {"player-armor", READONLYCVAR, CVT_INT, &gsvArmor, 0, 0},
-   {"player-weapon-current", READONLYCVAR, CVT_INT, &gsvCurrentWeapon, 0, 0},
-
-#if __JDOOM__ || __JDOOM64__
-   // Ammo
-   {"player-ammo-bullets", READONLYCVAR, CVT_INT, &gsvAmmo[AT_CLIP], 0, 0},
-   {"player-ammo-shells", READONLYCVAR, CVT_INT, &gsvAmmo[AT_SHELL], 0, 0},
-   {"player-ammo-cells", READONLYCVAR, CVT_INT, &gsvAmmo[AT_CELL], 0, 0},
-   {"player-ammo-missiles", READONLYCVAR, CVT_INT, &gsvAmmo[AT_MISSILE], 0, 0},
-   // Weapons
-   {"player-weapon-fist", READONLYCVAR, CVT_INT, &gsvWeapons[WT_FIRST], 0, 0},
-   {"player-weapon-pistol", READONLYCVAR, CVT_INT, &gsvWeapons[WT_SECOND], 0, 0},
-   {"player-weapon-shotgun", READONLYCVAR, CVT_INT, &gsvWeapons[WT_THIRD], 0, 0},
-   {"player-weapon-chaingun", READONLYCVAR, CVT_INT, &gsvWeapons[WT_FOURTH], 0, 0},
-   {"player-weapon-mlauncher", READONLYCVAR, CVT_INT, &gsvWeapons[WT_FIFTH], 0, 0},
-   {"player-weapon-plasmarifle", READONLYCVAR, CVT_INT, &gsvWeapons[WT_SIXTH], 0, 0},
-   {"player-weapon-bfg", READONLYCVAR, CVT_INT, &gsvWeapons[WT_SEVENTH], 0, 0},
-   {"player-weapon-chainsaw", READONLYCVAR, CVT_INT, &gsvWeapons[WT_EIGHTH], 0, 0},
-   {"player-weapon-sshotgun", READONLYCVAR, CVT_INT, &gsvWeapons[WT_NINETH], 0, 0},
-   // Keys
-   {"player-key-blue", READONLYCVAR, CVT_INT, &gsvKeys[KT_BLUECARD], 0, 0},
-   {"player-key-yellow", READONLYCVAR, CVT_INT, &gsvKeys[KT_YELLOWCARD], 0, 0},
-   {"player-key-red", READONLYCVAR, CVT_INT, &gsvKeys[KT_REDCARD], 0, 0},
-   {"player-key-blueskull", READONLYCVAR, CVT_INT, &gsvKeys[KT_BLUESKULL], 0, 0},
-   {"player-key-yellowskull", READONLYCVAR, CVT_INT, &gsvKeys[KT_YELLOWSKULL], 0, 0},
-   {"player-key-redskull", READONLYCVAR, CVT_INT, &gsvKeys[KT_REDSKULL], 0, 0},
-#elif __JHERETIC__
-   // Ammo
-   {"player-ammo-goldwand", READONLYCVAR, CVT_INT, &gsvAmmo[AT_CRYSTAL], 0, 0},
-   {"player-ammo-crossbow", READONLYCVAR, CVT_INT, &gsvAmmo[AT_ARROW], 0, 0},
-   {"player-ammo-dragonclaw", READONLYCVAR, CVT_INT, &gsvAmmo[AT_ORB], 0, 0},
-   {"player-ammo-hellstaff", READONLYCVAR, CVT_INT, &gsvAmmo[AT_RUNE], 0, 0},
-   {"player-ammo-phoenixrod", READONLYCVAR, CVT_INT, &gsvAmmo[AT_FIREORB], 0, 0},
-   {"player-ammo-mace", READONLYCVAR, CVT_INT, &gsvAmmo[AT_MSPHERE], 0, 0},
-    // Weapons
-   {"player-weapon-staff", READONLYCVAR, CVT_INT, &gsvWeapons[WT_FIRST], 0, 0},
-   {"player-weapon-goldwand", READONLYCVAR, CVT_INT, &gsvWeapons[WT_SECOND], 0, 0},
-   {"player-weapon-crossbow", READONLYCVAR, CVT_INT, &gsvWeapons[WT_THIRD], 0, 0},
-   {"player-weapon-dragonclaw", READONLYCVAR, CVT_INT, &gsvWeapons[WT_FOURTH], 0, 0},
-   {"player-weapon-hellstaff", READONLYCVAR, CVT_INT, &gsvWeapons[WT_FIFTH], 0, 0},
-   {"player-weapon-phoenixrod", READONLYCVAR, CVT_INT, &gsvWeapons[WT_SIXTH], 0, 0},
-   {"player-weapon-mace", READONLYCVAR, CVT_INT, &gsvWeapons[WT_SEVENTH], 0, 0},
-   {"player-weapon-gauntlets", READONLYCVAR, CVT_INT, &gsvWeapons[WT_EIGHTH], 0, 0},
-   // Keys
-   {"player-key-yellow", READONLYCVAR, CVT_INT, &gsvKeys[KT_YELLOW], 0, 0},
-   {"player-key-green", READONLYCVAR, CVT_INT, &gsvKeys[KT_GREEN], 0, 0},
-   {"player-key-blue", READONLYCVAR, CVT_INT, &gsvKeys[KT_BLUE], 0, 0},
-   // Inventory items
-   {"player-artifact-ring", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_INVULNERABILITY], 0, 0},
-   {"player-artifact-shadowsphere", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_INVISIBILITY], 0, 0},
-   {"player-artifact-crystalvial", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_HEALTH], 0, 0},
-   {"player-artifact-mysticurn", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_SUPERHEALTH], 0, 0},
-   {"player-artifact-tomeofpower", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_TOMBOFPOWER], 0, 0},
-   {"player-artifact-torch", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_TORCH], 0, 0},
-   {"player-artifact-firebomb", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_FIREBOMB], 0, 0},
-   {"player-artifact-egg", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_EGG], 0, 0},
-   {"player-artifact-wings", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_FLY], 0, 0},
-   {"player-artifact-chaosdevice", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_TELEPORT], 0, 0},
-#elif __JHEXEN__
-   // Mana
-   {"player-mana-blue", READONLYCVAR, CVT_INT, &gsvAmmo[AT_BLUEMANA], 0, 0},
-   {"player-mana-green", READONLYCVAR, CVT_INT, &gsvAmmo[AT_GREENMANA], 0, 0},
-   // Keys
-   {"player-key-steel", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEY1], 0, 0},
-   {"player-key-cave", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEY2], 0, 0},
-   {"player-key-axe", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEY3], 0, 0},
-   {"player-key-fire", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEY4], 0, 0},
-   {"player-key-emerald", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEY5], 0, 0},
-   {"player-key-dungeon", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEY6], 0, 0},
-   {"player-key-silver", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEY7], 0, 0},
-   {"player-key-rusted", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEY8], 0, 0},
-   {"player-key-horn", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEY9], 0, 0},
-   {"player-key-swamp", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEYA], 0, 0},
-   {"player-key-castle", READONLYCVAR, CVT_INT, &gsvKeys[KT_KEYB], 0, 0},
-   // Weapons
-   {"player-weapon-first", READONLYCVAR, CVT_INT, &gsvWeapons[WT_FIRST], 0, 0},
-   {"player-weapon-second", READONLYCVAR, CVT_INT, &gsvWeapons[WT_SECOND], 0, 0},
-   {"player-weapon-third", READONLYCVAR, CVT_INT, &gsvWeapons[WT_THIRD], 0, 0},
-   {"player-weapon-fourth", READONLYCVAR, CVT_INT, &gsvWeapons[WT_FOURTH], 0, 0},
-   // Weapon Pieces
-   {"player-weapon-piece1", READONLYCVAR, CVT_INT, &gsvWPieces[0], 0, 0},
-   {"player-weapon-piece2", READONLYCVAR, CVT_INT, &gsvWPieces[1], 0, 0},
-   {"player-weapon-piece3", READONLYCVAR, CVT_INT, &gsvWPieces[2], 0, 0},
-   {"player-weapon-allpieces", READONLYCVAR, CVT_INT, &gsvWPieces[3], 0, 0},
-   // Inventory items
-   {"player-artifact-defender", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_INVULNERABILITY], 0, 0},
-   {"player-artifact-quartzflask", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_HEALTH], 0, 0},
-   {"player-artifact-mysticurn", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_SUPERHEALTH], 0, 0},
-   {"player-artifact-mysticambit", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_HEALINGRADIUS], 0, 0},
-   {"player-artifact-darkservant", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_SUMMON], 0, 0},
-   {"player-artifact-torch", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_TORCH], 0, 0},
-   {"player-artifact-porkalator", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_EGG], 0, 0},
-   {"player-artifact-wings", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_FLY], 0, 0},
-   {"player-artifact-repulsion", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_BLASTRADIUS], 0, 0},
-   {"player-artifact-flechette", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_POISONBAG], 0, 0},
-   {"player-artifact-banishment", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_TELEPORTOTHER], 0, 0},
-   {"player-artifact-speed", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_SPEED], 0, 0},
-   {"player-artifact-might", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_BOOSTMANA], 0, 0},
-   {"player-artifact-bracers", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_BOOSTARMOR], 0, 0},
-   {"player-artifact-chaosdevice", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_TELEPORT], 0, 0},
-   {"player-artifact-skull", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZSKULL], 0, 0},
-   {"player-artifact-heart", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEMBIG], 0, 0},
-   {"player-artifact-ruby", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEMRED], 0, 0},
-   {"player-artifact-emerald1", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEMGREEN1], 0, 0},
-   {"player-artifact-emerald2", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEMGREEN2], 0, 0},
-   {"player-artifact-sapphire1", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEMBLUE1], 0, 0},
-   {"player-artifact-sapphire2", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEMBLUE2], 0, 0},
-   {"player-artifact-daemoncodex", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZBOOK1], 0, 0},
-   {"player-artifact-liberoscura", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZBOOK2], 0, 0},
-   {"player-artifact-flamemask", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZSKULL2], 0, 0},
-   {"player-artifact-glaiveseal", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZFWEAPON], 0, 0},
-   {"player-artifact-holyrelic", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZCWEAPON], 0, 0},
-   {"player-artifact-sigilmagus", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZMWEAPON], 0, 0},
-   {"player-artifact-gear1", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEAR1], 0, 0},
-   {"player-artifact-gear2", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEAR2], 0, 0},
-   {"player-artifact-gear3", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEAR3], 0, 0},
-   {"player-artifact-gear4", READONLYCVAR, CVT_INT, &gsvInvItems[IIT_PUZZGEAR4], 0, 0},
-#endif
    {NULL}
 };
 
-ccmd_t  gameCmds[] = {
+ccmd_t gameCmds[] = {
     { "listmaps",    "",     CCmdListMaps },
     { NULL }
 };
@@ -399,17 +201,19 @@ static skillmode_t dSkill;
 static int dEpisode;
 static int dMap;
 
-#if __JHEXEN__ || __JSTRIFE__
+#if __JHEXEN__
 static int gameLoadSlot;
 #endif
 
 static gameaction_t gameAction;
 
+static gamemap_t* theMap = NULL; // temp.
+
 // CODE --------------------------------------------------------------------
 
 void G_Register(void)
 {
-    int                 i;
+    int i;
 
     for(i = 0; gamestatusCVars[i].name; ++i)
         Con_AddVariable(gamestatusCVars + i);
@@ -435,16 +239,13 @@ gameaction_t G_GetGameAction(void)
  */
 void G_CommonPreInit(void)
 {
-    int                 i;
-    filename_t          file;
+    filename_t file;
+    int i;
 
     // Make sure game.dll isn't newer than Doomsday...
     if(gi.version < DOOMSDAY_VERSION)
         Con_Error(GAME_NICENAME " requires at least Doomsday " DOOMSDAY_VERSION_TEXT
                   "!\n");
-#ifdef TIC_DEBUG
-    rndDebugfile = fopen("rndtrace.txt", "wt");
-#endif
 
     verbose = ArgExists("-verbose");
 
@@ -462,8 +263,6 @@ void G_CommonPreInit(void)
     DD_SetDefsFile(file);
 
     R_SetDataPath( DATAPATH );
-
-    Con_SetString("map-name", NOTAMAPNAME, 1);
 
     G_RegisterBindClasses();
     G_RegisterPlayerControls();
@@ -489,7 +288,7 @@ void G_CommonPreInit(void)
 
 #if __JHEXEN__
 /**
- * \todo all this swapping colors around is rather silly, why not simply
+ * @todo all this swapping colors around is rather silly, why not simply
  * reorder the translation tables at load time?
  */
 void R_GetTranslation(int plrClass, int plrColor, int* tclass, int* tmap)
@@ -551,11 +350,10 @@ void R_LoadColorPalettes(void)
 #define PALENTRIES          (256)
 #define PALID               (0)
 
-    lumpnum_t           lump = W_GetNumForName(PALLUMPNAME);
-    byte                data[PALENTRIES*3];
+    lumpnum_t lump = W_GetNumForName(PALLUMPNAME);
+    byte data[PALENTRIES*3];
 
-    W_ReadLumpSection(lump, data, 0 + PALID * (PALENTRIES * 3),
-                      PALENTRIES * 3);
+    W_ReadLumpSection(lump, data, 0 + PALID * (PALENTRIES * 3), PALENTRIES * 3);
 
     R_CreateColorPalette("R8G8B8", PALLUMPNAME, data, PALENTRIES);
 
@@ -563,14 +361,13 @@ void R_LoadColorPalettes(void)
      * Create the translation tables to map the green color ramp to gray,
      * brown, red.
      *
-     * \note Assumes a given structure of the PLAYPAL. Could be read from a
+     * @note Assumes a given structure of the PLAYPAL. Could be read from a
      * lump instead?
      */
 #if __JDOOM__ || __JDOOM64__
     {
-    byte               *translationtables = (byte *)
-                    DD_GetVariable(DD_TRANSLATIONTABLES_ADDRESS);
-    int                 i;
+    byte* translationtables = (byte*) DD_GetVariable(DD_TRANSLATIONTABLES_ADDRESS);
+    int i;
 
     // Translate just the 16 green colors.
     for(i = 0; i < 256; ++i)
@@ -592,9 +389,8 @@ void R_LoadColorPalettes(void)
     }
 #elif __JHERETIC__
     {
-    int                 i;
-    byte*               translationtables =
-        (byte*) DD_GetVariable(DD_TRANSLATIONTABLES_ADDRESS);
+    byte* translationtables = (byte*) DD_GetVariable(DD_TRANSLATIONTABLES_ADDRESS);
+    int i;
 
     // Fill out the translation tables.
     for(i = 0; i < 256; ++i)
@@ -614,14 +410,13 @@ void R_LoadColorPalettes(void)
     }
 #else // __JHEXEN__
     {
-    int                 i;
-    byte*               translationtables =
-        (byte*) DD_GetVariable(DD_TRANSLATIONTABLES_ADDRESS);
+    byte* translationtables = (byte*) DD_GetVariable(DD_TRANSLATIONTABLES_ADDRESS);
+    int i;
 
     for(i = 0; i < 3 * 7; ++i)
     {
-        char                name[9];
-        lumpnum_t           lump;
+        char name[9];
+        lumpnum_t lump;
 
         dd_snprintf(name, 9, "TRANTBL%X", i);
 
@@ -700,10 +495,6 @@ void G_CommonPostInit(void)
 
     Con_Message("AM_Init: Init automap.\n");
     AM_Init();
-
-    // Create the various line lists (spechits, anims, buttons etc).
-    spechit = P_CreateIterList();
-    linespecials = P_CreateIterList();
 }
 
 /**
@@ -732,7 +523,7 @@ static const char* getGameStateStr(gamestate_t state)
         {GS_INFINE, "GS_INFINE"},
         {-1, NULL}
     };
-    uint                i;
+    uint i;
 
     for(i = 0; stateNames[i].name; ++i)
         if(stateNames[i].state == state)
@@ -741,6 +532,11 @@ static const char* getGameStateStr(gamestate_t state)
     return NULL;
 }
 #endif
+
+gamemap_t* P_CurrentGameMap(void)
+{
+    return theMap;
+}
 
 /**
  * Called when the gameui binding context is active. Triggers the menu.
@@ -841,21 +637,24 @@ void G_StartTitle(void)
 
 void G_DoLoadMap(void)
 {
-    int                 i;
-    char               *lname, *ptr;
-
-#if __JHEXEN__ || __JSTRIFE__
+#if __JHEXEN__
     static int firstFragReset = 1;
 #endif
 
-    mapStartTic = (int) GAMETIC; // Fr time calculation.
+    gamemap_t* map = NULL;
+    char mapID[9];
+    int i;
 
     // If we're the server, let clients know the map will change.
     NetSv_SendGameState(GSF_CHANGE_MAP, DDSP_ALL_PLAYERS);
 
+#if __JHEXEN__
+    SN_StopAllSequences();
+#endif
+
     for(i = 0; i < MAXPLAYERS; ++i)
     {
-        player_t           *plr = &players[i];
+        player_t* plr = &players[i];
 
         if(plr->plr->inGame && plr->playerState == PST_DEAD)
             plr->playerState = PST_REBORN;
@@ -870,20 +669,20 @@ void G_DoLoadMap(void)
 #else
         memset(plr->frags, 0, sizeof(plr->frags));
 #endif
-    }
-
-#if __JHEXEN__ || __JSTRIFE__
-    SN_StopAllSequences();
-#endif
-
-    // Set all player mobjs to NULL, clear control state toggles etc.
-    for(i = 0; i < MAXPLAYERS; ++i)
-    {
-        players[i].plr->mo = NULL;
+        // Set all player mobjs to NULL, clear control state toggles etc.
+        plr->plr->mo = NULL;
         G_ResetLookOffset(i);
     }
 
-    P_SetupMap(gameEpisode, gameMap, 0, gameSkill);
+    if(theMap)
+        P_DestroyGameMap(theMap);
+    theMap = NULL;
+
+    P_GetMapLumpName(mapID, gameEpisode, gameMap);
+    map = theMap = P_CreateGameMap(mapID, gameEpisode, gameMap);
+
+    P_SetupMap(map, gameSkill);
+
     Set(DD_DISPLAYPLAYER, CONSOLEPLAYER); // View the guy you are playing.
     G_SetGameAction(GA_NONE);
 
@@ -894,36 +693,6 @@ void G_DoLoadMap(void)
     sendPause = paused = false;
 
     G_ControlReset(-1); // Clear all controls for all local players.
-
-    // Set the game status cvar for map name.
-    lname = (char *) DD_GetVariable(DD_MAP_NAME);
-    if(lname)
-    {
-        ptr = strchr(lname, ':'); // Skip the E#M# or Map #.
-        if(ptr)
-        {
-            lname = ptr + 1;
-            while(*lname && isspace(*lname))
-                lname++;
-        }
-    }
-
-#if __JHEXEN__
-    // In jHexen we can look in the MAPINFO for the map name
-    if(!lname)
-        lname = P_GetMapName(gameMap);
-#endif
-
-    // Set the map name
-    // If still no name, call it unnamed.
-    if(!lname)
-    {
-        Con_SetString("map-name", UNNAMEDMAP, 1);
-    }
-    else
-    {
-        Con_SetString("map-name", lname, 1);
-    }
 
     // Start a briefing, if there is one.
     if(!FI_Briefing(gameEpisode, gameMap))
@@ -973,86 +742,16 @@ boolean G_Responder(event_t *ev)
 }
 
 /**
- * Updates the game status cvars based on game and player data.
- * Called each tick by G_Ticker().
- */
-void G_UpdateGSVarsForPlayer(player_t* pl)
-{
-    int                 i, plrnum;
-    gamestate_t         gameState;
-
-    if(!pl)
-        return;
-
-    plrnum = pl - players;
-    gameState = G_GetGameState();
-
-    gsvHealth = pl->health;
-#if !__JHEXEN__
-    // Map stats
-    gsvKills = pl->killCount;
-    gsvItems = pl->itemCount;
-    gsvSecrets = pl->secretCount;
-#endif
-        // armor
-#if __JHEXEN__
-    gsvArmor = FixedDiv(PCLASS_INFO(pl->class)->autoArmorSave +
-                        pl->armorPoints[ARMOR_ARMOR] +
-                        pl->armorPoints[ARMOR_SHIELD] +
-                        pl->armorPoints[ARMOR_HELMET] +
-                        pl->armorPoints[ARMOR_AMULET], 5 * FRACUNIT) >> FRACBITS;
-#else
-    gsvArmor = pl->armorPoints;
-#endif
-    // Owned keys
-    for(i = 0; i < NUM_KEY_TYPES; ++i)
-#if __JHEXEN__
-        gsvKeys[i] = (pl->keys & (1 << i))? 1 : 0;
-#else
-        gsvKeys[i] = pl->keys[i];
-#endif
-    // current weapon
-    gsvCurrentWeapon = pl->readyWeapon;
-
-    // owned weapons
-    for(i = 0; i < NUM_WEAPON_TYPES; ++i)
-        gsvWeapons[i] = pl->weapons[i].owned;
-
-#if __JHEXEN__
-    // weapon pieces
-    gsvWPieces[0] = (pl->pieces & WPIECE1)? 1 : 0;
-    gsvWPieces[1] = (pl->pieces & WPIECE2)? 1 : 0;
-    gsvWPieces[2] = (pl->pieces & WPIECE3)? 1 : 0;
-    gsvWPieces[3] = (pl->pieces == 7)? 1 : 0;
-#endif
-    // Current ammo amounts.
-    for(i = 0; i < NUM_AMMO_TYPES; ++i)
-        gsvAmmo[i] = pl->ammo[i].owned;
-
-#if __JHERETIC__ || __JHEXEN__ || __JDOOM64__
-    // Inventory items.
-    for(i = 0; i < NUM_INVENTORYITEM_TYPES; ++i)
-    {
-        if(pl->plr->inGame && gameState == GS_MAP)
-            gsvInvItems[i] = P_InventoryCount(plrnum, IIT_FIRST + i);
-        else
-            gsvInvItems[i] = 0;
-    }
-#endif
-}
-
-/**
  * The core of the timing loop. Game state, game actions etc occur here.
  *
  * @param ticLength     How long this tick is, in seconds.
  */
 void G_Ticker(timespan_t ticLength)
 {
-    static gamestate_t  oldGameState = -1;
-    static trigger_t    fixed = {1.0 / TICSPERSEC};
+    static trigger_t fixed = {1.0 / TICSPERSEC};
 
-    int                 i;
-    gameaction_t        currentAction;
+    gameaction_t currentAction;
+    int i;
 
     // Always tic:
     Hu_FogEffectTicker(ticLength);
@@ -1065,7 +764,7 @@ void G_Ticker(timespan_t ticLength)
     // Do player reborns if needed.
     for(i = 0; i < MAXPLAYERS; ++i)
     {
-        player_t       *plr = &players[i];
+        player_t* plr = &players[i];
 
         if(plr->plr->inGame && plr->playerState == PST_REBORN &&
            !P_MobjIsCamera(plr->plr->mo))
@@ -1079,7 +778,8 @@ void G_Ticker(timespan_t ticLength)
             {
                 if(!IS_CLIENT)
                 {
-                    P_SpawnTeleFog(plr->plr->mo->pos[VX],
+                    gamemap_t* map = P_CurrentGameMap();
+                    P_SpawnTeleFog(map, plr->plr->mo->pos[VX],
                                    plr->plr->mo->pos[VY],
                                    plr->plr->mo->angle + ANG180);
                 }
@@ -1176,10 +876,6 @@ Con_Message("G_Ticker: Removing player %i's mobj.\n", i);
         switch(G_GetGameState())
         {
         case GS_MAP:
-            // Update in-map game status cvar.
-            if(oldGameState != GS_MAP)
-                gsvInMap = 1;
-
             P_DoTick();
             HU_UpdatePsprites();
 
@@ -1204,18 +900,8 @@ Con_Message("G_Ticker: Removing player %i's mobj.\n", i);
             break;
 
         default:
-            if(oldGameState != G_GetGameState())
-            {
-                // Update game status cvars.
-                gsvInMap = 0;
-                Con_SetString("map-name", NOTAMAPNAME, 1);
-                gsvMapMusic = -1;
-            }
             break;
         }
-
-        // Update the game status cvars for player data.
-        G_UpdateGSVarsForPlayer(&players[CONSOLEPLAYER]);
 
         // Update view window size.
         R_ViewWindowTicker();
@@ -1227,8 +913,6 @@ Con_Message("G_Ticker: Removing player %i's mobj.\n", i);
         if(!IS_CLIENT)
             NetSv_Ticker();
     }
-
-    oldGameState = gameState;
 }
 
 /**
@@ -1249,8 +933,8 @@ void G_PlayerLeaveMap(int player)
     player_t* p = &players[player];
     boolean newCluster;
 
-#if __JHEXEN__ || __JSTRIFE__
-    newCluster = (P_GetMapCluster(gameMap) != P_GetMapCluster(leaveMap));
+#if __JHEXEN__
+    newCluster = (P_GetMapCluster(gameMap) != P_GetMapCluster(p->leaveMap));
 #else
     newCluster = true;
 #endif
@@ -1479,7 +1163,7 @@ void G_PlayerReborn(int player)
 #else
     p->readyWeapon = p->pendingWeapon = WT_FIRST;
     p->weapons[WT_FIRST].owned = true;
-    localQuakeHappening[player] = false;
+    p->viewShake = 0;
 #endif
 
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
@@ -1504,15 +1188,17 @@ void G_PlayerReborn(int player)
 #if __JDOOM__ || __JDOOM64__
 void G_QueueBody(mobj_t* mo)
 {
-    if(!mo)
-        return;
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
 
     // Flush an old corpse if needed.
-    if(bodyQueueSlot >= BODYQUEUESIZE)
-        P_MobjRemove(bodyQueue[bodyQueueSlot % BODYQUEUESIZE], false);
+    if(map->bodyQueueSlot >= BODYQUEUESIZE)
+        P_MobjRemove(map->bodyQueue[map->bodyQueueSlot % BODYQUEUESIZE], false);
 
-    bodyQueue[bodyQueueSlot % BODYQUEUESIZE] = mo;
-    bodyQueueSlot++;
+    map->bodyQueue[map->bodyQueueSlot % BODYQUEUESIZE] = mo;
+    map->bodyQueueSlot++;
+    }
 }
 #endif
 
@@ -1552,15 +1238,20 @@ void G_DoReborn(int plrNum)
 #if __JHEXEN__
 void G_StartNewInit(void)
 {
+    int i;
+
     SV_HxInitBaseSlot();
     SV_HxClearRebornSlot();
 
-# if __JHEXEN__
-    P_ACSInitNewGame();
-# endif
+    if(ActionScriptInterpreter)
+        P_DestroyActionScriptInterpreter(ActionScriptInterpreter);
 
     // Default the player start spot group to 0
-    rebornPosition = 0;
+    for(i = 0; i < MAXPLAYERS; ++i)
+    {
+        player_t* plr = &players[i];
+        plr->rebornPosition = 0;
+    }
 }
 
 void G_StartNewGame(skillmode_t skill)
@@ -1568,11 +1259,9 @@ void G_StartNewGame(skillmode_t skill)
     int realMap = 1;
 
     G_StartNewInit();
-#   if __JHEXEN__
+# if __JHEXEN__
     realMap = P_TranslateMap(1);
-#   elif __JSTRIFE__
-    realMap = 1;
-#   endif
+# endif
 
     if(realMap == -1)
     {
@@ -1584,6 +1273,8 @@ void G_StartNewGame(skillmode_t skill)
 
 void G_DoTeleportNewMap(void)
 {
+    player_t* plr = &players[CONSOLEPLAYER]; // @fixme This is not right.
+
     // Clients trust the server in these things.
     if(IS_CLIENT)
     {
@@ -1591,10 +1282,10 @@ void G_DoTeleportNewMap(void)
         return;
     }
 
-    SV_MapTeleport(leaveMap, leavePosition);
+    SV_MapTeleport(plr->leaveMap, plr->leavePosition);
     G_ChangeGameState(GS_MAP);
     G_SetGameAction(GA_NONE);
-    rebornPosition = leavePosition;
+    plr->rebornPosition = plr->leavePosition;
 
     // Is there a briefing before this map?
     FI_Briefing(gameEpisode, gameMap);
@@ -1610,8 +1301,10 @@ void G_DoTeleportNewMap(void)
  * @param position      Position id (maps with multiple entry/exit points).
  * @param secret        @c true = if this is a secret exit point.
  */
-void G_LeaveMap(int map, int position, boolean secret)
+void G_LeaveMap(int player, int map, int position, boolean secret)
 {
+    assert(player >= 0 && player < MAXPLAYERS);
+
     if(cyclingMaps && mapCycleNoExit)
         return;
 
@@ -1625,15 +1318,15 @@ void G_LeaveMap(int map, int position, boolean secret)
 #endif
 
 #if __JHEXEN__
-    leaveMap = map;
-    leavePosition = position;
+    players[player].leaveMap = map;
+    players[player].leavePosition = position;
 #else
-    secretExit = secret;
+    players[player].secretExit = secret;
   #if __JDOOM__
       // If no Wolf3D maps, no secret exit!
       if(secret && (gameMode == commercial) &&
          W_CheckNumForName("map31") < 0)
-          secretExit = false;
+          players[player].secretExit = false;
   #endif
 #endif
 
@@ -1665,11 +1358,19 @@ boolean G_IfVictory(void)
         return true;
     }
 
-#elif __JHEXEN__ || __JSTRIFE__
-    if(leaveMap == -1 && leavePosition == -1)
+#elif __JHEXEN__
     {
-        G_SetGameAction(GA_VICTORY);
-        return true;
+    int i;
+    for(i = 0; i < MAXPLAYERS; ++i)
+    {
+        player_t* plr = &players[i];
+
+        if(plr->leaveMap == -1 && plr->leavePosition == -1)
+        {
+            G_SetGameAction(GA_VICTORY);
+            return true;
+        }
+    }
     }
 #endif
 
@@ -1706,11 +1407,11 @@ void G_DoCompleted(void)
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
     {
     ddmapinfo_t minfo;
-    char levid[8];
+    char mapID[8];
 
-    P_GetMapLumpName(gameEpisode, gameMap, levid);
+    P_GetMapLumpName(mapID, gameEpisode, gameMap);
 
-    if(Def_Get(DD_DEF_MAP_INFO, levid, &minfo) && (minfo.flags & MIF_NO_INTERMISSION))
+    if(Def_Get(DD_DEF_MAP_INFO, mapID, &minfo) && (minfo.flags & MIF_NO_INTERMISSION))
     {
         G_WorldDone();
         return;
@@ -1741,7 +1442,7 @@ void G_DoCompleted(void)
     wmInfo.last = gameMap - 1;
 
 # if __JDOOM64__
-    if(secretExit)
+    if(players[CONSOLEPLAYER].secretExit)
     {
         switch(gameMap)
         {
@@ -1771,7 +1472,7 @@ void G_DoCompleted(void)
     // wmInfo.next is 0 biased, unlike gameMap
     if(gameMode == commercial)
     {
-        if(secretExit)
+        if(players[CONSOLEPLAYER].secretExit)
         {
             switch(gameMap)
             {
@@ -1798,7 +1499,7 @@ void G_DoCompleted(void)
     }
     else
     {
-        if(secretExit)
+        if(players[CONSOLEPLAYER].secretExit)
             wmInfo.next = 8; // Go to secret map.
         else if(gameMap == 9)
         {
@@ -1823,7 +1524,7 @@ void G_DoCompleted(void)
             wmInfo.next = gameMap; // Go to next map.
     }
 # else /* __JHERETIC__ */
-    if(secretExit == true)
+    if(players[CONSOLEPLAYER].secretExit == true)
     {
         wmInfo.next = 9;
     }
@@ -1845,9 +1546,12 @@ void G_DoCompleted(void)
     }
 
 # if __JDOOM__ || __JDOOM64__
-    wmInfo.maxKills = totalKills;
-    wmInfo.maxItems = totalItems;
-    wmInfo.maxSecret = totalSecret;
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    wmInfo.maxKills = map->totalKills;
+    wmInfo.maxItems = map->totalItems;
+    wmInfo.maxSecret = map->totalSecret;
+    }
 
     G_PrepareWIData();
 # endif
@@ -1861,7 +1565,7 @@ void G_DoCompleted(void)
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
     NetSv_Intermission(IMF_BEGIN, 0, 0);
 #else /* __JHEXEN__ */
-    NetSv_Intermission(IMF_BEGIN, leaveMap, leavePosition);
+    NetSv_Intermission(IMF_BEGIN, players[CONSOLEPLAYER].leaveMap, players[CONSOLEPLAYER].leavePosition);
 #endif
 
     G_ChangeGameState(GS_INTERMISSION);
@@ -1878,20 +1582,20 @@ void G_DoCompleted(void)
 #if __JDOOM__ || __JDOOM64__
 void G_PrepareWIData(void)
 {
-    int             i;
-    ddmapinfo_t     minfo;
-    char            levid[8];
-    wbstartstruct_t *info = &wmInfo;
+    ddmapinfo_t minfo;
+    char mapID[8];
+    wbstartstruct_t* info = &wmInfo;
+    int i;
 
 #if !__JDOOM64__
     info->epsd = gameEpisode - 1;
 #endif
     info->maxFrags = 0;
 
-    P_GetMapLumpName(gameEpisode, gameMap, levid);
+    P_GetMapLumpName(mapID, gameEpisode, gameMap);
 
     // See if there is a par time definition.
-    if(Def_Get(DD_DEF_MAP_INFO, levid, &minfo) && minfo.parTime > 0)
+    if(Def_Get(DD_DEF_MAP_INFO, mapID, &minfo) && minfo.parTime > 0)
         info->parTime = 35 * (int) minfo.parTime;
     else
         info->parTime = -1; // Unknown.
@@ -1899,14 +1603,15 @@ void G_PrepareWIData(void)
     info->pNum = CONSOLEPLAYER;
     for(i = 0; i < MAXPLAYERS; ++i)
     {
-        player_t       *p = &players[i];
-        wbplayerstruct_t *pStats = &info->plyr[i];
+        player_t* p = &players[i];
+        gamemap_t* map = P_CurrentGameMap();
+        wbplayerstruct_t* pStats = &info->plyr[i];
 
         pStats->inGame = p->plr->inGame;
         pStats->kills = p->killCount;
         pStats->items = p->itemCount;
         pStats->secret = p->secretCount;
-        pStats->time = mapTime;
+        pStats->time = map->time;
         memcpy(pStats->frags, p->frags, sizeof(pStats->frags));
     }
 }
@@ -1919,8 +1624,8 @@ boolean G_DebriefingEnabled(void)
         return false;
 #if __JHEXEN__
     if(cfg.overrideHubMsg && G_GetGameState() == GS_MAP &&
-       !(leaveMap == -1 && leavePosition == -1) &&
-       P_GetMapCluster(gameMap) != P_GetMapCluster(leaveMap))
+       !(players[CONSOLEPLAYER].leaveMap == -1 && players[CONSOLEPLAYER].leavePosition == -1) &&
+       P_GetMapCluster(gameMap) != P_GetMapCluster(players[CONSOLEPLAYER].leaveMap))
         return false;
 #endif
     if(G_GetGameState() == GS_INFINE || IS_CLIENT || Get(DD_PLAYBACK))
@@ -1932,7 +1637,7 @@ boolean G_DebriefingEnabled(void)
 void G_WorldDone(void)
 {
 #if __JDOOM__ || __JDOOM64__
-    if(secretExit)
+    if(players[CONSOLEPLAYER].secretExit)
         players[CONSOLEPLAYER].didSecret = true;
 #endif
 
@@ -2242,7 +1947,7 @@ int G_GetMapNumber(int episode, int map)
 /**
  * Compose the name of the map lump identifier.
  */
-void P_GetMapLumpName(int episode, int map, char *lumpName)
+void P_GetMapLumpName(char lumpName[9], int episode, int map)
 {
 #if __JDOOM64__
     sprintf(lumpName, "MAP%02i", map);
@@ -2263,19 +1968,19 @@ void P_GetMapLumpName(int episode, int map, char *lumpName)
  */
 boolean P_MapExists(int episode, int map)
 {
-    char                buf[20];
+    char mapID[9];
 
-    P_GetMapLumpName(episode, map, buf);
-    return W_CheckNumForName(buf) >= 0;
+    P_GetMapLumpName(mapID, episode, map);
+    return W_CheckNumForName(mapID) >= 0;
 }
 
 /**
  * Returns true if the specified (episode, map) pair can be used.
  * Otherwise the values are adjusted so they are valid.
  */
-boolean G_ValidateMap(int *episode, int *map)
+boolean G_ValidateMap(int* episode, int* map)
 {
-    boolean             ok = true;
+    boolean ok = true;
 
     if(*episode < 1)
     {
@@ -2409,8 +2114,8 @@ boolean G_ValidateMap(int *episode, int *map)
 #if __JHERETIC__
 char* P_GetShortMapName(int episode, int map)
 {
-    char*               name = P_GetMapName(episode, map);
-    char*               ptr;
+    char* name = P_GetMapName(episode, map);
+    char* ptr;
 
     // Remove the "ExMx:" from the beginning.
     ptr = strchr(name, ':');
@@ -2426,14 +2131,14 @@ char* P_GetShortMapName(int episode, int map)
 
 char* P_GetMapName(int episode, int map)
 {
-    char                id[10], *ptr;
-    ddmapinfo_t         info;
+    char mapID[10], *ptr;
+    ddmapinfo_t info;
 
     // Compose the map identifier.
-    P_GetMapLumpName(episode, map, id);
+    P_GetMapLumpName(mapID, episode, map);
 
     // Get the map info definition.
-    if(!Def_Get(DD_DEF_MAP_INFO, id, &info))
+    if(!Def_Get(DD_DEF_MAP_INFO, mapID, &info))
     {
         // There is no map information for this map...
         return "";
@@ -2451,10 +2156,9 @@ char* P_GetMapName(int episode, int map)
  */
 void G_PrintFormattedMapList(int episode, const char** files, int count)
 {
-    const char*         current = NULL;
-    char                lump[20];
-    int                 i, k;
-    int                 rangeStart = 0, len;
+    const char* current = NULL;
+    char mapID[20];
+    int i, k, rangeStart = 0, len;
 
     for(i = 0; i < count; ++i)
     {
@@ -2472,16 +2176,16 @@ void G_PrintFormattedMapList(int episode, const char** files, int count)
             {
                 for(k = rangeStart + 1; k <= i; ++k)
                 {
-                    P_GetMapLumpName(episode, k, lump);
-                    Con_Printf("%s%s", lump, k != i ? "," : "");
+                    P_GetMapLumpName(mapID, episode, k);
+                    Con_Printf("%s%s", mapID, k != i ? "," : "");
                 }
             }
             else
             {
-                P_GetMapLumpName(episode, rangeStart + 1, lump);
-                Con_Printf("%s-", lump);
-                P_GetMapLumpName(episode, i, lump);
-                Con_Printf("%s", lump);
+                P_GetMapLumpName(mapID, episode, rangeStart + 1);
+                Con_Printf("%s-", mapID);
+                P_GetMapLumpName(mapID, episode, i);
+                Con_Printf("%s", mapID);
             }
             Con_Printf(": %s\n", M_PrettyPath(current));
 
@@ -2498,10 +2202,10 @@ void G_PrintFormattedMapList(int episode, const char** files, int count)
  */
 void G_PrintMapList(void)
 {
-    const char*         sourceList[100];
-    lumpnum_t           lump;
-    int                 episode, map, numEpisodes, maxMapsPerEpisode;
-    char                mapLump[20];
+    const char* sourceList[100];
+    lumpnum_t lump;
+    int episode, map, numEpisodes, maxMapsPerEpisode;
+    char mapID[20];
 
 #if __JDOOM__
     if(gameMode == registered)
@@ -2534,15 +2238,15 @@ void G_PrintMapList(void)
 
     for(episode = 1; episode <= numEpisodes; ++episode)
     {
-        memset((void *) sourceList, 0, sizeof(sourceList));
+        memset((void*) sourceList, 0, sizeof(sourceList));
 
         // Find the name of each map (not all may exist).
         for(map = 1; map <= maxMapsPerEpisode; ++map)
         {
-            P_GetMapLumpName(episode, map, mapLump);
+            P_GetMapLumpName(mapID, episode, map);
 
             // Does the lump exist?
-            if((lump = W_CheckNumForName(mapLump)) >= 0)
+            if((lump = W_CheckNumForName(mapID)) >= 0)
             {
                 // Get the name of the WAD.
                 sourceList[map - 1] = W_LumpSourceFile(lump);

@@ -38,8 +38,8 @@
 // TYPES -------------------------------------------------------------------
 
 typedef struct mobjtargetableparams_s {
-    mobj_t         *source;
-    mobj_t         *target;
+    mobj_t* source;
+    mobj_t* target;
 } mobjtargetableparams_t;
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -52,19 +52,13 @@ typedef struct mobjtargetableparams_s {
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-intercept_t intercepts[MAXINTERCEPTS], *intercept_p;
-
-divline_t trace;
-boolean earlyout;
-int     ptflags;
-
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
-boolean PIT_MobjTargetable(mobj_t *mo, void *data)
+boolean PIT_MobjTargetable(mobj_t* mo, void* data)
 {
-    mobjtargetableparams_t *params = (mobjtargetableparams_t*) data;
+    mobjtargetableparams_t* params = (mobjtargetableparams_t*) data;
 
     if(params->source->player)
     {   // Minotaur looking around player.
@@ -85,7 +79,7 @@ boolean PIT_MobjTargetable(mobj_t *mo, void *data)
     }
     else if(params->source->type == MT_MINOTAUR)
     {   // Looking around minotaur.
-        mobj_t             *master = params->source->tracer;
+        mobj_t* master = params->source->tracer;
 
         if((mo->flags & MF_COUNTKILL) ||
            (mo->player && (mo != master)))
@@ -115,14 +109,12 @@ boolean PIT_MobjTargetable(mobj_t *mo, void *data)
 
             if(P_CheckSight(params->source, mo))
             {
-                angle_t             angle;
-                mobj_t             *master;
+                angle_t angle;
+                mobj_t* master;
 
                 master = params->source->target;
-                angle =
-                    R_PointToAngle2(master->pos[VX], master->pos[VY],
-                                    mo->pos[VY], mo->pos[VY]) -
-                                    master->angle;
+                angle = R_PointToAngle2(master->pos[VX], master->pos[VY],
+                                        mo->pos[VY], mo->pos[VY]) - master->angle;
                 angle >>= 24;
                 if(angle > 226 || angle < 30)
                 {
@@ -159,15 +151,13 @@ boolean PIT_MobjTargetable(mobj_t *mo, void *data)
  *
  * @return              Ptr to the targeted mobj if found, ELSE @c NULL;
  */
-mobj_t* P_RoughMonsterSearch(mobj_t *mo, int distance)
+mobj_t* P_RoughMonsterSearch(mobj_t* mo, int distance)
 {
 #define MAPBLOCKUNITS       128
 #define MAPBLOCKSHIFT       (FRACBITS+7)
 
-    int             i, block[2], startBlock[2];
-    int             count;
-    float           mapOrigin[2];
-    float           box[4];
+    int i, count, block[2], startBlock[2];
+    float mapOrigin[2], box[4];
     mobjtargetableparams_t params;
 
     mapOrigin[VX] = *((float*) DD_GetVariable(DD_MAP_MIN_X));

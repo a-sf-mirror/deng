@@ -150,40 +150,40 @@ typedef struct {
 } xgplanemover_t;
 
 void            XS_Init(void);
-void            XS_Update(void);
+void            XS_Update(struct gamemap_s* map);
 
 void            XS_Thinker(xsthinker_t* xs);
 
-float           XS_Gravity(struct sector_s *sector);
-float           XS_Friction(struct sector_s *sector);
-float           XS_ThrustMul(struct sector_s *sector);
+float           XS_Gravity(sector_t* sector);
+float           XS_Friction(sector_t* sector);
+float           XS_ThrustMul(sector_t* sector);
 
-void            XS_InitMovePlane(struct linedef_s *line);
-int C_DECL      XSTrav_MovePlane(struct sector_s *sector, boolean ceiling,
+void            XS_InitMovePlane(linedef_t*line);
+int C_DECL      XSTrav_MovePlane(sector_t* sector, boolean ceiling,
                                  void *context, void *context2, struct mobj_s *activator);
-int C_DECL      XSTrav_SectorType(struct sector_s *sec, boolean ceiling,
+int C_DECL      XSTrav_SectorType(sector_t* sec, boolean ceiling,
                                   void *context, void *context2, struct mobj_s *activator);
-int C_DECL      XSTrav_SectorLight(struct sector_s *sector, boolean ceiling,
+int C_DECL      XSTrav_SectorLight(sector_t* sector, boolean ceiling,
                                    void *context, void *context2, struct mobj_s *activator);
-int C_DECL      XSTrav_PlaneMaterial(struct sector_s *sec, boolean ceiling,
+int C_DECL      XSTrav_PlaneMaterial(sector_t* sec, boolean ceiling,
                                      void *context, void *context2, struct mobj_s *activator);
-void            XS_InitStairBuilder(struct linedef_s *line);
-int C_DECL      XSTrav_BuildStairs(struct sector_s *sector, boolean ceiling,
+void            XS_InitStairBuilder(linedef_t*line);
+int C_DECL      XSTrav_BuildStairs(sector_t* sector, boolean ceiling,
                                    void *context, void *context2, struct mobj_s *activator);
-int C_DECL      XSTrav_SectorSound(struct sector_s *sec, boolean ceiling,
+int C_DECL      XSTrav_SectorSound(sector_t* sec, boolean ceiling,
                                    void *context, void *context2, struct mobj_s *activator);
-int C_DECL      XSTrav_MimicSector(struct sector_s *sector, boolean ceiling,
+int C_DECL      XSTrav_MimicSector(sector_t* sector, boolean ceiling,
                                    void *context, void *context2, struct mobj_s *activator);
-int C_DECL      XSTrav_Teleport(struct sector_s *sector, boolean ceiling,
+int C_DECL      XSTrav_Teleport(sector_t* sector, boolean ceiling,
                                    void *context, void *context2, struct mobj_s *activator);
-void            XS_SetSectorType(struct sector_s *sec, int special);
-void            XS_ChangePlaneMaterial(struct sector_s *sector, boolean ceiling,
+void            XS_SetSectorType(sector_t* sec, int special);
+void            XS_ChangePlaneMaterial(sector_t* sector, boolean ceiling,
                                        material_t* mat, float *rgb);
-xgplanemover_t *XS_GetPlaneMover(struct sector_s *sector, boolean ceiling);
+xgplanemover_t *XS_GetPlaneMover(sector_t* sector, boolean ceiling);
 void            XS_PlaneMover(xgplanemover_t *mover);  // A thinker for plane movers.
 
-void            SV_WriteXGSector(struct sector_s *sec);
-void            SV_ReadXGSector(struct sector_s *sec);
+void            SV_WriteXGSector(sector_t* sec);
+void            SV_ReadXGSector(sector_t* sec);
 void            SV_WriteXGPlaneMover(thinker_t *th);
 int             SV_ReadXGPlaneMover(xgplanemover_t* mov);
 

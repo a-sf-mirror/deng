@@ -640,8 +640,13 @@ typedef struct {
     for(i = 0; i < nb->_map->numLineDefs; ++i)
     {
         linedef_t* lineDef = nb->_map->lineDefs[i];
-        vertex_t* from = lineDef->buildData.v[0];
-        vertex_t* to = lineDef->buildData.v[1];
+        vertex_t* from, *to;
+
+        if(lineDef->inFlags & LF_POLYOBJ)
+            continue;
+
+        from = lineDef->buildData.v[0];
+        to = lineDef->buildData.v[1];
 
         setVertexLineOwner2(&vertexInfo[((mvertex_t*) from->data)->index - 1].lineOwners,
                             &vertexInfo[((mvertex_t*) from->data)->index - 1].numLineOwners,
@@ -667,13 +672,18 @@ typedef struct {
     for(i = 0; i < nb->_map->numLineDefs; ++i)
     {
         linedef_t* lineDef = nb->_map->lineDefs[i];
-        vertex_t* from = lineDef->buildData.v[0];
-        vertex_t* to = lineDef->buildData.v[1];
+        vertex_t* from, *to;
+
+        if(lineDef->inFlags & LF_POLYOBJ)
+            continue;
 
         if((lineDef->buildData.sideDefs[FRONT] && lineDef->buildData.sideDefs[BACK]) ||
            !lineDef->buildData.sideDefs[FRONT] /* ||
            lineDef->buildData.overlap*/)
             continue;
+
+        from = lineDef->buildData.v[0];
+        to = lineDef->buildData.v[1];
 
         oneSiders = twoSiders = 0;
         countVertexLineOwners(vertexInfo[((mvertex_t*) from->data)->index - 1].lineOwners,
@@ -707,9 +717,14 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
     for(i = 0; i < nb->_map->numLineDefs; ++i)
     {
         linedef_t* lineDef = nb->_map->lineDefs[i];
-        vertex_t* from = lineDef->buildData.v[0];
-        vertex_t* to = lineDef->buildData.v[1];
+        vertex_t* from, *to;
         hedge_t* back, *front;
+
+        if(lineDef->inFlags & LF_POLYOBJ)
+            continue;
+
+        from = lineDef->buildData.v[0];
+        to = lineDef->buildData.v[1];
 
         front = NodeBuilder_CreateHEdge(nb, lineDef, lineDef, from,
                                         lineDef->buildData.sideDefs[FRONT]->sector, false);

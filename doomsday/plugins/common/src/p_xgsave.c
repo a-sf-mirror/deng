@@ -27,7 +27,7 @@
  *
  * Implements: Saving and loading routines for the XG data.
  *
- * \bug Not 64bit clean: In function 'SV_ReadXGLine': cast to pointer from integer of different size
+ * @fixme Not 64bit clean: In function 'SV_ReadXGLine': cast to pointer from integer of different size
  */
 
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
@@ -66,13 +66,10 @@
 
 // CODE --------------------------------------------------------------------
 
-void SV_WriteXGLine(linedef_t *li)
+void SV_WriteXGLine(linedef_t* li)
 {
-    xgline_t *xg;
-    linetype_t *info;
-
-    xg = P_ToXLine(li)->xg;
-    info = &xg->info;
+    xgline_t* xg = P_ToXLine(li)->xg;
+    linetype_t* info = &xg->info;
 
     // Version byte.
     SV_WriteByte(1);
@@ -98,10 +95,10 @@ void SV_WriteXGLine(linedef_t *li)
     SV_WriteFloat(xg->chTimer);
 }
 
-void SV_ReadXGLine(linedef_t *li)
+void SV_ReadXGLine(linedef_t* li)
 {
-    xgline_t *xg;
-    xline_t *xline = P_ToXLine(li);
+    xlinedef_t* xline = P_ToXLine(li);
+    xgline_t* xg;
 
     // Read version.
     SV_ReadByte();
@@ -132,7 +129,7 @@ void SV_ReadXGLine(linedef_t *li)
 /**
  * The function must belong to the specified xgsector.
  */
-void SV_WriteXGFunction(xgsector_t *xg, function_t *fn)
+void SV_WriteXGFunction(xgsector_t* xg, function_t* fn)
 {
     // Version byte.
     SV_WriteByte(1);
@@ -146,7 +143,7 @@ void SV_WriteXGFunction(xgsector_t *xg, function_t *fn)
     SV_WriteFloat(fn->oldValue);
 }
 
-void SV_ReadXGFunction(xgsector_t *xg, function_t *fn)
+void SV_ReadXGFunction(xgsector_t* xg, function_t* fn)
 {
     // Version byte.
     SV_ReadByte();
@@ -160,12 +157,12 @@ void SV_ReadXGFunction(xgsector_t *xg, function_t *fn)
     fn->oldValue = SV_ReadFloat();
 }
 
-void SV_WriteXGSector(struct sector_s *sec)
+void SV_WriteXGSector(sector_t* sec)
 {
-    int         i;
-    xgsector_t *xg;
-    sectortype_t *info;
-    xsector_t  *xsec = P_ToXSector(sec);
+    xsector_t* xsec = P_ToXSector(sec);
+    sectortype_t* info;
+    xgsector_t* xg;
+    int i;
 
     xg = xsec->xg;
     info = &xg->info;
@@ -185,11 +182,11 @@ void SV_WriteXGSector(struct sector_s *sec)
     SV_WriteXGFunction(xg, &xg->light);
 }
 
-void SV_ReadXGSector(struct sector_s *sec)
+void SV_ReadXGSector(sector_t* sec)
 {
-    int         i;
-    xgsector_t *xg;
-    xsector_t  *xsec = P_ToXSector(sec);
+    xsector_t* xsec = P_ToXSector(sec);
+    xgsector_t* xg;
+    int i;
 
     // Version byte.
     SV_ReadByte();
@@ -208,10 +205,10 @@ void SV_ReadXGSector(struct sector_s *sec)
     SV_ReadXGFunction(xg, &xg->light);
 }
 
-void SV_WriteXGPlaneMover(thinker_t *th)
+void SV_WriteXGPlaneMover(thinker_t* th)
 {
-    uint        i;
-    xgplanemover_t *mov = (xgplanemover_t *) th;
+    xgplanemover_t* mov = (xgplanemover_t*) th;
+    uint i;
 
     SV_WriteByte(3); // Version.
 
@@ -245,8 +242,8 @@ void SV_WriteXGPlaneMover(thinker_t *th)
  */
 int SV_ReadXGPlaneMover(xgplanemover_t* mov)
 {
-    int                 i, num;
-    byte                ver;
+    int i, num;
+    byte ver;
 
     ver = SV_ReadByte(); // Version.
 

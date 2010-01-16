@@ -42,6 +42,7 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "hu_log.h"
 #include "hu_stuff.h"
@@ -593,14 +594,11 @@ void FI_Start(char *finalescript, infinemode_t mode)
     {
         // We are able to figure out the truth values of all the
         // conditions.
-        fi->conditions[FICOND_SECRET] = (secretExit != 0);
-
 #if __JHEXEN__
-        // Current hub has been completed?
-        fi->conditions[FICOND_LEAVEHUB] =
-            (P_GetMapCluster(gameMap) != P_GetMapCluster(leaveMap));
+        fi->conditions[FICOND_SECRET] = false;
+        fi->conditions[FICOND_LEAVEHUB] = (P_GetMapCluster(gameMap) != P_GetMapCluster(players[CONSOLEPLAYER].leaveMap));
 #else
-        // Only Hexen has hubs.
+        fi->conditions[FICOND_SECRET] = (players[CONSOLEPLAYER].secretExit != 0);
         fi->conditions[FICOND_LEAVEHUB] = false;
 #endif
     }
@@ -676,11 +674,13 @@ void FI_End(void)
         }
         else if(oldMode == FIMODE_BEFORE)
         {
+            gamemap_t* map = P_CurrentGameMap();
+
             // Enter the map, this was a briefing.
             G_ChangeGameState(GS_MAP);
             S_MapMusic();
-            mapStartTic = (int) GAMETIC;
-            mapTime = actualMapTime = 0;
+            map->startTic = (int) GAMETIC;
+            map->time = map->actualTime = 0;
         }
         else if(oldMode == FIMODE_LOCAL)
         {
@@ -738,8 +738,8 @@ DEFCC(CCmdStopInFine)
  */
 int FI_Briefing(int episode, int map)
 {
-    char                mid[20];
-    ddfinale_t          fin;
+    char mapID[9];
+    ddfinale_t fin;
 
     // If we're already in the INFINE state, don't start a finale.
     if(briefDisabled || G_GetGameState() == GS_INFINE || IS_CLIENT ||
@@ -747,9 +747,9 @@ int FI_Briefing(int episode, int map)
         return false;
 
     // Is there such a finale definition?
-    P_GetMapLumpName(episode, map, mid);
+    P_GetMapLumpName(mapID, episode, map);
 
-    if(!Def_Get(DD_DEF_FINALE_BEFORE, mid, &fin))
+    if(!Def_Get(DD_DEF_FINALE_BEFORE, mapID, &fin))
         return false;
 
     FI_Start(fin.script, FIMODE_BEFORE);
@@ -762,12 +762,12 @@ int FI_Briefing(int episode, int map)
  */
 int FI_Debriefing(int episode, int map)
 {
-    char mid[20];
+    char mapID[9];
     ddfinale_t fin;
 
     // Is there such a finale definition?
-    P_GetMapLumpName(episode, map, mid);
-    if(!Def_Get(DD_DEF_FINALE_AFTER, mid, &fin))
+    P_GetMapLumpName(mapID, episode, map);
+    if(!Def_Get(DD_DEF_FINALE_AFTER, mapID, &fin))
         return false;
 
     FI_Start(fin.script, FIMODE_AFTER);
@@ -778,7 +778,7 @@ void FI_DemoEnds(void)
 {
     if(fi && fi->suspended)
     {
-        int                 i;
+        int i;
 
         // Restore the InFine state.
         fi->suspended = false;

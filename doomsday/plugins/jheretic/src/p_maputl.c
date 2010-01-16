@@ -37,6 +37,7 @@
 #include "jheretic.h"
 
 #include "dmu_lib.h"
+#include "gamemap.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -54,8 +55,6 @@
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-extern mobj_t *tmThing;
-
 // CODE --------------------------------------------------------------------
 
 /**
@@ -71,13 +70,13 @@ extern mobj_t *tmThing;
  */
 static boolean PIT_ApplyTorque(linedef_t* ld, void* data)
 {
-    mobj_t*             mo = tmThing;
-    float               dist;
-    sector_t*           frontsec, *backsec;
-    float               ffloor, bfloor;
-    float               d1[2], vtx[2];
+    gamemap_t* map = P_CurrentGameMap();
+    mobj_t* mo = map->tmThing;
+    float dist;
+    sector_t* frontsec, *backsec;
+    float ffloor, bfloor, d1[2], vtx[2];
 
-    if(tmThing->player)
+    if(map->tmThing->player)
         return true; // Skip players!
 
     if(!(frontsec = DMU_GetPtrp(ld, DMU_FRONT_SECTOR)) ||
@@ -148,18 +147,20 @@ static boolean PIT_ApplyTorque(linedef_t* ld, void* data)
 
 /**
  * Applies "torque" to objects, based on all contacted linedefs.
- * \note $dropoff_fix
+ * @note $dropoff_fix
  */
-void P_ApplyTorque(mobj_t *mo)
+void P_ApplyTorque(mobj_t* mo)
 {
-    // Remember the current state, for gear-change.
-    int     flags = mo->intFlags;
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int flags = mo->intFlags; // Remember the current state, for gear-change.
 
     // Corpse sliding anomalies, made configurable.
     if(!cfg.slidingCorpses)
         return;
 
-    tmThing = mo;
+    map->tmThing = mo;
 
     // Use VALIDCOUNT to prevent checking the same line twice.
     VALIDCOUNT++;
@@ -186,4 +187,5 @@ void P_ApplyTorque(mobj_t *mo)
     else if(mo->gear < MAXGEAR)
         // Else if not at max gear, move up a gear.
         mo->gear++;
+    }
 }

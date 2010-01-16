@@ -97,7 +97,9 @@ typedef struct player_s {
     mobj_t*         attacker; // Who did damage (NULL for floors/ceilings).
     int             colorMap; // Player skin colorshift, 0-3 for which color to draw player.
     pspdef_t        pSprites[NUMPSPRITES]; // Overlay view sprites (gun, etc).
+
     boolean         didSecret; // True if secret level has been done.
+    boolean         secretExit;
 
     int             jumpTics; // The player can jump if this counter is zero.
     int             airCounter;

@@ -33,6 +33,7 @@
 #endif
 
 #include "p_mobj.h"
+#include "p_acs.h"
 
 extern int debugSound; // debug flag for displaying sound info
 
@@ -41,13 +42,6 @@ extern int gameMap;
 extern skillmode_t gameSkill;
 extern boolean deathmatch;
 extern boolean userGame;
-
-extern int rebornPosition;
-extern int leaveMap;
-extern int leavePosition;
-extern boolean secretExit;
-
-extern int gsvMapMusic;
 
 void            R_InitRefresh(void);
 void            R_GetTranslation(int plrClass, int plrColor, int* tclass,
@@ -58,5 +52,7 @@ void            G_PrintMapList(void);
 void            G_PlayerReborn(int player);
 void            G_SaveGame(int slot, const char* description);
 
-void            P_GetMapLumpName(int episode, int map, char* lumpName);
+void            P_GetMapLumpName(char lumpName[9], int episode, int map);
+
+struct gamemap_s* P_CurrentGameMap(void);
 #endif

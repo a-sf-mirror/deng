@@ -135,6 +135,7 @@ typedef struct player_s {
 
     // True if secret level has been done.
     boolean         didSecret;
+    boolean         secretExit;
 
     int             jumpTics; // The player can jump if this counter is zero.
     int             airCounter;

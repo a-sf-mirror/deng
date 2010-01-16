@@ -844,6 +844,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\plugins\common\include\gamemap.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\plugins\common\include\hu_inventory.h"
 				>
 			</File>
@@ -1037,6 +1041,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\common\src\g_update.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\plugins\common\src\gamemap.c"
 				>
 			</File>
 			<File
@@ -1337,14 +1345,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\jheretic\include\p_telept.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\plugins\jheretic\include\r_data.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\plugins\jheretic\include\r_defs.h"
 				>
 			</File>
 			<File

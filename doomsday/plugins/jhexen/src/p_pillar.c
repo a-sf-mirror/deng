@@ -31,8 +31,10 @@
 
 #include "jhexen.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapspec.h"
+#include "p_mapsetup.h"
 #include "p_iterlist.h"
 
 // MACROS ------------------------------------------------------------------
@@ -53,35 +55,41 @@
 
 // CODE --------------------------------------------------------------------
 
-void T_BuildPillar(pillar_t *pillar)
+void T_BuildPillar(pillar_t* pillar)
 {
-    result_e            res1;
-    result_e            res2;
+    assert(pillar);
+    {
+    result_e res1, res2;
 
     // First, raise the floor
     res1 = T_MovePlane(pillar->sector, pillar->floorSpeed, pillar->floorDest, pillar->crush, 0, pillar->direction); // floorOrCeiling, direction
     // Then, lower the ceiling
-    res2 =
-        T_MovePlane(pillar->sector, pillar->ceilingSpeed, pillar->ceilingDest,
-                    pillar->crush, 1, -pillar->direction);
+    res2 = T_MovePlane(pillar->sector, pillar->ceilingSpeed, pillar->ceilingDest,
+                       pillar->crush, 1, -pillar->direction);
+
     if(res1 == pastdest && res2 == pastdest)
     {
         P_ToXSector(pillar->sector)->specialData = NULL;
         SN_StopSequence(DMU_GetPtrp(pillar->sector, DMU_SOUND_ORIGIN));
-        P_TagFinished(P_ToXSector(pillar->sector)->tag);
+        ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(pillar->sector)->tag);
         DD_ThinkerRemove(&pillar->thinker);
+    }
     }
 }
 
-int EV_BuildPillar(linedef_t *line, byte *args, boolean crush)
+int EV_BuildPillar(linedef_t* line, byte* args, boolean crush)
 {
-    int                 rtn = 0;
-    float               newHeight;
-    sector_t           *sec = NULL;
-    pillar_t           *pillar;
-    iterlist_t         *list;
+    assert(line);
+    assert(args);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int rtn = 0;
+    float newHeight;
+    sector_t* sec = NULL;
+    pillar_t* pillar;
+    iterlist_t* list;
 
-    list = P_GetSectorIterListForTag((int) args[0], false);
+    list = GameMap_SectorIterListForTag(map, (int) args[0], false);
     if(!list)
         return rtn;
 
@@ -146,16 +154,21 @@ int EV_BuildPillar(linedef_t *line, byte *args, boolean crush)
                          SEQ_PLATFORM + P_ToXSector(pillar->sector)->seqType);
     }
     return rtn;
+    }
 }
 
-int EV_OpenPillar(linedef_t *line, byte *args)
+int EV_OpenPillar(linedef_t* line, byte* args)
 {
-    int                 rtn = 0;
-    sector_t           *sec = NULL;
-    pillar_t           *pillar;
-    iterlist_t         *list;
+    assert(line);
+    assert(args);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int rtn = 0;
+    sector_t* sec = NULL;
+    pillar_t* pillar;
+    iterlist_t* list;
 
-    list = P_GetSectorIterListForTag((int) args[0], false);
+    list = GameMap_SectorIterListForTag(map, (int) args[0], false);
     if(!list)
         return rtn;
 
@@ -222,4 +235,5 @@ int EV_OpenPillar(linedef_t *line, byte *args)
     }
 
     return rtn;
+    }
 }

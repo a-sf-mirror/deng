@@ -43,6 +43,8 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
+#include "dmu_lib.h"
 #include "d_net.h"
 #include "p_svtexarc.h"
 #include "p_player.h"
@@ -593,9 +595,10 @@ int NetSv_ScanCycle(int index, maprule_t * rules)
 
 void NetSv_CheckCycling(void)
 {
-    int         map, i, f;
-    maprule_t   rules;
-    char        msg[100], tmp[50];
+    gamemap_t* map = P_CurrentGameMap();
+    int mapNum, i, f;
+    maprule_t rules;
+    char msg[100], tmp[50];
 
     if(!cyclingMaps)
         return;
@@ -610,11 +613,11 @@ void NetSv_CheckCycling(void)
             // Test every ten seconds.
             cycleCounter = 10 * TICSPERSEC;
 
-            map = NetSv_ScanCycle(cycleIndex, &rules);
-            if(map < 0)
+            mapNum = NetSv_ScanCycle(cycleIndex, &rules);
+            if(mapNum < 0)
             {
-                map = NetSv_ScanCycle(cycleIndex = 0, &rules);
-                if(map < 0)
+                mapNum = NetSv_ScanCycle(cycleIndex = 0, &rules);
+                if(mapNum < 0)
                 {
                     // Hmm?! Abort cycling.
                     Con_Message
@@ -625,7 +628,7 @@ void NetSv_CheckCycling(void)
             }
 
             if(rules.usetime &&
-               mapTime > (rules.time * 60 - 29) * TICSPERSEC)
+               map->time > (rules.time * 60 - 29) * TICSPERSEC)
             {
                 // Time runs out!
                 cycleMode = CYCLE_COUNTDOWN;
@@ -656,7 +659,7 @@ void NetSv_CheckCycling(void)
     case CYCLE_TELL_RULES:
         if(cycleCounter <= 0)
         {
-            // Get the rules of the current map.
+            // Get the rules of the current mapNum.
             NetSv_ScanCycle(cycleIndex, &rules);
             strcpy(msg, "MAP RULES: ");
             if(!rules.usetime && !rules.usefrags)
@@ -699,13 +702,13 @@ void NetSv_CheckCycling(void)
         }
         else if(cycleCounter <= 0)
         {
-            // Next map, please!
-            map = NetSv_ScanCycle(++cycleIndex, NULL);
-            if(map < 0)
+            // Next mapNum, please!
+            mapNum = NetSv_ScanCycle(++cycleIndex, NULL);
+            if(mapNum < 0)
             {
                 // Must be past the end?
-                map = NetSv_ScanCycle(cycleIndex = 0, NULL);
-                if(map < 0)
+                mapNum = NetSv_ScanCycle(cycleIndex = 0, NULL);
+                if(mapNum < 0)
                 {
                     // Hmm?! Abort cycling.
                     Con_Message
@@ -715,8 +718,8 @@ void NetSv_CheckCycling(void)
                 }
             }
 
-            // Warp to the next map. Don't bother with the intermission.
-            NetSv_CycleToMapNum(map);
+            // Warp to the next mapNum. Don't bother with the intermission.
+            NetSv_CycleToMapNum(mapNum);
         }
         break;
     }
@@ -727,40 +730,41 @@ void NetSv_CheckCycling(void)
  */
 void NetSv_NewPlayerEnters(int plrNum)
 {
-    player_t*           plr = &players[plrNum];
+    player_t* plr = &players[plrNum];
+    gamemap_t* map = P_CurrentGameMap();
 
     Con_Message("NetSv_NewPlayerEnters: spawning player %i.\n", plrNum);
 
     plr->playerState = PST_REBORN;  // Force an init.
 
     // Re-deal player starts.
-    P_DealPlayerStarts(0);
+    GameMap_DealPlayerStarts(map, 0);
 
     // Spawn the player into the world.
     if(deathmatch)
     {
-        G_DeathMatchSpawnPlayer(plrNum);
+        GameMap_SpawnPlayerDM(map, plrNum);
     }
     else
     {
 #if __JHEXEN__
-        byte                entryPoint = rebornPosition;
-        playerclass_t       pClass = cfg.playerClass[plrNum];
+        byte entryPoint = plr->rebornPosition;
+        playerclass_t pClass = cfg.playerClass[plrNum];
 #else
-        byte                entryPoint = 0;
-        playerclass_t       pClass = PCLASS_PLAYER;
+        byte entryPoint = 0;
+        playerclass_t pClass = PCLASS_PLAYER;
 #endif
         const playerstart_t* start;
 
-        if((start = P_GetPlayerStart(entryPoint, plrNum, false)))
+        if((start = GameMap_PlayerStart(map, entryPoint, plrNum, false)))
         {
-            P_SpawnPlayer(plrNum, pClass, start->pos[VX], start->pos[VY],
+            GameMap_SpawnPlayer(map, plrNum, pClass, start->pos[VX], start->pos[VY],
                           start->pos[VZ], start->angle, start->spawnFlags,
                           false);
         }
         else
         {
-            P_SpawnPlayer(plrNum, pClass, 0, 0, 0, 0, MSF_Z_FLOOR, true);
+            GameMap_SpawnPlayer(map, plrNum, pClass, 0, 0, 0, 0, MSF_Z_FLOOR, true);
         }
 
         //// \fixme Spawn a telefog in front of the player.
@@ -1190,7 +1194,7 @@ void NetSv_SendPlayerState(int srcPlrNum, int destPlrNum, int flags,
     if(flags & PSF_LOCAL_QUAKE)
     {
         // Send the "quaking" state.
-        *ptr++ = localQuakeHappening[srcPlrNum];
+        *ptr++ = players[srcPlrNum].viewShake;
     }
 #endif
 
@@ -1227,8 +1231,9 @@ void NetSv_SendPlayerInfo(int whose, int to_whom)
 
 void NetSv_ChangePlayerInfo(int from, byte* data)
 {
-    int                 col;
-    player_t*           pl = &players[from];
+    gamemap_t* map = P_CurrentGameMap();
+    player_t* pl = &players[from];
+    int col;
 
     // Color is first.
     col = *data++;
@@ -1261,7 +1266,7 @@ void NetSv_ChangePlayerInfo(int from, byte* data)
 #endif
 
     // Re-deal start spots.
-    P_DealPlayerStarts(0);
+    GameMap_DealPlayerStarts(map, 0);
 
     // Tell the other clients about the change.
     NetSv_SendPlayerInfo(from, DDSP_ALL_PLAYERS);
@@ -1433,8 +1438,8 @@ void NetSv_DoAction(int player, const char *data)
                 pl->plr->mo->pos[VY] = pos[VY];
                 pl->plr->mo->pos[VZ] = pos[VZ];
                 P_MobjLink(pl->plr->mo, DDLINK_SECTOR | DDLINK_BLOCKMAP);
-                pl->plr->mo->floorZ = tmFloorZ;
-                pl->plr->mo->ceilingZ = tmCeilingZ;
+                pl->plr->mo->floorZ = DMU_GetFloatp(pl->plr->mo->subsector, DMU_FLOOR_HEIGHT);
+                pl->plr->mo->ceilingZ = DMU_GetFloatp(pl->plr->mo->subsector, DMU_CEILING_HEIGHT);
             }
             pl->plr->mo->angle = angle;
             pl->plr->lookDir = lookDir;

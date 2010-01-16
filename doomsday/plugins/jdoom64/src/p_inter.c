@@ -36,6 +36,8 @@
 
 #include "jdoom64.h"
 
+#include "gamemap.h"
+#include "p_mapsetup.h"
 #include "am_map.h"
 #include "d_net.h"
 #include "dmu_lib.h"
@@ -797,7 +799,8 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
     case IT_DEMONKEY1:
         if(P_InventoryCount(plr - players, IIT_DEMONKEY1))
         {
-            if(!(mapTime & 0x1f))
+            gamemap_t* map = P_CurrentGameMap();
+            if(!(map->time & 0x1f))
                 P_SetMessage(plr, NGOTPOWERUP1, false);
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
 
@@ -814,7 +817,8 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
     case IT_DEMONKEY2:
         if(P_InventoryCount(plr - players, IIT_DEMONKEY2))
         {
-            if(!(mapTime & 0x1f))
+            gamemap_t* map = P_CurrentGameMap();
+            if(!(map->time & 0x1f))
                 P_SetMessage(plr, NGOTPOWERUP2, false);
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
 
@@ -831,7 +835,8 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
     case IT_DEMONKEY3:
         if(P_InventoryCount(plr - players, IIT_DEMONKEY3))
         {
-            if(!(mapTime & 0x1f))
+            gamemap_t* map = P_CurrentGameMap();
+            if(!(map->time & 0x1f))
                 P_SetMessage(plr, NGOTPOWERUP3, false);
 
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
@@ -889,16 +894,16 @@ void P_TouchSpecialMobj(mobj_t* special, mobj_t* toucher)
     player->bonusCount += BONUSADD;
 }
 
-void P_KillMobj(mobj_t *source, mobj_t *target, boolean stomping)
+void P_KillMobj(mobj_t* source, mobj_t* target, boolean stomping)
 {
-    mobjtype_t          item;
-    mobj_t*             mo;
-    unsigned int        an;
-    angle_t             angle;
-    statenum_t          state;
-
-    if(!target) // nothing to kill
-        return;
+    assert(target);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    mobjtype_t item;
+    mobj_t* mo;
+    unsigned int an;
+    angle_t angle;
+    statenum_t state;
 
     target->flags &= ~(MF_SHOOTABLE | MF_FLOAT | MF_SKULLFLY);
 
@@ -989,12 +994,13 @@ void P_KillMobj(mobj_t *source, mobj_t *target, boolean stomping)
     // 3D sprites.
     angle = P_Random() << 24;
     an = angle >> ANGLETOFINESHIFT;
-    if((mo = P_SpawnMobj3f(item,
-                          target->pos[VX] + 3 * FIX2FLT(finecosine[an]),
-                          target->pos[VY] + 3 * FIX2FLT(finesine[an]),
-                          0, angle, MSF_Z_FLOOR)))
+    if((mo = GameMap_SpawnMobj3f(map, item,
+                           target->pos[VX] + 3 * FIX2FLT(finecosine[an]),
+                           target->pos[VY] + 3 * FIX2FLT(finesine[an]),
+                           0, angle, MSF_Z_FLOOR)))
     {
         mo->flags |= MF_DROPPED; // Special versions of items.
+    }
     }
 }
 

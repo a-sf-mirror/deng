@@ -40,6 +40,7 @@
 
 #include "jdoom.h"
 
+#include "gamemap.h"
 #include "d_net.h"
 #include "p_player.h"
 #include "p_map.h"
@@ -73,16 +74,18 @@ static float bulletSlope;
 
 void R_GetWeaponBob(int player, float* x, float* y)
 {
+    gamemap_t* map = P_CurrentGameMap();
+
     if(x)
     {
         *x = 1 + (cfg.bobWeapon * players[player].bob) *
-            FIX2FLT(finecosine[(128 * mapTime) & FINEMASK]);
+            FIX2FLT(finecosine[(128 * map->time) & FINEMASK]);
     }
 
     if(y)
     {
         *y = 32 + (cfg.bobWeapon * players[player].bob) *
-            FIX2FLT(finesine[(128 * mapTime) & FINEMASK & (FINEANGLES / 2 - 1)]);
+            FIX2FLT(finesine[(128 * map->time) & FINEMASK & (FINEANGLES / 2 - 1)]);
     }
 }
 
@@ -349,11 +352,15 @@ void C_DECL A_GunFlash(player_t *player, pspdef_t *psp)
     P_SetPsprite(player, ps_flash, weaponInfo[player->readyWeapon][player->class].mode[0].states[WSN_FLASH]);
 }
 
-void C_DECL A_Punch(player_t *player, pspdef_t *psp)
+void C_DECL A_Punch(player_t* player, pspdef_t* psp)
 {
-    angle_t             angle;
-    int                 damage;
-    float               slope;
+    assert(player);
+    assert(psp);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    angle_t angle;
+    int damage;
+    float slope;
 
     P_ShotAmmo(player);
     player->update |= PSF_AMMO;
@@ -371,24 +378,29 @@ void C_DECL A_Punch(player_t *player, pspdef_t *psp)
     P_LineAttack(player->plr->mo, angle, MELEERANGE, slope, damage);
 
     // Turn to face target.
-    if(lineTarget)
+    if(map->lineTarget)
     {
         S_StartSoundEx(SFX_PUNCH, player->plr->mo);
 
         player->plr->mo->angle =
             R_PointToAngle2(player->plr->mo->pos[VX],
                             player->plr->mo->pos[VY],
-                            lineTarget->pos[VX],
-                            lineTarget->pos[VY]);
+                            map->lineTarget->pos[VX],
+                            map->lineTarget->pos[VY]);
         player->plr->flags |= DDPF_FIXANGLES;
+    }
     }
 }
 
-void C_DECL A_Saw(player_t *player, pspdef_t *psp)
+void C_DECL A_Saw(player_t* player, pspdef_t* psp)
 {
-    angle_t             angle;
-    int                 damage;
-    float               slope;
+    assert(player);
+    assert(psp);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    angle_t angle;
+    int damage;
+    float slope;
 
     P_ShotAmmo(player);
     player->update |= PSF_AMMO;
@@ -403,7 +415,7 @@ void C_DECL A_Saw(player_t *player, pspdef_t *psp)
     slope = P_AimLineAttack(player->plr->mo, angle, MELEERANGE + 1);
     P_LineAttack(player->plr->mo, angle, MELEERANGE + 1, slope, damage);
 
-    if(!lineTarget)
+    if(!map->lineTarget)
     {
         S_StartSoundEx(SFX_SAWFUL, player->plr->mo);
         return;
@@ -414,7 +426,7 @@ void C_DECL A_Saw(player_t *player, pspdef_t *psp)
     // Turn to face target.
     angle =
         R_PointToAngle2(player->plr->mo->pos[VX], player->plr->mo->pos[VY],
-                        lineTarget->pos[VX], lineTarget->pos[VY]);
+                        map->lineTarget->pos[VX], map->lineTarget->pos[VY]);
     if(angle - player->plr->mo->angle > ANG180)
     {
         if(angle - player->plr->mo->angle < -ANG90 / 20)
@@ -430,6 +442,7 @@ void C_DECL A_Saw(player_t *player, pspdef_t *psp)
             player->plr->mo->angle += ANG90 / 20;
     }
     player->plr->mo->flags |= MF_JUSTATTACKED;
+    }
 }
 
 void C_DECL A_FireMissile(player_t *player, pspdef_t *psp)
@@ -471,27 +484,29 @@ void C_DECL A_FirePlasma(player_t *player, pspdef_t *psp)
  * Sets a slope so a near miss is at aproximately the height of the
  * intended target.
  */
-void P_BulletSlope(mobj_t *mo)
+void P_BulletSlope(mobj_t* mo)
 {
-    angle_t             angle;
+    angle_t angle;
 
     // See which target is to be aimed at.
     angle = mo->angle;
     bulletSlope = P_AimLineAttack(mo, angle, 16 * 64);
     if(!cfg.noAutoAim)
     {
-        if(!lineTarget)
+        gamemap_t* map = P_CurrentGameMap();
+
+        if(!map->lineTarget)
         {
             angle += 1 << 26;
             bulletSlope = P_AimLineAttack(mo, angle, 16 * 64);
 
-            if(!lineTarget)
+            if(!map->lineTarget)
             {
                 angle -= 2 << 26;
                 bulletSlope = P_AimLineAttack(mo, angle, 16 * 64);
             }
 
-            if(!lineTarget)
+            if(!map->lineTarget)
             {
                 angle += 2 << 26;
                 bulletSlope =
@@ -646,10 +661,13 @@ void C_DECL A_Light2(player_t *player, pspdef_t *psp)
 /**
  * Spawn a BFG explosion on every monster in view.
  */
-void C_DECL A_BFGSpray(mobj_t *mo)
+void C_DECL A_BFGSpray(mobj_t* mo)
 {
-    int                 i, j, damage;
-    angle_t             angle;
+    assert(mo);
+    {
+    gamemap_t* map = P_CurrentGameMap();
+    int i, j, damage;
+    angle_t angle;
 
     // Offset angles from its attack angle.
     for(i = 0; i < 40; ++i)
@@ -659,19 +677,20 @@ void C_DECL A_BFGSpray(mobj_t *mo)
         // mo->target is the originator (player) of the missile.
         P_AimLineAttack(mo->target, angle, 16 * 64);
 
-        if(!lineTarget)
+        if(!map->lineTarget)
             continue;
 
-        P_SpawnMobj3f(MT_EXTRABFG,
-                      lineTarget->pos[VX], lineTarget->pos[VY],
-                      lineTarget->pos[VZ] + lineTarget->height / 2,
+        GameMap_SpawnMobj3f(map, MT_EXTRABFG,
+                      map->lineTarget->pos[VX], map->lineTarget->pos[VY],
+                      map->lineTarget->pos[VZ] + map->lineTarget->height / 2,
                       angle + ANG180, 0);
 
         damage = 0;
         for(j = 0; j < 15; ++j)
             damage += (P_Random() & 7) + 1;
 
-        P_DamageMobj(lineTarget, mo->target, mo->target, damage, false);
+        P_DamageMobj(map->lineTarget, mo->target, mo->target, damage, false);
+    }
     }
 }
 

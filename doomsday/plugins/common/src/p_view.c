@@ -43,6 +43,7 @@
 #  include "jstrife.h"
 #endif
 
+#include "gamemap.h"
 #include "p_player.h"
 #include "p_tick.h"
 #include "p_actor.h"
@@ -74,11 +75,11 @@
  */
 void P_CalcHeight(player_t* plr)
 {
-    boolean         airborne;
-    boolean         morphed = false;
-    ddplayer_t*     ddplr = plr->plr;
-    mobj_t*         pmo = ddplr->mo;
-    float           target, step;
+    gamemap_t* map = P_CurrentGameMap();
+    boolean airborne, morphed = false;
+    ddplayer_t* ddplr = plr->plr;
+    mobj_t* pmo = ddplr->mo;
+    float target, step;
 
     // Regular movement bobbing (needs to be calculated for gun swing even
     // if not on ground).
@@ -115,7 +116,7 @@ void P_CalcHeight(player_t* plr)
     }
     else
     {
-        angle_t angle = (FINEANGLES / 20 * mapTime) & FINEMASK;
+        angle_t angle = (FINEANGLES / 20 * map->time) & FINEMASK;
         target = cfg.bobView * ((plr->bob / 2) * FIX2FLT(finesine[angle]));
     }
 

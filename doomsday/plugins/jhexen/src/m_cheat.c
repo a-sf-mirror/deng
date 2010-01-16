@@ -408,8 +408,8 @@ int Cht_WarpFunc(const int* args, int player)
     Hu_MenuCommand(MCMD_CLOSE);
 
     // So be it.
-    leaveMap = map;
-    leavePosition = 0;
+    plr->leaveMap = map;
+    plr->leavePosition = 0;
     briefDisabled = true;
     G_WorldDone();
 
@@ -449,7 +449,7 @@ static void printDebugInfo(int player)
     if(!plr->plr->mo)
         return;
 
-    P_GetMapLumpName(gameEpisode, gameMap, lumpName);
+    P_GetMapLumpName(lumpName, gameEpisode, gameMap);
     sprintf(textBuffer, "MAP [%s]  X:%g  Y:%g  Z:%g",
             lumpName, plr->plr->mo->pos[VX], plr->plr->mo->pos[VY],
             plr->plr->mo->pos[VZ]);
@@ -787,6 +787,8 @@ int Cht_ScriptFunc3(const int* args, int player)
         return false;
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
+    if(!ActionScriptInterpreter)
+        return false;
 
     tens = args[0] - '0';
     ones = args[1] - '0';
@@ -797,7 +799,7 @@ int Cht_ScriptFunc3(const int* args, int player)
         return false;
     scriptArgs[0] = scriptArgs[1] = scriptArgs[2] = 0;
 
-    if(P_StartACS(script, 0, scriptArgs, plr->plr->mo, NULL, 0))
+    if(ActionScriptInterpreter_Start(ActionScriptInterpreter, script, 0, scriptArgs, plr->plr->mo, NULL, 0))
     {
         sprintf(textBuffer, "RUNNING SCRIPT %.2d", script);
         P_SetMessage(plr, textBuffer, false);

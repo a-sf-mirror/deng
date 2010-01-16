@@ -31,6 +31,7 @@
 
 #include "jhexen.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_inventory.h"
 #include "p_player.h"
@@ -57,14 +58,12 @@
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void P_LightningFlash(void);
+static void P_LightningFlash(gamemap_t* map);
 static boolean CheckedLockedDoor(mobj_t* mo, byte lock);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-mobj_t lavaInflictor;
 
 material_t* skyMaterial = NULL;
 boolean doubleSky;
@@ -78,20 +77,20 @@ static float* lightningLightLevels;
 
 // CODE --------------------------------------------------------------------
 
-void P_InitLava(void)
+void GameMap_InitLava(gamemap_t* map)
 {
-    memset(&lavaInflictor, 0, sizeof(mobj_t));
-
-    lavaInflictor.type = MT_CIRCLEFLAME;
-    lavaInflictor.flags2 = MF2_FIREDAMAGE | MF2_NODMGTHRUST;
+    assert(map);
+    memset(&map->lavaInflictor, 0, sizeof(map->lavaInflictor));
+    map->lavaInflictor.type = MT_CIRCLEFLAME;
+    map->lavaInflictor.flags2 = MF2_FIREDAMAGE | MF2_NODMGTHRUST;
 }
 
 void P_InitSky(int map)
 {
-    const char*         layer1TextureName = P_GetMapSkyLayer1Texture(map);
-    const char*         layer2TextureName = P_GetMapSkyLayer2Texture(map);
-    material_t*         mat = P_MaterialForName(MN_TEXTURES, layer1TextureName);
-    float               offset[] = { 0.f, 0.f };
+    const char* layer1TextureName = P_GetMapSkyLayer1Texture(map);
+    const char* layer2TextureName = P_GetMapSkyLayer2Texture(map);
+    material_t* mat = P_MaterialForName(MN_TEXTURES, layer1TextureName);
+    float offset[] = { 0.f, 0.f };
 
     if(P_GetMapDoubleSky(map))
     {
@@ -124,16 +123,19 @@ void P_InitSky(int map)
     DMU_SetPtr(DMU_SKY, 0, DMU_MATERIAL, mat);
 }
 
-boolean EV_SectorSoundChange(byte* args)
+boolean EV_SectorSoundChange(gamemap_t* map, byte* args)
 {
-    boolean             rtn = false;
-    sector_t*           sec = NULL;
-    iterlist_t*         list;
+    assert(map);
+    assert(args);
+    {
+    boolean rtn = false;
+    sector_t* sec = NULL;
+    iterlist_t* list;
 
     if(!args[0])
         return false;
 
-    list = P_GetSectorIterListForTag((int) args[0], false);
+    list = GameMap_SectorIterListForTag(map, (int) args[0], false);
     if(!list)
         return rtn;
 
@@ -145,11 +147,11 @@ boolean EV_SectorSoundChange(byte* args)
     }
 
     return rtn;
+    }
 }
 
 static boolean CheckedLockedDoor(mobj_t* mo, byte lock)
 {
-    extern int  TextKeyMessages[11];
     char        LockedBuffer[80];
 
     if(!mo->player)
@@ -187,10 +189,42 @@ boolean EV_LineSearchForPuzzleItem(linedef_t* line, byte* args, mobj_t* mo)
     return P_InventoryUse(mo->player - players, type, false);
 }
 
+boolean P_StartLockedACS(linedef_t* line, byte* args, mobj_t* mo, int side)
+{
+    int i, lock;
+    byte newArgs[5];
+    char LockedBuffer[80];
+
+    lock = args[4];
+    if(!mo->player)
+    {
+        return false;
+    }
+
+    if(lock)
+    {
+        if(!(mo->player->keys & (1 << (lock - 1))))
+        {
+            sprintf(LockedBuffer, "YOU NEED THE %s\n",
+                    GET_TXT(TextKeyMessages[lock - 1]));
+            P_SetMessage(mo->player, LockedBuffer, false);
+            S_StartSound(SFX_DOOR_LOCKED, mo);
+            return false;
+        }
+    }
+
+    for(i = 0; i < 4; ++i)
+    {
+        newArgs[i] = args[i];
+    }
+    newArgs[4] = 0;
+    return ActionScriptInterpreter_Start(ActionScriptInterpreter, newArgs[0], newArgs[1], &newArgs[2], mo, line, side);
+}
+
 boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
                              int side, mobj_t* mo)
 {
-    boolean             success;
+    boolean success;
 
     success = false;
     switch(special)
@@ -433,7 +467,7 @@ boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
             // Players must be alive to teleport
             if(!(mo && mo->player && mo->player->playerState == PST_DEAD))
             {
-                G_LeaveMap(args[0], args[1], false);
+                G_LeaveMap(mo->player - players, args[0], args[1], false);
                 success = true;
             }
         }
@@ -449,27 +483,27 @@ boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
                 if(deathmatch)
                 {
                     // Winning in deathmatch just goes back to map 1
-                    G_LeaveMap(1, 0, false);
+                    G_LeaveMap(mo->player - players, 1, 0, false);
                 }
                 else
                 {
                     // Passing -1, -1 to G_LeaveMap() starts the Finale
-                    G_LeaveMap(-1, -1, false);
+                    G_LeaveMap(mo->player - players, -1, -1, false);
                 }
             }
         }
         break;
 
     case 80: // ACS_Execute
-        success = P_StartACS(args[0], args[1], &args[2], mo, line, side);
+        success = ActionScriptInterpreter_Start(ActionScriptInterpreter, args[0], args[1], &args[2], mo, line, side);
         break;
 
     case 81: // ACS_Suspend
-        success = P_SuspendACS(args[0], args[1]);
+        success = ActionScriptInterpreter_Suspend(ActionScriptInterpreter, args[0], args[1]);
         break;
 
     case 82: // ACS_Terminate
-        success = P_TerminateACS(args[0], args[1]);
+        success = ActionScriptInterpreter_Stop(ActionScriptInterpreter, args[0], args[1]);
         break;
 
     case 83: // ACS_LockedExecute
@@ -546,46 +580,39 @@ boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
         break;
 
     case 130: // Thing_Activate
-        success = EV_ThingActivate(args[0]);
+        success = EV_ThingActivate(P_CurrentGameMap(), args[0]);
         break;
 
     case 131: // Thing_Deactivate
-        success = EV_ThingDeactivate(args[0]);
+        success = EV_ThingDeactivate(P_CurrentGameMap(), args[0]);
         break;
 
     case 132: // Thing_Remove
-        success = EV_ThingRemove(args[0]);
+        success = EV_ThingRemove(P_CurrentGameMap(), args[0]);
         break;
 
     case 133: // Thing_Destroy
-        success = EV_ThingDestroy(args[0]);
+        success = EV_ThingDestroy(P_CurrentGameMap(), args[0]);
         break;
 
     case 134: // Thing_Projectile
-        success = EV_ThingProjectile(args, 0);
+        success = EV_ThingProjectile(P_CurrentGameMap(), args, 0);
         break;
-
     case 135: // Thing_Spawn
-        success = EV_ThingSpawn(args, 1);
+        success = EV_ThingSpawn(P_CurrentGameMap(), args, 1);
         break;
-
     case 136: // Thing_ProjectileGravity
-        success = EV_ThingProjectile(args, 1);
+        success = EV_ThingProjectile(P_CurrentGameMap(), args, 1);
         break;
-
     case 137: // Thing_SpawnNoFog
-        success = EV_ThingSpawn(args, 0);
+        success = EV_ThingSpawn(P_CurrentGameMap(), args, 0);
         break;
-
     case 138: // Floor_Waggle
-        success =
-            EV_StartFloorWaggle(args[0], args[1], args[2], args[3], args[4]);
+        success = EV_StartFloorWaggle(P_CurrentGameMap(), args[0], args[1], args[2], args[3], args[4]);
         break;
-
     case 140: // Sector_SoundChange
-        success = EV_SectorSoundChange(args);
+        success = EV_SectorSoundChange(P_CurrentGameMap(), args);
         break;
-
     default:
         break;
     }
@@ -598,7 +625,7 @@ boolean P_ActivateLine(linedef_t *line, mobj_t *mo, int side, int activationType
     int             lineActivation;
     boolean         repeat;
     boolean         buttonSuccess;
-    xline_t        *xline = P_ToXLine(line);
+    xlinedef_t        *xline = P_ToXLine(line);
 
     lineActivation = GET_SPAC(xline->flags);
     if(lineActivation != activationType)
@@ -746,6 +773,7 @@ void P_PlayerInSpecialSector(player_t* player)
 
 void P_PlayerOnSpecialFloor(player_t* player)
 {
+    gamemap_t* map = P_CurrentGameMap();
     const terraintype_t* tt = P_MobjGetFloorTerrainType(player->plr->mo);
 
     if(!(tt->flags & TTF_DAMAGING))
@@ -757,14 +785,14 @@ void P_PlayerOnSpecialFloor(player_t* player)
         return; // Player is not touching the floor
     }
 
-    if(!(mapTime & 31))
+    if(!(map->time & 31))
     {
-        P_DamageMobj(player->plr->mo, &lavaInflictor, NULL, 10, false);
+        P_DamageMobj(player->plr->mo, &map->lavaInflictor, NULL, 10, false);
         S_StartSound(SFX_LAVA_SIZZLE, player->plr->mo);
     }
 }
 
-void P_UpdateSpecials(void)
+void GameMap_UpdateSpecials(gamemap_t* map)
 {
     // Stub.
 }
@@ -772,17 +800,19 @@ void P_UpdateSpecials(void)
 /**
  * After the map has been loaded, scan for specials that spawn thinkers.
  */
-void P_SpawnSpecials(void)
+void GameMap_SpawnSpecials(gamemap_t* map)
 {
-    uint        i;
-    linedef_t     *line;
-    xline_t    *xline;
-    iterlist_t *list;
-    sector_t   *sec;
-    xsector_t  *xsec;
+    assert(map);
+    {
+    uint i;
+    linedef_t* line;
+    xlinedef_t* xline;
+    iterlist_t* list;
+    sector_t* sec;
+    xsector_t* xsec;
 
     // Init special SECTORs.
-    P_DestroySectorTagLists();
+    GameMap_DestroySectorTagLists(map);
     for(i = 0; i < numsectors; ++i)
     {
         sec = DMU_ToPtr(DMU_SECTOR, i);
@@ -790,7 +820,7 @@ void P_SpawnSpecials(void)
 
         if(xsec->tag)
         {
-           list = P_GetSectorIterListForTag(xsec->tag, true);
+           list = GameMap_SectorIterListForTag(map, xsec->tag, true);
            P_AddObjectToIterList(list, sec);
         }
 
@@ -816,8 +846,8 @@ void P_SpawnSpecials(void)
     }
 
     // Init animating line specials.
-    P_EmptyIterList(linespecials);
-    P_DestroyLineTagLists();
+    P_EmptyIterList(map->_linespecials);
+    GameMap_DestroyLineTagLists(map);
     for(i = 0; i < numlines; ++i)
     {
         line = DMU_ToPtr(DMU_LINEDEF, i);
@@ -829,33 +859,36 @@ void P_SpawnSpecials(void)
         case 101: // Scroll_Texture_Right
         case 102: // Scroll_Texture_Up
         case 103: // Scroll_Texture_Down
-            P_AddObjectToIterList(linespecials, line);
+            P_AddObjectToIterList(map->_linespecials, line);
             break;
 
         case 121:               // Line_SetIdentification
             if(xline->arg1)
             {
-                list = P_GetLineIterListForTag((int) xline->arg1, true);
+                list = GameMap_IterListForTag(map, (int) xline->arg1, true);
                 P_AddObjectToIterList(list, line);
             }
             xline->special = 0;
             break;
         }
     }
+    }
 }
 
-void P_AnimateSurfaces(void)
+void GameMap_AnimateSurfaces(gamemap_t* map)
 {
+    assert(map);
+    {
 #define PLANE_MATERIAL_SCROLLUNIT (8.f/35*2)
 
-    uint                i;
-    linedef_t*          line;
+    uint i;
+    linedef_t* line;
 
     // Update scrolling plane materials.
     for(i = 0; i < numsectors; ++i)
     {
-        xsector_t*          sect = P_ToXSector(DMU_ToPtr(DMU_SECTOR, i));
-        float               texOff[2];
+        xsector_t* sect = P_ToXSector(DMU_ToPtr(DMU_SECTOR, i));
+        float texOff[2];
 
         switch(sect->special)
         {
@@ -936,14 +969,14 @@ void P_AnimateSurfaces(void)
     }
 
     // Update scrolling wall materials.
-    if(P_IterListSize(linespecials))
+    if(P_IterListSize(map->_linespecials))
     {
-        P_IterListResetIterator(linespecials, false);
-        while((line = P_IterListIterator(linespecials)) != NULL)
+        P_IterListResetIterator(map->_linespecials, false);
+        while((line = P_IterListIterator(map->_linespecials)) != NULL)
         {
-            sidedef_t*          side = 0;
-            fixed_t             texOff[2];
-            xline_t*            xline = P_ToXLine(line);
+            sidedef_t* side = 0;
+            fixed_t texOff[2];
+            xlinedef_t* xline = P_ToXLine(line);
 
             side = DMU_GetPtrp(line, DMU_SIDEDEF0);
             for(i = 0; i < 3; ++i)
@@ -968,7 +1001,7 @@ void P_AnimateSurfaces(void)
                     texOff[1] -= xline->arg1 << 10;
                     break;
                 default:
-                    Con_Error("P_AnimateSurfaces: Invalid line special %i for "
+                    Con_Error("GameMap_AnimateSurfaces: Invalid line special %i for "
                               "material scroller on linedef %ui.",
                               xline->special, DMU_ToIndex(line));
                 }
@@ -985,7 +1018,7 @@ void P_AnimateSurfaces(void)
     {
         if(!nextLightningFlash || lightningFlash)
         {
-            P_LightningFlash();
+            P_LightningFlash(map);
         }
         else
         {
@@ -994,11 +1027,12 @@ void P_AnimateSurfaces(void)
     }
 
 #undef PLANE_MATERIAL_SCROLLUNIT
+    }
 }
 
 static boolean isLightningSector(sector_t* sec)
 {
-    xsector_t*              xsec = P_ToXSector(sec);
+    xsector_t* xsec = P_ToXSector(sec);
 
     if(xsec->special == LIGHTNING_SPECIAL ||
        xsec->special == LIGHTNING_SPECIAL2)
@@ -1013,12 +1047,12 @@ static boolean isLightningSector(sector_t* sec)
     return false;
 }
 
-static void P_LightningFlash(void)
+static void P_LightningFlash(gamemap_t* map)
 {
-    uint                i;
-    float*              tempLight;
-    boolean             foundSec;
-    float               flashLight;
+    uint i;
+    float* tempLight;
+    boolean foundSec;
+    float flashLight;
 
     if(lightningFlash)
     {
@@ -1029,12 +1063,11 @@ static void P_LightningFlash(void)
         {
             for(i = 0; i < numsectors; ++i)
             {
-                sector_t*               sec = DMU_ToPtr(DMU_SECTOR, i);
+                sector_t* sec = DMU_ToPtr(DMU_SECTOR, i);
 
                 if(isLightningSector(sec))
                 {
-                    float               lightLevel =
-                        DMU_GetFloat(DMU_SECTOR, i, DMU_LIGHT_LEVEL);
+                    float lightLevel = DMU_GetFloat(DMU_SECTOR, i, DMU_LIGHT_LEVEL);
 
                     if(*tempLight < lightLevel - (4.f / 255))
                         DMU_SetFloat(DMU_SECTOR, i, DMU_LIGHT_LEVEL,
@@ -1048,7 +1081,7 @@ static void P_LightningFlash(void)
         {   // Remove the alternate lightning flash special.
             for(i = 0; i < numsectors; ++i)
             {
-                sector_t*               sec = DMU_ToPtr(DMU_SECTOR, i);
+                sector_t* sec = DMU_ToPtr(DMU_SECTOR, i);
 
                 if(isLightningSector(sec))
                 {
@@ -1070,12 +1103,12 @@ static void P_LightningFlash(void)
     foundSec = false;
     for(i = 0; i < numsectors; ++i)
     {
-        sector_t*           sec = DMU_ToPtr(DMU_SECTOR, i);
+        sector_t* sec = DMU_ToPtr(DMU_SECTOR, i);
 
         if(isLightningSector(sec))
         {
-            xsector_t*          xsec = P_ToXSector(sec);
-            float               newLevel = DMU_GetFloatp(sec, DMU_LIGHT_LEVEL);
+            xsector_t* xsec = P_ToXSector(sec);
+            float newLevel = DMU_GetFloatp(sec, DMU_LIGHT_LEVEL);
 
             *tempLight = newLevel;
 
@@ -1107,8 +1140,8 @@ static void P_LightningFlash(void)
 
     if(foundSec)
     {
-        mobj_t*             plrmo = players[DISPLAYPLAYER].plr->mo;
-        mobj_t*             crashOrigin = NULL;
+        mobj_t* plrmo = players[DISPLAYPLAYER].plr->mo;
+        mobj_t* crashOrigin = NULL;
 
         // Set the alternate (lightning) sky.
         DMU_SetBool(DMU_SKY, 0, DMU_LAYER2_ACTIVE, false);
@@ -1119,7 +1152,7 @@ static void P_LightningFlash(void)
         if(cfg.snd3D && plrmo && !IS_NETGAME)
         {
             if((crashOrigin =
-                P_SpawnMobj3f(plrmo->pos[VX] + (16 * (M_Random() - 127) << FRACBITS),
+                GameMap_SpawnMobj3f(map, plrmo->pos[VX] + (16 * (M_Random() - 127) << FRACBITS),
                               plrmo->pos[VY] + (16 * (M_Random() - 127) << FRACBITS),
                               plrmo->pos[VZ] + (4000 << FRACBITS), MT_CAMERA,
                               0, 0)))
@@ -1139,7 +1172,7 @@ static void P_LightningFlash(void)
         }
         else
         {
-            if(P_Random() < 128 && !(mapTime & 32))
+            if(P_Random() < 128 && !(map->time & 32))
             {
                 nextLightningFlash = ((P_Random() & 7) + 2) * TICSPERSEC;
             }

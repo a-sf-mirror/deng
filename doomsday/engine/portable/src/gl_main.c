@@ -754,10 +754,10 @@ void GL_SwitchTo3DState(boolean push_state, viewport_t* port)
 
     memcpy(&currentView, port, sizeof(currentView));
 
-    viewpx = port->x + viewwindowx / 320.0f * port->width;
-    viewpy = port->y + viewwindowy / 200.0f * port->height;
-    viewpw = port->width * viewwidth / 320.0f;
-    viewph = port->height * viewheight / 200.0f;
+    viewpx = floor(port->x + viewwindowx / 320.0f * port->width);
+    viewpy = floor(port->y + viewwindowy / 200.0f * port->height);
+    viewpw = ceil(port->width * viewwidth / 320.0f);
+    viewph = ceil(port->height * viewheight / 200.0f);
     glViewport(viewpx, FLIP(viewpy + viewph - 1), viewpw, viewph);
 
     // The 3D projection matrix.

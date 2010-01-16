@@ -25,7 +25,7 @@
 /**
  * g_update.c: Routines to call when updating the state of the engine
  *
- * \bug Not 64bit clean: In function 'G_RestoreState': cast from pointer to integer of different size
+ * @fixme Not 64bit clean: In function 'G_RestoreState': cast from pointer to integer of different size
  */
 
 // HEADER FILES ------------------------------------------------------------
@@ -40,13 +40,15 @@
 #  include "jheretic.h"
 #elif __JHEXEN__
 #  include "jhexen.h"
-#  include "m_cheat.h"
 #endif
 
 #include "hu_pspr.h"
 #include "hu_menu.h"
 #include "rend_automap.h"
 #include "p_inventory.h"
+#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
+#  include "p_xg.h"
+#endif
 
 // MACROS ------------------------------------------------------------------
 

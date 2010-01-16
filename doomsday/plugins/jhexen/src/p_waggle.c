@@ -31,9 +31,11 @@
 
 #include "jhexen.h"
 
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_map.h"
 #include "p_mapspec.h"
+#include "p_mapsetup.h"
 #include "p_iterlist.h"
 
 // MACROS ------------------------------------------------------------------
@@ -56,7 +58,7 @@
 
 void T_FloorWaggle(waggle_t* waggle)
 {
-    float               fh;
+    float fh;
 
     switch(waggle->state)
     {
@@ -86,7 +88,7 @@ void T_FloorWaggle(waggle_t* waggle)
                         waggle->originalHeight);
             P_ChangeSector(waggle->sector, true);
             P_ToXSector(waggle->sector)->specialData = NULL;
-            P_TagFinished(P_ToXSector(waggle->sector)->tag);
+            ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(waggle->sector)->tag);
             DD_ThinkerRemove(&waggle->thinker);
             return;
         }
@@ -95,22 +97,24 @@ void T_FloorWaggle(waggle_t* waggle)
 
     waggle->accumulator += waggle->accDelta;
     fh = waggle->originalHeight +
-        FLOATBOBOFFSET(((int) waggle->accumulator) & 63) * waggle->scale;
+        P_FloatBobOffset(((int) waggle->accumulator) & 63) * waggle->scale;
     DMU_SetFloatp(waggle->sector, DMU_FLOOR_HEIGHT, fh);
     DMU_SetFloatp(waggle->sector, DMU_FLOOR_TARGET_HEIGHT, fh);
     DMU_SetFloatp(waggle->sector, DMU_FLOOR_SPEED, 0);
     P_ChangeSector(waggle->sector, true);
 }
 
-boolean EV_StartFloorWaggle(int tag, int height, int speed, int offset,
-                            int timer)
+boolean EV_StartFloorWaggle(gamemap_t* map, int tag, int height, int speed,
+                            int offset, int timer)
 {
-    boolean             retCode = false;
-    sector_t*           sec = NULL;
-    waggle_t*      waggle;
-    iterlist_t*         list;
+    assert(map);
+    {
+    boolean retCode = false;
+    sector_t* sec = NULL;
+    waggle_t* waggle;
+    iterlist_t* list;
 
-    list = P_GetSectorIterListForTag(tag, false);
+    list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)
         return retCode;
 
@@ -140,4 +144,5 @@ boolean EV_StartFloorWaggle(int tag, int height, int speed, int offset,
     }
 
     return retCode;
+    }
 }

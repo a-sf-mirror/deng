@@ -27,7 +27,7 @@
  * rend_automap.c : Automap drawing.
  *
  * Code herein is considered a friend of automap_t. Consequently this means
- * that it need not negotiate the automap manager any may access automaps
+ * that it need not negotiate the automap manager and may access automaps
  * directly.
  */
 
@@ -48,6 +48,7 @@
 #endif
 
 #include "am_map.h"
+#include "gamemap.h"
 #include "dmu_lib.h"
 #include "p_mapsetup.h"
 #include "p_tick.h"
@@ -209,7 +210,7 @@ void Rend_AutomapLoadData(void)
  */
 void Rend_AutomapUnloadData(void)
 {
-    int                 i;
+    int i;
 
     if(Get(DD_NOVIDEO) || IS_DEDICATED)
         return; // Nothing to do.
@@ -614,7 +615,7 @@ int Rend_AutomapSeg(void* obj, void* data)
     rendwallseg_params_t* p = (rendwallseg_params_t*) data;
     float v1[2], v2[2];
     linedef_t* line;
-    xline_t* xLine;
+    xlinedef_t* xLine;
     sector_t* frontSector, *backSector;
     const mapobjectinfo_t* info;
     player_t* plr = p->plr;
@@ -818,7 +819,7 @@ int renderPolyObjLinedef(void* obj, void* context)
 {
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
     linedef_t* line = (linedef_t*) obj;
-    xline_t* xLine = P_ToXLine(line);
+    xlinedef_t* xLine = P_ToXLine(line);
     const mapobjectinfo_t* info;
     automapobjectname_t amo;
 
@@ -884,8 +885,9 @@ static void renderPolyObjs(const automap_t* map, const automapcfg_t* cfg,
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
 boolean renderXGLinedef(linedef_t* line, void* context)
 {
+    gamemap_t* map = P_CurrentGameMap();
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
-    xline_t* xLine;
+    xlinedef_t* xLine;
 
     xLine = P_ToXLine(line);
     if(!xLine || xLine->validCount == VALIDCOUNT ||
@@ -893,7 +895,7 @@ boolean renderXGLinedef(linedef_t* line, void* context)
         return 1;
 
     // Show only active XG lines.
-    if(!(xLine->xg && xLine->xg->active && (mapTime & 4)))
+    if(!(xLine->xg && xLine->xg->active && (map->time & 4)))
         return 1;
 
     renderLinedef(line, .8f, 0, .8f, 1, BM_ADD,

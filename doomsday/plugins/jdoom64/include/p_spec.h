@@ -57,13 +57,6 @@ enum {
 // at game start
 void            P_InitPicAnims(void);
 
-// at map load
-void            P_SpawnSpecials(void);
-
-// every tic
-void            P_UpdateSpecials(void);
-void            P_ThunderSector(void); // jd64
-
 boolean         P_ActivateLine(linedef_t *ld, mobj_t *mo, int side,
                                int activationType);
 

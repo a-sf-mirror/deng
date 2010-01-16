@@ -28,6 +28,7 @@
 #include "jdoom64.h"
 
 #include "dmu_lib.h"
+#include "g_common.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -52,17 +53,9 @@
  */
 void S_MapMusic(void)
 {
-    int                 songid;
-
     if(G_GetGameState() != GS_MAP)
         return;
-
-    songid = Get(DD_MAP_MUSIC);
-    if(S_StartMusicNum(songid, true))
-    {
-        // Set the game status cvar for the map music.
-        gsvMapMusic = songid;
-    }
+    S_StartMusicNum(Get(DD_MAP_MUSIC), true);
 }
 
 /**
