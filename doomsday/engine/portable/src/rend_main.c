@@ -1973,17 +1973,17 @@ static void getRendSegsForHEdge(hedge_t* hEdge, rendseg_t* temp, rendseg_t** rse
 static void getRendSegForPolyobjSeg(polyobj_t* po, uint segId, rendseg_t* temp,
                                     rendseg_t** rseg)
 {
-    poseg_t* seg = &po->segs[segId];
+    seg_t* seg = &po->segs[segId];
     sector_t* frontSec = po->subsector->sector;
     float bottom = frontSec->SP_floorvisheight;
     float top = frontSec->SP_ceilvisheight;
     float from[2], to[2];
 
-    from[VX] = seg->lineDef->L_v1->pos[VX];
-    from[VY] = seg->lineDef->L_v1->pos[VY];
+    from[VX] = seg->sideDef->lineDef->L_v1->pos[VX];
+    from[VY] = seg->sideDef->lineDef->L_v1->pos[VY];
 
-    to[VX] = seg->lineDef->L_v2->pos[VX];
-    to[VY] = seg->lineDef->L_v2->pos[VY];
+    to[VX] = seg->sideDef->lineDef->L_v2->pos[VX];
+    to[VY] = seg->sideDef->lineDef->L_v2->pos[VY];
 
     *rseg = RendSeg_staticConstructFromPolyobjSideDef(temp, seg->sideDef,
         from, to, bottom, top, po->subsector, seg);
@@ -2202,7 +2202,7 @@ static void Rend_RenderSubsector(face_t* face)
 
         for(i = 0; i < po->numSegs; ++i)
         {
-            poseg_t* seg = &po->segs[i];
+            seg_t* seg = &po->segs[i];
             rendseg_t temp, *rendSeg;
 
             getRendSegForPolyobjSeg(po, i, &temp, &rendSeg);
@@ -2210,16 +2210,16 @@ static void Rend_RenderSubsector(face_t* face)
             if(rendSeg)
             {
                 // Front facing?
-                if(!(R_FacingViewerDot(rendSeg->from[VX], rendSeg->from[VY],
-                                       rendSeg->to  [VX], rendSeg->to  [VY]) < 0))
+                if(R_FacingViewerDot(rendSeg->from[VX], rendSeg->from[VY],
+                                     rendSeg->to  [VX], rendSeg->to  [VY]) < 0)
                     continue;
 
                 Rend_RenderSeg(rendSeg);
-                R_MarkLineDefAsDrawnForViewer(seg->lineDef, viewPlayer - ddPlayers);
+                R_MarkLineDefAsDrawnForViewer(seg->sideDef->lineDef, viewPlayer - ddPlayers);
 
                 if(canAddOcclusionRanges)
-                    C_AddViewRelSeg(seg->lineDef->L_v1->pos[VX], seg->lineDef->L_v1->pos[VY],
-                                    seg->lineDef->L_v2->pos[VX], seg->lineDef->L_v2->pos[VY]);
+                    C_AddViewRelSeg(seg->sideDef->lineDef->L_v1->pos[VX], seg->sideDef->lineDef->L_v1->pos[VY],
+                                    seg->sideDef->lineDef->L_v2->pos[VX], seg->sideDef->lineDef->L_v2->pos[VY]);
             }
         }
     }

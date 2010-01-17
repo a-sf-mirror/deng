@@ -394,7 +394,7 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
  */
 rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg,
     sidedef_t* sideDef, float from[2], float to[2], float bottom, float top,
-    subsector_t* subsector, poseg_t* poSeg)
+    subsector_t* subsector, seg_t* poSeg)
 {
     rendseg_t* rseg = newRendSeg; // allocate.
 
@@ -425,7 +425,7 @@ rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg,
                 sideDef->SW_middlenormal, subsector, sideDef, SEG_MIDDLE,
                 frontSec->lightLevel, R_GetSectorLightColor(frontSec),
                 R_WallAngleLightLevelDelta(sideDef->lineDef, FRONT), surfaceColorTint, surfaceColorTint2, 1,
-                poSeg->bsuf,
+                poSeg->bsuf[SEG_MIDDLE],
                 materialOffset, materialScale, true);
 
     return rseg;

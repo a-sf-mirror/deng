@@ -42,6 +42,7 @@ void            P_DestroyLineDefBlockmap(linedefblockmap_t* blockmap);
 
 uint            LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, uint x, uint y);
 void            LineDefBlockmap_Link(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
+void            LineDefBlockmap_Link2(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
 boolean         LineDefBlockmap_Unlink(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
 void            LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t max);
 void            LineDefBlockmap_BlockSize(linedefblockmap_t* blockmap, pvec2_t blockSize);

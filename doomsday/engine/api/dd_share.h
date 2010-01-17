@@ -869,7 +869,7 @@ enum { MX, MY, MZ }; // Momentum axis indices.
     unsigned int    numLineDefs; \
     struct linedef_s** lineDefs; \
     unsigned int    numSegs; \
-    struct poseg_s* segs; \
+    struct seg_s*   segs; \
     struct fvertex_s* originalPts; /* Used as the base for the rotations. */ \
     struct fvertex_s* prevPts; /* Use to restore the old point values. */ \
     float           speed; /* Movement speed. */ \

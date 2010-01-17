@@ -476,7 +476,8 @@ void P_DestroyMap(map_t* map)
 
             for(j = 0; j < po->numLineDefs; ++j)
             {
-                linedef_t* lineDef = po->lineDefs[j];
+                linedef_t* lineDef = ((objectrecord_t*) po->lineDefs[j])->obj;
+                Z_Free(lineDef->hEdges[0]->twin);
                 Z_Free(lineDef->hEdges[0]);
             }
             Z_Free(po->lineDefs);
@@ -617,7 +618,7 @@ static boolean PIT_LinkToLines(linedef_t* ld, void* parm)
 }
 
 /**
- * \pre The mobj must be currently unlinked.
+ * @pre The mobj must be currently unlinked.
  */
 static void linkMobjToLineDefs(map_t* map, mobj_t* mo)
 {
@@ -1428,7 +1429,8 @@ static void buildLineDefBlockmap(map_t* map)
     for(i = 0; i < map->numLineDefs; ++i)
     {
         linedef_t* lineDef = map->lineDefs[i];
-
+        if(lineDef->inFlags & LF_POLYOBJ)
+            continue;
         LineDefBlockmap_Link(blockmap, lineDef);
     }
 
@@ -1454,7 +1456,7 @@ static void buildSubsectorBlockmap(map_t* map)
     for(i = 0; i < map->numSubsectors; ++i)
     {
         subsector_t* ssec = map->subsectors[i];
-        
+
         if(ssec->bBox[0][0] < bounds[0][0])
             bounds[0][0] = ssec->bBox[0][0];
         if(ssec->bBox[0][1] < bounds[0][1])
@@ -1848,13 +1850,13 @@ static void pruneUnusedSectors(map_t* map)
 }
 
 /**
- * \note Order here is critical!
+ * @note Order here is critical!
  * @param flags             @see pruneUnusedObjectsFlags
  */
 static void pruneUnusedObjects(map_t* map, int flags)
 {
     /**
-     * \fixme Pruning cannot be done as game map data object properties
+     * @fixme Pruning cannot be done as game map data object properties
      * are currently indexed by their original indices as determined by the
      * position in the map data. The same problem occurs within ACS scripts
      * and XG line/sector references.
@@ -2435,59 +2437,6 @@ static void addSectorsToDMU(map_t* map)
         P_CreateObjectRecord(DMU_SECTOR, map->sectors[i]);
 }
 
-static void finishPolyobjs(map_t* map)
-{
-    uint i;
-
-    for(i = 0; i < map->numPolyObjs; ++i)
-    {
-        polyobj_t* po = map->polyObjs[i];
-        uint j;
-
-        for(j = 0; j < po->numLineDefs; ++j)
-        {
-            linedef_t* lineDef = map->lineDefs[po->lineDefs[j]->buildData.index - 1];
-            hedge_t* hEdge;
-
-            hEdge = Z_Calloc(sizeof(hedge_t), PU_STATIC, 0);
-            hEdge->face = NULL;
-            hEdge->vertex = lineDef->buildData.v[0];
-            lineDef->buildData.v[0]->hEdge = hEdge;
-
-            lineDef->hEdges[0] = lineDef->hEdges[1] = hEdge;
-
-            hEdge = Z_Calloc(sizeof(hedge_t), PU_STATIC, 0);
-            hEdge->face = NULL;
-            hEdge->vertex = lineDef->buildData.v[1];
-            lineDef->buildData.v[1]->hEdge = hEdge;
-
-            hEdge->twin = lineDef->hEdges[0];
-            hEdge->twin->twin = hEdge;
-
-            po->lineDefs[j] = (linedef_t*) P_ObjectRecord(DMU_LINEDEF, lineDef);
-        }
-        po->lineDefs[j] = NULL;
-
-        po->originalPts = Z_Malloc(po->numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
-        po->prevPts = Z_Malloc(po->numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
-
-        // Temporary: Create a seg for each line of this polyobj.
-        po->numSegs = po->numLineDefs;
-        po->segs = Z_Calloc(sizeof(poseg_t) * (po->numSegs+1), PU_STATIC, 0);
-
-        for(j = 0; j < po->numSegs; ++j)
-        {
-            linedef_t* lineDef = ((objectrecord_t*) po->lineDefs[j])->obj;
-            poseg_t* seg = &po->segs[j];
-
-            lineDef->hEdges[0]->data = seg;
-
-            seg->lineDef = lineDef;
-            seg->sideDef = map->sideDefs[lineDef->buildData.sideDefs[FRONT]->buildData.index - 1];
-        }
-    }
-}
-
 static int buildSeg(hedge_t* hEdge, void* context)
 {
     hedge_info_t* info = (hedge_info_t*) hEdge->data;
@@ -2893,8 +2842,6 @@ void Map_EditEnd(map_t* map)
     addSideDefsToDMU(map);
     addLineDefsToDMU(map);
 
-    finishPolyobjs(map);
-
     /**
      * Build a LineDef blockmap for this map.
      */
@@ -2917,19 +2864,50 @@ void Map_EditEnd(map_t* map)
         polyobj_t* po = map->polyObjs[i];
         uint j;
 
+        po->originalPts = Z_Malloc(po->numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
+        po->prevPts = Z_Malloc(po->numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
+
         for(j = 0; j < po->numLineDefs; ++j)
         {
-            linedef_t* line = ((objectrecord_t*) po->lineDefs[j])->obj;
+            linedef_t* lineDef = po->lineDefs[j];
+            hedge_t* fHEdge, *bHEdge;
 
-            line->L_v1 = map->_halfEdgeDS->vertices[
-                ((mvertex_t*) line->buildData.v[0]->data)->index - 1];
-            line->L_v2 = map->_halfEdgeDS->vertices[
-                ((mvertex_t*) line->buildData.v[1]->data)->index - 1];
+            fHEdge = Z_Calloc(sizeof(*fHEdge), PU_STATIC, 0);
+            fHEdge->face = NULL;
+            fHEdge->vertex = map->_halfEdgeDS->vertices[
+                ((mvertex_t*) lineDef->buildData.v[0]->data)->index - 1];
+            fHEdge->vertex->hEdge = fHEdge;
+
+            bHEdge = Z_Calloc(sizeof(*bHEdge), PU_STATIC, 0);
+            bHEdge->face = NULL;
+            bHEdge->vertex = map->_halfEdgeDS->vertices[
+                ((mvertex_t*) lineDef->buildData.v[1]->data)->index - 1];
+            bHEdge->vertex->hEdge = bHEdge;
+
+            fHEdge->twin = bHEdge;
+            bHEdge->twin = fHEdge;
+
+            lineDef->hEdges[0] = lineDef->hEdges[1] = fHEdge;
 
             // The original Pts are based off the anchor Pt, and are unique
             // to each linedef.
-            po->originalPts[j].pos[VX] = line->L_v1->pos[VX] - po->pos[VX];
-            po->originalPts[j].pos[VY] = line->L_v1->pos[VY] - po->pos[VY];
+            po->originalPts[j].pos[VX] = lineDef->L_v1->pos[VX] - po->pos[VX];
+            po->originalPts[j].pos[VY] = lineDef->L_v1->pos[VY] - po->pos[VY];
+
+            po->lineDefs[j] = (linedef_t*) P_ObjectRecord(DMU_LINEDEF, lineDef);
+        }
+
+        // Temporary: Create a seg for each line of this polyobj.
+        po->numSegs = po->numLineDefs;
+        po->segs = Z_Calloc(sizeof(seg_t) * po->numSegs, PU_STATIC, 0);
+
+        for(j = 0; j < po->numSegs; ++j)
+        {
+            linedef_t* lineDef = ((objectrecord_t*) po->lineDefs[j])->obj;
+            seg_t* seg = &po->segs[j];
+
+            lineDef->hEdges[0]->data = seg;
+            seg->sideDef = map->sideDefs[lineDef->buildData.sideDefs[FRONT]->buildData.index - 1];
         }
     }
 
@@ -3584,7 +3562,7 @@ polyobj_t* Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount
 
     po = createPolyobj(map);
 
-    po->idx = map->numPolyObjs; // 0-based index.
+    po->idx = map->numPolyObjs - 1; // 0-based index.
     po->lineDefs = Z_Calloc(sizeof(linedef_t*) * (lineCount+1), PU_STATIC, 0);
     for(i = 0; i < lineCount; ++i)
     {
@@ -3823,7 +3801,7 @@ boolean P_LoadMap(const char* mapID)
             map->ambientLightLevel = 0;
         }
 
-        // \todo should be called from P_LoadMap() but R_InitMap requires the
+        // @todo should be called from P_LoadMap() but R_InitMap requires the
         // currentMap to be set first.
         P_SetCurrentMap(map);
 

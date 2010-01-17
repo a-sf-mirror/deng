@@ -705,7 +705,7 @@ static void interpretLinedefFlags(gamemap_t* map)
 
         if(xline->flags & ML_MAPPED)
         {
-            int                 p;
+            int p;
 
             // Update the automap(s) with all immediately visible lines.
             for(p = 0; p < MAXPLAYERS; ++p)

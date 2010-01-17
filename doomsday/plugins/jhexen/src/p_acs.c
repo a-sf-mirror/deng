@@ -708,7 +708,7 @@ void ActionScriptInterpreter_StartAll(actionscriptinterpreter_t* asi, int map)
             startScript(asi, store->scriptId, 0,store->args, NULL, NULL, 0, &newScript);
             if(newScript)
             {
-                newScript->delayCount = 35;
+                newScript->delayCount = TICSPERSEC;
             }
 
             store->mapId = -1;

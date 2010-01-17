@@ -79,7 +79,6 @@ void T_BuildPillar(pillar_t* pillar)
 
 int EV_BuildPillar(linedef_t* line, byte* args, boolean crush)
 {
-    assert(line);
     assert(args);
     {
     gamemap_t* map = P_CurrentGameMap();
@@ -159,7 +158,6 @@ int EV_BuildPillar(linedef_t* line, byte* args, boolean crush)
 
 int EV_OpenPillar(linedef_t* line, byte* args)
 {
-    assert(line);
     assert(args);
     {
     gamemap_t* map = P_CurrentGameMap();

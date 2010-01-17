@@ -117,16 +117,16 @@ void P_PolyobjChanged(polyobj_t* po)
     for(i = 0; i < po->numSegs; ++i)
     {
         linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
-        poseg_t* seg = &po->segs[i];
+        seg_t* seg = &po->segs[i];
 
-        if(seg->bsuf)
-            SB_SurfaceMoved(map, seg->bsuf);
+        if(seg->bsuf[SEG_MIDDLE])
+            SB_SurfaceMoved(map, seg->bsuf[SEG_MIDDLE]);
     }
 }
 
 static void updateLineDefAABB(linedef_t* line)
 {
-    byte                edge;
+    byte edge;
 
     edge = (line->L_v1->pos[VX] < line->L_v2->pos[VX]);
     line->bBox[BOXLEFT]  = LINE_VERTEX(line, edge^1)->pos[VX];
@@ -197,7 +197,7 @@ void P_InitPolyobj(polyobj_t* po)
 
     for(i = 0; i < po->numSegs; ++i)
     {
-        poseg_t* seg = &po->segs[i];
+        seg_t* seg = &po->segs[i];
         biassurface_t* bsuf = SB_CreateSurface(map);
         uint j;
 
@@ -207,7 +207,7 @@ void P_InitPolyobj(polyobj_t* po)
         for(j = 0; j < bsuf->size; ++j)
             SB_InitVertexIllum(&bsuf->illum[j]);
 
-        seg->bsuf = bsuf;
+        seg->bsuf[SEG_MIDDLE] = bsuf;
     }
 
     avg.pos[VX] = 0;
@@ -215,25 +215,25 @@ void P_InitPolyobj(polyobj_t* po)
 
     for(i = 0; i < po->numLineDefs; ++i)
     {
-        linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
-        sidedef_t* side = LINE_FRONTSIDE(line);
-        surface_t* surface = &side->SW_topsurface;
+        linedef_t* lineDef = ((objectrecord_t*) po->lineDefs[i])->obj;
+        sidedef_t* sideDef = LINE_FRONTSIDE(lineDef);
+        surface_t* surface = &sideDef->SW_topsurface;
 
-        side->SW_topinflags |= SUIF_NO_RADIO;
-        side->SW_middleinflags |= SUIF_NO_RADIO;
-        side->SW_bottominflags |= SUIF_NO_RADIO;
+        sideDef->SW_topinflags |= SUIF_NO_RADIO;
+        sideDef->SW_middleinflags |= SUIF_NO_RADIO;
+        sideDef->SW_bottominflags |= SUIF_NO_RADIO;
 
-        avg.pos[VX] += line->L_v1->pos[VX];
-        avg.pos[VY] += line->L_v1->pos[VY];
+        avg.pos[VX] += lineDef->L_v1->pos[VX];
+        avg.pos[VY] += lineDef->L_v1->pos[VY];
 
         // Set the surface normal.
-        surface->normal[VY] = (line->L_v1->pos[VX] - line->L_v2->pos[VX]) / line->length;
-        surface->normal[VX] = (line->L_v2->pos[VY] - line->L_v1->pos[VY]) / line->length;
+        surface->normal[VY] = (lineDef->L_v1->pos[VX] - lineDef->L_v2->pos[VX]) / lineDef->length;
+        surface->normal[VX] = (lineDef->L_v2->pos[VY] - lineDef->L_v1->pos[VY]) / lineDef->length;
         surface->normal[VZ] = 0;
 
         // All surfaces of a sidedef have the same normal.
-        memcpy(side->SW_middlenormal, surface->normal, sizeof(surface->normal));
-        memcpy(side->SW_bottomnormal, surface->normal, sizeof(surface->normal));
+        memcpy(sideDef->SW_middlenormal, surface->normal, sizeof(surface->normal));
+        memcpy(sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
     }
 
     avg.pos[VX] /= po->numLineDefs;
@@ -449,7 +449,7 @@ void P_PolyobjUnlinkLineDefs(polyobj_t* po)
     uint i;
 
     for(i = 0; i < po->numLineDefs; ++i)
-        LineDefBlockmap_Unlink(lineDefBlockmap, po->lineDefs[i]);
+        LineDefBlockmap_Unlink(lineDefBlockmap, ((objectrecord_t*) po->lineDefs[i])->obj);
 }
 
 void P_PolyobjLinkLineDefs(polyobj_t* po)
@@ -458,7 +458,7 @@ void P_PolyobjLinkLineDefs(polyobj_t* po)
     uint i;
 
     for(i = 0; i < po->numLineDefs; ++i)
-        LineDefBlockmap_Link(lineDefBlockmap, po->lineDefs[i]);
+        LineDefBlockmap_Link2(lineDefBlockmap, ((objectrecord_t*) po->lineDefs[i])->obj);
 }
 
 typedef struct ptrmobjblockingparams_s {

@@ -29,12 +29,6 @@
 #ifndef DOOMSDAY_POLYOBJECT_H
 #define DOOMSDAY_POLYOBJECT_H
 
-typedef struct poseg_s {
-    struct sidedef_s* sideDef;
-    struct linedef_s* lineDef;
-    struct biassurface_s* bsuf;
-} poseg_t;
-
 // We'll use the base polyobj template directly as our mobj.
 typedef struct polyobj_s {
 DD_BASE_POLYOBJ_ELEMENTS()} polyobj_t;

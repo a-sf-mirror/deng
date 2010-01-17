@@ -362,14 +362,15 @@ static void tryLinkLineDefToBlock(linedefblockmap_t* blockmap, uint x, uint y, l
     linkLineDefToBlock(blockmap, x, y, lineDef);
 }
 
-void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
+static void linkLineDef(linedefblockmap_t* blockmap, linedef_t* lineDef,
+                        const int vtx1[2], const int vtx2[2])
 {
 #define BLKSHIFT                7 // places to shift rel position for cell num
 #define BLKMASK                 ((1<<BLKSHIFT)-1) // mask for rel position within cell
 
     uint i, blockBox[2][2], dimensions[2];
     int vert, horiz;
-    int origin[2], vtx1[2], vtx2[2], aabb[2][2], delta[2];
+    int origin[2], aabb[2][2], delta[2];
     boolean slopePos, slopeNeg;
 
     assert(blockmap);
@@ -380,12 +381,6 @@ void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
     Gridmap_Dimensions(blockmap->gridmap, dimensions);
 
     // Determine all blocks it touches and add the lineDef number to those blocks.
-    vtx1[0] = (int) lineDef->buildData.v[0]->pos[0];
-    vtx1[1] = (int) lineDef->buildData.v[0]->pos[1];
-
-    vtx2[0] = (int) lineDef->buildData.v[1]->pos[0];
-    vtx2[1] = (int) lineDef->buildData.v[1]->pos[1];
-
     aabb[0][0] = MIN_OF(vtx1[0], vtx2[0]);
     aabb[0][1] = MIN_OF(vtx1[1], vtx2[1]);
 
@@ -535,6 +530,40 @@ void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
 
 #undef BLKSHIFT
 #undef BLKMASK
+}
+
+void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
+{
+    assert(blockmap);
+    assert(lineDef);
+    {
+    int vtx1[2], vtx2[2];
+
+    vtx1[0] = (int) lineDef->buildData.v[0]->pos[0];
+    vtx1[1] = (int) lineDef->buildData.v[0]->pos[1];
+
+    vtx2[0] = (int) lineDef->buildData.v[1]->pos[0];
+    vtx2[1] = (int) lineDef->buildData.v[1]->pos[1];
+
+    linkLineDef(blockmap, lineDef, vtx1, vtx2);
+    }
+}
+
+void LineDefBlockmap_Link2(linedefblockmap_t* blockmap, linedef_t* lineDef)
+{
+    assert(blockmap);
+    assert(lineDef);
+    {
+    int vtx1[2], vtx2[2];
+
+    vtx1[0] = (int) lineDef->L_v1->pos[0];
+    vtx1[1] = (int) lineDef->L_v1->pos[1];
+
+    vtx2[0] = (int) lineDef->L_v2->pos[0];
+    vtx2[1] = (int) lineDef->L_v2->pos[1];
+
+    linkLineDef(blockmap, lineDef, vtx1, vtx2);
+    }
 }
 
 boolean LineDefBlockmap_Unlink(linedefblockmap_t* blockmap, linedef_t* lineDef)
