@@ -48,12 +48,12 @@
 
 // at game start
 void            P_InitPicAnims(void);
-void            GameMap_InitLava(struct gamemap_s* map);
+void            GameMap_InitLava(struct map_s* map);
 
-void            GameMap_InitAmbientSfx(struct gamemap_s* map);
-void            GameMap_AddAmbientSfx(struct gamemap_s* map, int sequence);
+void            GameMap_InitAmbientSfx(struct map_s* map);
+void            GameMap_AddAmbientSfx(struct map_s* map, int sequence);
 
-void            GameMap_PlayAmbientSfx(struct gamemap_s* map);
+void            GameMap_PlayAmbientSfx(struct map_s* map);
 
 boolean         P_ActivateLine(linedef_t* ld, mobj_t* mo, int side,
                                int activationType);

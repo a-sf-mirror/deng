@@ -100,6 +100,4 @@ void            G_PrepareWIData(void);
 void            G_QueueBody(mobj_t* body);
 
 void            P_GetMapLumpName(char lumpName[9], int episode, int map);
-
-struct gamemap_s* P_CurrentGameMap(void);
 #endif

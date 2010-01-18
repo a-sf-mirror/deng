@@ -715,8 +715,8 @@ void P_PlayerChangeClass(player_t* player, playerclass_t newClass)
 
     if(player->plr->mo)
     {   // Respawn the player and destroy the old mobj.
-        gamemap_t* map = P_CurrentGameMap();
         mobj_t* oldMo = player->plr->mo;
+        map_t* map = Thinker_Map((thinker_t*) oldMo);
 
         GameMap_SpawnPlayer(map, player - players, newClass, oldMo->pos[VX],
                       oldMo->pos[VY], oldMo->pos[VZ], oldMo->angle, 0,
@@ -804,7 +804,7 @@ int P_CameraXYMovement(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
 
     if(!P_MobjIsCamera(mo))
         return false;
@@ -1085,7 +1085,7 @@ DEFCC(CCmdSetViewLock)
 
 DEFCC(CCmdMakeLocal)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     player_t* plr;
     char buf[20];
     int p;
@@ -1162,7 +1162,7 @@ DEFCC(CCmdSpawnMobj)
     mobj_t* mo;
     angle_t angle;
     int spawnFlags = 0;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     if(argc != 5 && argc != 6)
     {

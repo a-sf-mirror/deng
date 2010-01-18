@@ -267,7 +267,7 @@ weaponinfo_t weaponInfo[NUM_WEAPON_TYPES][NUM_PLAYER_CLASSES] = {
 
 void R_GetWeaponBob(int player, float* x, float* y)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) players[player].plr->mo);
     if(x)
     {
         if(players[player].morphTics > 0)
@@ -618,7 +618,7 @@ void AdjustPlayerAngle(mobj_t* pmo)
 {
     assert(pmo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) pmo);
     angle_t angle;
     int difference;
 
@@ -641,7 +641,7 @@ void C_DECL A_SnoutAttack(player_t* plr, pspdef_t* psp)
 {
     assert(plr);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
     angle_t angle;
     int damage;
     float slope;
@@ -672,7 +672,7 @@ void C_DECL A_FHammerAttack(player_t* plr, pspdef_t* psp)
 {
     assert(plr);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
     int i;
     angle_t angle;
     mobj_t* mo = plr->plr->mo;
@@ -789,7 +789,7 @@ void C_DECL A_FSwordFlames(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     int i;
     angle_t angle;
     float pos[3];
@@ -881,7 +881,7 @@ void C_DECL A_LightningZap(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     mobj_t* pmo;
     float deltaZ;
 
@@ -981,7 +981,7 @@ void C_DECL A_LastZap(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     mobj_t* pmo;
 
     if((pmo = GameMap_SpawnMobj3fv(map, MT_LIGHTNING_ZAP, mo->pos, P_Random() << 24, 0)))
@@ -1152,7 +1152,7 @@ void C_DECL A_FPunchAttack(player_t* plr, pspdef_t* psp)
 {
     assert(plr);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
     int i;
     angle_t angle;
     int damage;
@@ -1232,7 +1232,7 @@ void C_DECL A_FAxeAttack(player_t* plr, pspdef_t* psp)
 {
     assert(plr);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
     int i;
     angle_t angle;
     mobj_t* pmo = plr->plr->mo;
@@ -1308,7 +1308,7 @@ void C_DECL A_CMaceAttack(player_t* plr, pspdef_t* psp)
 {
     assert(plr);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
     int i;
     angle_t angle;
     int damage;
@@ -1351,7 +1351,7 @@ void C_DECL A_CStaffCheck(player_t* plr, pspdef_t* psp)
 {
     assert(plr);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
     int i;
     mobj_t* pmo;
     int damage, newLife;
@@ -1494,7 +1494,7 @@ void C_DECL A_CFlameMissile(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     int i;
     uint an, an90;
     float dist;
@@ -1580,7 +1580,7 @@ void C_DECL A_CHolyAttack2(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     mobj_t* pmo, *tail, *next;
     int i, j;
 
@@ -1717,7 +1717,7 @@ static void CHolySeekerMissile(mobj_t *mo, angle_t thresh, angle_t turnMax)
     angle_t delta;
     mobj_t* target;
     float dist, newZ, deltaZ;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
 
     target = mo->tracer;
     if(target == NULL)
@@ -1829,7 +1829,7 @@ void C_DECL A_CHolySeek(mobj_t* mo)
 
     if(mo->tracer)
     {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = Thinker_Map((thinker_t*) mo);
 
         CHolySeekerMissile(mo, mo->args[0] * ANGLE_1,
                            mo->args[0] * ANGLE_1 * 2);
@@ -1943,7 +1943,7 @@ void C_DECL A_CHolySpawnPuff(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     GameMap_SpawnMobj3fv(map, MT_HOLY_MISSILE_PUFF, mo->pos, P_Random() << 24, 0);
     }
 }
@@ -1952,7 +1952,7 @@ void C_DECL A_FireConePL1(player_t* plr, pspdef_t* psp)
 {
     assert(plr);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
     int i, damage;
     angle_t angle;
     mobj_t* pmo, *mo;
@@ -2139,7 +2139,7 @@ void C_DECL A_PoisonBag(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     player_t* player;
     mobj_t* bag;
     float pos[3];

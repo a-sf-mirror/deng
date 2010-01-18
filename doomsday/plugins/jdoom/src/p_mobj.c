@@ -193,7 +193,7 @@ void P_MobjMoveXY(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     float pos[3], mom[3];
     player_t* player;
     boolean largeNegative;
@@ -391,7 +391,7 @@ void P_HitFloor(mobj_t* mo)
 
 void P_MobjMoveZ(mobj_t* mo)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     float gravity, targetZ, floorZ, ceilingZ;
 
     // $democam: cameramen get special z movement.
@@ -619,7 +619,7 @@ void P_NightmareRespawn(mobj_t* mobj)
 {
     assert(mobj);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mobj);
     mobj_t* mo;
 
     // Something is occupying it's position?
@@ -796,7 +796,7 @@ void P_MobjThinker(mobj_t* mo)
     }
     else if(!IS_CLIENT)
     {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = Thinker_Map((thinker_t*) mo);
 
         // Check for nightmare respawn.
         if(!(mo->flags & MF_COUNTKILL))
@@ -818,7 +818,7 @@ void P_MobjThinker(mobj_t* mo)
 /**
  * Spawns a mobj of "type" at the specified position.
  */
-mobj_t* GameMap_SpawnMobj3f(gamemap_t* map, mobjtype_t type, float x, float y,
+mobj_t* GameMap_SpawnMobj3f(map_t* map, mobjtype_t type, float x, float y,
                       float z, angle_t angle, int spawnFlags)
 {
     assert(map);
@@ -885,7 +885,7 @@ mobj_t* GameMap_SpawnMobj3f(gamemap_t* map, mobjtype_t type, float x, float y,
     if(info->flags2 & MF2_DONTDRAW)
         ddflags |= DDMF_DONTDRAW;
 
-    mo = P_MobjCreate(P_MobjThinker, x, y, z, angle, info->radius,
+    mo = P_MobjCreate(map, P_MobjThinker, x, y, z, angle, info->radius,
                       info->height, ddflags);
     mo->type = type;
     mo->info = info;
@@ -964,14 +964,14 @@ mobj_t* GameMap_SpawnMobj3f(gamemap_t* map, mobjtype_t type, float x, float y,
     }
 }
 
-mobj_t* GameMap_SpawnMobj3fv(gamemap_t* map, mobjtype_t type, const float pos[3],
+mobj_t* GameMap_SpawnMobj3fv(map_t* map, mobjtype_t type, const float pos[3],
                        angle_t angle, int spawnFlags)
 {
     assert(map);
     return GameMap_SpawnMobj3f(map, type, pos[VX], pos[VY], pos[VZ], angle, spawnFlags);
 }
 
-mobj_t* P_SpawnCustomPuff(gamemap_t* map, mobjtype_t type, float x,
+mobj_t* P_SpawnCustomPuff(map_t* map, mobjtype_t type, float x,
                           float y, float z, angle_t angle)
 {
     assert(map);
@@ -998,7 +998,7 @@ mobj_t* P_SpawnCustomPuff(gamemap_t* map, mobjtype_t type, float x,
     }
 }
 
-void P_SpawnPuff(gamemap_t* map, float x, float y, float z, angle_t angle)
+void P_SpawnPuff(map_t* map, float x, float y, float z, angle_t angle)
 {
     assert(map);
     {
@@ -1013,7 +1013,7 @@ void P_SpawnPuff(gamemap_t* map, float x, float y, float z, angle_t angle)
     }
 }
 
-void P_SpawnBlood(gamemap_t* map, float x, float y, float z, int damage, angle_t angle)
+void P_SpawnBlood(map_t* map, float x, float y, float z, int damage, angle_t angle)
 {
     assert(map);
     {
@@ -1080,7 +1080,7 @@ mobj_t* P_SpawnMissile(mobjtype_t type, mobj_t* source, mobj_t* dest)
 {
     assert(source);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) source);
     float pos[3];
     mobj_t* th = 0;
     unsigned int an;

@@ -299,7 +299,7 @@ int destroyXSThinker(void* p, void* context)
 
 void XS_SetSectorType(sector_t* sec, int special)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     xsector_t* xsec = P_ToXSector(sec);
     xgsector_t* xg;
     sectortype_t* info;
@@ -1391,7 +1391,7 @@ void XS_InitMovePlane(linedef_t* line)
 int C_DECL XSTrav_MovePlane(sector_t* sector, boolean ceiling, void* context,
                             void* context2, mobj_t* activator)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     linedef_t* line = (linedef_t*) context;
     linetype_t* info = (linetype_t*) context2;
     xgplanemover_t* mover;
@@ -1524,7 +1524,7 @@ int C_DECL XSTrav_MovePlane(sector_t* sector, boolean ceiling, void* context,
 
 void XS_InitStairBuilder(linedef_t* line)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     uint i;
 
     for(i = 0; i < numsectors; ++i)
@@ -1656,7 +1656,7 @@ int spreadBuild(void *ptr, void *context)
     return 1; // Continue iteration.
 }
 
-static void markBuiltSectors(gamemap_t* map)
+static void markBuiltSectors(map_t* map)
 {
     uint i;
 
@@ -1677,7 +1677,7 @@ static boolean spreadBuildToNeighborAll(linedef_t* origin, linetype_t* info,
                                         boolean picstop, boolean ceiling,
                                         material_t* myMat, int stepCount)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     spreadbuildparams_t params;
     boolean result = false;
     uint i;
@@ -1783,7 +1783,7 @@ boolean spreadBuildToNeighborLowestIDX(linedef_t* origin, linetype_t* info,
                                        material_t* myMat, int stepcount,
                                        sector_t* foundSec)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     findbuildneighborparams_t params;
     boolean result = false;
     uint i;
@@ -1834,7 +1834,7 @@ int C_DECL XSTrav_BuildStairs(sector_t* sector, boolean ceiling,
 {
     assert(sector);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     uint stepCount = 0;
     linedef_t* origin = (linedef_t *) context;
     linetype_t* info = context2;
@@ -2157,7 +2157,7 @@ int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
     assert(sector);
     assert(thing);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     mobj_t* mo = NULL;
     boolean ok = false;
     linetype_t* info = context2;
@@ -2628,7 +2628,7 @@ void XS_UpdateLight(sector_t* sec)
 
 void XS_DoChain(sector_t* sec, int ch, int activating, void* actThing)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     xgsector_t* xg;
     sectortype_t* info;
     float flevtime = TIC2FLT(map->time);
@@ -3065,7 +3065,7 @@ float XS_ThrustMul(struct sector_s *sector)
  * updated. However, this is a bit messy operation, prone to errors.
  * Instead, we just disable XG...
  */
-void XS_Update(gamemap_t* map)
+void XS_Update(map_t* map)
 {
     assert(map);
     {
@@ -3125,7 +3125,7 @@ DEFCC(CCmdMovePlane)
     int p = 0;
     float floorheight, ceilingheight;
     xgplanemover_t* mover;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     if(argc < 2)
     {

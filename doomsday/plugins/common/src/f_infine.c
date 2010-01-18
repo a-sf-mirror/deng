@@ -674,7 +674,7 @@ void FI_End(void)
         }
         else if(oldMode == FIMODE_BEFORE)
         {
-            gamemap_t* map = P_CurrentGameMap();
+            map_t* map = P_CurrentMap();
 
             // Enter the map, this was a briefing.
             G_ChangeGameState(GS_MAP);

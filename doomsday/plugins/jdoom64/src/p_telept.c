@@ -61,7 +61,7 @@
 
 // CODE --------------------------------------------------------------------
 
-mobj_t* P_SpawnTeleFog(gamemap_t* map, float x, float y, angle_t angle)
+mobj_t* P_SpawnTeleFog(map_t* map, float x, float y, angle_t angle)
 {
     return GameMap_SpawnMobj3f(map, MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
 }
@@ -91,7 +91,7 @@ static int findMobj(void* p, void* context)
     return false; // Stop iteration.
 }
 
-static mobj_t* getTeleportDestination(gamemap_t* map, short tag)
+static mobj_t* getTeleportDestination(map_t* map, short tag)
 {
     iterlist_t* list;
 
@@ -124,7 +124,7 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
     assert(line);
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     mobj_t* dest;
 
     if(mo->flags2 & MF2_NOTELEPORT)
@@ -308,7 +308,7 @@ static int fadeSpawn(void* p, void* context)
 {
     fadespawnparams_t* params = (fadespawnparams_t*) context;
     mobj_t* origin = (mobj_t*) p;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) origin);
     mobjtype_t spawntype;
 
     if(params->sec &&
@@ -356,7 +356,7 @@ static int fadeSpawn(void* p, void* context)
  */
 int EV_FadeSpawn(linedef_t* li, mobj_t* mo)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     iterlist_t* list;
 
     list = GameMap_SectorIterListForTag(map, P_ToXLine(li)->tag, false);
@@ -436,7 +436,7 @@ int PIT_ChangeMobjFlags(void* p, void* context)
  */
 int EV_FadeAway(linedef_t* line, mobj_t* thing)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) thing);
     sector_t* sec = NULL;
     iterlist_t* list;
 

@@ -763,6 +763,83 @@ typedef boolean (*traverser_t) (intercept_t* in);
 
 #define NO_INDEX            0xffffffff
 
+    // Base map_t elements. Games MUST use this as the basis for map_t.
+#define DD_BASE_MAP_ELEMENTS() \
+    char            mapID[9]; \
+    char            uniqueID[256]; \
+    boolean         editActive; \
+\
+    struct thinkers_s* _thinkers; \
+    struct gameobjrecords_s* _gameObjectRecords; \
+\
+    struct halfedgeds_s* _halfEdgeDS; \
+    struct binarytree_s* _rootNode; \
+\
+    struct mobjblockmap_s* _mobjBlockmap; \
+    struct linedefblockmap_s* _lineDefBlockmap; \
+    struct subsectorblockmap_s* _subsectorBlockmap; \
+\
+    /* Following blockmaps are emptied each render frame. */ \
+    struct particleblockmap_s* _particleBlockmap; \
+    struct lumobjblockmap_s* _lumobjBlockmap; \
+\
+    struct objcontactlist_s* _subsectorContacts; /* List of obj contacts for each subsector. */ \
+    struct lightgrid_s* _lightGrid; \
+\
+    float           bBox[4]; \
+\
+    uint            numSectors; \
+    struct sector_s** sectors; \
+\
+    uint            numLineDefs; \
+    struct linedef_s** lineDefs; \
+\
+    uint            numSideDefs; \
+    struct sidedef_s** sideDefs; \
+\
+    uint            numPlanes; \
+    struct plane_s** planes; \
+\
+    uint            numNodes; \
+    struct node_s** nodes; \
+\
+    uint            numSubsectors; \
+    struct subsector_s** subsectors; \
+\
+    uint            numSegs; \
+    struct seg_s**  segs; \
+\
+    uint            numPolyObjs; \
+    struct polyobj_s** polyObjs; \
+\
+    struct lineowner_s* lineOwners; \
+\
+    struct planelist_s* _watchedPlaneList; \
+    struct surfacelist_s* _movingSurfaceList; \
+    struct surfacelist_s* _decoratedSurfaceList; \
+\
+    struct nodepile_s* mobjNodes, *lineNodes; /* All kinds of wacky links. */ \
+    nodeindex_t*    lineLinks; /* Indices to roots. */ \
+\
+    float           globalGravity; \
+    int             ambientLightLevel; \
+\
+    float           skyFixCeiling; \
+    float           skyFixFloor; \
+\
+    struct { \
+        struct dynlist_s* linkList; /* Surface-projected lumobjs (dynlights). */ \
+    } _dlights; \
+\
+    struct { \
+        unsigned int    lastChangeOnFrame; \
+        int             editGrabbedID; \
+        int             numSourceDelta; \
+\
+        struct sourcelist_s* sources; \
+        struct biassurface_s* surfaces; /* Head of the biassurface list. */ \
+    } _bias;
+
 //------------------------------------------------------------------------
 //
 // Mobjs

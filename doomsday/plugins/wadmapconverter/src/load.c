@@ -1794,17 +1794,16 @@ boolean LoadMap(const int* lumpList, int numLumps)
 
 boolean TransferMap(void)
 {
-    uint                startTime = Sys_GetRealTime();
-
-    uint                i;
-    boolean             result;
+    uint startTime = Sys_GetRealTime();
+    boolean result;
+    uint i;
 
     // Announce any bad material names we came across while loading the map.
     LogUnknownMaterials();
 
     VERBOSE(Con_Message("WadMapConverter::TransferMap...\n"));
 
-    MPE_Begin(map->name);
+    MPE_Begin();
 
     // Create all the data structures.
     VERBOSE(Con_Message("WadMapConverter::Transfering vertexes...\n"));

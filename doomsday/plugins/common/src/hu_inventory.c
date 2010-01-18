@@ -306,7 +306,7 @@ void Hu_InventoryDraw(int player, int x, int y, float alpha,
     uint i, from, to, idx, slot, first, selected;
     uint numVisSlots, maxVisSlots, startSlot, endSlot;
     float invScale, lightDelta;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     if(alpha <= 0)
         return;
@@ -463,7 +463,7 @@ void Hu_InventoryDraw2(int player, int x, int y, float alpha)
     const hud_inventory_t* inv;
     player_t* plr;
     uint i, idx, slot, from, to, first, cursor, startSlot, endSlot;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     if(alpha <= 0)
         return;

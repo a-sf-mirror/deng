@@ -35,12 +35,12 @@
 
 void            P_Init(void);
 mobjtype_t      P_DoomEdNumToMobjType(int doomEdNum);
-void            P_MoveThingsOutOfWalls(struct gamemap_s* map);
+void            P_MoveThingsOutOfWalls(struct map_s* map);
 #if __JHERETIC__
-void            P_TurnGizmosAwayFromDoors(struct gamemap_s* map);
+void            P_TurnGizmosAwayFromDoors(struct map_s* map);
 #endif
 
 void            P_RebornPlayer(int plrNum);
 
-boolean         P_CheckSpot(struct gamemap_s* map, float x, float y);
+boolean         P_CheckSpot(struct map_s* map, float x, float y);
 #endif

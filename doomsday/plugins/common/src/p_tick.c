@@ -137,7 +137,7 @@ void P_RunPlayers(timespan_t ticLength)
  */
 void P_DoTick(void)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     // If the game is paused, nothing will happen.
     if(paused)

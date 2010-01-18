@@ -28,7 +28,7 @@
 #ifndef DOOMSDAY_ARCHIVED_MAP_H
 #define DOOMSDAY_ARCHIVED_MAP_H
 
-boolean         DAM_TryMapConversion(const char* mapID);
-const char*     DAM_GenerateUniqueMapName(const char* mapID);
+boolean         DAM_TryMapConversion(const char mapID[9]);
+const char*     DAM_GenerateUniqueMapName(const char mapID[9]);
 
 #endif /* DOOMSDAY_ARCHIVED_MAP_H */

@@ -81,7 +81,7 @@ static spawnqueuenode_t* allocateNode(void)
     return Z_Malloc(sizeof(spawnqueuenode_t), PU_STATIC, 0);
 }
 
-static void freeNode(gamemap_t* map, spawnqueuenode_t* node)
+static void freeNode(map_t* map, spawnqueuenode_t* node)
 {
     // Find this node in the spawn queue and unlink it if found.
     if(map->_spawnQueueHead)
@@ -105,7 +105,7 @@ static void freeNode(gamemap_t* map, spawnqueuenode_t* node)
     Z_Free(node);
 }
 
-static spawnqueuenode_t* dequeueSpawn(gamemap_t* map)
+static spawnqueuenode_t* dequeueSpawn(map_t* map)
 {
     spawnqueuenode_t* n = map->_spawnQueueHead;
 
@@ -115,7 +115,7 @@ static spawnqueuenode_t* dequeueSpawn(gamemap_t* map)
     return n;
 }
 
-static void emptySpawnQueue(gamemap_t* map)
+static void emptySpawnQueue(map_t* map)
 {
     if(map->_spawnQueueHead)
     {
@@ -128,7 +128,7 @@ static void emptySpawnQueue(gamemap_t* map)
     map->_spawnQueueHead = NULL;
 }
 
-static void enqueueSpawn(gamemap_t* map, int minTics, mobjtype_t type,
+static void enqueueSpawn(map_t* map, int minTics, mobjtype_t type,
                          float x, float y, float z, angle_t angle, int spawnFlags,
                          void (*callback) (mobj_t* mo, void* context),
                          void* context)
@@ -183,7 +183,7 @@ static void enqueueSpawn(gamemap_t* map, int minTics, mobjtype_t type,
     }
 }
 
-static mobj_t* doDeferredSpawn(gamemap_t* map)
+static mobj_t* doDeferredSpawn(map_t* map)
 {
     mobj_t* mo = NULL;
 
@@ -209,23 +209,22 @@ static mobj_t* doDeferredSpawn(gamemap_t* map)
 /**
  * Called 35 times per second by P_DoTick.
  */
-static void doDeferredSpawns(gamemap_t* map)
+static void doDeferredSpawns(map_t* map)
 {
     while(doDeferredSpawn(map));
 }
 
-gamemap_t* P_CreateGameMap(const char mapID[9], int episodeNum, int mapNum)
+map_t* P_CreateGameMap(const char mapID[9], int episodeNum, int mapNum)
 {
-    gamemap_t* map = Z_Calloc(sizeof(*map), PU_STATIC, 0);
+    map_t* map = P_CreateMap(mapID); // Call base class constructor.
 
-    memcpy(map->mapID, mapID, sizeof(map->mapID));
     map->episodeNum = episodeNum;
     map->mapNum = mapNum;
 
     return map;
 }
 
-void P_DestroyGameMap(gamemap_t* map)
+void P_DestroyGameMap(map_t* map)
 {
     assert(map);
     if(map->_spechit)
@@ -242,10 +241,11 @@ void P_DestroyGameMap(gamemap_t* map)
 
     GameMap_DestroyLineTagLists(map);
     GameMap_DestroySectorTagLists(map);
-    Z_Free(map);
+    
+    P_DestroyMap(map);
 }
 
-void GameMap_RunTick(gamemap_t* map)
+void GameMap_RunTick(map_t* map)
 {
     assert(map);
 
@@ -279,7 +279,7 @@ void GameMap_RunTick(gamemap_t* map)
 /**
  * Initialize all polyobjects in the current map.
  */
-void GameMap_InitPolyobjs(gamemap_t* map)
+void GameMap_InitPolyobjs(map_t* map)
 {
     assert(map);
     {
@@ -334,7 +334,7 @@ void GameMap_InitPolyobjs(gamemap_t* map)
  * Deferred mobj spawning until at least @minTics have passed.
  * Spawn behavior is otherwise exactly the same as an immediate spawn, via   * P_SpawnMobj*
  */
-void GameMap_DeferSpawnMobj3f(gamemap_t* map, int minTics, mobjtype_t type,
+void GameMap_DeferSpawnMobj3f(map_t* map, int minTics, mobjtype_t type,
     float x, float y, float z, angle_t angle, int spawnFlags,
     void (*callback) (mobj_t* mo, void* context), void* context)
 {
@@ -357,7 +357,7 @@ void GameMap_DeferSpawnMobj3f(gamemap_t* map, int minTics, mobjtype_t type,
     }
 }
 
-void GameMap_DeferSpawnMobj3fv(gamemap_t* map, int minTics, mobjtype_t type,
+void GameMap_DeferSpawnMobj3fv(map_t* map, int minTics, mobjtype_t type,
     const float pos[3], angle_t angle, int spawnFlags,
     void (*callback) (mobj_t* mo, void* context), void* context)
 {
@@ -380,14 +380,14 @@ void GameMap_DeferSpawnMobj3fv(gamemap_t* map, int minTics, mobjtype_t type,
     }
 }
 
-void GameMap_PurgeDeferredSpawns(gamemap_t* map)
+void GameMap_PurgeDeferredSpawns(map_t* map)
 {
     assert(map);
     emptySpawnQueue(map);
 }
 
 #if __JHERETIC__
-void GameMap_AddMaceSpot(gamemap_t* map, float x, float y, angle_t angle)
+void GameMap_AddMaceSpot(map_t* map, float x, float y, angle_t angle)
 {
     assert(map);
     {
@@ -402,7 +402,7 @@ void GameMap_AddMaceSpot(gamemap_t* map, float x, float y, angle_t angle)
     }
 }
 
-void GameMap_AddBossSpot(gamemap_t* map, float x, float y, angle_t angle)
+void GameMap_AddBossSpot(map_t* map, float x, float y, angle_t angle)
 {
     assert(map);
     {

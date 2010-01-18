@@ -248,10 +248,13 @@ boolean DD_EarlyInit(void)
  */
 void DD_ShutdownAll(void)
 {
-    int                 i;
+    int i;
 
+#if _DEBUG
     if(P_CurrentMap())
-        P_DestroyMap(P_CurrentMap());
+        Con_Error("DD_ShutdownAll: Warning, open Maps remain.\n");
+#endif
+
     P_ShutdownMapUpdate();
     Con_Shutdown();
     DD_ShutdownHelp();

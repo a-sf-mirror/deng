@@ -36,7 +36,7 @@
 
 #define MO_TELEPORTMAN          14
 
-void        GameMap_InitLava(struct gamemap_s* map);
+void        GameMap_InitLava(struct map_s* map);
 
 boolean     P_ExecuteLineSpecial(int special, byte* args, linedef_t* line, int side, mobj_t* mo);
 boolean     P_StartLockedACS(linedef_t* line, byte* args, mobj_t* mo, int side);
@@ -73,12 +73,12 @@ void        P_ArtiTele(player_t* player);
 
 mobjtype_t  P_MapScriptThingIdToMobjType(int thingId);
 
-boolean     EV_ThingProjectile(struct gamemap_s* map, byte* args, boolean gravity);
-boolean     EV_ThingSpawn(struct gamemap_s* map, byte* args, boolean fog);
-boolean     EV_ThingActivate(struct gamemap_s* map, int tid);
-boolean     EV_ThingDeactivate(struct gamemap_s* map, int tid);
-boolean     EV_ThingRemove(struct gamemap_s* map, int tid);
-boolean     EV_ThingDestroy(struct gamemap_s* map, int tid);
+boolean     EV_ThingProjectile(struct map_s* map, byte* args, boolean gravity);
+boolean     EV_ThingSpawn(struct map_s* map, byte* args, boolean fog);
+boolean     EV_ThingActivate(struct map_s* map, int tid);
+boolean     EV_ThingDeactivate(struct map_s* map, int tid);
+boolean     EV_ThingRemove(struct map_s* map, int tid);
+boolean     EV_ThingDestroy(struct map_s* map, int tid);
 
 void        P_InitSky(int map);
 

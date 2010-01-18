@@ -162,8 +162,16 @@ typedef struct material_s { int type; } material_t;
     int             F_Access(const char* path);
     unsigned int    F_LastModified(const char* fileName);
 
+    // World: Map.
+    struct map_s*   P_CurrentMap(void);
+    void            P_SetCurrentMap(struct map_s* map);
+    struct map_s*   P_CreateMap(const char* mapID);
+    void            P_DestroyMap(struct map_s* map);
+
+    boolean         Map_Load(struct map_s* map);
+
     // Map building interface.
-    boolean         MPE_Begin(const char* name);
+    boolean         MPE_Begin(void);
     boolean         MPE_End(void);
 
     objectrecordid_t MPE_CreateVertex(float x, float y);
@@ -190,9 +198,9 @@ typedef struct material_s { int type; } material_t;
     void             MPE_SetSectorPlane(objectrecordid_t sector, uint type, objectrecordid_t plane);
     objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint linecount,
                                        int tag, int sequenceType, float anchorX, float anchorY);
-    boolean         MPE_GameObjectRecordProperty(const char* objName, uint idx,
-                                        const char* propName, valuetype_t type,
-                                        void* data);
+    boolean          MPE_GameObjectRecordProperty(const char* objName, uint idx,
+                                         const char* propName, valuetype_t type,
+                                         void* data);
 
     // Custom map object data types.
     boolean         P_CreateObjectDef(int identifier, const char* name);
@@ -238,9 +246,6 @@ typedef struct material_s { int type; } material_t;
     void            P_NewPlayerControl(int id, controltype_t type, const char* name, const char* bindContext);
     void            P_GetControlState(int playerNum, int control, float* pos, float* relativeOffset);
     int             P_GetImpulseControlState(int playerNum, int control);
-
-    // Play: Setup.
-    boolean         P_LoadMap(const char* mapID);
 
     // Play: Map Data Updates and Information Access.
     void*           P_GetVariable(int value);
@@ -360,7 +365,7 @@ typedef struct material_s { int type; } material_t;
                                              int amount);
 
     // Play: Mobjs.
-    struct mobj_s*  P_MobjCreate(think_t function, float x, float y, float z,
+    struct mobj_s*  P_MobjCreate(struct map_s* map, think_t function, float x, float y, float z,
                                  angle_t angle, float radius, float height, int ddflags);
     void            P_MobjDestroy(struct mobj_s* mo);
     void            P_MobjSetState(struct mobj_s* mo, int statenum);
@@ -394,6 +399,8 @@ typedef struct material_s { int type; } material_t;
     void            DD_ThinkerAdd(thinker_t* th);
     void            DD_ThinkerRemove(thinker_t* th);
     void            DD_ThinkerSetStasis(thinker_t* th, boolean on);
+
+    struct map_s*   Thinker_Map(thinker_t* th);
 
     // Refresh.
     int             DD_GetFrameRate(void);

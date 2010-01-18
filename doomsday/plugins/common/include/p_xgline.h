@@ -336,7 +336,7 @@ void            XG_Register(void);
 // Initialize extended lines for the map.
 void            XL_Init(void);
 // Called when reseting engine state.
-void            XL_Update(struct gamemap_s* map);
+void            XL_Update(struct map_s* map);
 
 void            XL_Thinker(xlthinker_t* xl);
 
@@ -348,10 +348,10 @@ int             XL_LineEvent(int evType, int lineType, linedef_t* line,
 void            XL_ActivateLine(boolean activating, linetype_t* info,
                                 linedef_t* line, int sideNum,
                                 mobj_t* data, int evType);
-int             XL_TraverseLines(struct gamemap_s* map, linedef_t* line, int reftype, int ref,
+int             XL_TraverseLines(struct map_s* map, linedef_t* line, int reftype, int ref,
                                  void* context, void* context2, mobj_t* activator,
                                  int (C_DECL *func)());
-int             XL_TraversePlanes(struct gamemap_s* map, linedef_t* line, int reftype, int ref,
+int             XL_TraversePlanes(struct map_s* map, linedef_t* line, int reftype, int ref,
                                   void* context, void* context2, boolean travSectors,
                                   mobj_t* activator,
                                   int (C_DECL *func)());

@@ -352,50 +352,82 @@ static int destroyGenerator(void* ptr, void* content)
     return true; // Continue iteration.
 }
 
+/**
+ * @note Part of the Doomsday public API.
+ */
 map_t* P_CreateMap(const char* mapID)
 {
-    map_t* map = Z_Calloc(sizeof(map_t), PU_STATIC, 0);
+    map_t* map;
+    
+    if(!mapID || !mapID[0])
+        Con_Error("P_CreateMap: Cannot create Map, a mapID must be specified.");
+
+    map = Z_Calloc(MAP_SIZE, PU_STATIC, NULL);
 
     dd_snprintf(map->mapID, 9, "%s", mapID);
+    strncpy(map->uniqueID, DAM_GenerateUniqueMapName(mapID), sizeof(map->uniqueID));
+
     map->editActive = true;
-    map->bias.editGrabbedID = -1;
+    map->_bias.editGrabbedID = -1;
 
     map->_thinkers = P_CreateThinkers();
     map->_halfEdgeDS = P_CreateHalfEdgeDS();
     map->_gameObjectRecords = P_CreateGameObjectRecords();
     map->_lightGrid = P_CreateLightGrid();
 
+    map->_dlights.linkList = Z_Calloc(sizeof(dynlist_t), PU_STATIC, 0);
+
     return map;
 }
 
+/**
+ * @note Part of the Doomsday public API.
+ */
 void P_DestroyMap(map_t* map)
 {
-    biassurface_t* bsuf;
-
     if(!map)
-        return;
+    {
+        Con_Error("P_DestroyMap: Cannot destroy NULL map.");
+        return; // Unreachable.
+    }
 
-    DL_DestroyDynlights(&map->dlights.linkList);
+    DL_DestroyDynlights(map->_dlights.linkList);
+    Z_Free(map->_dlights.linkList);
+    map->_dlights.linkList = NULL;
 
     /**
      * @todo handle vertexillum allocation/destruction along with the surfaces,
      * utilizing global storage.
      */
-    for(bsuf = map->bias.surfaces; bsuf; bsuf = bsuf->next)
+    {
+    biassurface_t* bsuf;
+    for(bsuf = map->_bias.surfaces; bsuf; bsuf = bsuf->next)
     {
         if(bsuf->illum)
             Z_Free(bsuf->illum);
     }
+    }
 
     SB_DestroySurfaces(map);
+    if(map->_bias.sources)
+        SB_DestroySourceList(map->_bias.sources);
+    map->_bias.sources = NULL;
 
     if(map->_lightGrid)
         P_DestroyLightGrid(map->_lightGrid);
     map->_lightGrid = NULL;
 
-    PlaneList_Empty(&map->watchedPlaneList);
-    SurfaceList_Empty(&map->movingSurfaceList);
-    SurfaceList_Empty(&map->decoratedSurfaceList);
+    if(map->_watchedPlaneList)
+        P_DestroyPlaneList(map->_watchedPlaneList);
+    map->_watchedPlaneList = NULL;
+
+    if(map->_movingSurfaceList)
+        P_DestroySurfaceList(map->_movingSurfaceList);
+    map->_movingSurfaceList = NULL;
+
+    if(map->_decoratedSurfaceList)
+        P_DestroySurfaceList(map->_decoratedSurfaceList);
+    map->_decoratedSurfaceList = NULL;
 
     if(map->_mobjBlockmap)
         P_DestroyMobjBlockmap(map->_mobjBlockmap);
@@ -572,6 +604,9 @@ void P_DestroyMap(map_t* map)
     Thinkers_Iterate(map->_thinkers, NULL, ITF_PUBLIC, recycleMobjs, NULL);
     P_DestroyThinkers(map->_thinkers);
     map->_thinkers = NULL;
+
+    if(P_CurrentMap() == map)
+        P_SetCurrentMap(NULL);
 
     Z_Free(map);
 }
@@ -1179,7 +1214,8 @@ static boolean resetPlaneHeightTracking(plane_t* plane, void* context)
     uint i;
 
     Plane_ResetHeightTracking(plane);
-    PlaneList_Remove(&map->watchedPlaneList, plane);
+    if(map->_watchedPlaneList)
+        PlaneList_Remove(map->_watchedPlaneList, plane);
 
     for(i = 0; i < map->numSectors; ++i)
     {
@@ -1202,9 +1238,10 @@ static boolean interpolatePlaneHeight(plane_t* plane, void* context)
     uint i;
 
     Plane_InterpolateHeight(plane);
+
     // Has this plane reached its destination?
-    if(plane->visHeight == plane->height)
-        PlaneList_Remove(&map->watchedPlaneList, plane);
+    if(plane->visHeight == plane->height && map->_watchedPlaneList)
+        PlaneList_Remove(map->_watchedPlaneList, plane);
 
     for(i = 0; i < map->numSectors; ++i)
     {
@@ -1227,8 +1264,8 @@ static boolean interpolatePlaneHeight(plane_t* plane, void* context)
 void Map_UpdateWatchedPlanes(map_t* map)
 {
     assert(map);
-
-    PlaneList_Iterate(&map->watchedPlaneList, updatePlaneHeightTracking, NULL);
+    if(map->_watchedPlaneList)
+        PlaneList_Iterate(map->_watchedPlaneList, updatePlaneHeightTracking, NULL);
 }
 
 /**
@@ -1241,14 +1278,14 @@ static void interpolateWatchedPlanes(map_t* map, boolean resetNextViewer)
     if(resetNextViewer)
     {
         // $smoothplane: Reset the plane height trackers.
-        PlaneList_Iterate(&map->watchedPlaneList, resetPlaneHeightTracking, map);
+        PlaneList_Iterate(map->_watchedPlaneList, resetPlaneHeightTracking, map);
     }
     // While the game is paused there is no need to calculate any
     // visual plane offsets $smoothplane.
     else //if(!clientPaused)
     {
         // $smoothplane: Set the visible offsets.
-        PlaneList_Iterate(&map->watchedPlaneList, interpolatePlaneHeight, map);
+        PlaneList_Iterate(map->_watchedPlaneList, interpolatePlaneHeight, map);
     }
 }
 
@@ -1305,14 +1342,14 @@ static void interpolateMovingSurfaces(map_t* map, boolean resetNextViewer)
     if(resetNextViewer)
     {
         // Reset the material offset trackers.
-        SurfaceList_Iterate(&map->movingSurfaceList, resetMovingSurface, &map->movingSurfaceList);
+        SurfaceList_Iterate(map->_movingSurfaceList, resetMovingSurface, map->_movingSurfaceList);
     }
     // While the game is paused there is no need to calculate any
     // visual material offsets.
     else //if(!clientPaused)
     {
         // Set the visible material offsets.
-        SurfaceList_Iterate(&map->movingSurfaceList, interpMovingSurface, &map->movingSurfaceList);
+        SurfaceList_Iterate(map->_movingSurfaceList, interpMovingSurface, map->_movingSurfaceList);
     }
 }
 
@@ -1348,10 +1385,9 @@ static boolean updateMovingSurface(surface_t* suf, void* context)
  */
 void Map_UpdateMovingSurfaces(map_t* map)
 {
-    if(!map)
-        return;
-
-    SurfaceList_Iterate(&map->movingSurfaceList, updateMovingSurface, NULL);
+    assert(map);
+    if(map->_movingSurfaceList)
+        SurfaceList_Iterate(map->_movingSurfaceList, updateMovingSurface, NULL);
 }
 
 typedef struct {
@@ -2971,8 +3007,10 @@ void Map_BeginFrame(map_t* map, boolean resetNextViewer)
     assert(map);
 
     clearSectorFlags(map);
-    interpolateWatchedPlanes(map, resetNextViewer);
-    interpolateMovingSurfaces(map, resetNextViewer);
+    if(map->_watchedPlaneList)
+        interpolateWatchedPlanes(map, resetNextViewer);
+    if(map->_movingSurfaceList)
+        interpolateMovingSurfaces(map, resetNextViewer);
 
     if(!freezeRLs)
     {
@@ -3684,21 +3722,16 @@ boolean Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objcontactty
 
 /**
  * Begin the process of loading a new map.
- * Can be accessed by the games via the public API.
  *
  * @param levelId       Identifier of the map to be loaded (eg "E1M1").
  *
  * @return              @c true, if the map was loaded successfully.
  */
-boolean P_LoadMap(const char* mapID)
+boolean Map_Load(map_t* map)
 {
-    uint i;
-    map_t* map = NULL;
+    assert(map);
 
-    if(!mapID || !mapID[0])
-        return false; // Yeah, ok... :P
-
-    Con_Message("P_LoadMap: \"%s\"\n", mapID);
+    Con_Message("Map_Load: \"%s\"\n", map->mapID);
 
     // It would be very cool if map loading happened in another
     // thread. That way we could be keeping ourselves busy while
@@ -3712,6 +3745,7 @@ boolean P_LoadMap(const char* mapID)
 
     if(isServer)
     {
+        int i;
         // Whenever the map changes, remote players must tell us when
         // they're ready to begin receiving frames.
         for(i = 0; i < DDMAXPLAYERS; ++i)
@@ -3728,16 +3762,14 @@ boolean P_LoadMap(const char* mapID)
         }
     }
 
-    if(DAM_TryMapConversion(mapID))
-        map = MPE_GetLastBuiltMap();
-    else
+    MPE_SetEditMap(map);
+    if(!DAM_TryMapConversion(map->mapID))
         return false;
 
     if(1)//(map = DAM_LoadMap(mapID)))
     {
         ded_sky_t* skyDef = NULL;
         ded_mapinfo_t* mapInfo;
-        uint i;
 
         // Initialize The Logical Sound Manager.
         S_MapChange();
@@ -3771,10 +3803,6 @@ boolean P_LoadMap(const char* mapID)
 
         initSubsectorContacts(map);
 
-        strncpy(map->mapID, mapID, 8);
-        strncpy(map->uniqueID, DAM_GenerateUniqueMapName(mapID),
-                sizeof(map->uniqueID));
-
         // See what mapinfo says about this map.
         mapInfo = Def_GetMapInfo(map->mapID);
         if(!mapInfo)
@@ -3802,12 +3830,6 @@ boolean P_LoadMap(const char* mapID)
             map->ambientLightLevel = 0;
         }
 
-        // @todo should be called from P_LoadMap() but R_InitMap requires the
-        // currentMap to be set first.
-        P_SetCurrentMap(map);
-
-        map = P_CurrentMap();
-
         R_InitSectorShadows(map);
 
         {
@@ -3831,6 +3853,8 @@ boolean P_LoadMap(const char* mapID)
         R_CalcLightModRange(NULL);
 
         // Invalidate old cmds and init player values.
+        {
+        int i;
         for(i = 0; i < DDMAXPLAYERS; ++i)
         {
             player_t* plr = &ddPlayers[i];
@@ -3840,6 +3864,7 @@ boolean P_LoadMap(const char* mapID)
 
             plr->extraLight = plr->targetExtraLight = 0;
             plr->extraLightCounter = 0;
+        }
         }
 
         // Make sure that the next frame doesn't use a filtered viewer.
@@ -3865,6 +3890,8 @@ boolean P_LoadMap(const char* mapID)
 boolean Map_MobjsBoxIterator(map_t* map, const float box[4],
                              boolean (*func) (mobj_t*, void*), void* data)
 {
+    assert(map);
+    {
     vec2_t bounds[2];
 
     bounds[0][VX] = box[BOXLEFT];
@@ -3873,18 +3900,18 @@ boolean Map_MobjsBoxIterator(map_t* map, const float box[4],
     bounds[1][VY] = box[BOXTOP];
 
     return Map_MobjsBoxIteratorv(map, bounds, func, data);
+    }
 }
 
 boolean Map_MobjsBoxIteratorv(map_t* map, const arvec2_t box,
                               boolean (*func) (mobj_t*, void*), void* data)
 {
+    assert(map);
+    {
     uint blockBox[4];
-
-    if(!map)
-        return true;
-
     MobjBlockmap_BoxToBlocks(map->_mobjBlockmap, blockBox, box);
     return MobjBlockmap_BoxIterate(map->_mobjBlockmap, blockBox, func, data);
+    }
 }
 
 static boolean linesBoxIteratorv(map_t* map, const arvec2_t box,
@@ -3892,10 +3919,6 @@ static boolean linesBoxIteratorv(map_t* map, const arvec2_t box,
                                  void* data, boolean retObjRecord)
 {
     uint blockBox[4];
-
-    if(!map)
-        return true;
-
     LineDefBlockmap_BoxToBlocks(map->_lineDefBlockmap, blockBox, box);
     return LineDefBlockmap_BoxIterate(map->_lineDefBlockmap, blockBox, func, data, retObjRecord);
 }
@@ -3904,6 +3927,7 @@ boolean Map_LineDefsBoxIteratorv(map_t* map, const arvec2_t box,
                                  boolean (*func) (linedef_t*, void*), void* data,
                                  boolean retObjRecord)
 {
+    assert(map);
     return linesBoxIteratorv(map, box, func, data, retObjRecord);
 }
 
@@ -3914,6 +3938,8 @@ boolean Map_SubsectorsBoxIterator(map_t* map, const float box[4], sector_t* sect
                                   boolean (*func) (subsector_t*, void*),
                                   void* parm, boolean retObjRecord)
 {
+    assert(map);
+    {
     vec2_t bounds[2];
 
     bounds[0][VX] = box[BOXLEFT];
@@ -3922,6 +3948,7 @@ boolean Map_SubsectorsBoxIterator(map_t* map, const float box[4], sector_t* sect
     bounds[1][VY] = box[BOXTOP];
 
     return Map_SubsectorsBoxIteratorv(map, bounds, sector, func, parm, retObjRecord);
+    }
 }
 
 /**
@@ -3932,11 +3959,10 @@ boolean Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, sector_t* sec
                                    boolean (*func) (subsector_t*, void*),
                                    void* data, boolean retObjRecord)
 {
+    assert(map);
+    {
     static int localValidCount = 0;
     uint blockBox[4];
-
-    if(!map)
-        return true;
 
     // This is only used here.
     localValidCount++;
@@ -3946,6 +3972,7 @@ boolean Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, sector_t* sec
     return SubsectorBlockmap_BoxIterate(map->_subsectorBlockmap, blockBox, sector,
                                        box, localValidCount, func, data,
                                        retObjRecord);
+    }
 }
 
 gameobjrecords_t* Map_GameObjectRecords(map_t* map)

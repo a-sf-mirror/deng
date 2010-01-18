@@ -74,7 +74,7 @@ static float bulletSlope;
 
 void R_GetWeaponBob(int player, float* x, float* y)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) players[player].plr->mo);
 
     if(x)
     {
@@ -357,7 +357,7 @@ void C_DECL A_Punch(player_t* player, pspdef_t* psp)
     assert(player);
     assert(psp);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     angle_t angle;
     int damage;
     float slope;
@@ -397,7 +397,7 @@ void C_DECL A_Saw(player_t* player, pspdef_t* psp)
     assert(player);
     assert(psp);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     angle_t angle;
     int damage;
     float slope;
@@ -486,6 +486,8 @@ void C_DECL A_FirePlasma(player_t *player, pspdef_t *psp)
  */
 void P_BulletSlope(mobj_t* mo)
 {
+    assert(mo);
+    {
     angle_t angle;
 
     // See which target is to be aimed at.
@@ -493,7 +495,7 @@ void P_BulletSlope(mobj_t* mo)
     bulletSlope = P_AimLineAttack(mo, angle, 16 * 64);
     if(!cfg.noAutoAim)
     {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = Thinker_Map((thinker_t*) mo);
 
         if(!map->lineTarget)
         {
@@ -514,12 +516,15 @@ void P_BulletSlope(mobj_t* mo)
             }
         }
     }
+    }
 }
 
-void P_GunShot(mobj_t *mo, boolean accurate)
+void P_GunShot(mobj_t* mo, boolean accurate)
 {
-    angle_t             angle;
-    int                 damage;
+    assert(mo);
+    {
+    angle_t angle;
+    int damage;
 
     damage = 5 * (P_Random() % 3 + 1);
     angle = mo->angle;
@@ -528,6 +533,7 @@ void P_GunShot(mobj_t *mo, boolean accurate)
         angle += (P_Random() - P_Random()) << 18;
 
     P_LineAttack(mo, angle, MISSILERANGE, bulletSlope, damage);
+    }
 }
 
 void C_DECL A_FirePistol(player_t *player, pspdef_t *psp)
@@ -665,7 +671,7 @@ void C_DECL A_BFGSpray(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     int i, j, damage;
     angle_t angle;
 

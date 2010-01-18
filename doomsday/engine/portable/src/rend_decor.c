@@ -491,7 +491,6 @@ static uint generateDecorLights(map_t* map, const ded_decorlight_t* def,
                                 const pvec3_t delta, int axis,
                                 float offsetS, float offsetT, sector_t* sec)
 {
-    surfacelist_t* list = &map->decoratedSurfaceList;
     uint num;
     float s, t; // Horizontal and vertical offset.
     vec3_t posBase, pos;
@@ -547,7 +546,10 @@ static uint generateDecorLights(map_t* map, const ded_decorlight_t* def,
                 d->subsector = Map_PointInSubsector(map, d->pos[VX], d->pos[VY]);
                 DEC_LIGHT(d)->def = def;
 
-                SurfaceList_Add(list, suf);
+                if(!map->_decoratedSurfaceList)
+                    map->_decoratedSurfaceList = P_CreateSurfaceList();
+
+                SurfaceList_Add(map->_decoratedSurfaceList, suf);
 
                 num++;
             }
@@ -563,7 +565,6 @@ static uint generateDecorModels(map_t* map, const ded_decormodel_t* def,
                                 const pvec3_t delta, int axis,
                                 float offsetS, float offsetT, sector_t* sec)
 {
-    surfacelist_t* list = &map->decoratedSurfaceList;
     uint num;
     modeldef_t* mf;
     float pitch, yaw;
@@ -633,7 +634,10 @@ static uint generateDecorModels(map_t* map, const ded_decormodel_t* def,
                 DEC_MODEL(d)->pitch = pitch;
                 DEC_MODEL(d)->yaw = yaw;
 
-                SurfaceList_Add(list, suf);
+                if(!map->_decoratedSurfaceList)
+                    map->_decoratedSurfaceList = P_CreateSurfaceList();
+
+                SurfaceList_Add(map->_decoratedSurfaceList, suf);
 
                 num++;
             }
@@ -653,7 +657,9 @@ static void updateSurfaceDecorations(map_t* map, surface_t* suf, float offsetS,
     vec3_t delta;
 
     R_ClearSurfaceDecorations(suf);
-    SurfaceList_Remove(&map->decoratedSurfaceList, suf);
+
+    if(map->_decoratedSurfaceList)
+        SurfaceList_Remove(map->_decoratedSurfaceList, suf);
 
     V3_Subtract(delta, v2, v1);
 
@@ -905,8 +911,8 @@ void Rend_InitDecorationsForFrame(map_t* map)
 
 BEGIN_PROF( PROF_DECOR_PROJECT );
 
-        SurfaceList_Iterate(&map->decoratedSurfaceList,
-                            R_ProjectSurfaceDecorations, &decorMaxDist);
+        if(map->_decoratedSurfaceList)
+            SurfaceList_Iterate(map->_decoratedSurfaceList, R_ProjectSurfaceDecorations, &decorMaxDist);
 
 END_PROF( PROF_DECOR_PROJECT );
     }

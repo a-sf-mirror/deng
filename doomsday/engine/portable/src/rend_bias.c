@@ -150,14 +150,14 @@ static biassurface_t* createSurface(map_t* map)
     biassurface_t*      bsuf = allocBiasSurface();
 
     // Link it to the map's surface list.
-    linkSurfaceToList(&map->bias.surfaces, bsuf);
+    linkSurfaceToList(&map->_bias.surfaces, bsuf);
     return bsuf;
 }
 
 static void destroySurface(map_t* map, biassurface_t* bsuf)
 {
     // Unlink this surface from map's surface list.
-    unlinkSurfaceFromList(&map->bias.surfaces, bsuf);
+    unlinkSurfaceFromList(&map->_bias.surfaces, bsuf);
 
     freeBiasSurface(bsuf);
 }
@@ -166,21 +166,21 @@ static void destroyAllSurfaces(map_t* map)
 {
     biassurface_t*      bsuf;
 
-    while((bsuf = map->bias.surfaces))
+    while((bsuf = map->_bias.surfaces))
     {
         destroySurface(map, bsuf);
     }
 }
 
-static int newSourceAt(map_t* map, float x, float y, float z, float size,
+static int newSourceAt(sourcelist_t* sl, float x, float y, float z, float size,
                        float minLight, float maxLight, float* rgb)
 {
-    source_t*           src;
+    source_t* src;
 
-    if(map->bias.numSources == MAX_BIAS_LIGHTS)
+    if(sl->num == MAX_BIAS_LIGHTS)
         return -1;
 
-    src = &map->bias.sources[map->bias.numSources++];
+    src = &sl->sources[sl->num++];
 
     // New lights are automatically locked.
     src->flags = BLF_CHANGED | BLF_LOCKED;
@@ -200,37 +200,34 @@ static int newSourceAt(map_t* map, float x, float y, float z, float size,
     // STILL_UNSEEN).
     src->lastUpdateTime = 0;
 
-    return map->bias.numSources; // == index + 1;
+    return sl->num; // == index + 1;
 }
 
-static void deleteSource(map_t* map, int which)
+static void deleteSource(sourcelist_t* sl, int which)
 {
-    int                 i;
+    int i;
 
     // Do a memory move.
-    for(i = which; i < map->bias.numSources; ++i)
-        map->bias.sources[i].flags |= BLF_CHANGED;
+    for(i = which; i < sl->num; ++i)
+        sl->sources[i].flags |= BLF_CHANGED;
 
-    if(which < map->bias.numSources)
-        memmove(&map->bias.sources[which], &map->bias.sources[which + 1],
-                sizeof(source_t) * (map->bias.numSources - which - 1));
+    if(which < sl->num)
+        memmove(&sl->sources[which], &sl->sources[which + 1],
+                sizeof(source_t) * (sl->num - which - 1));
 
-    map->bias.sources[map->bias.numSources - 1].intensity = 0;
-
-    // Will be one fewer very soon.
-    map->bias.numSourceDelta--;
+    sl->sources[sl->num - 1].intensity = 0;
 }
 
-static void clearSources(map_t* map)
+static void clearSources(sourcelist_t* sl)
 {
-    while(map->bias.numSources-- > 0)
-        map->bias.sources[map->bias.numSources].flags |= BLF_CHANGED;
-    map->bias.numSources = 0;
+    while(sl->num-- > 0)
+        sl->sources[sl->num].flags |= BLF_CHANGED;
+    sl->num = 0;
 }
 
 static void addAffected(affection_t* aff, uint k, float intensity)
 {
-    uint                i, worst;
+    uint i, worst;
 
     if(aff->numFound < MAX_BIAS_AFFECTED)
     {
@@ -476,20 +473,22 @@ static void evalPoint(map_t* map, float light[4], vertexillum_t* illum,
     // Determine if any of the affecting lights have changed since
     // last frame.
     aff = affecting;
-    if(map->bias.numSources > 0)
+    if(map->_bias.sources && map->_bias.sources->num > 0)
     {
+        sourcelist_t* sl = map->_bias.sources;
+
         for(i = 0;
             affectedSources[i].source >= 0 && i < MAX_BIAS_AFFECTED; ++i)
         {
             idx = affectedSources[i].source;
 
             // Is this a valid index?
-            if(idx < 0 || idx >= map->bias.numSources)
+            if(idx < 0 || idx >= sl->num)
                 continue;
 
             aff->index = idx;
             //aff->affNum = i;
-            aff->source = &map->bias.sources[idx];
+            aff->source = &sl->sources[idx];
             aff->affection = &affectedSources[i];
             aff->overrider = (aff->source->flags & BLF_COLOR_OVERRIDE) != 0;
 
@@ -501,9 +500,9 @@ static void evalPoint(map_t* map, float light[4], vertexillum_t* illum,
 
                 // Keep track of the earliest time when an affected source
                 // was changed.
-                if(latestSourceUpdate < map->bias.sources[idx].lastUpdateTime)
+                if(latestSourceUpdate < sl->sources[idx].lastUpdateTime)
                 {
-                    latestSourceUpdate = map->bias.sources[idx].lastUpdateTime;
+                    latestSourceUpdate = sl->sources[idx].lastUpdateTime;
                 }
             }
             else
@@ -699,51 +698,56 @@ static void updateAffected(map_t* map, biassurface_t* bsuf,
 {
     int i, k;
     vec2_t delta;
-    source_t* src;
     float distance = 0, len;
     float intensity;
     affection_t aff;
 
     // If the data is already up to date, nothing needs to be done.
-    if(bsuf->updated == map->bias.lastChangeOnFrame)
+    if(bsuf->updated == map->_bias.lastChangeOnFrame)
         return;
 
-    bsuf->updated = map->bias.lastChangeOnFrame;
+    bsuf->updated = map->_bias.lastChangeOnFrame;
     aff.affected = bsuf->affected;
     aff.numFound = 0;
     memset(aff.affected, -1, sizeof(bsuf->affected));
 
-    for(k = 0, src = map->bias.sources; k < map->bias.numSources; ++k, ++src)
+    if(map->_bias.sources)
     {
-        if(src->intensity <= 0)
-            continue;
+        sourcelist_t* sl = map->_bias.sources;
+        source_t* src;
 
-        // Calculate minimum 2D distance to the seg.
-        for(i = 0; i < 2; ++i)
+        for(k = 0, src = sl->sources; k < sl->num; ++k, ++src)
         {
-            if(!i)
-                V2_Set(delta, from[VX] - src->pos[VX], from[VY] - src->pos[VY]);
-            else
-                V2_Set(delta, to[VX] - src->pos[VX], to[VY] - src->pos[VY]);
-            len = V2_Normalize(delta);
+            if(src->intensity <= 0)
+                continue;
 
-            if(i == 0 || len < distance)
-                distance = len;
+            // Calculate minimum 2D distance to the seg.
+            for(i = 0; i < 2; ++i)
+            {
+                if(!i)
+                    V2_Set(delta, from[VX] - src->pos[VX], from[VY] - src->pos[VY]);
+                else
+                    V2_Set(delta, to[VX] - src->pos[VX], to[VY] - src->pos[VY]);
+                len = V2_Normalize(delta);
+
+                if(i == 0 || len < distance)
+                    distance = len;
+            }
+
+            if(M_DotProduct(delta, normal) >= 0)
+                continue;
+
+            if(distance < 1)
+                distance = 1;
+
+            intensity = src->intensity / distance;
+
+            // Is the source is too weak, ignore it entirely.
+            if(intensity < biasIgnoreLimit)
+                continue;
+
+            addAffected(&aff, k, intensity);
         }
-
-        if(M_DotProduct(delta, normal) >= 0)
-            continue;
-
-        if(distance < 1)
-            distance = 1;
-
-        intensity = src->intensity / distance;
-
-        // Is the source is too weak, ignore it entirely.
-        if(intensity < biasIgnoreLimit)
-            continue;
-
-        addAffected(&aff, k, intensity);
     }
 }
 
@@ -755,52 +759,57 @@ static void updateAffected2(map_t* map, biassurface_t* bsuf,
     int i;
     uint k;
     vec2_t delta;
-    source_t* src;
     float distance = 0, len, dot;
     float intensity;
     affection_t aff;
 
     // If the data is already up to date, nothing needs to be done.
-    if(bsuf->updated == map->bias.lastChangeOnFrame)
+    if(bsuf->updated == map->_bias.lastChangeOnFrame)
         return;
 
-    bsuf->updated = map->bias.lastChangeOnFrame;
+    bsuf->updated = map->_bias.lastChangeOnFrame;
     aff.affected = bsuf->affected;
     aff.numFound = 0;
     memset(aff.affected, -1, sizeof(aff.affected));
 
-    for(i = 0, src = map->bias.sources; i < map->bias.numSources; ++i, ++src)
+    if(map->_bias.sources)
     {
-        if(src->intensity <= 0)
-            continue;
+        sourcelist_t* sl = map->_bias.sources;
+        source_t* src;
 
-        // Calculate minimum 2D distance to the subSector.
-        // \fixme This is probably too accurate an estimate.
-        for(k = 0; k < bsuf->size; ++k)
+        for(i = 0, src = sl->sources; i < sl->num; ++i, ++src)
         {
-            V2_Set(delta,
-                   rvertices[k].pos[VX] - src->pos[VX],
-                   rvertices[k].pos[VY] - src->pos[VY]);
-            len = V2_Length(delta);
+            if(src->intensity <= 0)
+                continue;
 
-            if(k == 0 || len < distance)
-                distance = len;
+            // Calculate minimum 2D distance to the subSector.
+            // @fixme This is probably too accurate an estimate.
+            for(k = 0; k < bsuf->size; ++k)
+            {
+                V2_Set(delta,
+                       rvertices[k].pos[VX] - src->pos[VX],
+                       rvertices[k].pos[VY] - src->pos[VY]);
+                len = V2_Length(delta);
+
+                if(k == 0 || len < distance)
+                    distance = len;
+            }
+            if(distance < 1)
+                distance = 1;
+
+            // Estimate the effect on this surface.
+            dot = biasDot(src, point, normal);
+            if(dot <= 0)
+                continue;
+
+            intensity = /*dot * */ src->intensity / distance;
+
+            // Is the source is too weak, ignore it entirely.
+            if(intensity < biasIgnoreLimit)
+                continue;
+
+            addAffected(&aff, i, intensity);
         }
-        if(distance < 1)
-            distance = 1;
-
-        // Estimate the effect on this surface.
-        dot = biasDot(src, point, normal);
-        if(dot <= 0)
-            continue;
-
-        intensity = /*dot * */ src->intensity / distance;
-
-        // Is the source is too weak, ignore it entirely.
-        if(intensity < biasIgnoreLimit)
-            continue;
-
-        addAffected(&aff, i, intensity);
     }
 }
 
@@ -823,21 +832,21 @@ static boolean changeInAffected(biasaffection_t* affected,
     return false;
 }
 
-static void markSurfaceSourcesChanged(map_t* map, biassurface_t* bsuf)
+static void markSurfaceSourcesChanged(sourcelist_t* sl, biassurface_t* bsuf)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < MAX_BIAS_AFFECTED && bsuf->affected[i].source >= 0; ++i)
     {
-        map->bias.sources[bsuf->affected[i].source].flags |= BLF_CHANGED;
+        sl->sources[bsuf->affected[i].source].flags |= BLF_CHANGED;
     }
 }
 
 static void newSourcesFromLightDefs(map_t* map)
 {
-    int                 i;
-    ded_light_t*        def;
-    const char*         uniqueID = Map_UniqueName(map);
+    int i;
+    ded_light_t* def;
+    const char* uniqueID = Map_UniqueName(map);
 
     // Check all the loaded Light definitions for any matches.
     for(i = 0; i < defs.count.lights.num; ++i)
@@ -847,9 +856,12 @@ static void newSourcesFromLightDefs(map_t* map)
         if(def->state[0] || stricmp(uniqueID, def->uniqueMapID))
             continue;
 
-        if(newSourceAt(map, def->offset[VX], def->offset[VY], def->offset[VZ],
-                       def->size, def->lightLevel[0], def->lightLevel[1],
-                       def->color) == -1)
+        if(!map->_bias.sources)
+            map->_bias.sources = SB_CreateSourceList();
+
+        if(newSourceAt(map->_bias.sources, def->offset[VX], def->offset[VY],
+                       def->offset[VZ], def->size, def->lightLevel[0],
+                       def->lightLevel[1], def->color) == -1)
             break;
     }
 }
@@ -859,11 +871,22 @@ static void init(map_t* map)
     destroyAllSurfaces(map);
 
     // Start with no sources whatsoever.
-    map->bias.numSources = 0;
-    map->bias.numSourceDelta = 0;
-    map->bias.lastChangeOnFrame = 0;
+    map->_bias.sources = NULL;
+    map->_bias.numSourceDelta = 0;
+    map->_bias.lastChangeOnFrame = 0;
 
     newSourcesFromLightDefs(map);
+}
+
+sourcelist_t* SB_CreateSourceList(void)
+{
+    return Z_Calloc(sizeof(sourcelist_t), PU_STATIC, 0);
+}
+
+void SB_DestroySourceList(sourcelist_t* sl)
+{
+    assert(sl);
+    Z_Free(sl);
 }
 
 /**
@@ -900,12 +923,14 @@ void SB_DestroySurfaces(map_t* map)
  */
 void SB_BeginFrame(map_t* map)
 {
-    int                 l;
-    source_t*           s;
-    biastracker_t       allChanges;
+    assert(map);
+    {
+    int l;
+    source_t* s;
+    biastracker_t allChanges;
 
 #ifdef DD_PROFILE
-    static int          i;
+    static int i;
 
     if(++i > 40)
     {
@@ -913,9 +938,6 @@ void SB_BeginFrame(map_t* map)
         PRINT_PROF( PROF_BIAS_UPDATE );
     }
 #endif
-
-    if(!map)
-        return;
 
     if(!useBias)
         return;
@@ -927,58 +949,62 @@ BEGIN_PROF( PROF_BIAS_UPDATE );
 
     // Check which sources have changed.
     memset(&allChanges, 0, sizeof(allChanges));
-    for(l = 0; l < map->bias.numSources; ++l)
+    if(map->_bias.sources)
     {
-        s = &map->bias.sources[l];
-
-        if(s->sectorLevel[1] > 0 || s->sectorLevel[0] > 0)
+        sourcelist_t* sl = map->_bias.sources;
+        for(l = 0; l < sl->num; ++l)
         {
-            float minLevel = s->sectorLevel[0];
-            float maxLevel = s->sectorLevel[1];
-            subsector_t* subsector = Map_PointInSubsector(map, s->pos[VX], s->pos[VY]);
-            sector_t* sector;
-            float oldIntensity = s->intensity;
+            s = &sl->sources[l];
 
-            sector = subsector->sector;
-
-            // The lower intensities are useless for light emission.
-            if(sector->lightLevel >= maxLevel)
+            if(s->sectorLevel[1] > 0 || s->sectorLevel[0] > 0)
             {
-                s->intensity = s->primaryIntensity;
+                float minLevel = s->sectorLevel[0];
+                float maxLevel = s->sectorLevel[1];
+                subsector_t* subsector = Map_PointInSubsector(map, s->pos[VX], s->pos[VY]);
+                sector_t* sector;
+                float oldIntensity = s->intensity;
+
+                sector = subsector->sector;
+
+                // The lower intensities are useless for light emission.
+                if(sector->lightLevel >= maxLevel)
+                {
+                    s->intensity = s->primaryIntensity;
+                }
+
+                if(sector->lightLevel >= minLevel && minLevel != maxLevel)
+                {
+                    s->intensity = s->primaryIntensity *
+                        (sector->lightLevel - minLevel) / (maxLevel - minLevel);
+                }
+                else
+                {
+                    s->intensity = 0;
+                }
+
+                if(s->intensity != oldIntensity)
+                    s->flags |= BLF_CHANGED;
             }
 
-            if(sector->lightLevel >= minLevel && minLevel != maxLevel)
+            if(s->flags & BLF_CHANGED)
             {
-                s->intensity = s->primaryIntensity *
-                    (sector->lightLevel - minLevel) / (maxLevel - minLevel);
+                trackerMark(&allChanges, l);
+                s->flags &= ~BLF_CHANGED;
+
+                // This is used for interpolation.
+                s->lastUpdateTime = currentTimeSB;
+
+                // Recalculate which sources affect which surfaces.
+                map->_bias.lastChangeOnFrame = frameCount;
             }
-            else
-            {
-                s->intensity = 0;
-            }
-
-            if(s->intensity != oldIntensity)
-                s->flags |= BLF_CHANGED;
-        }
-
-        if(s->flags & BLF_CHANGED)
-        {
-            trackerMark(&allChanges, l);
-            s->flags &= ~BLF_CHANGED;
-
-            // This is used for interpolation.
-            s->lastUpdateTime = currentTimeSB;
-
-            // Recalculate which sources affect which surfaces.
-            map->bias.lastChangeOnFrame = frameCount;
         }
     }
 
     // Apply to all surfaces.
     {
-    biassurface_t*      bsuf;
+    biassurface_t* bsuf;
 
-    for(bsuf = map->bias.surfaces; bsuf; bsuf = bsuf->next)
+    for(bsuf = map->_bias.surfaces; bsuf; bsuf = bsuf->next)
     {
         trackerApply(&bsuf->tracker, &allChanges);
 
@@ -996,62 +1022,61 @@ BEGIN_PROF( PROF_BIAS_UPDATE );
     }
 
 END_PROF( PROF_BIAS_UPDATE );
+    }
 }
 
 void SB_EndFrame(map_t* map)
 {
-    if(!map)
-        return;
-
-    if(map->bias.numSourceDelta != 0)
+    assert(map);
+    if(map->_bias.sources && map->_bias.numSourceDelta != 0)
     {
-        map->bias.numSources += map->bias.numSourceDelta;
-        map->bias.numSourceDelta = 0;
+        map->_bias.sources->num += map->_bias.numSourceDelta;
+        map->_bias.numSourceDelta = 0;
     }
 }
 
 biassurface_t* SB_CreateSurface(map_t* map)
 {
-    if(!map)
-        return NULL;
-
+    assert(map);
     return createSurface(map);
 }
 
 void SB_DestroySurface(map_t* map, biassurface_t* bsuf)
 {
-    if(!map || !bsuf)
-        return;
-
+    assert(map);
+    assert(bsuf);
     destroySurface(map, bsuf);
 }
 
 void SB_InitVertexIllum(vertexillum_t* villum)
 {
-    int                 i;
-
+    assert(villum);
+    {
+    int i;
     villum->flags |= VIF_STILL_UNSEEN;
-
     for(i = 0; i < MAX_BIAS_AFFECTED; ++i)
         villum->casted[i].source = -1;
+    }
 }
 
 void SB_SurfaceInit(biassurface_t* bsuf)
 {
-    uint                i;
-
+    assert(bsuf);
+    {
+    uint i;
     for(i = 0; i < bsuf->size; ++i)
     {
         SB_InitVertexIllum(&bsuf->illum[i]);
+    }
     }
 }
 
 void SB_SurfaceMoved(map_t* map, biassurface_t* bsuf)
 {
-    if(!map || !bsuf)
-        return;
-
-    markSurfaceSourcesChanged(map, bsuf);
+    assert(map);
+    assert(bsuf);
+    if(map->_bias.sources)
+        markSurfaceSourcesChanged(map->_bias.sources, bsuf);
 }
 
 /**
@@ -1059,10 +1084,10 @@ void SB_SurfaceMoved(map_t* map, biassurface_t* bsuf)
  */
 source_t* SB_GetSource(map_t* map, int which)
 {
-    if(!map || which < 0)
+    assert(map);
+    if(!map->_bias.sources || which < 0 || which >= map->_bias.sources->num)
         return NULL;
-
-    return &map->bias.sources[which];
+    return &map->_bias.sources->sources[which];
 }
 
 /**
@@ -1072,10 +1097,9 @@ source_t* SB_GetSource(map_t* map, int which)
  */
 int SB_ToIndex(map_t* map, source_t* source)
 {
-    if(!map || !source)
-        return -1;
-
-    return (source - map->bias.sources);
+    assert(map);
+    assert(map->_bias.sources);
+    return (source - map->_bias.sources->sources);
 }
 
 /**
@@ -1097,10 +1121,10 @@ int SB_ToIndex(map_t* map, source_t* source)
 int SB_NewSourceAt(map_t* map, float x, float y, float z, float size,
                    float minLight, float maxLight, float* rgb)
 {
-    if(!map)
-        return 0;
-
-    return newSourceAt(map, x, y, z, size, minLight, maxLight, rgb);
+    assert(map);
+    if(!map->_bias.sources)
+        map->_bias.sources = SB_CreateSourceList();
+    return newSourceAt(map->_bias.sources, x, y, z, size, minLight, maxLight, rgb);
 }
 
 /**
@@ -1161,10 +1185,14 @@ void SB_SourceSetColor(source_t* src, float* rgb)
  */
 void SB_DeleteSource(map_t* map, int which)
 {
-    if(!map || which < 0 || which >= map->bias.numSources)
+    assert(map);
+
+    if(!map->_bias.sources || which < 0 || which >= map->_bias.sources->num)
         return; // Very odd...
 
-    deleteSource(map, which);
+    deleteSource(map->_bias.sources, which);
+    // Will be one fewer very soon.
+    map->_bias.numSourceDelta--;
 }
 
 /**
@@ -1172,10 +1200,9 @@ void SB_DeleteSource(map_t* map, int which)
  */
 void SB_ClearSources(map_t* map)
 {
-    if(!map)
-        return;
-
-    clearSources(map);
+    assert(map);
+    if(map->_bias.sources)
+        clearSources(map->_bias.sources);
 }
 
 /**

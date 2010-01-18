@@ -91,7 +91,7 @@
 
 // CODE --------------------------------------------------------------------
 
-static boolean fuzzySpawnPosition(gamemap_t* map, float* x, float* y,
+static boolean fuzzySpawnPosition(map_t* map, float* x, float* y,
     float* z, angle_t* angle, int* spawnFlags)
 {
 #define XOFFSET         (33) // Player radius = 16
@@ -204,7 +204,7 @@ void P_Init(void)
 #endif
 }
 
-void GameMap_AddPlayerStart(gamemap_t* map, int defaultPlrNum, byte entryPoint,
+void GameMap_AddPlayerStart(map_t* map, int defaultPlrNum, byte entryPoint,
                          boolean deathmatch, float x, float y, float z,
                          angle_t angle, int spawnFlags)
 {
@@ -235,7 +235,7 @@ void GameMap_AddPlayerStart(gamemap_t* map, int defaultPlrNum, byte entryPoint,
     }
 }
 
-void GameMap_ClearPlayerStarts(gamemap_t* map)
+void GameMap_ClearPlayerStarts(map_t* map)
 {
     assert(map);
     {
@@ -255,7 +255,7 @@ void GameMap_ClearPlayerStarts(gamemap_t* map)
  * @return              The correct start for the player. The start is in
  *                      the given group for specified entry point.
  */
-const playerstart_t* GameMap_PlayerStart(gamemap_t* map, byte entryPoint, int pnum, boolean deathmatch)
+const playerstart_t* GameMap_PlayerStart(map_t* map, byte entryPoint, int pnum, boolean deathmatch)
 {
     assert(map);
     {
@@ -296,7 +296,7 @@ const playerstart_t* GameMap_PlayerStart(gamemap_t* map, byte entryPoint, int pn
     }
 }
 
-uint GameMap_NumPlayerStarts(gamemap_t* map, boolean deathmatch)
+uint GameMap_NumPlayerStarts(map_t* map, boolean deathmatch)
 {
     assert(map);
     if(deathmatch)
@@ -308,7 +308,7 @@ uint GameMap_NumPlayerStarts(gamemap_t* map, boolean deathmatch)
  * Gives all the players in the game a playerstart.
  * Only needed in co-op games (start spots are random in deathmatch).
  */
-void GameMap_DealPlayerStarts(gamemap_t* map, byte entryPoint)
+void GameMap_DealPlayerStarts(map_t* map, byte entryPoint)
 {
     assert(map);
     {
@@ -374,7 +374,7 @@ void GameMap_DealPlayerStarts(gamemap_t* map, byte entryPoint)
  * Called when a player is spawned into the map. Most of the player
  * structure stays unchanged between maps.
  */
-void GameMap_SpawnPlayer(gamemap_t* map, int plrNum, playerclass_t pClass,
+void GameMap_SpawnPlayer(map_t* map, int plrNum, playerclass_t pClass,
                          float x, float y, float z, angle_t angle, int spawnFlags,
                          boolean makeCamera)
 {
@@ -515,7 +515,7 @@ void GameMap_SpawnPlayer(gamemap_t* map, int plrNum, playerclass_t pClass,
     }
 }
 
-static void spawnPlayer(gamemap_t* map, int plrNum, playerclass_t pClass,
+static void spawnPlayer(map_t* map, int plrNum, playerclass_t pClass,
                         float x, float y, float z, angle_t angle, int spawnFlags,
                         boolean makeCamera, boolean doTeleSpark,
                         boolean doTeleFrag)
@@ -580,7 +580,7 @@ void P_RebornPlayer(int plrNum)
     angle_t angle;
     int spawnFlags;
     boolean makeCamera;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     if(plrNum < 0 || plrNum >= MAXPLAYERS)
         return; // Wha?
@@ -764,7 +764,7 @@ void P_RebornPlayer(int plrNum)
  * @return              @c false if the player cannot be respawned at the
  *                      given location because something is occupying it.
  */
-boolean P_CheckSpot(gamemap_t* map, float x, float y)
+boolean P_CheckSpot(map_t* map, float x, float y)
 {
     assert(map);
     {
@@ -803,7 +803,7 @@ boolean P_CheckSpot(gamemap_t* map, float x, float y)
  * Spawns all players, using the method appropriate for current game mode.
  * Called during map setup.
  */
-void GameMap_SpawnPlayers(gamemap_t* map)
+void GameMap_SpawnPlayers(map_t* map)
 {
     assert(map);
 
@@ -889,7 +889,7 @@ void GameMap_SpawnPlayers(gamemap_t* map)
 /**
  * Spawns a player at one of the random death match spots.
  */
-void GameMap_SpawnPlayerDM(gamemap_t* map, int playerNum)
+void GameMap_SpawnPlayerDM(map_t* map, int playerNum)
 {
     assert(map);
     {
@@ -1049,7 +1049,7 @@ int iterateLinedefsNearMobj(void* p, void* context)
  * original maps. The DOOM engine allowed these kinds of things but a
  * Z-buffer doesn't.
  */
-void P_MoveThingsOutOfWalls(gamemap_t* map)
+void P_MoveThingsOutOfWalls(map_t* map)
 {
     assert(map);
     {
@@ -1098,7 +1098,7 @@ float P_PointLineDistance(linedef_t* line, float x, float y, float* offset)
 /**
  * Fails in some places, but works most of the time.
  */
-void P_TurnGizmosAwayFromDoors(gamemap_t* map)
+void P_TurnGizmosAwayFromDoors(map_t* map)
 {
     assert(map);
     {

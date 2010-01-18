@@ -73,7 +73,7 @@ typedef struct {
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void     P_FinalizeMap(gamemap_t* map);
+static void     P_FinalizeMap(map_t* map);
 static void     P_PrintMapBanner(int episode, int map);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -99,7 +99,7 @@ xlinedef_t* P_ToXLine(linedef_t* line)
     }
     else
     {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = P_CurrentMap();
         return &map->_xLineDefs[DMU_ToIndex(line)];
     }
 }
@@ -119,7 +119,7 @@ xsector_t* P_ToXSector(sector_t* sector)
     }
     else
     {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = P_CurrentMap();
         return &map->_xSectors[DMU_ToIndex(sector)];
     }
 }
@@ -143,7 +143,7 @@ xsector_t* P_ToXSectorOfSubsector(subsector_t* subsector)
     }
     else
     {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = P_CurrentMap();
         return &map->_xSectors[DMU_ToIndex(sec)];
     }
 }
@@ -157,7 +157,7 @@ xsector_t* P_ToXSectorOfSubsector(subsector_t* subsector)
  *
  * @return              Ptr to xlinedef_t.
  */
-xlinedef_t* GameMap_XLineDef(gamemap_t* map, uint index)
+xlinedef_t* GameMap_XLineDef(map_t* map, uint index)
 {
     assert(map);
     if(index >= numlines)
@@ -174,7 +174,7 @@ xlinedef_t* GameMap_XLineDef(gamemap_t* map, uint index)
  *
  * @return              Ptr to xsector_t.
  */
-xsector_t* GameMap_XSector(gamemap_t* map, uint index)
+xsector_t* GameMap_XSector(map_t* map, uint index)
 {
     assert(map);
     if(index >= numsectors)
@@ -197,7 +197,7 @@ void P_SetupForMapData(int type, uint num)
     {
     case DMU_SECTOR:
         {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = P_CurrentMap();
         if(num > 0)
             map->_xSectors = Z_Calloc(num * sizeof(xsector_t), PU_MAP, 0);
         else
@@ -206,7 +206,7 @@ void P_SetupForMapData(int type, uint num)
         }
     case DMU_LINEDEF:
         {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = P_CurrentMap();
         if(num > 0)
             map->_xLineDefs = Z_Calloc(num * sizeof(xlinedef_t), PU_MAP, 0);
         else
@@ -396,7 +396,7 @@ static boolean checkMapSpotSpawnFlags(const mapspot_t* spot)
     return true;
 }
 
-static void P_LoadMapObjs(gamemap_t* map)
+static void P_LoadMapObjs(map_t* map)
 {
     uint i;
 
@@ -634,7 +634,7 @@ Con_Message("spawning x:[%g, %g, %g] angle:%i ednum:%i flags:%i\n",
 /**
  * @todo This should be done in the map converter plugin, not here.
  */
-static void interpretLinedefFlags(gamemap_t* map)
+static void interpretLinedefFlags(map_t* map)
 {
 #define ML_BLOCKING             1 // Solid, is an obstacle.
 #define ML_TWOSIDED             4 // Backside will not be present at all if not two sided.
@@ -726,7 +726,7 @@ static void interpretLinedefFlags(gamemap_t* map)
 #endif
 }
 
-void GameMap_Precache(gamemap_t* map)
+void GameMap_Precache(map_t* map)
 {
     assert(map);
 
@@ -775,7 +775,7 @@ void GameMap_Precache(gamemap_t* map)
 #endif
 }
 
-static void loadRejectMatrix(gamemap_t* map)
+static void loadRejectMatrix(map_t* map)
 {
     lumpnum_t lumpNum = W_GetNumForName(map->mapID) + 9 /*ML_REJECT*/;
     if(lumpNum != -1)
@@ -786,22 +786,22 @@ static void loadRejectMatrix(gamemap_t* map)
 }
 
 typedef struct setupmapparams_s {
-    gamemap_t*      map;
+    map_t*      map;
     skillmode_t     skill;
 } setupmapparams_t;
 
 int P_SetupMapWorker(void* ptr)
 {
     const setupmapparams_t* p = ptr;
-    gamemap_t* map = p->map;
-
-    // It begins...
-    map->inSetup = true;
+    map_t* map = p->map;
 
     // Let the engine know that we are about to start setting up a map.
     R_SetupMap(DDSMM_INITIALIZE, 0);
 
-    if(!P_LoadMap(map->mapID))
+    // It begins...
+    map->inSetup = true;
+
+    if(!Map_Load(map))
     {
         return 0; // Failed.
     }
@@ -865,7 +865,7 @@ int P_SetupMapWorker(void* ptr)
     return 1; // Success.
 }
 
-boolean GameMap_Load(gamemap_t* map, skillmode_t skill)
+boolean GameMap_Load(map_t* map, skillmode_t skill)
 {
     assert(map);
 
@@ -950,7 +950,7 @@ static void loadActionScripts(const char* mapID)
 /**
  * Loads map and glnode data for the requested episode and map.
  */
-void P_SetupMap(gamemap_t* map, skillmode_t skill)
+void P_SetupMap(map_t* map, skillmode_t skill)
 {
     assert(map);
     {
@@ -1025,7 +1025,7 @@ void P_SetupMap(gamemap_t* map, skillmode_t skill)
 /**
  * Do any map finalization including any game-specific stuff.
  */
-static void P_FinalizeMap(gamemap_t* map)
+static void P_FinalizeMap(map_t* map)
 {
 #if __JDOOM__ || __JDOOM64__
     // Adjust slime lower wall textures (a hack!).

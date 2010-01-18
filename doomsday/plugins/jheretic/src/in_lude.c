@@ -242,7 +242,7 @@ void IN_InitStats(void)
     int posNum;
     int slaughterCount;
     int teamCount, team;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     // Init team info.
     if(IS_NETGAME)
@@ -280,7 +280,7 @@ void IN_InitStats(void)
         {
             if(players[i].plr->inGame)
             {
-                gamemap_t* map = P_CurrentGameMap();
+                map_t* map = P_CurrentMap();
 
                 if(map->totalKills)
                 {
@@ -687,7 +687,7 @@ void IN_DrawSingleStats(void)
 {
     static int sounds;
 
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     char* levelname;
     int x;
 

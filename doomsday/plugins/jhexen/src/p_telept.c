@@ -68,26 +68,25 @@ void P_ArtiTeleportOther(player_t* plr)
 
 void P_TeleportToPlayerStarts(mobj_t* mo)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    assert(mo);
+    {
+    map_t* map = Thinker_Map((thinker_t*) mo);
     const playerstart_t* start;
-
-    if(!mo)
-        return;
 
     // Get a random player start.
     if((start = GameMap_PlayerStart(map, 0, -1, false)))
     {
         P_Teleport(mo, start->pos[VX], start->pos[VY], start->angle, true);
     }
+    }
 }
 
 void P_TeleportToDeathmatchStarts(mobj_t* mo)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    assert(mo);
+    {
+    map_t* map = Thinker_Map((thinker_t*) mo);
     const playerstart_t* start;
-
-    if(!mo)
-        return;
 
     // First, try a random deathmatch start.
     if((start = GameMap_PlayerStart(map, 0, -1, true)))
@@ -98,9 +97,10 @@ void P_TeleportToDeathmatchStarts(mobj_t* mo)
     {
         P_TeleportToPlayerStarts(mo);
     }
+    }
 }
 
-mobj_t* P_SpawnTeleFog(gamemap_t* map, float x, float y, angle_t angle)
+mobj_t* P_SpawnTeleFog(map_t* map, float x, float y, angle_t angle)
 {
     assert(map);
     return GameMap_SpawnMobj3f(map, MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
@@ -111,7 +111,7 @@ boolean P_Teleport(mobj_t* mo, float x, float y, angle_t angle,
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     float oldpos[3], aboveFloor, fogDelta;
     player_t* player;
     unsigned int an;
@@ -219,7 +219,7 @@ boolean EV_Teleport(int tid, mobj_t* mo, boolean fog)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     int i, count, searcher;
     mobj_t* dest = 0;
 
@@ -251,7 +251,7 @@ boolean EV_Teleport(int tid, mobj_t* mo, boolean fog)
 #if __JHERETIC__ || __JHEXEN__
 void P_ArtiTele(player_t* player)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     const playerstart_t* start;
 
     if((start = GameMap_PlayerStart(map, 0, deathmatch? -1 : 0, deathmatch)))

@@ -1310,7 +1310,7 @@ static int findActiveMinotaur(void* p, void* context)
     findactiveminotaurparams_t* params =
         (findactiveminotaurparams_t*) context;
     mobj_t* mo = (mobj_t*) p;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
 
     if(mo->type != MT_MINOTAUR)
         return true; // Continue iteration.
@@ -1638,7 +1638,7 @@ boolean P_MorphPlayer(player_t* player)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* pmo, *fog, *beastMo;
     float pos[3];
     angle_t angle;
@@ -1691,7 +1691,7 @@ boolean P_MorphMonster(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* master, *monster, *fog;
     mobjtype_t moType;
     float pos[3];
@@ -2372,7 +2372,7 @@ int P_PoisonDamage(player_t* player, mobj_t* source, int damage,
 {
     int originalHealth;
     mobj_t* target, *inflictor;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
 
     target = player->plr->mo;
     originalHealth = target->health;

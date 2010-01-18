@@ -106,7 +106,10 @@ boolean Plane_SetProperty(plane_t* plane, const setargs_t* args)
             uint i;
             map_t* map = P_CurrentMap();
 
-            PlaneList_Add(&map->watchedPlaneList, plane);
+            if(!map->_watchedPlaneList)
+                map->_watchedPlaneList = P_CreatePlaneList();
+
+            PlaneList_Add(map->_watchedPlaneList, plane);
 
             for(i = 0; i < map->numSectors; ++i)
             {

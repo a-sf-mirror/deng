@@ -58,7 +58,7 @@
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void P_LightningFlash(gamemap_t* map);
+static void P_LightningFlash(map_t* map);
 static boolean CheckedLockedDoor(mobj_t* mo, byte lock);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -77,7 +77,7 @@ static float* lightningLightLevels;
 
 // CODE --------------------------------------------------------------------
 
-void GameMap_InitLava(gamemap_t* map)
+void GameMap_InitLava(map_t* map)
 {
     assert(map);
     memset(&map->lavaInflictor, 0, sizeof(map->lavaInflictor));
@@ -123,7 +123,7 @@ void P_InitSky(int map)
     DMU_SetPtr(DMU_SKY, 0, DMU_MATERIAL, mat);
 }
 
-boolean EV_SectorSoundChange(gamemap_t* map, byte* args)
+boolean EV_SectorSoundChange(map_t* map, byte* args)
 {
     assert(map);
     assert(args);
@@ -580,38 +580,38 @@ boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
         break;
 
     case 130: // Thing_Activate
-        success = EV_ThingActivate(P_CurrentGameMap(), args[0]);
+        success = EV_ThingActivate(P_CurrentMap(), args[0]);
         break;
 
     case 131: // Thing_Deactivate
-        success = EV_ThingDeactivate(P_CurrentGameMap(), args[0]);
+        success = EV_ThingDeactivate(P_CurrentMap(), args[0]);
         break;
 
     case 132: // Thing_Remove
-        success = EV_ThingRemove(P_CurrentGameMap(), args[0]);
+        success = EV_ThingRemove(P_CurrentMap(), args[0]);
         break;
 
     case 133: // Thing_Destroy
-        success = EV_ThingDestroy(P_CurrentGameMap(), args[0]);
+        success = EV_ThingDestroy(P_CurrentMap(), args[0]);
         break;
 
     case 134: // Thing_Projectile
-        success = EV_ThingProjectile(P_CurrentGameMap(), args, 0);
+        success = EV_ThingProjectile(P_CurrentMap(), args, 0);
         break;
     case 135: // Thing_Spawn
-        success = EV_ThingSpawn(P_CurrentGameMap(), args, 1);
+        success = EV_ThingSpawn(P_CurrentMap(), args, 1);
         break;
     case 136: // Thing_ProjectileGravity
-        success = EV_ThingProjectile(P_CurrentGameMap(), args, 1);
+        success = EV_ThingProjectile(P_CurrentMap(), args, 1);
         break;
     case 137: // Thing_SpawnNoFog
-        success = EV_ThingSpawn(P_CurrentGameMap(), args, 0);
+        success = EV_ThingSpawn(P_CurrentMap(), args, 0);
         break;
     case 138: // Floor_Waggle
-        success = EV_StartFloorWaggle(P_CurrentGameMap(), args[0], args[1], args[2], args[3], args[4]);
+        success = EV_StartFloorWaggle(P_CurrentMap(), args[0], args[1], args[2], args[3], args[4]);
         break;
     case 140: // Sector_SoundChange
-        success = EV_SectorSoundChange(P_CurrentGameMap(), args);
+        success = EV_SectorSoundChange(P_CurrentMap(), args);
         break;
     default:
         break;
@@ -773,7 +773,7 @@ void P_PlayerInSpecialSector(player_t* player)
 
 void P_PlayerOnSpecialFloor(player_t* player)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     const terraintype_t* tt = P_MobjGetFloorTerrainType(player->plr->mo);
 
     if(!(tt->flags & TTF_DAMAGING))
@@ -792,7 +792,7 @@ void P_PlayerOnSpecialFloor(player_t* player)
     }
 }
 
-void GameMap_UpdateSpecials(gamemap_t* map)
+void GameMap_UpdateSpecials(map_t* map)
 {
     // Stub.
 }
@@ -800,7 +800,7 @@ void GameMap_UpdateSpecials(gamemap_t* map)
 /**
  * After the map has been loaded, scan for specials that spawn thinkers.
  */
-void GameMap_SpawnSpecials(gamemap_t* map)
+void GameMap_SpawnSpecials(map_t* map)
 {
     assert(map);
     {
@@ -875,7 +875,7 @@ void GameMap_SpawnSpecials(gamemap_t* map)
     }
 }
 
-void GameMap_AnimateSurfaces(gamemap_t* map)
+void GameMap_AnimateSurfaces(map_t* map)
 {
     assert(map);
     {
@@ -1047,7 +1047,7 @@ static boolean isLightningSector(sector_t* sec)
     return false;
 }
 
-static void P_LightningFlash(gamemap_t* map)
+static void P_LightningFlash(map_t* map)
 {
     uint i;
     float* tempLight;

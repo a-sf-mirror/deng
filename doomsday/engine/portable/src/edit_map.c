@@ -47,20 +47,19 @@
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 static map_t* editMap = NULL;
-static map_t* lastBuiltMap = NULL;
 
 // CODE --------------------------------------------------------------------
+
+void MPE_SetEditMap(map_t* map)
+{
+    editMap = map;
+}
 
 /**
  * Called to begin the map building process.
  */
-boolean MPE_Begin(const char* mapID)
+boolean MPE_Begin(void)
 {
-    if(editMap)
-        Con_Error("MPE_Begin: Error, already editing map %s.\n", editMap->mapID);
-
-    editMap = P_CreateMap(mapID);
-
     return true;
 }
 
@@ -73,16 +72,7 @@ boolean MPE_End(void)
         return false;
 
     Map_EditEnd(editMap);
-
-    lastBuiltMap = editMap;
-    editMap = NULL;
-
     return true;
-}
-
-map_t* MPE_GetLastBuiltMap(void)
-{
-    return lastBuiltMap;
 }
 
 /**

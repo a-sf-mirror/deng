@@ -2359,7 +2359,7 @@ void Rend_RenderMap(map_t* map)
              * projections are sensitive to distance from the viewer
              * (e.g. some may fade out when far away).
              */
-            DL_DestroyDynlights(&map->dlights.linkList);
+            DL_DestroyDynlights(map->_dlights.linkList);
             DL_ClearDynlists();
         }
 

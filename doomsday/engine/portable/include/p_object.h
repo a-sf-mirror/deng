@@ -52,7 +52,7 @@ extern boolean dontHitMobjs;
 
 #include "cl_def.h"                // for clplayerstate_s
 
-mobj_t*         P_MobjCreate(think_t function, float x, float y, float z,
+mobj_t*         P_MobjCreate(struct map_s* map, think_t function, float x, float y, float z,
                              angle_t angle, float radius, float height,
                              int ddflags);
 void            P_MobjDestroy(mobj_t* mo);

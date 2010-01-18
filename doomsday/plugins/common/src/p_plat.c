@@ -110,7 +110,7 @@ static void stopPlat(plat_t* plat)
 void T_PlatRaise(plat_t* plat)
 {
     result_e res;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) plat);
 
     switch(plat->state)
     {
@@ -257,7 +257,7 @@ static int doPlat(linedef_t* line, int tag, plattype_e type, int amount)
 #endif
     xsector_t* xsec;
     iterlist_t* list;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)

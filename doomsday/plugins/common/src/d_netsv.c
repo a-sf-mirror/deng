@@ -595,7 +595,7 @@ int NetSv_ScanCycle(int index, maprule_t * rules)
 
 void NetSv_CheckCycling(void)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     int mapNum, i, f;
     maprule_t rules;
     char msg[100], tmp[50];
@@ -731,7 +731,7 @@ void NetSv_CheckCycling(void)
 void NetSv_NewPlayerEnters(int plrNum)
 {
     player_t* plr = &players[plrNum];
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     Con_Message("NetSv_NewPlayerEnters: spawning player %i.\n", plrNum);
 
@@ -1231,7 +1231,7 @@ void NetSv_SendPlayerInfo(int whose, int to_whom)
 
 void NetSv_ChangePlayerInfo(int from, byte* data)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     player_t* pl = &players[from];
     int col;
 

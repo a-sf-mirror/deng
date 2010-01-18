@@ -34,7 +34,7 @@
  *
  * @ingroup map
  */
-typedef struct {
+typedef struct thinkers_s {
     boolean         inited;
     int             idtable[2048]; // 65536 bits telling which IDs are in use.
     unsigned short  iddealer;

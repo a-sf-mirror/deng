@@ -700,7 +700,8 @@ void G_Shutdown(void)
     Hu_UnloadData();
     Hu_LogShutdown();
 
-    P_DestroyGameMap(P_CurrentGameMap());
+    if(P_CurrentMap())
+        P_DestroyGameMap(P_CurrentMap());
 
     AM_Shutdown();
     P_FreeWeaponSlots();

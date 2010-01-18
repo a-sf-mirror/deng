@@ -25,6 +25,10 @@
 #ifndef DOOMSDAY_MAP_H
 #define DOOMSDAY_MAP_H
 
+#if defined(__JDOOM__) || defined(__JHERETIC__) || defined(__JHEXEN__)
+#  error "Attempted to include internal Doomsday map.h from a game"
+#endif
+
 #include "dd_share.h"
 #include "m_vector.h"
 #include "halfedgeds.h"
@@ -111,83 +115,11 @@ typedef struct shadowlink_s {
     byte            side;
 } shadowlink_t;
 
+// We'll use the base map template directly as our map.
 typedef struct map_s {
-    char            mapID[9];
-    char            uniqueID[256];
-    boolean         editActive;
+DD_BASE_MAP_ELEMENTS()} map_t;
 
-    thinkers_t*     _thinkers;
-    gameobjrecords_t* _gameObjectRecords;
-
-    halfedgeds_t*   _halfEdgeDS;
-    binarytree_t*   _rootNode;
-
-    mobjblockmap_t* _mobjBlockmap;
-    linedefblockmap_t* _lineDefBlockmap;
-    subsectorblockmap_t* _subsectorBlockmap;
-
-    // Following blockmaps are emptied each render frame.
-    particleblockmap_t* _particleBlockmap;
-    lumobjblockmap_t* _lumobjBlockmap;
-
-    objcontactlist_t* _subsectorContacts; // List of obj contacts for each subsector.
-    lightgrid_t*    _lightGrid;
-
-    float           bBox[4];
-    uint            numSectors;
-    sector_t**      sectors;
-
-    uint            numLineDefs;
-    linedef_t**     lineDefs;
-
-    uint            numSideDefs;
-    sidedef_t**     sideDefs;
-
-    uint            numPlanes;
-    plane_t**       planes;
-
-    uint            numNodes;
-    node_t**        nodes;
-
-    uint            numSubsectors;
-    subsector_t**   subsectors;
-
-    uint            numSegs;
-    seg_t**         segs;
-
-    uint            numPolyObjs;
-    polyobj_t**     polyObjs;
-
-    lineowner_t*    lineOwners;
-
-    planelist_t     watchedPlaneList;
-    surfacelist_t   movingSurfaceList;
-    surfacelist_t   decoratedSurfaceList;
-
-    nodepile_t*     mobjNodes, *lineNodes; // All kinds of wacky links.
-    nodeindex_t*    lineLinks; // Indices to roots.
-
-    float           globalGravity;
-    int             ambientLightLevel;
-
-    float           skyFixCeiling;
-    float           skyFixFloor;
-
-    struct {
-        dynlist_t       linkList; // Surface-projected lumobjs (dynlights).
-    } dlights;
-
-    struct {
-        unsigned int    lastChangeOnFrame;
-
-        int             numSources, numSourceDelta;
-        source_t        sources[MAX_BIAS_LIGHTS];
-
-        biassurface_t*  surfaces; // Head of the biassurface list.
-
-        int             editGrabbedID;
-    } bias;
-} map_t;
+#define MAP_SIZE            gx.mapSize
 
 extern int bspFactor;
 
@@ -195,6 +127,8 @@ void            P_MapRegister(void);
 
 map_t*          P_CreateMap(const char* mapID);
 void            P_DestroyMap(map_t* map);
+
+boolean         Map_Load(map_t* map);
 
 const char*     Map_ID(map_t* map);
 const char*     Map_UniqueName(map_t* map);

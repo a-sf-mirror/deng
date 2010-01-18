@@ -506,7 +506,7 @@ void P_DeathThink(player_t* player)
         {
             if(player->plr->lookDir < 60)
             {
-                gamemap_t* map = P_CurrentGameMap();
+                map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
 
                 lookDelta = (60 - player->plr->lookDir) / 8;
                 if(lookDelta < 1 && (map->time & 1))
@@ -711,7 +711,7 @@ boolean P_UndoPlayerMorph(player_t* player)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* fog = 0, *mo = 0, *pmo = 0;
     float pos[3];
     unsigned int an;
@@ -1096,8 +1096,8 @@ void P_PlayerThinkMorph(player_t *player)
 
 void P_PlayerThinkMove(player_t *player)
 {
-    gamemap_t* map = P_CurrentGameMap();
     mobj_t* plrmo = player->plr->mo;
+    map_t* map = Thinker_Map((thinker_t*) plrmo);
 
     // Move around.
     // Reactiontime is used to prevent movement for a bit after a teleport.
@@ -1464,7 +1464,7 @@ void P_PlayerThinkMap(player_t* player)
 void P_PlayerThinkPowers(player_t* player)
 {
     // Counters, time dependend power ups.
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
 
 #if __JDOOM__ || __JDOOM64__
     // Strength counts up to diminish fade.

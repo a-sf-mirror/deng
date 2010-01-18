@@ -43,7 +43,7 @@
 
 void            P_SetupForMapData(int type, uint num);
 
-void            P_SetupMap(struct gamemap_s* map, skillmode_t skill);
+void            P_SetupMap(struct map_s* map, skillmode_t skill);
 const char*     P_GetMapNiceName(void);
 const char*     P_GetMapAuthor(boolean surpressIWADAuthors);
 

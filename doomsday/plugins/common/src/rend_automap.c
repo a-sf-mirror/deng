@@ -885,7 +885,7 @@ static void renderPolyObjs(const automap_t* map, const automapcfg_t* cfg,
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
 boolean renderXGLinedef(linedef_t* line, void* context)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
     xlinedef_t* xLine;
 

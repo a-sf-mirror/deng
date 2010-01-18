@@ -96,7 +96,7 @@ void C_DECL A_PotteryExplode(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     int i, maxBits = (P_Random() & 3) + 3;
 
     for(i = 0; i < maxBits; ++i)
@@ -185,20 +185,17 @@ void C_DECL A_PotteryCheck(mobj_t* actor)
 void C_DECL A_CorpseBloodDrip(mobj_t* actor)
 {
     assert(actor);
-    {
-    gamemap_t* map = P_CurrentGameMap();
     if(P_Random() > 128)
         return;
-    GameMap_SpawnMobj3f(map, MT_CORPSEBLOODDRIP, actor->pos[VX], actor->pos[VY],
-                        actor->pos[VZ] + actor->height / 2, actor->angle, 0);
-    }
+    GameMap_SpawnMobj3f(Thinker_Map((thinker_t*) actor), MT_CORPSEBLOODDRIP,
+                        actor->pos[VX], actor->pos[VY], actor->pos[VZ] + actor->height / 2, actor->angle, 0);
 }
 
 void C_DECL A_CorpseExplode(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     int i;
 
@@ -236,10 +233,10 @@ void C_DECL A_LeafSpawn(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
-    int i;
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float pos[3];
+    int i;
 
     for(i = (P_Random() & 3) + 1; i; i--)
     {
@@ -342,7 +339,7 @@ void C_DECL A_BridgeInit(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     byte startangle;
     mobj_t* ball1, *ball2, *ball3;
 
@@ -453,7 +450,7 @@ void C_DECL A_Summon(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3fv(map, MT_MINOTAUR, actor->pos, actor->angle, 0)))
@@ -507,7 +504,7 @@ void C_DECL A_FogSpawn(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     mobjtype_t type = 0;
     angle_t delta, angle;
@@ -577,7 +574,7 @@ void C_DECL A_PoisonBagInit(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3f(map, MT_POISONCLOUD, actor->pos[VX], actor->pos[VY],
@@ -666,7 +663,7 @@ boolean A_LocalQuake(byte* args, mobj_t* actor)
 {
     assert(args);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* focus, *target;
     int lastfound = 0;
     int success = false;
@@ -756,7 +753,7 @@ void C_DECL A_Quake(mobj_t* actor)
 
 static void telospawn(mobjtype_t type, mobj_t* actor)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3fv(map, MT_TELOTHER_FX2, actor->pos, actor->angle, 0)))
@@ -806,7 +803,7 @@ void P_SpawnDirt(mobj_t* actor, float radius)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     float pos[3];
     int mobjType = 0;
     mobj_t* mo;
@@ -862,7 +859,7 @@ void C_DECL A_ThrustInitDn(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     actor->special2 = 5;
@@ -935,7 +932,7 @@ void C_DECL A_SoAExplode(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     int i;
 
     for(i = 0; i < 10; ++i)

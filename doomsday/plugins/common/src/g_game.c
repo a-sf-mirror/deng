@@ -207,8 +207,6 @@ static int gameLoadSlot;
 
 static gameaction_t gameAction;
 
-static gamemap_t* theMap = NULL; // temp.
-
 // CODE --------------------------------------------------------------------
 
 void G_Register(void)
@@ -533,11 +531,6 @@ static const char* getGameStateStr(gamestate_t state)
 }
 #endif
 
-gamemap_t* P_CurrentGameMap(void)
-{
-    return theMap;
-}
-
 /**
  * Called when the gameui binding context is active. Triggers the menu.
  */
@@ -641,7 +634,7 @@ void G_DoLoadMap(void)
     static int firstFragReset = 1;
 #endif
 
-    gamemap_t* map = NULL;
+    map_t* map = NULL;
     char mapID[9];
     int i;
 
@@ -674,12 +667,12 @@ void G_DoLoadMap(void)
         G_ResetLookOffset(i);
     }
 
-    if(theMap)
-        P_DestroyGameMap(theMap);
-    theMap = NULL;
+    if(P_CurrentMap())
+        P_DestroyGameMap(P_CurrentMap());
 
     P_GetMapLumpName(mapID, gameEpisode, gameMap);
-    map = theMap = P_CreateGameMap(mapID, gameEpisode, gameMap);
+    map = P_CreateGameMap(mapID, gameEpisode, gameMap);
+    P_SetCurrentMap(map);
 
     P_SetupMap(map, gameSkill);
 
@@ -778,8 +771,7 @@ void G_Ticker(timespan_t ticLength)
             {
                 if(!IS_CLIENT)
                 {
-                    gamemap_t* map = P_CurrentGameMap();
-                    P_SpawnTeleFog(map, plr->plr->mo->pos[VX],
+                    P_SpawnTeleFog(Thinker_Map((thinker_t*) plr->plr->mo), plr->plr->mo->pos[VX],
                                    plr->plr->mo->pos[VY],
                                    plr->plr->mo->angle + ANG180);
                 }
@@ -1190,7 +1182,7 @@ void G_QueueBody(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
 
     // Flush an old corpse if needed.
     if(map->bodyQueueSlot >= BODYQUEUESIZE)
@@ -1547,7 +1539,7 @@ void G_DoCompleted(void)
 
 # if __JDOOM__ || __JDOOM64__
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     wmInfo.maxKills = map->totalKills;
     wmInfo.maxItems = map->totalItems;
     wmInfo.maxSecret = map->totalSecret;
@@ -1604,7 +1596,7 @@ void G_PrepareWIData(void)
     for(i = 0; i < MAXPLAYERS; ++i)
     {
         player_t* p = &players[i];
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = P_CurrentMap();
         wbplayerstruct_t* pStats = &info->plyr[i];
 
         pStats->inGame = p->plr->inGame;

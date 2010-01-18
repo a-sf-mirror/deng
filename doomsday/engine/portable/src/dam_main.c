@@ -64,8 +64,8 @@ static boolean convertMap(const char* mapID)
     // Nope. See if there is a converter available.
     if(Plug_CheckForHook(HOOK_MAP_CONVERT))
     {
-        // Pass the lump list around the map converters, hopefully
-        // one of them will recognise the format and convert it.
+        // Iterate the map converters, hopefully one of them will recognise
+        // the format and convert it.
         if(Plug_DoHook(HOOK_MAP_CONVERT, 0, (void*) mapID))
             converted = true;
     }
@@ -100,7 +100,7 @@ const char* DAM_GenerateUniqueMapName(const char* mapID)
 /**
  * Attempt to load the map associated with the specified identifier.
  */
-boolean DAM_TryMapConversion(const char* mapID)
+boolean DAM_TryMapConversion(const char mapID[9])
 {
     // Load it in. Try a JIT conversion with the help of a plugin.
     // Destroy DMU obj records for map-owned objects.

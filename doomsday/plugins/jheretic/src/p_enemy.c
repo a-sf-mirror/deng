@@ -170,7 +170,9 @@ boolean P_CheckMissileRange(mobj_t *actor)
  */
 boolean P_Move(mobj_t* actor, boolean dropoff)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    assert(actor);
+    {
+    map_t* map = Thinker_Map((thinker_t*) actor);
     float pos[2], step[2];
     linedef_t* ld;
     boolean good;
@@ -255,6 +257,7 @@ boolean P_Move(mobj_t* actor, boolean dropoff)
     }
 
     return true;
+    }
 }
 
 /**
@@ -263,17 +266,17 @@ boolean P_Move(mobj_t* actor, boolean dropoff)
  * If move is either clear of block only by a door, returns TRUE and sets.
  * If a door is in the way, an OpenDoor call is made to start it opening.
  */
-boolean P_TryWalk(mobj_t *actor)
+boolean P_TryWalk(mobj_t* actor)
 {
+    assert(actor);
     // $dropoff_fix
     if(!P_Move(actor, false))
         return false;
-
     actor->moveCount = P_Random() & 15;
     return true;
 }
 
-static void newChaseDir(mobj_t *actor, float deltaX, float deltaY)
+static void newChaseDir(mobj_t* actor, float deltaX, float deltaY)
 {
     dirtype_t xdir, ydir, tdir;
     dirtype_t olddir = actor->moveDir;
@@ -344,7 +347,7 @@ static void newChaseDir(mobj_t *actor, float deltaX, float deltaY)
  */
 static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     sector_t* backsector = DMU_GetPtrp(line, DMU_BACK_SECTOR);
     float* bbox = DMU_GetPtrp(line, DMU_BOUNDING_BOX);
 
@@ -390,7 +393,7 @@ static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
  */
 static float P_AvoidDropoff(mobj_t* actor)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
 
     map->floorZ = actor->pos[VZ]; // Remember floor height.
     map->dropoffDelta[VX] = map->dropoffDelta[VY] = 0;
@@ -408,7 +411,7 @@ void P_NewChaseDir(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     float delta[2];
 
     if(!actor->target)
@@ -796,7 +799,7 @@ void C_DECL A_DripBlood(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float pos[3];
 
@@ -843,7 +846,7 @@ void C_DECL A_ImpExplode(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3fv(map, MT_IMPCHUNK1, actor->pos, P_Random() << 24, 0)))
@@ -869,7 +872,7 @@ void C_DECL A_BeastPuff(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
 
     if(P_Random() > 64)
     {
@@ -981,7 +984,7 @@ boolean P_UpdateChicken(mobj_t* actor, int tics)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* fog;
     float pos[3];
     mobjtype_t moType;
@@ -1072,7 +1075,7 @@ void C_DECL A_Feathers(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     int i, count;
     mobj_t* mo;
 
@@ -1148,7 +1151,7 @@ void C_DECL A_MummySoul(mobj_t* mummy)
 {
     assert(mummy);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mummy);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3f(map, MT_MUMMYSOUL,
@@ -1162,12 +1165,14 @@ void C_DECL A_MummySoul(mobj_t* mummy)
 
 void C_DECL A_Sor1Pain(mobj_t* actor)
 {
+    assert(actor);
     actor->special1 = 20; // Number of steps to walk fast.
     A_Pain(actor);
 }
 
-void C_DECL A_Sor1Chase(mobj_t *actor)
+void C_DECL A_Sor1Chase(mobj_t* actor)
 {
+    assert(actor);
     if(actor->special1)
     {
         actor->special1--;
@@ -1180,10 +1185,12 @@ void C_DECL A_Sor1Chase(mobj_t *actor)
 /**
  * Sorcerer demon attack.
  */
-void C_DECL A_Srcr1Attack(mobj_t *actor)
+void C_DECL A_Srcr1Attack(mobj_t* actor)
 {
-    mobj_t     *mo;
-    angle_t     angle;
+    assert(actor);
+    {
+    mobj_t* mo;
+    angle_t angle;
 
     if(!actor->target)
         return;
@@ -1228,13 +1235,14 @@ void C_DECL A_Srcr1Attack(mobj_t *actor)
             }
         }
     }
+    }
 }
 
 void C_DECL A_SorcererRise(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     actor->flags &= ~MF_SOLID;
@@ -1250,7 +1258,7 @@ void P_DSparilTeleport(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
 
     // No spots?
     if(map->bossSpotCount > 0)
@@ -1297,7 +1305,7 @@ void P_DSparilTeleport(mobj_t* actor)
 void C_DECL A_Srcr2Decide(mobj_t* actor)
 {
     static int chance[] = { 192, 120, 120, 120, 64, 64, 32, 16, 0 };
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
 
     // No spots?
     if(!map->bossSpotCount)
@@ -1342,7 +1350,7 @@ void C_DECL A_BlueSpark(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     int i;
 
     for(i = 0; i < 2; ++i)
@@ -1363,7 +1371,7 @@ void C_DECL A_GenWizard(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo, *fog;
 
     if(!(mo = GameMap_SpawnMobj3f(map, MT_WIZARD, actor->pos[VX], actor->pos[VY],
@@ -1521,7 +1529,7 @@ void C_DECL A_MinotaurCharge(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* puff;
 
     if(actor->special1)
@@ -1650,7 +1658,7 @@ void C_DECL A_MntrFloorFire(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float pos[3];
     angle_t angle;
@@ -1700,7 +1708,7 @@ void C_DECL A_HeadAttack(mobj_t* actor)
     static const int atkResolve1[] = { 50, 150 };
     static const int atkResolve2[] = { 150, 200 };
 
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* fire, *baseFire, *mo, *target;
     int randAttack;
     float dist;
@@ -1803,7 +1811,7 @@ void C_DECL A_HeadIceImpact(mobj_t* ice)
 {
     assert(ice);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) ice);
     int i;
 
     for(i = 0; i < 8; ++i)
@@ -1971,7 +1979,7 @@ mobj_t* P_DropItem(mobjtype_t type, mobj_t* source, int special, int chance)
 {
     assert(source);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) source);
     mobj_t* mo;
 
     if(P_Random() > chance)
@@ -2080,7 +2088,7 @@ void C_DECL A_PodPain(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     int i, count, chance;
 
     chance = P_Random();
@@ -2126,7 +2134,7 @@ void C_DECL A_MakePod(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     // Too many generated pods?
@@ -2273,7 +2281,7 @@ void C_DECL A_SpawnTeleGlitter(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     float pos[3];
     mobj_t* mo;
 
@@ -2293,7 +2301,7 @@ void C_DECL A_SpawnTeleGlitter2(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     float pos[3];
     mobj_t* mo;
 
@@ -2320,7 +2328,7 @@ void C_DECL A_InitKeyGizmo(mobj_t* gizmo)
 {
     assert(gizmo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) gizmo);
     statenum_t state;
     mobj_t* mo;
 
@@ -2361,7 +2369,7 @@ void C_DECL A_VolcanoBlast(mobj_t* volcano)
 {
     assert(volcano);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) volcano);
     int i, count;
 
     count = 1 + (P_Random() % 3);
@@ -2392,7 +2400,7 @@ void C_DECL A_VolcBallImpact(mobj_t* ball)
 {
     assert(ball);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) ball);
     int i;
 
     if(ball->pos[VZ] <= ball->floorZ)
@@ -2426,7 +2434,7 @@ void C_DECL A_SkullPop(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3f(map, MT_BLOODYSKULL, actor->pos[VX], actor->pos[VY],
@@ -2494,7 +2502,7 @@ void C_DECL A_AddPlayerCorpse(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
 
     // Too many player corpses?
     if(map->bodyQueueSlot >= BODYQUEUESIZE)

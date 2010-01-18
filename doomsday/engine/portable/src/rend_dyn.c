@@ -263,17 +263,17 @@ static dynlight_t* allocDynlight(void)
 
 static void linkDynlightToMap(map_t* map, dynlight_t* dyn)
 {
-    listPushFront(&map->dlights.linkList, dyn);
+    listPushFront(map->_dlights.linkList, dyn);
 }
 
 static dynlist_t* allocDynlist(void)
 {
-    dynlist_t*          list;
+    dynlist_t* list;
 
     // Ran out of light link lists?
     if(++numDynlists >= maxDynlists)
     {
-        uint                newNum = maxDynlists * 2;
+        uint newNum = maxDynlists * 2;
 
         if(!newNum)
             newNum = 2;

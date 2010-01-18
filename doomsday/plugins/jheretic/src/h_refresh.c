@@ -341,7 +341,7 @@ void H_Display2(void)
 
         if(DD_GetInteger(DD_GAME_DRAW_HUD_HINT))
         {
-            gamemap_t* map = P_CurrentGameMap();
+            map_t* map = P_CurrentMap();
 
             // Level information is shown for a few seconds in the
             // beginning of a level.

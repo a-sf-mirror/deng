@@ -186,7 +186,7 @@ static boolean checkMissileRange(mobj_t *actor)
  */
 static boolean moveMobj(mobj_t* actor, boolean dropoff)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     float pos[3], step[3];
     linedef_t* ld;
     boolean good;
@@ -360,7 +360,7 @@ static void doNewChaseDir(mobj_t *actor, float deltaX, float deltaY)
  */
 static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     sector_t* backsector = DMU_GetPtrp(line, DMU_BACK_SECTOR);
     float* bbox = DMU_GetPtrp(line, DMU_BOUNDING_BOX);
 
@@ -407,7 +407,7 @@ static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
  */
 static boolean avoidDropoff(mobj_t* actor)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
 
     map->floorZ = actor->pos[VZ]; // Remember floor height.
     map->dropoffDelta[VX] = map->dropoffDelta[VY] = 0;
@@ -423,7 +423,7 @@ static boolean avoidDropoff(mobj_t* actor)
 
 static void newChaseDir(mobj_t* actor)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* target = actor->target;
     float deltaX = target->pos[VX] - actor->pos[VX];
     float deltaY = target->pos[VY] - actor->pos[VY];
@@ -550,7 +550,7 @@ int P_Massacre(void)
 
 static int findBrainTarget(void* p, void* context)
 {
-    gamemap_t* map = (gamemap_t*) context;
+    map_t* map = (map_t*) context;
     mobj_t* mo = (mobj_t*) p;
 
     if(mo->type == MT_BOSSTARGET)
@@ -583,7 +583,7 @@ static int findBrainTarget(void* p, void* context)
  *
  * @todo Does not belong in this file, find it a better home.
  */
-void P_SpawnBrainTargets(gamemap_t* map)
+void P_SpawnBrainTargets(map_t* map)
 {
     assert(map);
     // Find all the target spots.
@@ -1026,7 +1026,7 @@ void C_DECL A_Tracer(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     float dist, slope;
     mobj_t* dest, *th;
     angle_t angle;
@@ -1126,7 +1126,7 @@ void C_DECL A_SkelFist(mobj_t *actor)
  */
 boolean PIT_VileCheck(mobj_t* thing, void* data)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) thing);
     float maxdist;
     boolean check;
 
@@ -1187,7 +1187,7 @@ void C_DECL A_VileChase(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobjinfo_t* info;
     mobj_t* temp;
     float box[4];
@@ -1294,7 +1294,7 @@ void C_DECL A_VileTarget(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* fog;
 
     if(!actor->target)
@@ -1459,7 +1459,7 @@ void C_DECL A_PainShootSkull(mobj_t* actor, angle_t angle)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     float pos[3];
     mobj_t* newmobj;
     uint an;
@@ -1621,7 +1621,7 @@ void C_DECL A_BossDeath(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     countmobjoftypeparams_t params;
     linedef_t* dummyLine;
     int i;
@@ -1838,7 +1838,7 @@ void C_DECL A_BrainScream(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     float pos[3];
 
     pos[VY] = mo->pos[VY] - 320;
@@ -1870,7 +1870,7 @@ void C_DECL A_BrainExplode(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     float pos[3];
     mobj_t* th;
 
@@ -1900,7 +1900,7 @@ void C_DECL A_BrainSpit(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     mobj_t* targ, *newmobj;
 
     if(!map->brain.numTargets)
@@ -1940,7 +1940,7 @@ void C_DECL A_SpawnFly(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     mobj_t* newmobj, *fog, *targ;
     mobjtype_t type;
     int r;

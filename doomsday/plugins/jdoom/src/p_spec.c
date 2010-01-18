@@ -787,11 +787,12 @@ static void shootSpecialLine(mobj_t *thing, linedef_t *line)
  */
 void P_PlayerInSpecialSector(player_t* player)
 {
-    gamemap_t* map = P_CurrentGameMap();
-    sector_t* sector = DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
+    mobj_t* mo = player->plr->mo;
+    map_t* map = Thinker_Map((thinker_t*) mo);
+    sector_t* sector = DMU_GetPtrp(mo->subsector, DMU_SECTOR);
 
     // Falling, not all the way down yet?
-    if(player->plr->mo->pos[VZ] != DMU_GetFloatp(sector, DMU_FLOOR_HEIGHT))
+    if(mo->pos[VZ] != DMU_GetFloatp(sector, DMU_FLOOR_HEIGHT))
         return;
 
     // Has hitten ground.
@@ -802,7 +803,7 @@ void P_PlayerInSpecialSector(player_t* player)
         if(!player->powers[PT_IRONFEET])
         {
             if(!(map->time & 0x1f))
-                P_DamageMobj(player->plr->mo, NULL, NULL, 10, false);
+                P_DamageMobj(mo, NULL, NULL, 10, false);
         }
         break;
 
@@ -811,7 +812,7 @@ void P_PlayerInSpecialSector(player_t* player)
         if(!player->powers[PT_IRONFEET])
         {
             if(!(map->time & 0x1f))
-                P_DamageMobj(player->plr->mo, NULL, NULL, 5, false);
+                P_DamageMobj(mo, NULL, NULL, 5, false);
         }
         break;
 
@@ -822,7 +823,7 @@ void P_PlayerInSpecialSector(player_t* player)
         if(!player->powers[PT_IRONFEET] || (P_Random() < 5))
         {
             if(!(map->time & 0x1f))
-                P_DamageMobj(player->plr->mo, NULL, NULL, 20, false);
+                P_DamageMobj(mo, NULL, NULL, 20, false);
         }
         break;
 
@@ -842,7 +843,7 @@ void P_PlayerInSpecialSector(player_t* player)
         player->cheats &= ~CF_GODMODE;
 
         if(!(map->time & 0x1f))
-            P_DamageMobj(player->plr->mo, NULL, NULL, 20, false);
+            P_DamageMobj(mo, NULL, NULL, 20, false);
 
         if(player->health <= 10)
             G_LeaveMap(player - players, G_GetMapNumber(gameEpisode, gameMap), 0, false);
@@ -856,7 +857,7 @@ void P_PlayerInSpecialSector(player_t* player)
 /**
  * Animate planes, scroll walls, etc.
  */
-void GameMap_UpdateSpecials(gamemap_t* map)
+void GameMap_UpdateSpecials(map_t* map)
 {
     assert(map);
 
@@ -904,7 +905,7 @@ void GameMap_UpdateSpecials(gamemap_t* map)
 /**
  * After the map has been loaded, scan for specials that spawn thinkers.
  */
-void GameMap_SpawnSpecials(gamemap_t* map)
+void GameMap_SpawnSpecials(map_t* map)
 {
     assert(map);
     {

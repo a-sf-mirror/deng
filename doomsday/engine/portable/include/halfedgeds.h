@@ -44,7 +44,7 @@ typedef struct face_s {
     void*           data;
 } face_t;
 
-typedef struct {
+typedef struct halfedgeds_s {
     uint            _numVertices;
     vertex_t**      vertices;
 

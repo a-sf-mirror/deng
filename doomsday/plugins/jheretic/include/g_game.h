@@ -90,6 +90,4 @@ boolean         G_Responder(event_t* ev);
 void            G_ScreenShot(void);
 
 void            P_GetMapLumpName(char lumpName[9], int episode, int map);
-
-struct gamemap_s* P_CurrentGameMap(void);
 #endif

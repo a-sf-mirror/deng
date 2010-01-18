@@ -451,11 +451,10 @@ static itemtype_t getItemTypeBySprite(spritetype_e sprite)
  */
 static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
 {
-    gamemap_t* map = P_CurrentGameMap();
-
+    map_t* map;
     if(!plr)
         return false;
-
+    map = Thinker_Map((thinker_t*) plr->plr->mo);
     switch(item)
     {
     case IT_ARMOR_GREEN:
@@ -847,7 +846,7 @@ void P_TouchSpecialMobj(mobj_t* special, mobj_t* toucher)
     assert(special);
     assert(toucher);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) toucher);
     player_t* player;
     float delta;
     itemtype_t item;
@@ -888,14 +887,13 @@ void P_TouchSpecialMobj(mobj_t* special, mobj_t* toucher)
 
 void P_KillMobj(mobj_t* source, mobj_t* target, boolean stomping)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    assert(target);
+    {
+    map_t* map = Thinker_Map((thinker_t*) target);
     mobjtype_t item;
     mobj_t* mo;
     unsigned int an;
     angle_t angle;
-
-    if(!target)
-        return; // Nothing to kill...
 
     target->flags &= ~(MF_SHOOTABLE | MF_FLOAT | MF_SKULLFLY);
 
@@ -994,6 +992,7 @@ void P_KillMobj(mobj_t* source, mobj_t* target, boolean stomping)
                            target->pos[VY] + 3 * FIX2FLT(finesine[an]),
                            0, angle, MSF_Z_FLOOR)))
         mo->flags |= MF_DROPPED; // Special versions of items.
+    }
 }
 
 /**

@@ -102,6 +102,7 @@ typedef struct {
 
     // Main structure sizes.
     size_t          ticcmdSize; // sizeof(ticcmd_t)
+    size_t          mapSize; // sizeof(map_t)
     size_t          mobjSize; // sizeof(mobj_t)
     size_t          polyobjSize; // sizeof(polyobj_t)
 

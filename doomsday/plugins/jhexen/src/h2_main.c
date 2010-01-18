@@ -569,14 +569,12 @@ static void execOptionScripts(const char** args, int tag)
 
 void G_Shutdown(void)
 {
-    gamemap_t* map;
-
     Hu_MsgShutdown();
     Hu_UnloadData();
     Hu_LogShutdown();
 
-    if((map = P_CurrentGameMap()))
-        P_DestroyGameMap(map);
+    if(P_CurrentMap())
+        P_DestroyGameMap(P_CurrentMap());
     
     if(ActionScriptInterpreter)
         P_DestroyActionScriptInterpreter(ActionScriptInterpreter);

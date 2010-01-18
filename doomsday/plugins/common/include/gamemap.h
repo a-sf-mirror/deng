@@ -227,8 +227,9 @@ typedef struct xlinedef_s {
 #endif
 } xlinedef_t;
 
-typedef struct gamemap_s {
-    char            mapID[9];
+typedef struct map_s {
+    // Defined in dd_share.h; required map elements.
+    DD_BASE_MAP_ELEMENTS()
     int             episodeNum, mapNum;
     boolean         inSetup; // @c true = we are in the process of setting up this map.
 
@@ -415,67 +416,67 @@ typedef struct gamemap_s {
 #if !__JHEXEN__
     int             tmUnstuck; // $unstuck: used to check unsticking
 #endif
-} gamemap_t;
+} map_t;
 
-gamemap_t*          P_CreateGameMap(const char mapID[9], int episodeNum, int mapNum);
-void                P_DestroyGameMap(gamemap_t* map);
+map_t*              P_CreateGameMap(const char mapID[9], int episodeNum, int mapNum);
+void                P_DestroyGameMap(map_t* map);
 
-boolean             GameMap_Load(gamemap_t* map, skillmode_t skill);
-void                GameMap_Precache(gamemap_t* map);
+boolean             GameMap_Load(map_t* map, skillmode_t skill);
+void                GameMap_Precache(map_t* map);
 
 #if __JHEXEN__
-void                GameMap_InitPolyobjs(gamemap_t* map);
+void                GameMap_InitPolyobjs(map_t* map);
 #endif
-void                GameMap_SpawnSpecials(gamemap_t* map);
-void                GameMap_SpawnPlayers(gamemap_t* map);
-void                GameMap_SpawnPlayer(gamemap_t* map, int plrNum, playerclass_t pClass, float x,
+void                GameMap_SpawnSpecials(map_t* map);
+void                GameMap_SpawnPlayers(map_t* map);
+void                GameMap_SpawnPlayer(map_t* map, int plrNum, playerclass_t pClass, float x,
                                         float y, float z, angle_t angle,
                                         int spawnFlags, boolean makeCamera);
-void                GameMap_SpawnPlayerDM(gamemap_t* map, int playernum);
+void                GameMap_SpawnPlayerDM(map_t* map, int playernum);
 
-mobj_t*             GameMap_SpawnMobj3f(gamemap_t* map, mobjtype_t type, float x, float y, float z, angle_t angle, int spawnFlags);
-mobj_t*             GameMap_SpawnMobj3fv(gamemap_t* map, mobjtype_t type, const float pos[3], angle_t angle, int spawnFlags);
-void                GameMap_DeferSpawnMobj3f(gamemap_t* map, int minTics, mobjtype_t type, float x, float y, float z, angle_t angle, int spawnFlags,
+mobj_t*             GameMap_SpawnMobj3f(map_t* map, mobjtype_t type, float x, float y, float z, angle_t angle, int spawnFlags);
+mobj_t*             GameMap_SpawnMobj3fv(map_t* map, mobjtype_t type, const float pos[3], angle_t angle, int spawnFlags);
+void                GameMap_DeferSpawnMobj3f(map_t* map, int minTics, mobjtype_t type, float x, float y, float z, angle_t angle, int spawnFlags,
                                              void (*callback) (mobj_t* mo, void* context), void* context);
-void                GameMap_DeferSpawnMobj3fv(gamemap_t* map, int minTics, mobjtype_t type, const float pos[3], angle_t angle, int spawnFlags,
+void                GameMap_DeferSpawnMobj3fv(map_t* map, int minTics, mobjtype_t type, const float pos[3], angle_t angle, int spawnFlags,
                                               void (*callback) (mobj_t* mo, void* context), void* context);
-void                GameMap_PurgeDeferredSpawns(gamemap_t* map);
+void                GameMap_PurgeDeferredSpawns(map_t* map);
 
-void                GameMap_RunTick(gamemap_t* map);
-void                GameMap_UpdateSpecials(gamemap_t* map);
+void                GameMap_RunTick(map_t* map);
+void                GameMap_UpdateSpecials(map_t* map);
 
-void                GameMap_AddPlayerStart(gamemap_t* map, int defaultPlrNum, byte entryPoint,
+void                GameMap_AddPlayerStart(map_t* map, int defaultPlrNum, byte entryPoint,
                                            boolean deathmatch, float x, float y,
                                            float z, angle_t angle, int spawnFlags);
-uint                GameMap_NumPlayerStarts(gamemap_t* map, boolean deathmatch);
-const playerstart_t* GameMap_PlayerStart(gamemap_t* map, byte entryPoint, int pnum, boolean deathmatch);
+uint                GameMap_NumPlayerStarts(map_t* map, boolean deathmatch);
+const playerstart_t* GameMap_PlayerStart(map_t* map, byte entryPoint, int pnum, boolean deathmatch);
 
-void                GameMap_ClearPlayerStarts(gamemap_t* map);
-void                GameMap_DealPlayerStarts(gamemap_t* map, byte entryPoint);
+void                GameMap_ClearPlayerStarts(map_t* map);
+void                GameMap_DealPlayerStarts(map_t* map, byte entryPoint);
 
 #if __JHERETIC__
-void                GameMap_AddMaceSpot(gamemap_t* map, float x, float y, angle_t angle);
-void                GameMap_AddBossSpot(gamemap_t* map, float x, float y, angle_t angle);
+void                GameMap_AddMaceSpot(map_t* map, float x, float y, angle_t angle);
+void                GameMap_AddBossSpot(map_t* map, float x, float y, angle_t angle);
 #endif
 
 #if __JDOOM64__
-void                GameMap_Thunder(gamemap_t* map);
+void                GameMap_Thunder(map_t* map);
 #endif
 
 #if __JHEXEN__
-void                GameMap_AnimateSurfaces(gamemap_t* map);
+void                GameMap_AnimateSurfaces(map_t* map);
 #endif
 
-void                GameMap_DestroyLineTagLists(gamemap_t* map);
-iterlist_t*         GameMap_IterListForTag(gamemap_t* map, int tag, boolean createNewList);
+void                GameMap_DestroyLineTagLists(map_t* map);
+iterlist_t*         GameMap_IterListForTag(map_t* map, int tag, boolean createNewList);
 
-void                GameMap_DestroySectorTagLists(gamemap_t* map);
-iterlist_t*         GameMap_SectorIterListForTag(gamemap_t* map, int tag, boolean createNewList);
+void                GameMap_DestroySectorTagLists(map_t* map);
+iterlist_t*         GameMap_SectorIterListForTag(map_t* map, int tag, boolean createNewList);
 
-xlinedef_t*         GameMap_XLineDef(gamemap_t* map, uint idx);
-xsector_t*          GameMap_XSector(gamemap_t* map, uint idx);
+xlinedef_t*         GameMap_XLineDef(map_t* map, uint idx);
+xsector_t*          GameMap_XSector(map_t* map, uint idx);
 
 // @todo Should be private to GameMap.
-iterlist_t*         GameMap_SpecHits(gamemap_t* map);
+iterlist_t*         GameMap_SpecHits(map_t* map);
 
 #endif /* LIBCOMMON_GAMEMAP_H */

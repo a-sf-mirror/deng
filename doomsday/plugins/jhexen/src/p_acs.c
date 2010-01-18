@@ -96,7 +96,7 @@ static boolean addToScriptStore(actionscriptinterpreter_t* asi, actionscriptid_t
 static int indexForScriptId(actionscriptinterpreter_t* asi, actionscriptid_t scriptId);
 
 static boolean tagBusy(int tag);
-static int countMobjsOfType(gamemap_t* map, int type, int tid);
+static int countMobjsOfType(map_t* map, int type, int tid);
 
 static D_ASCMD(NOP);
 static D_ASCMD(Terminate);
@@ -1357,7 +1357,7 @@ static D_ASCMD(MobjCount)
 {
     int tid;
     tid = Pop(script);
-    Push(script, countMobjsOfType(P_CurrentGameMap(), Pop(script), tid));
+    Push(script, countMobjsOfType(P_CurrentMap(), Pop(script), tid));
     return SA_CONTINUE;
 }
 
@@ -1365,7 +1365,7 @@ static D_ASCMD(MobjCountDirect)
 {
     int type;
     type = LONG(*script->bytecodePos++);
-    Push(script, countMobjsOfType(P_CurrentGameMap(), type, LONG(*script->bytecodePos++)));
+    Push(script, countMobjsOfType(P_CurrentMap(), type, LONG(*script->bytecodePos++)));
     return SA_CONTINUE;
 }
 
@@ -1392,7 +1392,7 @@ static int countMobjOfType(void* p, void* context)
     return true; // Continue iteration.
 }
 
-static int countMobjsOfType(gamemap_t* map, int type, int tid)
+static int countMobjsOfType(map_t* map, int type, int tid)
 {
     mobjtype_t moType;
     int count;
@@ -1479,7 +1479,7 @@ static D_ASCMD(ChangeFloor)
     int tag = Pop(script);
     iterlist_t* list;
 
-    if((list = GameMap_SectorIterListForTag(P_CurrentGameMap(), tag, false)))
+    if((list = GameMap_SectorIterListForTag(P_CurrentMap(), tag, false)))
     {
         material_t* mat = P_MaterialForName(MN_FLATS, flatName);
         sector_t* sec = NULL;
@@ -1500,7 +1500,7 @@ static D_ASCMD(ChangeFloorDirect)
     const char* flatName = getString(&ActionScriptInterpreter->bytecode, (script_bytecode_stringid_t) LONG(*script->bytecodePos++));
     iterlist_t* list;
 
-    if((list = GameMap_SectorIterListForTag(P_CurrentGameMap(), tag, false)))
+    if((list = GameMap_SectorIterListForTag(P_CurrentMap(), tag, false)))
     {
         material_t* mat = P_MaterialForName(MN_FLATS, flatName);
         sector_t* sec = NULL;
@@ -1521,7 +1521,7 @@ static D_ASCMD(ChangeCeiling)
     int tag = Pop(script);
     iterlist_t* list;
 
-    if((list = GameMap_SectorIterListForTag(P_CurrentGameMap(), tag, false)))
+    if((list = GameMap_SectorIterListForTag(P_CurrentMap(), tag, false)))
     {
         material_t* mat = P_MaterialForName(MN_FLATS, flatName);
         sector_t* sec = NULL;
@@ -1542,7 +1542,7 @@ static D_ASCMD(ChangeCeilingDirect)
     const char* flatName = getString(&ActionScriptInterpreter->bytecode, (script_bytecode_stringid_t) LONG(*script->bytecodePos++));
     iterlist_t* list;
 
-    if((list = GameMap_SectorIterListForTag(P_CurrentGameMap(), tag, false)))
+    if((list = GameMap_SectorIterListForTag(P_CurrentMap(), tag, false)))
     {
         material_t* mat = P_MaterialForName(MN_FLATS, flatName);
         sector_t* sec = NULL;
@@ -1783,7 +1783,7 @@ static D_ASCMD(GameSkill)
 
 static D_ASCMD(Timer)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     Push(script, map->time);
     return SA_CONTINUE;
 }
@@ -1817,7 +1817,7 @@ static D_ASCMD(MobjSound)
     sound = S_GetSoundID(getString(&ActionScriptInterpreter->bytecode, (script_bytecode_stringid_t) Pop(script)));
     tid = Pop(script);
     searcher = -1;
-    while(sound && (mo = P_FindMobjFromTID(P_CurrentGameMap(), tid, &searcher)) != NULL)
+    while(sound && (mo = P_FindMobjFromTID(P_CurrentMap(), tid, &searcher)) != NULL)
     {
         S_StartSoundAtVolume(sound, mo, volume / 127.0f);
     }
@@ -1836,7 +1836,7 @@ static D_ASCMD(AmbientSound)
     // for the sound.
     if(cfg.snd3D && plrmo)
     {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = Thinker_Map((thinker_t*) plrmo);
         float pos[3];
 
         pos[VX] = plrmo->pos[VX] + (((M_Random() - 127) * 2) << FRACBITS);
@@ -1864,7 +1864,7 @@ static D_ASCMD(SoundSequence)
 
 static D_ASCMD(SetSideDefMaterial)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     int lineTag, side, position;
     material_t* mat;
     linedef_t* line;
@@ -1903,7 +1903,7 @@ static D_ASCMD(SetSideDefMaterial)
 
 static D_ASCMD(SetLineDefBlocking)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     linedef_t* line;
     int lineTag;
     boolean blocking;
@@ -1928,7 +1928,7 @@ static D_ASCMD(SetLineDefBlocking)
 
 static D_ASCMD(SetLineDefSpecial)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     linedef_t* line;
     int lineTag, special, arg1, arg2, arg3, arg4, arg5;
     iterlist_t* list;

@@ -935,7 +935,7 @@ static void P_ShootSpecialLine(mobj_t* thing, linedef_t* line)
  */
 void P_PlayerInSpecialSector(player_t* player)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     sector_t* sector = DMU_GetPtrp(player->plr->mo->subsector, DMU_SECTOR);
 
     // Falling, not all the way down yet?
@@ -1029,7 +1029,7 @@ void P_PlayerInSpecialSector(player_t* player)
 /**
  * Animate planes, scroll walls, etc.
  */
-void GameMap_UpdateSpecials(gamemap_t* map)
+void GameMap_UpdateSpecials(map_t* map)
 {
     assert(map);
     {
@@ -1151,7 +1151,7 @@ void GameMap_UpdateSpecials(gamemap_t* map)
 /**
  * After the map has been loaded, scan for specials that spawn thinkers.
  */
-void GameMap_SpawnSpecials(gamemap_t* map)
+void GameMap_SpawnSpecials(map_t* map)
 {
     assert(map);
     {
@@ -1292,7 +1292,7 @@ void GameMap_SpawnSpecials(gamemap_t* map)
     }
 }
 
-void GameMap_InitLava(gamemap_t* map)
+void GameMap_InitLava(map_t* map)
 {
     assert(map);
 
@@ -1359,7 +1359,7 @@ void P_PlayerInWindSector(player_t* player)
     P_WindThrust(player->plr->mo);
 }
 
-void GameMap_InitAmbientSfx(gamemap_t* map)
+void GameMap_InitAmbientSfx(map_t* map)
 {
     assert(map);
 
@@ -1369,7 +1369,7 @@ void GameMap_InitAmbientSfx(gamemap_t* map)
     map->ambSfx.ptr = AmbSndSeqInit;
 }
 
-void GameMap_AddAmbientSfx(gamemap_t* map, int sequence)
+void GameMap_AddAmbientSfx(map_t* map, int sequence)
 {
     assert(map);
 
@@ -1380,7 +1380,7 @@ void GameMap_AddAmbientSfx(gamemap_t* map, int sequence)
     map->ambientSfx[map->ambientSfxCount++] = AmbientSfx[sequence];
 }
 
-void GameMap_PlayAmbientSfx(gamemap_t* map)
+void GameMap_PlayAmbientSfx(map_t* map)
 {
     assert(map);
     {

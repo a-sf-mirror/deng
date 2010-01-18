@@ -159,7 +159,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
  */
 void R_DrawMapTitle(void)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     float alpha;
     int y = 12, mapnum;
     const char* lname, *lauthor;

@@ -56,7 +56,7 @@
 
 // CODE --------------------------------------------------------------------
 
-mobj_t* P_SpawnTeleFog(gamemap_t* map, float x, float y, angle_t angle)
+mobj_t* P_SpawnTeleFog(map_t* map, float x, float y, angle_t angle)
 {
     assert(map);
     return GameMap_SpawnMobj3f(map, MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
@@ -67,7 +67,7 @@ boolean P_Teleport(mobj_t* thing, float x, float y, angle_t angle,
 {
     assert(thing);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) thing);
     float oldpos[3], aboveFloor, fogDelta;
     player_t* player;
     uint an;
@@ -197,7 +197,7 @@ static int findMobj(void* p, void* context)
     return false; // Stop iteration.
 }
 
-static mobj_t* getTeleportDestination(gamemap_t* map, short tag)
+static mobj_t* getTeleportDestination(map_t* map, short tag)
 {
     iterlist_t* list;
 
@@ -230,7 +230,7 @@ boolean EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
     assert(line);
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     mobj_t* dest;
 
     if(mo->flags2 & MF2_NOTELEPORT)
@@ -254,7 +254,7 @@ void P_ArtiTele(player_t* player)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     const playerstart_t* start;
 
     // Get a random deathmatch start.

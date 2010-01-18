@@ -104,7 +104,7 @@ void T_FloorWaggle(waggle_t* waggle)
     P_ChangeSector(waggle->sector, true);
 }
 
-boolean EV_StartFloorWaggle(gamemap_t* map, int tag, int height, int speed,
+boolean EV_StartFloorWaggle(map_t* map, int tag, int height, int speed,
                             int offset, int timer)
 {
     assert(map);

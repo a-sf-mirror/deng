@@ -319,6 +319,7 @@ objectrecord_t* P_ObjectRecord(int type, void* p)
 }
 
 /**
+ * @note Part of the Doomsday public API.
  * @return              Ptr to the current map.
  */
 map_t* P_CurrentMap(void)
@@ -326,8 +327,13 @@ map_t* P_CurrentMap(void)
     return currentMap;
 }
 
+/**
+ * @note Part of the Doomsday public API.
+ */
 void P_SetCurrentMap(map_t* map)
 {
+    if(map && currentMap)
+        Con_Error("Attempt to set currentMap with another map loaded!");
     currentMap = map;
 }
 

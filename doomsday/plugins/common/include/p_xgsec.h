@@ -150,7 +150,7 @@ typedef struct {
 } xgplanemover_t;
 
 void            XS_Init(void);
-void            XS_Update(struct gamemap_s* map);
+void            XS_Update(struct map_s* map);
 
 void            XS_Thinker(xsthinker_t* xs);
 

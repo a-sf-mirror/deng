@@ -759,7 +759,7 @@ static playerheader_t* getPlayerHeader(void)
 
 unsigned int SV_GameID(void)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     return Sys_GetRealTime() + (map->time << 24);
 }
 
@@ -4103,6 +4103,7 @@ static int restoreMobjLinks(void* p, void* context)
  */
 static void P_UnArchiveThinkers(void)
 {
+    map_t* map = P_CurrentMap();
     uint i;
     byte tClass;
     thinker_t* th = NULL;
@@ -4207,7 +4208,7 @@ static void P_UnArchiveThinkers(void)
                     if(thInfo->thinkclass == TC_MOBJ)
                     {
                         th = (thinker_t*)
-                            P_MobjCreate(P_MobjThinker, 0, 0, 0, 0, 64, 64, 0);
+                            P_MobjCreate(map, P_MobjThinker, 0, 0, 0, 0, 64, 64, 0);
                     }
                     else
                     {
@@ -4247,7 +4248,7 @@ static void P_UnArchiveThinkers(void)
     // Update references to things.
 #if __JHEXEN__
     DD_IterateThinkers(P_MobjThinker, restoreMobjLinks, NULL);
-    P_CreateTIDList(P_CurrentGameMap());
+    P_CreateTIDList(P_CurrentMap());
     P_AddCreaturesToCorpseQueue();
 #else
     if(IS_SERVER)
@@ -4267,7 +4268,7 @@ static void P_UnArchiveThinkers(void)
 }
 
 #if __JDOOM__
-static void P_ArchiveBrain(gamemap_t* map)
+static void P_ArchiveBrain(map_t* map)
 {
     int i;
 
@@ -4278,7 +4279,7 @@ static void P_ArchiveBrain(gamemap_t* map)
         SV_WriteShort(SV_ThingArchiveNum(map->brain.targets[i]));
 }
 
-static void P_UnArchiveBrain(gamemap_t* map)
+static void P_UnArchiveBrain(map_t* map)
 {
     int i;
 
@@ -4457,7 +4458,7 @@ static void P_UnArchiveMisc(void)
 
 static void P_ArchiveMap(boolean savePlayers)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     // Place a header marker
     SV_BeginSegment(ASEG_MAP_HEADER2);
@@ -4505,7 +4506,7 @@ static void P_ArchiveMap(boolean savePlayers)
 
 static void P_UnArchiveMap(void)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 #if __JHEXEN__
     int segType = SV_ReadLong();
 
@@ -4691,7 +4692,7 @@ typedef struct savegameparam_s {
 
 int SV_SaveGameWorker(void* ptr)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     savegameparam_t* param = ptr;
 #if __JHEXEN__
     char versionText[HXS_VERSION_TEXT_LENGTH];
@@ -4935,7 +4936,7 @@ static boolean readSaveHeader(saveheader_t *hdr, LZFILE *savefile)
 
 static boolean SV_LoadGame2(void)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     int i;
     char buf[80];
     boolean loaded[MAXPLAYERS], infile[MAXPLAYERS];
@@ -5132,7 +5133,7 @@ boolean SV_LoadGame(const char* fileName)
 void SV_SaveClient(unsigned int gameID)
 {
 #if !__JHEXEN__ // unsupported in jHexen
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     filename_t name;
     player_t* pl = &players[CONSOLEPLAYER];
     mobj_t* mo = pl->plr->mo;
@@ -5187,7 +5188,7 @@ void SV_SaveClient(unsigned int gameID)
 void SV_LoadClient(unsigned int gameid)
 {
 #if !__JHEXEN__ // unsupported in jHexen
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     filename_t name;
     player_t* cpl = players + CONSOLEPLAYER;
     mobj_t* mo = cpl->plr->mo;
@@ -5374,7 +5375,7 @@ void SV_MapTeleport(int map, int position)
     targetPlayerMobj = NULL;
     for(i = 0; i < MAXPLAYERS; ++i)
     {
-        gamemap_t* map = P_CurrentGameMap();
+        map_t* map = P_CurrentMap();
         uint j;
 
         if(!players[i].plr->inGame)

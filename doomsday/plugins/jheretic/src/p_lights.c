@@ -174,7 +174,7 @@ void EV_StartLightStrobing(linedef_t* line)
 {
     assert(line);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     sector_t* sec = NULL;
     iterlist_t* list;
 
@@ -197,7 +197,7 @@ void EV_TurnTagLightsOff(linedef_t* line)
 {
     assert(line);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     sector_t* sec = NULL;
     iterlist_t* list;
     float lightLevel, otherLevel;
@@ -224,7 +224,7 @@ void EV_LightTurnOn(linedef_t* line, float max)
 {
     assert(line);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     sector_t* sec = NULL;
     iterlist_t* list;
     float lightLevel, otherLevel;

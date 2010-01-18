@@ -292,7 +292,7 @@ long int D_NetPlayerEvent(int plrNumber, int peType, void *data)
 
         if(IS_SERVER)
         {
-            gamemap_t* map = P_CurrentGameMap();
+            map_t* map = P_CurrentMap();
             GameMap_DealPlayerStarts(map, 0);
         }
     }

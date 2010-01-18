@@ -315,7 +315,7 @@ void T_Door(door_t* door)
     }
 }
 
-static int EV_DoDoor2(gamemap_t* map, int tag, float speed, int topwait,
+static int EV_DoDoor2(map_t* map, int tag, float speed, int topwait,
                       doortype_e type)
 {
     int rtn = 0, sound;
@@ -435,7 +435,7 @@ int EV_DoDoor(linedef_t* line, byte* args, doortype_e type)
     assert(line);
     assert(args);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     return EV_DoDoor2(map, (int) args[0], (float) args[1] * (1.0 / 8), (int) args[2], type);
     }
 }
@@ -444,7 +444,7 @@ int EV_DoDoor(linedef_t* line, doortype_e type)
 {
     assert(line);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     return EV_DoDoor2(map, P_ToXLine(line)->tag, DOORSPEED, DOORWAIT, type);
     }
 }

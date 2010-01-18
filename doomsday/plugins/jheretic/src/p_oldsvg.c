@@ -275,7 +275,7 @@ static void SV_v13_ReadMobj(void)
     /**
      * We now have all the information we need to create the mobj.
      */
-    mo = P_MobjCreate(P_MobjThinker, pos[VX], pos[VY], pos[VZ], angle,
+    mo = P_MobjCreate(P_CurrentMap(), P_MobjThinker, pos[VX], pos[VY], pos[VZ], angle,
                       radius, height, ddflags);
 
     mo->sprite = sprite;
@@ -870,7 +870,7 @@ boolean SV_v13_LoadGame(const char* savename)
     size_t length;
     int i, a, b, c;
     char vcheck[VERSIONSIZE];
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     if(!(length = M_ReadFile(savename, &savebuffer)))
         return false;

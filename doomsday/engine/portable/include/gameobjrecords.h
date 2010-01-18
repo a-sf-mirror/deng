@@ -31,7 +31,7 @@ typedef struct {
     struct valuetable_s**  tables;
 } valuedb_t;
 
-typedef struct {
+typedef struct gameobjrecords_s {
     uint            numNamespaces;
     struct gameobjrecord_namespace_s* namespaces;
     valuedb_t       values;

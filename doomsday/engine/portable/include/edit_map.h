@@ -31,6 +31,8 @@
 #include "map.h"
 #include "p_materialmanager.h"
 
+void            MPE_SetEditMap(map_t* map);
+
 boolean         MPE_Begin(const char* mapID);
 boolean         MPE_End(void);
 
@@ -62,5 +64,4 @@ objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint linecount,
 boolean          MPE_GameObjectRecordProperty(const char* objName, uint idx,
                                               const char* propName, valuetype_t type,
                                               void* data);
-map_t*          MPE_GetLastBuiltMap(void);
 #endif /* DOOMSDAY_MAP_EDITOR_H */

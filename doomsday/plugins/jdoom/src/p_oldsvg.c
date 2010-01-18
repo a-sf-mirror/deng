@@ -262,7 +262,7 @@ static void SV_ReadMobj(void)
     /**
      * We now have all the information we need to create the mobj.
      */
-    mo = P_MobjCreate(P_MobjThinker, pos[VX], pos[VY], pos[VZ], angle,
+    mo = P_MobjCreate(P_CurrentMap(), P_MobjThinker, pos[VX], pos[VY], pos[VZ], angle,
                       radius, height, ddflags);
 
     mo->sprite = sprite;
@@ -853,7 +853,7 @@ void P_v19_UnArchiveSpecials(void)
 
 boolean SV_v19_LoadGame(const char* savename)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
     int i, a, b, c;
     size_t length;
     char vcheck[VERSIONSIZE];

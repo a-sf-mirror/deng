@@ -53,6 +53,4 @@ void            G_PlayerReborn(int player);
 void            G_SaveGame(int slot, const char* description);
 
 void            P_GetMapLumpName(char lumpName[9], int episode, int map);
-
-struct gamemap_s* P_CurrentGameMap(void);
 #endif

@@ -470,7 +470,7 @@ float bulletSlope;
 
 void R_GetWeaponBob(int player, float* x, float* y)
 {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) players[player].plr->mo);
     if(x)
     {
         *x = 1 + (cfg.bobWeapon * players[player].bob) *
@@ -865,7 +865,7 @@ void P_BulletSlope(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     angle_t an = mo->angle;
 
     if(!cfg.noAutoAim) // Autoaiming enabled.
@@ -899,7 +899,7 @@ void C_DECL A_BeakAttackPL1(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     angle_t angle;
     int damage;
     float slope;
@@ -929,7 +929,7 @@ void C_DECL A_BeakAttackPL2(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     angle_t angle;
     int damage;
     float slope;
@@ -959,7 +959,7 @@ void C_DECL A_StaffAttackPL1(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     angle_t angle;
     int damage;
     float slope;
@@ -987,7 +987,7 @@ void C_DECL A_StaffAttackPL2(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     angle_t angle;
     int damage;
     float slope;
@@ -1016,7 +1016,7 @@ void C_DECL A_FireBlasterPL1(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* mo;
     angle_t angle;
     int damage;
@@ -1056,7 +1056,7 @@ void C_DECL A_FireGoldWandPL1(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* mo;
     angle_t angle;
     int damage;
@@ -1084,7 +1084,7 @@ void C_DECL A_FireGoldWandPL2(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* mo;
     angle_t angle;
     int damage;
@@ -1118,7 +1118,7 @@ void C_DECL A_FireMacePL1B(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* pmo, *ball;
     uint an;
 
@@ -1231,7 +1231,7 @@ void C_DECL A_MaceBallImpact2(mobj_t* ball)
 {
     assert(ball);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) ball);
 
     if(ball->pos[VZ] <= ball->floorZ && P_HitFloor(ball))
     {   // Landed in some sort of liquid.
@@ -1285,7 +1285,7 @@ void C_DECL A_FireMacePL2(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* mo;
 
     P_ShotAmmo(player);
@@ -1311,7 +1311,7 @@ void C_DECL A_DeathBallImpact(mobj_t* ball)
 {
     assert(ball);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) ball);
     mobj_t* target;
     angle_t angle;
     boolean newAngle;
@@ -1385,7 +1385,7 @@ void C_DECL A_SpawnRippers(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     int i;
 
     for(i = 0; i < 8; ++i)
@@ -1441,7 +1441,7 @@ void C_DECL A_BoltSpark(mobj_t* bolt)
 {
     assert(bolt);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) bolt);
     mobj_t* spark;
 
     if(P_Random() > 50)
@@ -1484,7 +1484,7 @@ void C_DECL A_FireSkullRodPL2(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* mo;
 
     P_ShotAmmo(player);
@@ -1574,7 +1574,7 @@ void C_DECL A_SkullRodStorm(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     float pos[3];
     mobj_t* mo;
     int playerNum;
@@ -1671,7 +1671,7 @@ void C_DECL A_PhoenixPuff(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* puff;
     uint an;
 
@@ -1707,7 +1707,7 @@ void C_DECL A_FirePhoenixPL2(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* mo, *pmo;
     angle_t angle;
     uint an;
@@ -1771,7 +1771,7 @@ void C_DECL A_GauntletAttack(player_t* player, pspdef_t* psp)
 {
     assert(player);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
     angle_t angle;
     int damage, randVal;
     float slope, dist;
@@ -1925,7 +1925,7 @@ void C_DECL A_FireBomb(mobj_t* mo)
 {
     assert(mo);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     mobj_t* bomb;
     float pos[3];
     uint an;

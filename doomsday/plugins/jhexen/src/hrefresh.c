@@ -91,7 +91,7 @@ void R_DrawMapTitle(void)
     float alpha;
     int y = 12;
     const char* lname, *lauthor;
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = P_CurrentMap();
 
     if(!cfg.mapTitle || map->actualTime > 6 * 35)
         return;

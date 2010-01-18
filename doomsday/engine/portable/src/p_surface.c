@@ -124,7 +124,11 @@ boolean Surface_SetMaterialOffsetX(surface_t* suf, float x)
     if(!ddMapSetup)
     {
         map_t* map = P_CurrentMap();
-        SurfaceList_Add(&map->movingSurfaceList, suf);
+
+        if(!map->_movingSurfaceList)
+            map->_movingSurfaceList = P_CreateSurfaceList();
+
+        SurfaceList_Add(map->_movingSurfaceList, suf);
     }
     else
     {
@@ -155,7 +159,11 @@ boolean Surface_SetMaterialOffsetY(surface_t* suf, float y)
     if(!ddMapSetup)
     {
         map_t* map = P_CurrentMap();
-        SurfaceList_Add(&map->movingSurfaceList, suf);
+
+        if(!map->_movingSurfaceList)
+            map->_movingSurfaceList = P_CreateSurfaceList();
+
+        SurfaceList_Add(map->_movingSurfaceList, suf);
     }
     else
     {
@@ -188,7 +196,11 @@ boolean Surface_SetMaterialOffsetXY(surface_t* suf, float x, float y)
     if(!ddMapSetup)
     {
         map_t* map = P_CurrentMap();
-        SurfaceList_Add(&map->movingSurfaceList, suf);
+
+        if(!map->_movingSurfaceList)
+            map->_movingSurfaceList = P_CreateSurfaceList();
+
+        SurfaceList_Add(map->_movingSurfaceList, suf);
     }
     else
     {

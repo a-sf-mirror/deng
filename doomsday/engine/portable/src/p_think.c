@@ -301,6 +301,7 @@ boolean Thinkers_Iterate(thinkers_t* thinkers, think_t func, byte flags,
 
 /**
  * Returns the map of the thinker.
+ * @note Part of the Doomsday public API.
  */
 map_t* Thinker_Map(thinker_t* th)
 {

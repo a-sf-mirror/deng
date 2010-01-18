@@ -106,9 +106,11 @@ static mobj_t *unusedMobjs = NULL;
 /**
  * All mobjs must be allocated through this routine. Part of the public API.
  */
-mobj_t* P_MobjCreate(think_t function, float x, float y, float z,
+mobj_t* P_MobjCreate(map_t* map, think_t function, float x, float y, float z,
                      angle_t angle, float radius, float height, int ddflags)
 {
+    assert(map);
+    {
     mobj_t* mo;
 
     if(!function)
@@ -137,11 +139,11 @@ mobj_t* P_MobjCreate(think_t function, float x, float y, float z,
     mo->thinker.function = function;
     if(mo->thinker.function)
     {
-        // @todo map should be specified by the caller.
-        Map_AddThinker(P_CurrentMap(), &mo->thinker, true); // Make it public.
+        Map_AddThinker(map, &mo->thinker, true); // Make it public.
     }
 
     return mo;
+    }
 }
 
 /**

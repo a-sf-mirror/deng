@@ -89,7 +89,7 @@ void P_SpawnTelefog(mobj_t* mo, void* context)
 # elif __JDOOM__
     // Spawn the item teleport fog at the new spot.
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     GameMap_SpawnMobj3fv(map, MT_IFOG, mo->pos, mo->angle, 0);
     }
 # endif
@@ -123,7 +123,7 @@ void P_MobjRemove(mobj_t* mo, boolean noRespawn)
 # endif
            )
         {
-            gamemap_t* map = P_CurrentGameMap();
+            map_t* map = Thinker_Map((thinker_t*) mo);
             GameMap_DeferSpawnMobj3fv(map, RESPAWNTICS, mo->type, mo->spawnSpot.pos,
                                 mo->spawnSpot.angle, mo->spawnSpot.flags,
                                 P_SpawnTelefog, NULL);
@@ -298,7 +298,7 @@ void P_RipperBlood(mobj_t* actor)
 {
     assert(actor);
     {
-    gamemap_t* map = P_CurrentGameMap();
+    map_t* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float pos[3];
 

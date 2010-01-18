@@ -133,10 +133,10 @@ static void getHand(float pos[3])
 
 static source_t* grabSource(map_t* map, int index)
 {
-    source_t*           s;
-    int                 i;
+    source_t* s;
+    int i;
 
-    map->bias.editGrabbedID = index;
+    map->_bias.editGrabbedID = index;
     s = SB_GetSource(map, index);
 
     // Update the property cvars.
@@ -149,34 +149,41 @@ static source_t* grabSource(map_t* map, int index)
 
 static source_t* getGrabbed(map_t* map)
 {
-    if(map->bias.editGrabbedID >= 0 && map->bias.editGrabbedID < map->bias.numSources)
+    if(map->_bias.sources &&
+       map->_bias.editGrabbedID >= 0 &&
+       map->_bias.editGrabbedID < map->_bias.sources->num)
     {
-        return SB_GetSource(map, map->bias.editGrabbedID);
+        return SB_GetSource(map, map->_bias.editGrabbedID);
     }
     return NULL;
 }
 
 static source_t* getNearest(map_t* map)
 {
-    float               hand[3];
-    source_t*           nearest = NULL, *s;
-    float               minDist = 0, len;
-    int                 i;
-
-    getHand(hand);
-
-    s = SB_GetSource(map, 0);
-    for(i = 0; i < map->bias.numSources; ++i, s++)
+    if(map->_bias.sources)
     {
-        len = M_Distance(hand, s->pos);
-        if(i == 0 || len < minDist)
-        {
-            minDist = len;
-            nearest = s;
-        }
-    }
+        float hand[3];
+        source_t* nearest = NULL;
+        float minDist = 0;
+        int i;
 
-    return nearest;
+        getHand(hand);
+        
+        for(i = 0; i < map->_bias.sources->num; ++i)
+        {
+            source_t* s = SB_GetSource(map, i);
+            float len = M_Distance(hand, s->pos);
+
+            if(i == 0 || len < minDist)
+            {
+                minDist = len;
+                nearest = s;
+            }
+        }
+
+        return nearest;
+    }
+    return NULL;
 }
 
 static void getHueColor(float* color, float* angle, float* sat)
@@ -586,15 +593,19 @@ static void drawHue(void)
 
 static boolean newSource(map_t* map)
 {
-    source_t*           s;
+    source_t* s;
 
-    if(map->bias.numSources == MAX_BIAS_LIGHTS)
+    if(!map->_bias.sources)
+        map->_bias.sources = SB_CreateSourceList();
+
+    if(map->_bias.sources->num == MAX_BIAS_LIGHTS)
         return false;
 
-    s = grabSource(map, map->bias.numSources);
+    s = grabSource(map, map->_bias.sources->num);
+    map->_bias.sources->num++;
+
     s->flags &= ~BLF_LOCKED;
     s->flags |= BLF_COLOR_OVERRIDE;
-    map->bias.numSources++;
 
     editIntensity = 200;
     editColor[0] = editColor[1] = editColor[2] = 1;
@@ -604,10 +615,10 @@ static boolean newSource(map_t* map)
 
 static void deleteSource(map_t* map, int which)
 {
-    if(map->bias.editGrabbedID == which)
-        map->bias.editGrabbedID = -1;
-    else if(map->bias.editGrabbedID > which)
-        map->bias.editGrabbedID--;
+    if(map->_bias.editGrabbedID == which)
+        map->_bias.editGrabbedID = -1;
+    else if(map->_bias.editGrabbedID > which)
+        map->_bias.editGrabbedID--;
 
     SB_DeleteSource(map, which);
 }
@@ -630,10 +641,10 @@ static void unlockSource(map_t* map, int which)
 
 static void grab(map_t* map, int which)
 {
-    if(map->bias.editGrabbedID != which)
+    if(map->_bias.editGrabbedID != which)
         grabSource(map, which);
     else
-        map->bias.editGrabbedID = -1;
+        map->_bias.editGrabbedID = -1;
 }
 
 static void dupeSource(map_t* map, int which)
@@ -656,10 +667,13 @@ static void dupeSource(map_t* map, int which)
 
 static boolean save(map_t* map, const char* name)
 {
-    int                 i;
-    FILE*               file;
-    filename_t          fileName;
-    const char*         uid = Map_UniqueName(map);
+    int i;
+    FILE* file;
+    filename_t fileName;
+    const char* uid = Map_UniqueName(map);
+
+    if(!map->_bias.sources)
+        return false;
 
     if(!name)
     {
@@ -680,15 +694,15 @@ static boolean save(map_t* map, const char* name)
     if((file = fopen(fileName, "wt")) == NULL)
         return false;
 
-    fprintf(file, "# %i Bias Lights for %s\n\n", map->bias.numSources, uid);
+    fprintf(file, "# %i Bias Lights for %s\n\n", map->_bias.sources->num, uid);
 
     // Since there can be quite a lot of these, make sure we'll skip
     // the ones that are definitely not suitable.
     fprintf(file, "SkipIf Not %s\n", (char *) gx.GetVariable(DD_GAME_MODE));
 
-    for(i = 0; i < map->bias.numSources; ++i)
+    for(i = 0; i < map->_bias.sources->num; ++i)
     {
-        source_t*           s = SB_GetSource(map, i);
+        source_t* s = SB_GetSource(map, i);
 
         fprintf(file, "\nLight {\n");
         fprintf(file, "  Map = \"%s\"\n", uid);
@@ -803,8 +817,12 @@ void SBE_DrawHUD(void)
     glOrtho(0, theWindow->width, theWindow->height, 0, -1, 1);
 
     // Overall stats: numSources / MAX (left)
-    sprintf(buf, "%i / %i (%i free)", map->bias.numSources, MAX_BIAS_LIGHTS,
-            MAX_BIAS_LIGHTS - map->bias.numSources);
+    if(map->_bias.sources)
+        sprintf(buf, "%i / %i (%i free)", map->_bias.sources->num, MAX_BIAS_LIGHTS,
+                MAX_BIAS_LIGHTS - map->_bias.sources->num);
+    else
+        sprintf(buf, "%i / %i (%i free)", 0, MAX_BIAS_LIGHTS, MAX_BIAS_LIGHTS);
+
     w = FR_TextWidth(buf) + 16;
     h = FR_TextHeight(buf) + 16;
     y = theWindow->height - 10 - h;
@@ -934,15 +952,15 @@ static void drawCursor(map_t* map)
     }
 
     // Show all sources?
-    if(editShowAll)
+    if(editShowAll && map->_bias.sources)
     {
-        int                 i;
+        int i;
 
         glDisable(GL_DEPTH_TEST);
 
-        for(i = 0; i < map->bias.numSources; ++i)
+        for(i = 0; i < map->_bias.sources->num; ++i)
         {
-            source_t*           src = SB_GetSource(map, i);
+            source_t* src = SB_GetSource(map, i);
 
             if(s == src)
                 continue;
@@ -959,18 +977,17 @@ static void drawCursor(map_t* map)
 
 void SBE_DrawCursor(map_t* map)
 {
-    if(!map || !map->bias.numSources)
-        return;
-
+    assert(map);
     if(!editActive || editHidden)
         return;
-
+    if(!map->_bias.sources || !map->_bias.sources->num)
+        return;
     drawCursor(map);
 }
 
 D_CMD(SBE_Begin)
 {
-    map_t*          map;
+    map_t* map;
 
     if(editActive)
         return false;
@@ -981,7 +998,7 @@ D_CMD(SBE_Begin)
     gameDrawHUD = false;
     editActive = true;
 
-    map->bias.editGrabbedID = -1;
+    map->_bias.editGrabbedID = -1;
 
     Con_Printf("Bias light editor: ON\n");
     return true;
@@ -1026,7 +1043,7 @@ D_CMD(BLEditor)
 
         SB_ClearSources(map);
 
-        map->bias.editGrabbedID = -1;
+        map->_bias.editGrabbedID = -1;
         newSource(map);
 
         return true;
@@ -1049,99 +1066,102 @@ D_CMD(BLEditor)
     map = P_CurrentMap();
 
     // Has the light index been given as an argument?
-    if(map->bias.editGrabbedID >= 0)
-        which = map->bias.editGrabbedID;
+    if(map->_bias.editGrabbedID >= 0)
+        which = map->_bias.editGrabbedID;
     else
         which = SB_ToIndex(map, getNearest(map));
 
-    if(!stricmp(cmd, "c") && map->bias.numSources > 0)
+    if(map->_bias.sources && map->_bias.sources->num > 0)
     {
-        source_t*           src = SB_GetSource(map, which);
-        float               r = 1, g = 1, b = 1;
-
-        if(argc >= 4)
+        if(!stricmp(cmd, "c"))
         {
-            r = strtod(argv[1], NULL);
-            g = strtod(argv[2], NULL);
-            b = strtod(argv[3], NULL);
+            source_t* src = SB_GetSource(map, which);
+            float r = 1, g = 1, b = 1;
+
+            if(argc >= 4)
+            {
+                r = strtod(argv[1], NULL);
+                g = strtod(argv[2], NULL);
+                b = strtod(argv[3], NULL);
+            }
+
+            editColor[0] = r;
+            editColor[1] = g;
+            editColor[2] = b;
+
+            SB_SourceSetColor(src, editColor);
+            src->flags |= BLF_CHANGED;
+            return true;
         }
 
-        editColor[0] = r;
-        editColor[1] = g;
-        editColor[2] = b;
-
-        SB_SourceSetColor(src, editColor);
-        src->flags |= BLF_CHANGED;
-        return true;
-    }
-
-    if(!stricmp(cmd, "i") && map->bias.numSources > 0)
-    {
-        source_t*           src = SB_GetSource(map, which);
-
-        if(argc >= 3)
+        if(!stricmp(cmd, "i"))
         {
-            src->sectorLevel[0] = strtod(argv[1], NULL) / 255.0f;
-            if(src->sectorLevel[0] < 0)
-                src->sectorLevel[0] = 0;
-            else if(src->sectorLevel[0] > 1)
-                src->sectorLevel[0] = 1;
+            source_t* src = SB_GetSource(map, which);
 
-            src->sectorLevel[1] = strtod(argv[2], NULL) / 255.0f;
-            if(src->sectorLevel[1] < 0)
-                src->sectorLevel[1] = 0;
-            else if(src->sectorLevel[1] > 1)
-                src->sectorLevel[1] = 1;
-        }
-        else if(argc >= 2)
-        {
-            editIntensity = strtod(argv[1], NULL);
+            if(argc >= 3)
+            {
+                src->sectorLevel[0] = strtod(argv[1], NULL) / 255.0f;
+                if(src->sectorLevel[0] < 0)
+                    src->sectorLevel[0] = 0;
+                else if(src->sectorLevel[0] > 1)
+                    src->sectorLevel[0] = 1;
+
+                src->sectorLevel[1] = strtod(argv[2], NULL) / 255.0f;
+                if(src->sectorLevel[1] < 0)
+                    src->sectorLevel[1] = 0;
+                else if(src->sectorLevel[1] > 1)
+                    src->sectorLevel[1] = 1;
+            }
+            else if(argc >= 2)
+            {
+                editIntensity = strtod(argv[1], NULL);
+            }
+
+            src->primaryIntensity = src->intensity = editIntensity;
+            src->flags |= BLF_CHANGED;
+            return true;
         }
 
-        src->primaryIntensity = src->intensity = editIntensity;
-        src->flags |= BLF_CHANGED;
-        return true;
-    }
+        if(argc > 1)
+        {
+            which = atoi(argv[1]);
+        }
 
-    if(argc > 1)
-    {
-        which = atoi(argv[1]);
-    }
+        if(which < 0 || which >= map->_bias.sources->num)
+        {
+            Con_Printf("Invalid light index %i.\n", which);
+            return false;
+        }
 
-    if(which < 0 || which >= map->bias.numSources)
-    {
-        Con_Printf("Invalid light index %i.\n", which);
-        return false;
-    }
+        if(!stricmp(cmd, "del"))
+        {
+            deleteSource(map, which);
+            return true;
+        }
 
-    if(!stricmp(cmd, "del"))
-    {
-        deleteSource(map, which);
-        return true;
-    }
+        if(!stricmp(cmd, "dup"))
+        {
+            dupeSource(map, which);
+            return true;
+        }
 
-    if(!stricmp(cmd, "dup"))
-    {
-        dupeSource(map, which);
-        return true;
-    }
+        if(!stricmp(cmd, "lock"))
+        {
+            lockSource(map, which);
+            return true;
+        }
 
-    if(!stricmp(cmd, "lock"))
-    {
-        lockSource(map, which);
-        return true;
-    }
+        if(!stricmp(cmd, "unlock"))
+        {
+            unlockSource(map, which);
+            return true;
+        }
 
-    if(!stricmp(cmd, "unlock"))
-    {
-        unlockSource(map, which);
-        return true;
-    }
-
-    if(!stricmp(cmd, "grab"))
-    {
-        grab(map, which);
-        return true;
+        if(!stricmp(cmd, "grab"))
+        {
+            grab(map, which);
+            return true;
+        }
     }
 
     return false;

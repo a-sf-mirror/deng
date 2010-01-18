@@ -71,6 +71,11 @@ typedef struct source_s {
     uint            lastUpdateTime;
 } source_t;
 
+typedef struct sourcelist_s {
+    int             num;
+    source_t        sources[MAX_BIAS_LIGHTS];
+} sourcelist_t;
+
 typedef struct biastracker_s {
     uint            changes[MAX_BIAS_TRACKED];
 } biastracker_t;
@@ -83,6 +88,9 @@ extern int      useBias; // Bias lighting enabled.
 extern uint     currentTimeSB;
 
 void            SB_Register(void);
+
+sourcelist_t*   SB_CreateSourceList(void);
+void            SB_DestroySourceList(sourcelist_t* sl);
 
 void            SB_InitForMap(struct map_s* map);
 void            SB_BeginFrame(struct map_s* map);

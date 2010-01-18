@@ -128,6 +128,18 @@ static void surfaceListNodeDestroy(surfacelistnode_t* node)
     unusedSurfaceListNodes = node;
 }
 
+surfacelist_t* P_CreateSurfaceList(void)
+{
+    return Z_Calloc(sizeof(planelist_t), PU_STATIC, 0);
+}
+
+void P_DestroySurfaceList(surfacelist_t* sl)
+{
+    assert(sl);
+    SurfaceList_Empty(sl);
+    Z_Free(sl);
+}
+
 /**
  * Adds the surface to the given surface list.
  *
@@ -337,6 +349,18 @@ static void planeListNodeDestroy(planelistnode_t* node)
     node->data = NULL;
     node->next = unusedPlaneListNodes;
     unusedPlaneListNodes = node;
+}
+
+planelist_t* P_CreatePlaneList(void)
+{
+    return Z_Calloc(sizeof(planelist_t), PU_STATIC, 0);
+}
+
+void P_DestroyPlaneList(planelist_t* pl)
+{
+    assert(pl);
+    PlaneList_Empty(pl);
+    Z_Free(pl);
 }
 
 void PlaneList_Add(planelist_t* pl, plane_t* pln)
@@ -610,12 +634,17 @@ void R_DestroyPlaneOfSector(map_t* map, uint id, sector_t* sec)
     }
 
     // If this plane is currently being watched, remove it.
-    PlaneList_Remove(&map->watchedPlaneList, plane);
+    if(map->_watchedPlaneList)
+        PlaneList_Remove(map->_watchedPlaneList, plane);
 
     // If this plane's surface is in the moving list, remove it.
-    SurfaceList_Remove(&map->movingSurfaceList, &plane->surface);
+    if(map->_movingSurfaceList)
+        SurfaceList_Remove(map->_movingSurfaceList, &plane->surface);
+
     // If this plane's surface is in the deocrated list, remove it.
-    SurfaceList_Remove(&map->decoratedSurfaceList, &plane->surface);
+    if(map->_decoratedSurfaceList)
+        SurfaceList_Remove(map->_decoratedSurfaceList, &plane->surface);
+
     if(plane->surface.decorations)
         Z_Free(plane->surface.decorations);
 
@@ -1636,14 +1665,8 @@ void R_SetupMap(int mode, int flags)
     switch(mode)
     {
     case DDSMM_INITIALIZE:
-        {
-        map_t* map = P_CurrentMap();
-
-        P_DestroyMap(map);
-
         // @todo remove the PU_MAP and PU_MAPSTATIC zone tags.
         Z_FreeTags(PU_MAP, PU_PURGELEVEL - 1);
-        }
 
         // Switch to fast malloc mode in the zone. This is intended for large
         // numbers of mallocs with no frees in between.
