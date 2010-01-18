@@ -304,7 +304,7 @@ static void setupPSpriteParams(rendpspriteparams_t* params,
         if(useBias)
         {
             // Evaluate the position in the light grid.
-            LightGrid_Evaluate(Map_LightGrid(P_CurrentMap()), spr->center, params->ambientColor);
+            LightGrid_Evaluate(Map_LightGrid(Thinker_Map((thinker_t*) viewPlayer->shared.mo)), spr->center, params->ambientColor);
         }
         else
         {
@@ -691,7 +691,7 @@ static void setupModelParamsForVisPSprite(rendmodelparams_t* params,
 
         if(useBias)
         {
-            LightGrid_Evaluate(Map_LightGrid(P_CurrentMap()), params->center, params->ambientColor);
+            LightGrid_Evaluate(Map_LightGrid(Thinker_Map((thinker_t*) viewPlayer->shared.mo)), params->center, params->ambientColor);
         }
         else
         {

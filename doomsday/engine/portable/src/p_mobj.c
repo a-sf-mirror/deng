@@ -159,8 +159,7 @@ void P_MobjDestroy(mobj_t* mo)
 
     S_StopSound(0, mo);
 
-    // @todo mobj should return the map it's linked to.
-    Map_RemoveThinker(P_CurrentMap(), (thinker_t *) mo);
+    Map_RemoveThinker(Thinker_Map((thinker_t*) mo), (thinker_t*) mo);
 }
 
 /**
@@ -334,16 +333,17 @@ boolean PIT_MobjCollide(mobj_t* mo, void* parm)
  */
 boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
 {
+    assert(mo);
+    assert(Thinker_Map((thinker_t*) mo));
+    {
+    map_t* map = Thinker_Map((thinker_t*) mo);
     subsector_t* newsubsec;
     checkpos_data_t data;
     vec2_t point;
     boolean result = true;
-    map_t* map = P_CurrentMap();
 
     if(!map)
-        return false;
-    if(!mo)
-        return false;
+        Con_Error("P_CheckPosXYZ: Mobj not linked in Map.\n");
 
     blockingMobj = NULL;
     mo->onMobj = NULL;
@@ -397,6 +397,7 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     tmpFloorZ = data.floorZ;
     tmpDropOffZ = data.dropOffZ;
     return result;
+    }
 }
 
 /**
@@ -643,7 +644,7 @@ static void mobjSlideMove(mobj_t* mo)
 {
     float leadPos[2], trailPos[2], delta[2];
     int hitcount;
-    map_t* map = P_CurrentMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
 
     slideMo = mo;
     hitcount = 0;
@@ -847,7 +848,7 @@ void P_MobjMovement2(mobj_t *mo, void *pstate)
 
 void P_MobjZMovement(mobj_t* mo)
 {
-    map_t* map = P_CurrentMap();
+    map_t* map = Thinker_Map((thinker_t*) mo);
     float gravity = FIX2FLT(map->globalGravity);
 
     // Adjust height.

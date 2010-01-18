@@ -185,8 +185,8 @@ void P_DeleteGenerator(generator_t* gen)
 {
     assert(gen);
     {
-    // @todo generator should return the map it's linked to.
-    Map_RemoveThinker(P_CurrentMap(), &gen->thinker);
+    thinker_t* th = (thinker_t*) gen;
+    Map_RemoveThinker(Thinker_Map(th), th);
     P_DestroyGenerator(gen);
     }
 }
@@ -205,8 +205,7 @@ void P_SpawnParticleGen(mobj_t* source, const ded_generator_t* def)
     if(isDedicated || !useParticles)
         return;
 
-    // @todo source mobj should return the map it's linked to.
-    if(!(gen = P_NewGenerator(P_CurrentMap())))
+    if(!(gen = P_NewGenerator(Thinker_Map((thinker_t*) source))))
         return;
 
 /*#if _DEBUG
@@ -385,7 +384,7 @@ static void P_NewParticle(generator_t* gen)
     angle_t ang, ang2;
     float* box, inter = -1;
     modeldef_t* mf = 0, *nextmf = 0;
-    map_t* map = P_CurrentMap(); // @todo Generator should return the map its in.
+    map_t* map = Thinker_Map((thinker_t*) gen);
     particle_t* pt;
     int i;
 
@@ -828,7 +827,7 @@ static void P_MoveParticle(generator_t* gen, particle_t* pt)
     ded_ptcstage_t* stDef = &gen->def->stages[pt->stage];
     boolean zBounce = false, hitFloor = false;
     fixed_t x, y, z, hardRadius = st->radius / 2;
-    map_t* map = P_CurrentMap(); // @todo Particle should return the map its linked in.
+    map_t* map = Thinker_Map((thinker_t*) gen);
     vec2_t point;
 
     // Particle rotates according to spin speed.
@@ -1052,7 +1051,7 @@ static void P_MoveParticle(generator_t* gen, particle_t* pt)
     // Iterate the lines in the contacted blocks.
 
     validCount++;
-    if(!Map_LineDefsBoxIteratorv(P_CurrentMap(), mbox, PIT_CheckLinePtc, 0, false))
+    if(!Map_LineDefsBoxIteratorv(map, mbox, PIT_CheckLinePtc, 0, false))
     {
         fixed_t normal[2], dotp;
 
@@ -1110,7 +1109,7 @@ void P_GeneratorThinker(generator_t* gen)
     particle_t* pt;
     float newparts;
     const ded_generator_t* def = gen->def;
-    map_t* map = P_CurrentMap(); // @todo Map should be returned by gen.
+    map_t* map = Thinker_Map((thinker_t*) gen);
 
     // Source has been destroyed?
     if(!(gen->flags & PGF_UNTRIGGERED) &&
@@ -1216,8 +1215,7 @@ void P_SpawnDamageParticleGen(mobj_t* mo, mobj_t* inflictor, int amount)
         vec3_t vector, vecDelta;
 
         // Create it.
-        // @todo mobj should return the map it's linked to.
-        if(!(gen = P_NewGenerator(P_CurrentMap())))
+        if(!(gen = P_NewGenerator(Thinker_Map((thinker_t*) mo))))
             return; // No more generators.
 
         gen->count = def->particles;

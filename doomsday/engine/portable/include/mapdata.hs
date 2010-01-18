@@ -12,6 +12,9 @@ typedef struct thinker_s {
     think_t         function;
     boolean         inStasis;
     thid_t          id; // Only used for mobjs (zero is not an ID).
+
+    /// The map where the thinker is in.
+    struct map_s*   _map;
 } thinker_t;
 end
 
@@ -260,7 +263,6 @@ struct plane
     FLOAT   float       speed // Move speed
     -       float       visHeight // Visible plane height (smoothed)
     -       float       visHeightDelta
-    -       planetype_t type // PLN_* type.
     -       mplane_t    buildData
 end
 

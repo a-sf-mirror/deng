@@ -145,8 +145,8 @@ void Cl_RemoveActiveMover(mover_t* mover)
     for(i = 0; i < MAX_MOVERS; ++i)
         if(activemovers[i] == mover)
         {
-            // @todo thinker should return the map it's linked to.
-            Map_RemoveThinker(P_CurrentMap(), &mover->thinker);
+            thinker_t* th = (thinker_t*) mover;
+            Map_RemoveThinker(Thinker_Map(th), th);
             activemovers[i] = NULL;
             break;
         }
@@ -162,8 +162,8 @@ void Cl_RemoveActivePoly(polymover_t* mover)
     for(i = 0; i < MAX_MOVERS; ++i)
         if(activepolys[i] == mover)
         {
-            // @todo thinker should return the map it's linked to.
-            Map_RemoveThinker(P_CurrentMap(), &mover->thinker);
+            thinker_t* th = (thinker_t*) mover;
+            Map_RemoveThinker(Thinker_Map(th), th);
             activepolys[i] = NULL;
             break;
         }

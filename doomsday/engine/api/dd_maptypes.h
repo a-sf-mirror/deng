@@ -14,6 +14,9 @@ typedef struct thinker_s {
     think_t         function;
     boolean         inStasis;
     thid_t          id; // Only used for mobjs (zero is not an ID).
+
+    /// The map where the thinker is in.
+    struct map_s*   _map;
 } thinker_t;
 
 #define DMT_VERTEX_POS DDVT_FLOAT

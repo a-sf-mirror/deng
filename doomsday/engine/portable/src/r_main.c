@@ -527,8 +527,7 @@ static int createObjLinksForParticles(void* ptr, void* context)
         if(!(size > .0001f))
             continue; // Infinitely small.
 
-        // @todo Generator should return the map its linked to.
-        ParticleBlockmap_Link(Map_ParticleBlockmap(P_CurrentMap()), pt);
+        ParticleBlockmap_Link(Map_ParticleBlockmap(Thinker_Map((thinker_t*) gen)), pt);
     }
 
     return true; // Continue iteration.

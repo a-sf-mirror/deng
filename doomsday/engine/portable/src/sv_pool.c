@@ -1600,7 +1600,7 @@ float Sv_MobjDistance(const mobj_t* mo, const ownerinfo_t* info,
     float z;
 
     // @todo map should be returned by mobj.
-    if(isReal && !Thinkers_IsUsedMobjID(Map_Thinkers(P_CurrentMap()), mo->thinker.id))
+    if(isReal && !Thinkers_IsUsedMobjID(Map_Thinkers(Thinker_Map((thinker_t*) mo)), mo->thinker.id))
     {
         // This mobj does not exist any more!
         return DDMAXFLOAT;

@@ -576,8 +576,7 @@ void Cl_MoveLocalPlayer(float dx, float dy, float z, boolean onground)
         P_MobjLink(mo, DDLINK_SECTOR | DDLINK_BLOCKMAP);
     }
 
-    // @todo Mobj should return the map its linked in.
-    subsector = Map_PointInSubsector(P_CurrentMap(), mo->pos[VX], mo->pos[VY]);
+    subsector = Map_PointInSubsector(Thinker_Map((thinker_t*) mo), mo->pos[VX], mo->pos[VY]);
     mo->floorZ = subsector->sector->SP_floorheight;
     mo->ceilingZ = subsector->sector->SP_ceilheight;
 

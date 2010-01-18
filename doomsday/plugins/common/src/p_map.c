@@ -1107,11 +1107,10 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
         if(!P_MobjsBoxIterator(box, PIT_CheckThing, 0))
             return false;
 
-#if _DEBUG
-        if(thing->onMobj)
-            Con_Message("thing->onMobj = %p (solid:%i)\n", thing->onMobj,
-                        (thing->onMobj->flags & MF_SOLID)!=0);
-#endif
+/* #if _DEBUG
+if(thing->onMobj)
+    Con_Message("thing->onMobj = %p (solid:%i)\n", thing->onMobj, (thing->onMobj->flags & MF_SOLID)!=0);
+#endif */
     }
 
      // Check lines.

@@ -248,8 +248,7 @@ void R_StopMatFader(matfader_t* fader)
         fader->suf->materialB = NULL;
         fader->suf->matBlendFactor = 1;
 
-        // @todo thinker should return the map it's linked to.
-        Map_RemoveThinker(P_CurrentMap(), (thinker_t*) fader);
+        Map_RemoveThinker(Thinker_Map((thinker_t*) fader), (thinker_t*) fader);
     }
 }
 

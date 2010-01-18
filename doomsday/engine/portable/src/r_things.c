@@ -1578,6 +1578,7 @@ void Mobj_ProjectVisSprite(const mobj_t* mo)
 boolean RIT_ProjectVisSpriteForMobj(void* ptr, void* data)
 {
     mobj_t* mo = (mobj_t*) ptr;
+    map_t* map = Thinker_Map((thinker_t*) mo);
     subsector_t* subsector = (subsector_t*) data;
     sector_t* sec = subsector->sector;
 
@@ -1602,10 +1603,10 @@ boolean RIT_ProjectVisSpriteForMobj(void* ptr, void* data)
 
                 visibleTop = mo->pos[VZ] + mat->height;
 
-                if(visibleTop > P_CurrentMap()->skyFixCeiling)
+                if(visibleTop > map->skyFixCeiling)
                 {
                     // Raise skyfix ceiling.
-                    P_CurrentMap()->skyFixCeiling = visibleTop + 16; // Add some leeway.
+                    map->skyFixCeiling = visibleTop + 16; // Add some leeway.
                 }
             }
         }

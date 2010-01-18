@@ -336,8 +336,8 @@ static int recycleMobjs(void* ptr, void* context)
     thinker_t* th = (thinker_t*) ptr;
     if(th->id)
     {   // Its a mobj.
-        // @todo Thinker should return the map it is linked to.
-        Thinkers_Remove(Map_Thinkers(P_CurrentMap()), th);
+        Thinkers_Remove(Map_Thinkers(Thinker_Map(th)), th);
+        Thinker_SetMap(th, NULL);
         P_MobjRecycle((mobj_t*) th);
     }
     return true; // Continue iteration.
@@ -346,9 +346,9 @@ static int recycleMobjs(void* ptr, void* context)
 static int destroyGenerator(void* ptr, void* content)
 {
     generator_t* gen = (generator_t*) ptr;
+    thinker_t* th = (thinker_t*) gen;
+    Map_RemoveThinker(Thinker_Map(th), th);
     P_DestroyGenerator(gen);
-    // @todo generator should return the map it's linked to.
-    Map_RemoveThinker(P_CurrentMap(), &gen->thinker);
     return true; // Continue iteration.
 }
 
@@ -808,6 +808,7 @@ void Map_AddThinker(map_t* map, thinker_t* th, boolean makePublic)
 
     // Link the thinker to the thinker list.
     Thinkers_Add(map->_thinkers, th, makePublic);
+    Thinker_SetMap(th, map);
 }
 
 /**
@@ -4038,8 +4039,8 @@ static int runThinker(void* p, void* context)
         if(th->function == (think_t) -1)
         {
             // Time to remove it.
-            // @todo Thinker should return the map it is linked to.
-            Thinkers_Remove(Map_Thinkers(P_CurrentMap()), th);
+            Thinkers_Remove(Map_Thinkers(Thinker_Map(th)), th);
+            Thinker_SetMap(th, NULL);
 
             if(th->id)
             {   // Its a mobj.
@@ -4095,8 +4096,7 @@ void DD_ThinkerAdd(thinker_t* th)
  */
 void DD_ThinkerRemove(thinker_t* th)
 {
-    // @todo Thinker should return the map it is linked to.
-    Map_RemoveThinker(P_CurrentMap(), th);
+    Map_RemoveThinker(Thinker_Map(th), th);
 }
 
 /**
@@ -4107,6 +4107,5 @@ void DD_ThinkerRemove(thinker_t* th)
  */
 void DD_ThinkerSetStasis(thinker_t* th, boolean on)
 {
-    // @todo Thinker should return the map it is linked to.
-    Map_ThinkerSetStasis(P_CurrentMap(), th, on);
+    Map_ThinkerSetStasis(Thinker_Map(th), th, on);
 }

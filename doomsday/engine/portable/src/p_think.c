@@ -300,6 +300,26 @@ boolean Thinkers_Iterate(thinkers_t* thinkers, think_t func, byte flags,
 }
 
 /**
+ * Returns the map of the thinker.
+ */
+map_t* Thinker_Map(thinker_t* th)
+{
+    assert(th);
+    return th->_map;
+}
+
+/**
+ * Sets the map of the thinker. Every thinker is in at most one map.
+ *
+ * @param map  Map.
+ */
+void Thinker_SetMap(thinker_t* th, map_t* map)
+{
+    assert(th);
+    th->_map = map;
+}
+
+/**
  * @todo Does not belong in this file?
  */
 boolean P_IsMobjThinker(thinker_t* th, void* context)

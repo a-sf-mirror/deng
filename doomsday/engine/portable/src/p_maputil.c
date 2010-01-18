@@ -410,7 +410,7 @@ void DMU_LineOpening(void* p)
  */
 int P_MobjUnlink(mobj_t* mo)
 {
-    return Map_UnlinkMobj(P_CurrentMap(), mo);
+    return Map_UnlinkMobj(Thinker_Map((thinker_t*) mo), mo);
 }
 
 /**
@@ -420,8 +420,7 @@ int P_MobjUnlink(mobj_t* mo)
  */
 void P_MobjLink(mobj_t* mo, byte flags)
 {
-    // @fixme Mobj should tell us which map it belongs to.
-    Map_LinkMobj(P_CurrentMap(), mo, flags);
+    Map_LinkMobj(Thinker_Map((thinker_t*) mo), mo, flags);
 }
 
 /**
@@ -456,8 +455,7 @@ boolean P_MobjLinesIterator(const mobj_t* mo, boolean (*func) (linedef_t*, void*
     if(!mo->lineRoot)
         return true; // No lines to process.
 
-    // @fixme Mobj should tell us which map it belongs to.
-    map = P_CurrentMap();
+    map = Thinker_Map((thinker_t*) mo);
 
     tn = map->mobjNodes->nodes;
     for(nix = tn[mo->lineRoot].next; nix != mo->lineRoot;
@@ -506,9 +504,7 @@ boolean P_MobjSectorsIterator(const mobj_t* mo,
     if(!func)
         return true;
 
-    // @fixme Mobj should tell us which map it belongs to.
-    map = P_CurrentMap();
-
+    map = Thinker_Map((thinker_t*) mo);
     tn = map->mobjNodes->nodes;
 
     // Always process the mobj's own sector first.

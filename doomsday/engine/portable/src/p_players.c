@@ -158,13 +158,13 @@ boolean P_IsInVoid(player_t* player)
     {
         if(ddpl->mo->subsector)
         {
-            sector_t* sec =
-                ((const subsector_t*) ((objectrecord_t*) ddpl->mo->subsector)->obj)->sector;
+            map_t* map = Thinker_Map((thinker_t*) ddpl->mo);
+            sector_t* sec = ((const subsector_t*) ((objectrecord_t*) ddpl->mo->subsector)->obj)->sector;
 
             if((IS_SKYSURFACE(&sec->SP_ceilsurface) &&
-                ddpl->mo->pos[VZ] < P_CurrentMap()->skyFixCeiling - 4) ||
+                ddpl->mo->pos[VZ] < map->skyFixCeiling - 4) ||
                (IS_SKYSURFACE(&sec->SP_floorsurface) &&
-                ddpl->mo->pos[VZ] > P_CurrentMap()->skyFixFloor + 4))
+                ddpl->mo->pos[VZ] > map->skyFixFloor + 4))
                 return false;
         }
 

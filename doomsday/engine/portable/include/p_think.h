@@ -59,6 +59,9 @@ void            Thinkers_Remove(thinkers_t* thinkers, thinker_t* th);
 boolean         Thinkers_Iterate(thinkers_t* thinkers, think_t func, byte flags,
                                  int (*callback) (void* p, void*), void* context);
 
+struct map_s*   Thinker_Map(thinker_t* th);
+void            Thinker_SetMap(thinker_t* th, struct map_s* map);
+
 // @todo Does not belong in this file?
 boolean         P_IsMobjThinker(thinker_t* th, void*);
 
