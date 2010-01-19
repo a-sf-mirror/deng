@@ -181,18 +181,18 @@ EXPORTS
     Map_SubsectorsBoxIterator   @345 NONAME
 
     ; Edit interface.
-    MPE_Begin                   @350 NONAME
+    Map_EditBegin               @350 NONAME
     Map_EditEnd                 @351 NONAME
 
-    MPE_CreateVertex            @352 NONAME
-    MPE_CreateVertices          @409 NONAME
-    MPE_CreateSideDef           @353 NONAME
-    MPE_CreateLineDef           @354 NONAME
-    MPE_CreateSector            @355 NONAME
-    MPE_CreatePlane             @408 NONAME
-    MPE_CreatePolyobj           @356 NONAME
-    MPE_SetSectorPlane          @328 NONAME
-    MPE_GameObjectRecordProperty @413 NONAME
+    Map_CreateVertex            @352 NONAME
+    Map_CreateVertices          @409 NONAME
+    Map_CreateSideDef           @353 NONAME
+    Map_CreateLineDef           @354 NONAME
+    Map_CreateSector            @355 NONAME
+    Map_CreatePlane             @408 NONAME
+    Map_CreatePolyobj           @356 NONAME
+    Map_SetSectorPlane          @328 NONAME
+    Map_GameObjectRecordProperty @413 NONAME
 
 ; Network.
     Net_SendPacket              @53 NONAME

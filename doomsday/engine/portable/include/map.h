@@ -184,21 +184,33 @@ boolean         Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objc
  * Map Edit interface.
  */
 boolean         Map_EditEnd(map_t* map);
-vertex_t*       Map_CreateVertex(map_t* map, float x, float y);
-linedef_t*      Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
-                                  sidedef_t* front, sidedef_t* back);
-sidedef_t*      Map_CreateSideDef(map_t* map, sector_t* sector, short flags, material_t* topMaterial,
-                                  float topOffsetX, float topOffsetY, float topRed, float topGreen,
-                                  float topBlue, material_t* middleMaterial, float middleOffsetX,
-                                  float middleOffsetY, float middleRed, float middleGreen, float middleBlue,
-                                  float middleAlpha, material_t* bottomMaterial, float bottomOffsetX,
-                                  float bottomOffsetY, float bottomRed, float bottomGreen, float bottomBlue);
-sector_t*       Map_CreateSector(map_t* map, float lightLevel, float red, float green, float blue);
-plane_t*        Map_CreatePlane(map_t* map, float height, material_t* material,
-                                float matOffsetX, float matOffsetY, float r, float g, float b, float a,
-                                float normalX, float normalY, float normalZ);
-polyobj_t*      Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,
-                                  int sequenceType, float anchorX, float anchorY);
+
+objectrecordid_t Map_CreateVertex(map_t* map, float x, float y);
+boolean         Map_CreateVertices(map_t* map, size_t num, float* values, objectrecordid_t* indices);
+objectrecordid_t Map_CreateSideDef(map_t* map, objectrecordid_t sector, short flags,
+                                   material_t* topMaterial,
+                                   float topOffsetX, float topOffsetY, float topRed,
+                                   float topGreen, float topBlue,
+                                   material_t* middleMaterial,
+                                   float middleOffsetX, float middleOffsetY,
+                                   float middleRed, float middleGreen,
+                                   float middleBlue, float middleAlpha,
+                                   material_t* bottomMaterial,
+                                   float bottomOffsetX, float bottomOffsetY,
+                                   float bottomRed, float bottomGreen,
+                                   float bottomBlue);
+objectrecordid_t Map_CreateLineDef(map_t* map, objectrecordid_t v1, objectrecordid_t v2, uint frontSide,
+                                   uint backSide, int flags);
+objectrecordid_t Map_CreateSector(map_t* map, float lightlevel, float red, float green, float blue);
+objectrecordid_t Map_CreatePlane(map_t* map, float height, material_t* material,
+                                 float matOffsetX, float matOffsetY, float r, float g, float b, float a,
+                                 float normalX, float normalY, float normalZ);
+objectrecordid_t Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint linecount,
+                                   int tag, int sequenceType, float startX, float startY);
+
+boolean          Map_GameObjectRecordProperty(map_t* map, const char* objName, uint idx,
+                                              const char* propName, valuetype_t type,
+                                              void* data);
 
 // Mobjs in bounding box iterators.
 boolean         Map_MobjsBoxIterator(map_t* map, const float box[4],

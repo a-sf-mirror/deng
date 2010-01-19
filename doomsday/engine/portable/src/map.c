@@ -49,11 +49,12 @@
  * @defGroup pruneUnusedObjectsFlags Prune Unused Objects Flags
  */
 /*{*/
-#define PRUNE_LINEDEFS      0x1
-#define PRUNE_VERTEXES      0x2
-#define PRUNE_SIDEDEFS      0x4
-#define PRUNE_SECTORS       0x8
-#define PRUNE_ALL           (PRUNE_LINEDEFS|PRUNE_VERTEXES|PRUNE_SIDEDEFS|PRUNE_SECTORS)
+#define PRUNE_LINEDEFS      0x0001
+#define PRUNE_VERTEXES      0x0002
+#define PRUNE_SIDEDEFS      0x0004
+#define PRUNE_SECTORS       0x0008
+#define PRUNE_PLANES        0x0010
+#define PRUNE_ALL           (PRUNE_LINEDEFS|PRUNE_VERTEXES|PRUNE_SIDEDEFS|PRUNE_SECTORS|PRUNE_PLANES)
 /*}*/
 
 // $smoothmatoffset: Maximum speed for a smoothed material offset.
@@ -133,7 +134,7 @@ static thid_t newMobjID(map_t* map)
     return thinkers->iddealer;
 }
 
-static linedef_t* createLineDef(map_t* map)
+static linedef_t* createLineDef2(map_t* map)
 {
     linedef_t* line = Z_Calloc(sizeof(*line), PU_STATIC, 0);
 
@@ -146,7 +147,7 @@ static linedef_t* createLineDef(map_t* map)
     return line;
 }
 
-static sidedef_t* createSideDef(map_t* map)
+static sidedef_t* createSideDef2(map_t* map)
 {
     sidedef_t* side = Z_Calloc(sizeof(*side), PU_STATIC, 0);
 
@@ -161,7 +162,7 @@ static sidedef_t* createSideDef(map_t* map)
     return side;
 }
 
-static sector_t* createSector(map_t* map)
+static sector_t* createSector2(map_t* map)
 {
     sector_t* sec = Z_Calloc(sizeof(*sec), PU_STATIC, 0);
 
@@ -173,12 +174,19 @@ static sector_t* createSector(map_t* map)
     return sec;
 }
 
-static plane_t* P_CreatePlane(map_t* map)
+static plane_t* createPlane2(map_t* map)
 {
-    return Z_Calloc(sizeof(plane_t), PU_STATIC, 0);
+    plane_t* pln = Z_Calloc(sizeof(plane_t), PU_STATIC, 0);
+
+    map->planes = Z_Realloc(map->planes, sizeof(pln) * (++map->numPlanes + 1), PU_STATIC);
+    map->planes[map->numPlanes-1] = pln;
+    map->planes[map->numPlanes] = NULL;
+
+    pln->buildData.index = map->numPlanes; // 1-based index.
+    return pln;
 }
 
-static polyobj_t* createPolyobj(map_t* map)
+static polyobj_t* createPolyobj2(map_t* map)
 {
     polyobj_t* po = Z_Calloc(POLYOBJ_SIZE, PU_STATIC, 0);
 
@@ -1897,7 +1905,11 @@ static void pruneUnusedObjects(map_t* map, int flags)
         pruneUnusedSideDefs(map);
 
     if(flags & PRUNE_SECTORS)
-        pruneUnusedSectors(map);*/
+        pruneUnusedSectors(map);
+    
+    if(flags & PRUNE_PLANES)
+        pruneUnusedPlanes(map);
+*/
 }
 
 static void hardenSectorSubsectorList(map_t* map, uint secIDX)
@@ -2461,6 +2473,13 @@ static void addSectorsToDMU(map_t* map)
         P_CreateObjectRecord(DMU_SECTOR, map->sectors[i]);
 }
 
+static void addPlanesToDMU(map_t* map)
+{
+    uint i;
+    for(i = 0; i < map->numPlanes; ++i)
+        P_CreateObjectRecord(DMU_PLANE, map->planes[i]);
+}
+
 static int buildSeg(hedge_t* hEdge, void* context)
 {
     hedge_info_t* info = (hedge_info_t*) hEdge->data;
@@ -2846,6 +2865,16 @@ static int addVertexToDMU(vertex_t* vertex, void* context)
     return true; // Continue iteration.
 }
 
+/**
+ * Called to begin the map building process.
+ */
+boolean Map_EditBegin(map_t* map)
+{
+    assert(map);
+    map->editActive = true;
+    return true;
+}
+
 boolean Map_EditEnd(map_t* map)
 {
     assert(map);
@@ -2863,6 +2892,7 @@ boolean Map_EditEnd(map_t* map)
     pruneUnusedObjects(map, PRUNE_ALL);
 
     addSectorsToDMU(map);
+    addPlanesToDMU(map);
     addSideDefsToDMU(map);
     addLineDefsToDMU(map);
 
@@ -3428,7 +3458,7 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
     }
 }
 
-vertex_t* Map_CreateVertex(map_t* map, float x, float y)
+static vertex_t* createVertex(map_t* map, float x, float y)
 {
     assert(map);
     {
@@ -3442,8 +3472,63 @@ vertex_t* Map_CreateVertex(map_t* map, float x, float y)
     }
 }
 
-linedef_t* Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
-                             sidedef_t* front, sidedef_t* back)
+/**
+ * Create a new vertex in currently loaded editable map.
+ *
+ * @param x             X coordinate of the new vertex.
+ * @param y             Y coordinate of the new vertex.
+ *
+ * @return              Index number of the newly created vertex else 0 if
+ *                      the vertex could not be created for some reason.
+ */
+objectrecordid_t Map_CreateVertex(map_t* map, float x, float y)
+{
+    assert(map);
+    {
+    vertex_t* v;
+    if(!map->editActive)
+        return 0;
+    v = createVertex(map, x, y);
+    return v ? ((mvertex_t*) v->data)->index : 0;
+    }
+}
+
+/**
+ * Create many new vertexs in the currently loaded editable map.
+ *
+ * @param num           Number of vertexes to be created.
+ * @param values        Ptr to an array containing the coordinates for the
+ *                      vertexs to create [v0 X, vo Y, v1 X, v1 Y...]
+ * @param indices       If not @c NULL, the indices of the newly created
+ *                      vertexes will be written back here.
+ */
+boolean Map_CreateVertices(map_t* map, size_t num, float* values, objectrecordid_t* indices)
+{
+    assert(map);
+    {
+    uint n;
+
+    if(!num || !values)
+        return false;
+
+    if(!map->editActive)
+        return false;
+
+    // Create many vertexes.
+    for(n = 0; n < num; ++n)
+    {
+        vertex_t* v = createVertex(map, values[n * 2], values[n * 2 + 1]);
+
+        if(indices)
+            indices[n] = ((mvertex_t*) v->data)->index;
+    }
+
+    return true;
+    }
+}
+
+static linedef_t* createLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
+    sidedef_t* front, sidedef_t* back)
 {
     linedef_t* l;
 
@@ -3452,7 +3537,7 @@ linedef_t* Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
     if(!map->editActive)
         return NULL;
 
-    l = createLineDef(map);
+    l = createLineDef2(map);
 
     l->buildData.v[0] = vtx1;
     l->buildData.v[1] = vtx2;
@@ -3528,12 +3613,73 @@ linedef_t* Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
     return l;
 }
 
-sidedef_t* Map_CreateSideDef(map_t* map, sector_t* sector, short flags, material_t* topMaterial,
-                             float topOffsetX, float topOffsetY, float topRed, float topGreen,
-                             float topBlue, material_t* middleMaterial, float middleOffsetX,
-                             float middleOffsetY, float middleRed, float middleGreen, float middleBlue,
-                             float middleAlpha, material_t* bottomMaterial, float bottomOffsetX,
-                             float bottomOffsetY, float bottomRed, float bottomGreen, float bottomBlue)
+/**
+ * Create a new linedef in the editable map.
+ *
+ * @param v1            Idx of the start vertex.
+ * @param v2            Idx of the end vertex.
+ * @param frontSide     Idx of the front sidedef.
+ * @param backSide      Idx of the back sidedef.
+ * @param flags         Currently unused.
+ *
+ * @return              Idx of the newly created linedef else @c 0 if there
+ *                      was an error.
+ */
+objectrecordid_t Map_CreateLineDef(map_t* map, objectrecordid_t v1,
+    objectrecordid_t v2, uint frontSide, uint backSide, int flags)
+{
+    assert(map);
+    {
+    linedef_t* l;
+    sidedef_t* front = NULL, *back = NULL;
+    vertex_t* vtx1, *vtx2;
+    float length, dx, dy;
+
+    if(!map->editActive)
+        return 0;
+    if(frontSide > map->numSideDefs)
+        return 0;
+    if(backSide > map->numSideDefs)
+        return 0;
+    if(v1 == 0 || v1 > Map_NumVertexes(map))
+        return 0;
+    if(v2 == 0 || v2 > Map_NumVertexes(map))
+        return 0;
+    if(v1 == v2)
+        return 0;
+
+    // First, ensure that the side indices are unique.
+    if(frontSide && map->sideDefs[frontSide - 1]->buildData.refCount)
+        return 0; // Already in use.
+    if(backSide && map->sideDefs[backSide - 1]->buildData.refCount)
+        return 0; // Already in use.
+
+    // Next, check the length is not zero.
+    vtx1 = Map_HalfEdgeDS(map)->vertices[v1 - 1];
+    vtx2 = Map_HalfEdgeDS(map)->vertices[v2 - 1];
+    dx = vtx2->pos[VX] - vtx1->pos[VX];
+    dy = vtx2->pos[VY] - vtx1->pos[VY];
+    length = P_AccurateDistance(dx, dy);
+    if(!(length > 0))
+        return 0;
+
+    if(frontSide > 0)
+        front = map->sideDefs[frontSide - 1];
+    if(backSide > 0)
+        back = map->sideDefs[backSide - 1];
+
+    l = createLineDef(map, vtx1, vtx2, front, back);
+
+    return l->buildData.index;
+    }
+}
+
+static sidedef_t* createSideDef(map_t* map, sector_t* sector, short flags,
+    material_t* topMaterial, float topOffsetX, float topOffsetY, float topRed,
+    float topGreen, float topBlue, material_t* middleMaterial, float middleOffsetX,
+    float middleOffsetY, float middleRed, float middleGreen, float middleBlue,
+    float middleAlpha, material_t* bottomMaterial, float bottomOffsetX,
+    float bottomOffsetY, float bottomRed, float bottomGreen, float bottomBlue)
 {
     sidedef_t* s = NULL;
 
@@ -3541,7 +3687,7 @@ sidedef_t* Map_CreateSideDef(map_t* map, sector_t* sector, short flags, material
 
     if(map->editActive)
     {
-        s = createSideDef(map);
+        s = createSideDef2(map);
         s->flags = flags;
         s->sector = sector;
 
@@ -3561,7 +3707,35 @@ sidedef_t* Map_CreateSideDef(map_t* map, sector_t* sector, short flags, material
     return s;
 }
 
-sector_t* Map_CreateSector(map_t* map, float lightLevel, float red, float green, float blue)
+objectrecordid_t Map_CreateSideDef(map_t* map, objectrecordid_t sector,
+    short flags, material_t* topMaterial, float topOffsetX, float topOffsetY,
+    float topRed, float topGreen, float topBlue, material_t* middleMaterial,
+    float middleOffsetX, float middleOffsetY, float middleRed, float middleGreen,
+    float middleBlue, float middleAlpha, material_t* bottomMaterial,
+    float bottomOffsetX, float bottomOffsetY, float bottomRed, float bottomGreen,
+    float bottomBlue)
+{
+    assert(map);
+    {
+    sidedef_t* s;
+    if(!map->editActive)
+        return 0;
+    if(sector > Map_NumSectors(map))
+        return 0;
+
+    s = createSideDef(map, (sector == 0? NULL: map->sectors[sector-1]), flags,
+                      topMaterial? ((objectrecord_t*) topMaterial)->obj : NULL,
+                      topOffsetX, topOffsetY, topRed, topGreen, topBlue,
+                      middleMaterial? ((objectrecord_t*) middleMaterial)->obj : NULL,
+                      middleOffsetX, middleOffsetY, middleRed, middleGreen, middleBlue,
+                      middleAlpha, bottomMaterial? ((objectrecord_t*) bottomMaterial)->obj : NULL,
+                      bottomOffsetX, bottomOffsetY, bottomRed, bottomGreen, bottomBlue);
+
+    return s ? s->buildData.index : 0;
+    }
+}
+
+static sector_t* createSector(map_t* map, float lightLevel, float red, float green, float blue)
 {
     sector_t* s;
 
@@ -3570,7 +3744,7 @@ sector_t* Map_CreateSector(map_t* map, float lightLevel, float red, float green,
     if(!map->editActive)
         return NULL;
 
-    s = createSector(map);
+    s = createSector2(map);
 
     s->planeCount = 0;
     s->planes = NULL;
@@ -3582,10 +3756,22 @@ sector_t* Map_CreateSector(map_t* map, float lightLevel, float red, float green,
     return s;
 }
 
-plane_t* Map_CreatePlane(map_t* map, float height, material_t* material,
-                         float matOffsetX, float matOffsetY, float r, float g,
-                         float b, float a, float normalX, float normalY,
-                         float normalZ)
+objectrecordid_t Map_CreateSector(map_t* map, float lightLevel, float red, float green, float blue)
+{
+    assert(map);
+    {
+    sector_t* s;
+    if(!map->editActive)
+        return 0;
+    s = createSector(map, lightLevel, red, green, blue);
+    return s ? s->buildData.index : 0;
+    }
+}
+
+static plane_t* createPlane(map_t* map, float height, material_t* material,
+                            float matOffsetX, float matOffsetY, float r, float g,
+                            float b, float a, float normalX, float normalY,
+                            float normalZ)
 {
     plane_t* pln;
 
@@ -3594,7 +3780,7 @@ plane_t* Map_CreatePlane(map_t* map, float height, material_t* material,
     if(!map->editActive)
         return NULL;
 
-    pln = P_CreatePlane(map);
+    pln = createPlane2(map);
 
     pln->height = pln->visHeight = pln->oldHeight[0] =
         pln->oldHeight[1] = height;
@@ -3618,25 +3804,35 @@ plane_t* Map_CreatePlane(map_t* map, float height, material_t* material,
     else
         pln->type = PLN_FLOOR;*/
     M_Normalize(pln->PS_normal);
-
-    pln->buildData.index = P_CreateObjectRecord(DMU_PLANE, pln) - 1;
-    map->planes = Z_Realloc(map->planes, ++map->numPlanes * sizeof(plane_t*), PU_STATIC);
-    map->planes[map->numPlanes-1] = pln;
     return pln;
 }
 
-polyobj_t* Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,
-                             int sequenceType, float anchorX, float anchorY)
+objectrecordid_t Map_CreatePlane(map_t* map, float height, material_t* material,
+    float matOffsetX, float matOffsetY, float r, float g, float b, float a,
+    float normalX, float normalY, float normalZ)
+{
+    assert(map);
+    {
+    plane_t* p;
+
+    if(!map->editActive)
+        return 0;
+
+    p = createPlane(map, height, material, matOffsetX, matOffsetY, r, g, b, a, normalX, normalY, normalZ);
+    return p ? p->buildData.index : 0;
+    }
+}
+
+static polyobj_t* createPolyobj(map_t* map, objectrecordid_t* lines, uint lineCount,
+    int tag, int sequenceType, float anchorX, float anchorY)
 {
     polyobj_t* po;
     uint i;
 
-    assert(map);
-
     if(!map->editActive)
         return NULL;
 
-    po = createPolyobj(map);
+    po = createPolyobj2(map);
 
     po->idx = map->numPolyObjs - 1; // 0-based index.
     po->lineDefs = Z_Calloc(sizeof(linedef_t*) * (lineCount+1), PU_STATIC, 0);
@@ -3658,6 +3854,39 @@ polyobj_t* Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount
     po->pos[VY] = anchorY;
 
     return po;
+}
+
+objectrecordid_t Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,
+                                   int sequenceType, float anchorX, float anchorY)
+{
+    assert(map);
+    {
+    uint i;
+    polyobj_t* po;
+
+    if(!map->editActive)
+        return 0;
+    if(!lineCount || !lines)
+        return 0;
+
+    // First check that all the line indices are valid and that they arn't
+    // already part of another polyobj.
+    for(i = 0; i < lineCount; ++i)
+    {
+        linedef_t* line;
+
+        if(lines[i] == 0 || lines[i] > Map_NumLineDefs(map))
+            return 0;
+
+        line = map->lineDefs[lines[i] - 1];
+        if(line->inFlags & LF_POLYOBJ)
+            return 0;
+    }
+
+    po = createPolyobj(map, lines, lineCount, tag, sequenceType, anchorX, anchorY);
+
+    return po ? po->buildData.index : 0;
+    }
 }
 
 static void findDominantLightSources(map_t* map)
@@ -4138,4 +4367,74 @@ int Map_IterateThinkers(map_t* map, think_t func, int (*callback) (void* p, void
 void Map_ThinkerAdd(map_t* map, thinker_t* th)
 {
     Map_AddThinker(map, th, true); // This is a public thinker.
+}
+
+void Map_SetSectorPlane(map_t* map, objectrecordid_t sector, uint type, objectrecordid_t plane)
+{
+    assert(map);
+    {
+    sector_t* sec;
+    plane_t* pln;
+    uint i;
+
+    if(!map->editActive)
+        return;
+    if(sector == 0 || sector > Map_NumSectors(map))
+        return;
+    if(plane == 0 || plane > Map_NumPlanes(map))
+        return;
+
+    sec = map->sectors[sector-1];
+
+    // First check whether sector is already linked with this plane.
+    for(i = 0; i < sec->planeCount; ++i)
+    {
+        if(sec->planes[i]->buildData.index == plane)
+            return;
+    }
+
+    pln = map->planes[plane-1];
+    sec->planes = Z_Realloc(sec->planes, sizeof(plane_t*) * (++sec->planeCount + 1), PU_STATIC);
+    sec->planes[type > PLN_CEILING? sec->planeCount-1 : type] = pln;
+    sec->planes[sec->planeCount] = NULL; // Terminate.
+    }
+}
+
+boolean Map_GameObjectRecordProperty(map_t* map, const char* objName, uint idx,
+                                     const char* propName, valuetype_t type,
+                                     void* data)
+{
+    assert(map);
+    {
+    uint i;
+    size_t len;
+    def_gameobject_t* def;
+
+    if(!map->editActive)
+        return false;
+    if(!objName || !propName || !data)
+        return false; // Hmm...
+
+    // Is this a known object?
+    if((def = P_GameObjectDef(0, objName, false)) == NULL)
+        return false; // Nope.
+
+    // Is this a known property?
+    len = strlen(propName);
+    for(i = 0; i < def->numProperties; ++i)
+    {
+        if(!strnicmp(propName, def->properties[i].name, len))
+        {   // Found a match!
+            // Create a record of this so that the game can query it later.
+            GameObjRecords_Update(Map_GameObjectRecords(map), def, i, idx, type, data);
+            return true; // We're done.
+        }
+    }
+
+    // An unknown property.
+    VERBOSE(Con_Message("Map_GameObjectRecordProperty: %s has no property \"%s\".\n",
+                        def->name, propName));
+
+    return false;
+    }
 }

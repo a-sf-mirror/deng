@@ -3,7 +3,7 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2007-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,42 +21,7 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * edit_map.h: Public map creation/modification API.
- */
-
 #ifndef DOOMSDAY_MAP_EDITOR_H
 #define DOOMSDAY_MAP_EDITOR_H
 
-#include "map.h"
-#include "p_materialmanager.h"
-
-objectrecordid_t MPE_CreateVertex(map_t* map, float x, float y);
-boolean         MPE_CreateVertices(map_t* map, size_t num, float* values, objectrecordid_t* indices);
-objectrecordid_t MPE_CreateSideDef(map_t* map, objectrecordid_t sector, short flags,
-                                   material_t* topMaterial,
-                                   float topOffsetX, float topOffsetY, float topRed,
-                                   float topGreen, float topBlue,
-                                   material_t* middleMaterial,
-                                   float middleOffsetX, float middleOffsetY,
-                                   float middleRed, float middleGreen,
-                                   float middleBlue, float middleAlpha,
-                                   material_t* bottomMaterial,
-                                   float bottomOffsetX, float bottomOffsetY,
-                                   float bottomRed, float bottomGreen,
-                                   float bottomBlue);
-objectrecordid_t MPE_CreateLineDef(map_t* map, objectrecordid_t v1, objectrecordid_t v2, uint frontSide,
-                                   uint backSide, int flags);
-objectrecordid_t MPE_CreateSector(map_t* map, float lightlevel, float red, float green, float blue);
-void             MPE_CreatePlane(map_t* map, objectrecordid_t sector, float height,
-                                 material_t* material,
-                                 float matOffsetX, float matOffsetY,
-                                 float r, float g, float b, float a,
-                                 float normalX, float normalY, float normalZ);
-objectrecordid_t MPE_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint linecount,
-                                   int tag, int sequenceType, float startX, float startY);
-
-boolean          MPE_GameObjectRecordProperty(map_t* map, const char* objName, uint idx,
-                                              const char* propName, valuetype_t type,
-                                              void* data);
 #endif /* DOOMSDAY_MAP_EDITOR_H */

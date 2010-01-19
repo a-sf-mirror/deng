@@ -212,34 +212,33 @@ typedef struct material_s { int type; } material_t;
                                        float bottomSlope, float topSlope, int flags);
 
     // Map building interface.
-    boolean         MPE_Begin(struct map_s* map);
+    boolean         Map_EditBegin(struct map_s* map);
     boolean         Map_EditEnd(struct map_s* map);
 
-    objectrecordid_t MPE_CreateVertex(struct map_s* map, float x, float y);
-    boolean         MPE_CreateVertices(struct map_s* map, size_t num, float* values, objectrecordid_t* indices);
-    objectrecordid_t MPE_CreateSideDef(struct map_s* map, objectrecordid_t sector, short flags,
-                                      material_t* topMaterial,
-                                      float topOffsetX, float topOffsetY, float topRed,
-                                      float topGreen, float topBlue,
-                                      material_t* middleMaterial,
-                                      float middleOffsetX, float middleOffsetY,
-                                      float middleRed, float middleGreen,
-                                      float middleBlue, float middleAlpha,
-                                      material_t* bottomMaterial,
-                                      float bottomOffsetX, float bottomOffsetY,
-                                      float bottomRed, float bottomGreen,
-                                      float bottomBlue);
-    objectrecordid_t MPE_CreateLineDef(struct map_s* map, objectrecordid_t v1, objectrecordid_t v2, objectrecordid_t frontSide,
-                                      objectrecordid_t backSide, int flags);
-    objectrecordid_t MPE_CreateSector(struct map_s* map, float lightlevel, float red, float green, float blue);
-    objectrecordid_t MPE_CreatePlane(struct map_s* map, float height, material_t* material,
-                                     float matOffsetX, float matOffsetY,
-                                     float r, float g, float b, float a,
+    objectrecordid_t Map_CreateVertex(struct map_s* map, float x, float y);
+    boolean         Map_CreateVertices(struct map_s* map, size_t num, float* values, objectrecordid_t* indices);
+    objectrecordid_t Map_CreateSideDef(struct map_s* map, objectrecordid_t sector, short flags,
+                                       material_t* topMaterial,
+                                       float topOffsetX, float topOffsetY, float topRed,
+                                       float topGreen, float topBlue,
+                                       material_t* middleMaterial,
+                                       float middleOffsetX, float middleOffsetY,
+                                       float middleRed, float middleGreen,
+                                       float middleBlue, float middleAlpha,
+                                       material_t* bottomMaterial,
+                                       float bottomOffsetX, float bottomOffsetY,
+                                       float bottomRed, float bottomGreen,
+                                       float bottomBlue);
+    objectrecordid_t Map_CreateLineDef(struct map_s* map, objectrecordid_t v1, objectrecordid_t v2, uint frontSide,
+                                       uint backSide, int flags);
+    objectrecordid_t Map_CreateSector(struct map_s* map, float lightlevel, float red, float green, float blue);
+    objectrecordid_t Map_CreatePlane(struct map_s* map, float height, material_t* material,
+                                     float matOffsetX, float matOffsetY, float r, float g, float b, float a,
                                      float normalX, float normalY, float normalZ);
-    void             MPE_SetSectorPlane(struct map_s* map, objectrecordid_t sector, uint type, objectrecordid_t plane);
-    objectrecordid_t MPE_CreatePolyobj(struct map_s* map, objectrecordid_t* lines, uint linecount,
-                                       int tag, int sequenceType, float anchorX, float anchorY);
-    boolean          MPE_GameObjectRecordProperty(struct map_s* map, const char* objName, uint idx,
+    objectrecordid_t Map_CreatePolyobj(struct map_s* map, objectrecordid_t* lines, uint linecount,
+                                       int tag, int sequenceType, float startX, float startY);
+    void             Map_SetSectorPlane(struct map_s* map, objectrecordid_t sector, uint type, objectrecordid_t plane);
+    boolean          Map_GameObjectRecordProperty(struct map_s* map, const char* objName, uint idx,
                                          const char* propName, valuetype_t type,
                                          void* data);
 

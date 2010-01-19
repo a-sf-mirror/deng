@@ -1803,11 +1803,11 @@ boolean TransferMap(void)
 
     VERBOSE(Con_Message("WadMapConverter::TransferMap...\n"));
 
-    MPE_Begin(map);
+    Map_EditBegin(map);
 
     // Create all the data structures.
     VERBOSE(Con_Message("WadMapConverter::Transfering vertexes...\n"));
-    MPE_CreateVertices(map, wadmap->numVertexes, wadmap->vertexes, NULL);
+    Map_CreateVertices(map, wadmap->numVertexes, wadmap->vertexes, NULL);
 
     VERBOSE(Con_Message("WadMapConverter::Transfering sectors...\n"));
     for(i = 0; i < wadmap->numSectors; ++i)
@@ -1815,30 +1815,30 @@ boolean TransferMap(void)
         msector_t* sec = &wadmap->sectors[i];
         uint sectorIDX, floorIDX, ceilIDX;
 
-        sectorIDX = MPE_CreateSector(map, (float) sec->lightLevel / 255.0f, 1, 1, 1);
+        sectorIDX = Map_CreateSector(map, (float) sec->lightLevel / 255.0f, 1, 1, 1);
 
-        floorIDX = MPE_CreatePlane(map, sec->floorHeight,
+        floorIDX = Map_CreatePlane(map, sec->floorHeight,
                                    sec->floorMaterial? sec->floorMaterial->material : 0,
                                    0, 0, 1, 1, 1, 1, 0, 0, 1);
-        ceilIDX = MPE_CreatePlane(map, sec->ceilHeight,
+        ceilIDX = Map_CreatePlane(map, sec->ceilHeight,
                                   sec->ceilMaterial? sec->ceilMaterial->material : 0,
                                   0, 0, 1, 1, 1, 1, 0, 0, -1);
 
-        MPE_SetSectorPlane(map, sectorIDX, 0, floorIDX);
-        MPE_SetSectorPlane(map, sectorIDX, 1, ceilIDX);
+        Map_SetSectorPlane(map, sectorIDX, 0, floorIDX);
+        Map_SetSectorPlane(map, sectorIDX, 1, ceilIDX);
 
-        MPE_GameObjectRecordProperty(map, "XSector", i, "ID", DDVT_INT, &i);
-        MPE_GameObjectRecordProperty(map, "XSector", i, "Tag", DDVT_SHORT, &sec->tag);
-        MPE_GameObjectRecordProperty(map, "XSector", i, "Type", DDVT_SHORT, &sec->type);
+        Map_GameObjectRecordProperty(map, "XSector", i, "ID", DDVT_INT, &i);
+        Map_GameObjectRecordProperty(map, "XSector", i, "Tag", DDVT_SHORT, &sec->tag);
+        Map_GameObjectRecordProperty(map, "XSector", i, "Type", DDVT_SHORT, &sec->type);
 
         if(wadmap->format == MF_DOOM64)
         {
-            MPE_GameObjectRecordProperty(map, "XSector", i, "Flags", DDVT_SHORT, &sec->d64flags);
-            MPE_GameObjectRecordProperty(map, "XSector", i, "CeilingColor", DDVT_SHORT, &sec->d64ceilingColor);
-            MPE_GameObjectRecordProperty(map, "XSector", i, "FloorColor", DDVT_SHORT, &sec->d64floorColor);
-            MPE_GameObjectRecordProperty(map, "XSector", i, "UnknownColor", DDVT_SHORT, &sec->d64unknownColor);
-            MPE_GameObjectRecordProperty(map, "XSector", i, "WallTopColor", DDVT_SHORT, &sec->d64wallTopColor);
-            MPE_GameObjectRecordProperty(map, "XSector", i, "WallBottomColor", DDVT_SHORT, &sec->d64wallBottomColor);
+            Map_GameObjectRecordProperty(map, "XSector", i, "Flags", DDVT_SHORT, &sec->d64flags);
+            Map_GameObjectRecordProperty(map, "XSector", i, "CeilingColor", DDVT_SHORT, &sec->d64ceilingColor);
+            Map_GameObjectRecordProperty(map, "XSector", i, "FloorColor", DDVT_SHORT, &sec->d64floorColor);
+            Map_GameObjectRecordProperty(map, "XSector", i, "UnknownColor", DDVT_SHORT, &sec->d64unknownColor);
+            Map_GameObjectRecordProperty(map, "XSector", i, "WallTopColor", DDVT_SHORT, &sec->d64wallTopColor);
+            Map_GameObjectRecordProperty(map, "XSector", i, "WallBottomColor", DDVT_SHORT, &sec->d64wallBottomColor);
         }
     }
 
@@ -1853,7 +1853,7 @@ boolean TransferMap(void)
         if(front)
         {
             frontIdx =
-                MPE_CreateSideDef(map, front->sector,
+                Map_CreateSideDef(map, front->sector,
                                   (wadmap->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
                                   front->topMaterial? front->topMaterial->material : 0,
                                   front->offset[VX], front->offset[VY], 1, 1, 1,
@@ -1867,7 +1867,7 @@ boolean TransferMap(void)
         if(back)
         {
             backIdx =
-                MPE_CreateSideDef(map, back->sector,
+                Map_CreateSideDef(map, back->sector,
                                   (wadmap->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
                                   back->topMaterial? back->topMaterial->material : 0,
                                   back->offset[VX], back->offset[VY], 1, 1, 1,
@@ -1877,34 +1877,34 @@ boolean TransferMap(void)
                                   back->offset[VX], back->offset[VY], 1, 1, 1);
         }
 
-        MPE_CreateLineDef(map, l->v[0], l->v[1], frontIdx, backIdx, 0);
+        Map_CreateLineDef(map, l->v[0], l->v[1], frontIdx, backIdx, 0);
 
-        MPE_GameObjectRecordProperty(map, "XLinedef", i, "ID", DDVT_INT, &i);
-        MPE_GameObjectRecordProperty(map, "XLinedef", i, "Flags", DDVT_SHORT, &l->flags);
+        Map_GameObjectRecordProperty(map, "XLinedef", i, "ID", DDVT_INT, &i);
+        Map_GameObjectRecordProperty(map, "XLinedef", i, "Flags", DDVT_SHORT, &l->flags);
 
         switch(wadmap->format)
         {
         default:
         case MF_DOOM:
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Type", DDVT_SHORT, &l->dType);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Tag", DDVT_SHORT, &l->dTag);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Type", DDVT_SHORT, &l->dType);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Tag", DDVT_SHORT, &l->dTag);
             break;
 
         case MF_DOOM64:
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "DrawFlags", DDVT_BYTE, &l->d64drawFlags);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "TexFlags", DDVT_BYTE, &l->d64texFlags);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Type", DDVT_BYTE, &l->d64type);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "UseType", DDVT_BYTE, &l->d64useType);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Tag", DDVT_SHORT, &l->d64tag);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "DrawFlags", DDVT_BYTE, &l->d64drawFlags);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "TexFlags", DDVT_BYTE, &l->d64texFlags);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Type", DDVT_BYTE, &l->d64type);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "UseType", DDVT_BYTE, &l->d64useType);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Tag", DDVT_SHORT, &l->d64tag);
             break;
 
         case MF_HEXEN:
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Type", DDVT_BYTE, &l->xType);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg0", DDVT_BYTE, &l->xArgs[0]);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg1", DDVT_BYTE, &l->xArgs[1]);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg2", DDVT_BYTE, &l->xArgs[2]);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg3", DDVT_BYTE, &l->xArgs[3]);
-            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg4", DDVT_BYTE, &l->xArgs[4]);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Type", DDVT_BYTE, &l->xType);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Arg0", DDVT_BYTE, &l->xArgs[0]);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Arg1", DDVT_BYTE, &l->xArgs[1]);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Arg2", DDVT_BYTE, &l->xArgs[2]);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Arg3", DDVT_BYTE, &l->xArgs[3]);
+            Map_GameObjectRecordProperty(map, "XLinedef", i, "Arg4", DDVT_BYTE, &l->xArgs[4]);
             break;
         }
     }
@@ -1914,12 +1914,12 @@ boolean TransferMap(void)
     {
         surfacetint_t* l = &wadmap->lights[i];
 
-        MPE_GameObjectRecordProperty(map, "Light", i, "ColorR", DDVT_FLOAT, &l->rgb[0]);
-        MPE_GameObjectRecordProperty(map, "Light", i, "ColorG", DDVT_FLOAT, &l->rgb[1]);
-        MPE_GameObjectRecordProperty(map, "Light", i, "ColorB", DDVT_FLOAT, &l->rgb[2]);
-        MPE_GameObjectRecordProperty(map, "Light", i, "XX0", DDVT_BYTE, &l->xx[0]);
-        MPE_GameObjectRecordProperty(map, "Light", i, "XX1", DDVT_BYTE, &l->xx[1]);
-        MPE_GameObjectRecordProperty(map, "Light", i, "XX2", DDVT_BYTE, &l->xx[2]);
+        Map_GameObjectRecordProperty(map, "Light", i, "ColorR", DDVT_FLOAT, &l->rgb[0]);
+        Map_GameObjectRecordProperty(map, "Light", i, "ColorG", DDVT_FLOAT, &l->rgb[1]);
+        Map_GameObjectRecordProperty(map, "Light", i, "ColorB", DDVT_FLOAT, &l->rgb[2]);
+        Map_GameObjectRecordProperty(map, "Light", i, "XX0", DDVT_BYTE, &l->xx[0]);
+        Map_GameObjectRecordProperty(map, "Light", i, "XX1", DDVT_BYTE, &l->xx[1]);
+        Map_GameObjectRecordProperty(map, "Light", i, "XX2", DDVT_BYTE, &l->xx[2]);
     }
 
     VERBOSE(Con_Message("WadMapConverter::Transfering polyobjs...\n"));
@@ -1931,7 +1931,7 @@ boolean TransferMap(void)
         lineList = malloc(sizeof(uint) * po->lineCount);
         for(j = 0; j < po->lineCount; ++j)
             lineList[j] = po->lineIndices[j] + 1;
-        MPE_CreatePolyobj(map, lineList, po->lineCount, po->tag,
+        Map_CreatePolyobj(map, lineList, po->lineCount, po->tag,
                           po->seqType, (float) po->anchor[VX],
                           (float) po->anchor[VY]);
         free(lineList);
@@ -1942,27 +1942,27 @@ boolean TransferMap(void)
     {
         mthing_t* th = &wadmap->things[i];
 
-        MPE_GameObjectRecordProperty(map, "Thing", i, "X", DDVT_SHORT, &th->pos[VX]);
-        MPE_GameObjectRecordProperty(map, "Thing", i, "Y", DDVT_SHORT, &th->pos[VY]);
-        MPE_GameObjectRecordProperty(map, "Thing", i, "Z", DDVT_SHORT, &th->pos[VZ]);
-        MPE_GameObjectRecordProperty(map, "Thing", i, "Angle", DDVT_ANGLE, &th->angle);
-        MPE_GameObjectRecordProperty(map, "Thing", i, "DoomEdNum", DDVT_SHORT, &th->doomEdNum);
-        MPE_GameObjectRecordProperty(map, "Thing", i, "Flags", DDVT_INT, &th->flags);
+        Map_GameObjectRecordProperty(map, "Thing", i, "X", DDVT_SHORT, &th->pos[VX]);
+        Map_GameObjectRecordProperty(map, "Thing", i, "Y", DDVT_SHORT, &th->pos[VY]);
+        Map_GameObjectRecordProperty(map, "Thing", i, "Z", DDVT_SHORT, &th->pos[VZ]);
+        Map_GameObjectRecordProperty(map, "Thing", i, "Angle", DDVT_ANGLE, &th->angle);
+        Map_GameObjectRecordProperty(map, "Thing", i, "DoomEdNum", DDVT_SHORT, &th->doomEdNum);
+        Map_GameObjectRecordProperty(map, "Thing", i, "Flags", DDVT_INT, &th->flags);
 
         if(wadmap->format == MF_DOOM64)
         {
-            MPE_GameObjectRecordProperty(map, "Thing", i, "ID", DDVT_SHORT, &th->d64TID);
+            Map_GameObjectRecordProperty(map, "Thing", i, "ID", DDVT_SHORT, &th->d64TID);
         }
         else if(wadmap->format == MF_HEXEN)
         {
 
-            MPE_GameObjectRecordProperty(map, "Thing", i, "Special", DDVT_BYTE, &th->xSpecial);
-            MPE_GameObjectRecordProperty(map, "Thing", i, "ID", DDVT_SHORT, &th->xTID);
-            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg0", DDVT_BYTE, &th->xArgs[0]);
-            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg1", DDVT_BYTE, &th->xArgs[1]);
-            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg2", DDVT_BYTE, &th->xArgs[2]);
-            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg3", DDVT_BYTE, &th->xArgs[3]);
-            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg4", DDVT_BYTE, &th->xArgs[4]);
+            Map_GameObjectRecordProperty(map, "Thing", i, "Special", DDVT_BYTE, &th->xSpecial);
+            Map_GameObjectRecordProperty(map, "Thing", i, "ID", DDVT_SHORT, &th->xTID);
+            Map_GameObjectRecordProperty(map, "Thing", i, "Arg0", DDVT_BYTE, &th->xArgs[0]);
+            Map_GameObjectRecordProperty(map, "Thing", i, "Arg1", DDVT_BYTE, &th->xArgs[1]);
+            Map_GameObjectRecordProperty(map, "Thing", i, "Arg2", DDVT_BYTE, &th->xArgs[2]);
+            Map_GameObjectRecordProperty(map, "Thing", i, "Arg3", DDVT_BYTE, &th->xArgs[3]);
+            Map_GameObjectRecordProperty(map, "Thing", i, "Arg4", DDVT_BYTE, &th->xArgs[4]);
         }
     }
 
