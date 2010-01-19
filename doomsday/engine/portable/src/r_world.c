@@ -649,7 +649,7 @@ void R_DestroyPlaneOfSector(map_t* map, uint id, sector_t* sec)
         Z_Free(plane->surface.decorations);
 
     // Stop active material fade on this surface.
-    Map_IterateThinkers(map, R_MatFaderThinker, ITF_PRIVATE, // Always non-public
+    Map_IterateThinkers2(map, R_MatFaderThinker, ITF_PRIVATE, // Always non-public
                         RIT_StopMatFader, &plane->surface);
 
     /**
@@ -1655,34 +1655,33 @@ static __inline void initSurfaceMaterialOffset(surface_t* suf)
         suf->oldOffset[1][VY] = suf->offset[VY];
 }
 
+void R_BeginSetupMap(void)
+{
+    // @todo remove the PU_MAP and PU_MAPSTATIC zone tags.
+    Z_FreeTags(PU_MAP, PU_PURGELEVEL - 1);
+
+    // Switch to fast malloc mode in the zone. This is intended for large
+    // numbers of mallocs with no frees in between.
+    Z_EnableFastMalloc(false);
+
+    // A new map is about to be setup.
+    ddMapSetup = true;
+}
+
 /**
  * Called by the game at various points in the map setup process.
  */
-void R_SetupMap(int mode, int flags)
+void R_SetupMap(map_t* map, int mode, int flags)
 {
-    uint i;
+    assert(map);
 
     switch(mode)
     {
-    case DDSMM_INITIALIZE:
-        // @todo remove the PU_MAP and PU_MAPSTATIC zone tags.
-        Z_FreeTags(PU_MAP, PU_PURGELEVEL - 1);
-
-        // Switch to fast malloc mode in the zone. This is intended for large
-        // numbers of mallocs with no frees in between.
-        Z_EnableFastMalloc(false);
-
-        // A new map is about to be setup.
-        ddMapSetup = true;
-        return;
-
     case DDSMM_AFTER_LOADING:
         {
-        map_t* map = P_CurrentMap();
-
+        uint i;
         // Update everything again. Its possible that after loading we
         // now have more HOMs to fix, etc..
-
         Map_InitSkyFix(map);
 
         // Set intial values of various tracked and interpolated properties
@@ -1721,8 +1720,7 @@ void R_SetupMap(int mode, int flags)
         }
     case DDSMM_FINALIZE:
         {
-        map_t* map = P_CurrentMap();
-
+        uint i;
         // We are now finished with the game data, map object db.
         Map_DestroyGameObjectRecords(map);
 
@@ -1806,7 +1804,7 @@ void R_SetupMap(int mode, int flags)
             if(ddpl->mo)
             {
                 const subsector_t* subsector =
-                    Map_PointInSubsector(map, ddpl->mo->pos[VX], ddpl->mo->pos[VY]);
+                    Map_PointInSubsector2(map, ddpl->mo->pos[VX], ddpl->mo->pos[VY]);
 
                 //// \fixme $nplanes
                 if(ddpl->mo->pos[VZ] >= subsector->sector->SP_floorvisheight &&
@@ -1831,7 +1829,6 @@ void R_SetupMap(int mode, int flags)
         }
     case DDSMM_AFTER_BUSY:
         {
-        map_t* map = P_CurrentMap();
         ded_mapinfo_t* mapInfo = Def_GetMapInfo(Map_ID(map));
 
         // Shouldn't do anything time-consuming, as we are no longer in busy mode.
@@ -2309,6 +2306,9 @@ void R_CalcLightModRange(cvar_t* unused)
     float f;
     map_t* map = P_CurrentMap();
 
+    if(!map)
+        return;
+
     memset(lightModRange, 0, sizeof(float) * 255);
 
     mapAmbient = Map_AmbientLightLevel(map);
@@ -2404,13 +2404,15 @@ const float* R_GetSectorLightColor(const sector_t *sector)
 #if _DEBUG
 D_CMD(UpdateSurfaces)
 {
-    uint i;
     map_t* map = P_CurrentMap();
 
-    Con_Printf("Updating world surfaces...\n");
-
-    for(i = 0; i < map->numSectors; ++i)
-        R_UpdateSector(map->sectors[i], true);
+    if(map)
+    {
+        uint i;
+        Con_Printf("Updating world surfaces...\n");
+        for(i = 0; i < map->numSectors; ++i)
+            R_UpdateSector(map->sectors[i], true);
+    }
 
     return true;
 }

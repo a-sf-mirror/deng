@@ -636,7 +636,12 @@ DEFCC(CCmdCheatGive)
 
 DEFCC(CCmdCheatMassacre)
 {
-    Con_Printf("%i monsters killed.\n", P_Massacre());
+    // Only massacre when actually in a level.
+    if(G_GetGameState() == GS_MAP)
+    {
+        int numKilled = P_Massacre(P_CurrentMap());
+        Con_Printf("%i monsters killed.\n", numKilled);
+    }
     return true;
 }
 

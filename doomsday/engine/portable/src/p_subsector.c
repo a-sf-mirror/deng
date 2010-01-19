@@ -267,6 +267,8 @@ static boolean PTR_SpreadContacts(void* obj, void* context)
         if(((particle_t*) obj)->spreadFrameCount == frameCount)
             return true;
         break;
+    default:
+        break;
     }
 
     findContacts(type, obj);
@@ -275,6 +277,8 @@ static boolean PTR_SpreadContacts(void* obj, void* context)
     {
     case OCT_LUMOBJ: ((lumobj_t*) obj)->spreadFrameCount = frameCount; break;
     case OCT_PARTICLE: ((particle_t*) obj)->spreadFrameCount = frameCount; break;
+    default:
+        break;
     }
 
     return true; // Continue iteration.

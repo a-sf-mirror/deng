@@ -2465,17 +2465,15 @@ void R_PrecacheMobjNum(int num)
  * is placed in the GL/D3D drivers. The prepared textures are also bound
  * here once so they should be ready for use ASAP.
  */
-void R_PrecacheMap(void)
+void Map_Precache(map_t* map)
 {
+    assert(map);
+    {
     uint i, j;
     size_t n;
     float startTime;
     material_t* mat, **matPresent;
     int numMaterials;
-    map_t* map = P_CurrentMap();
-
-    if(!map)
-        return;
 
     // Don't precache when playing demo.
     if(isDedicated || playback)
@@ -2529,7 +2527,7 @@ void R_PrecacheMap(void)
         {
             spritedef_t* sprDef = &sprites[i];
 
-            if(!Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, findSpriteOwner, sprDef))
+            if(!Map_IterateThinkers2(map, gx.MobjThinker, ITF_PUBLIC, findSpriteOwner, sprDef))
             {   // This sprite is used by some state of at least one mobj.
                 int j;
 
@@ -2565,7 +2563,7 @@ void R_PrecacheMap(void)
     // Precache model skins?
     if(useModels && precacheSkins)
     {
-        Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, R_PrecacheSkinsForMobj, NULL);
+        Map_IterateThinkers2(map, gx.MobjThinker, ITF_PUBLIC, R_PrecacheSkinsForMobj, NULL);
     }
 
     // Sky models usually have big skins.
@@ -2573,6 +2571,7 @@ void R_PrecacheMap(void)
 
     VERBOSE(Con_Message("Precaching took %.2f seconds.\n",
                         Sys_GetSeconds() - startTime))
+    }
 }
 
 detailtex_t* R_CreateDetailTexture(const ded_detailtexture_t* def)

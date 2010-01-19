@@ -324,7 +324,7 @@ static void drawLightLevelGauge(int x, int y, int height, source_t* src)
     char buf[80];
 
     // @todo Source should return the map its linked in.
-    sector = Map_PointInSubsector(P_CurrentMap(), src->pos[VX], src->pos[VY])->sector;
+    sector = Map_PointInSubsector2(P_CurrentMap(), src->pos[VX], src->pos[VY])->sector;
 
     if(lastSector != sector)
     {

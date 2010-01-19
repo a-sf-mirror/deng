@@ -401,7 +401,7 @@ void T_MoveFloor(floor_t* floor)
 #if __JHEXEN__
         ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(floor->sector)->tag);
 #endif
-        DD_ThinkerRemove(&floor->thinker);
+        Map_RemoveThinker(Thinker_Map((thinker_t*) floor), (thinker_t*) floor);
     }
 }
 
@@ -587,7 +587,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
         // New floor thinker.
         floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
         floor->thinker.function = T_MoveFloor;
-        DD_ThinkerAdd(&floor->thinker);
+        Map_ThinkerAdd(map, &floor->thinker);
 
         xsec->specialData = floor;
 
@@ -1033,7 +1033,7 @@ int EV_BuildStairs(linedef_t* line, stair_e type)
         // New floor thinker.
         floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
         floor->thinker.function = T_MoveFloor;
-        DD_ThinkerAdd(&floor->thinker);
+        Map_ThinkerAdd(map, &floor->thinker);
 
         xsec->specialData = floor;
         floor->state = FS_UP;
@@ -1083,7 +1083,7 @@ int EV_BuildStairs(linedef_t* line, stair_e type)
 
             floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
             floor->thinker.function = T_MoveFloor;
-            DD_ThinkerAdd(&floor->thinker);
+            Map_ThinkerAdd(map, &floor->thinker);
 
             P_ToXSector(params.foundSec)->specialData = floor;
 #if __JHERETIC__
@@ -1153,7 +1153,7 @@ static void processStairSector(sector_t* sec, int type, float height,
 
     floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
     floor->thinker.function = T_MoveFloor;
-    DD_ThinkerAdd(&floor->thinker);
+    Map_ThinkerAdd(map, (thinker_t*) floor);
 
     P_ToXSector(sec)->specialData = floor;
     floor->type = FT_RAISEBUILDSTEP;
@@ -1329,7 +1329,7 @@ int EV_DoDonut(linedef_t* line)
             // Spawn rising slime.
             floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
             floor->thinker.function = T_MoveFloor;
-            DD_ThinkerAdd(&floor->thinker);
+            Map_ThinkerAdd(map, &floor->thinker);
 
             P_ToXSector(ring)->specialData = floor;
 
@@ -1345,7 +1345,7 @@ int EV_DoDonut(linedef_t* line)
             // Spawn lowering donut-hole.
             floor = Z_Calloc(sizeof(*floor), PU_MAP, 0);
             floor->thinker.function = T_MoveFloor;
-            DD_ThinkerAdd(&floor->thinker);
+            Map_ThinkerAdd(map, &floor->thinker);
 
             P_ToXSector(sec)->specialData = floor;
             floor->type = FT_LOWER;
@@ -1364,8 +1364,8 @@ int EV_DoDonut(linedef_t* line)
 #if __JHEXEN__
 static int stopFloorCrush(void* p, void* context)
 {
-    boolean*            found = (boolean*) context;
-    floor_t*            floor = (floor_t*) p;
+    boolean* found = (boolean*) context;
+    floor_t* floor = (floor_t*) p;
 
     if(floor->type == FT_RAISEFLOORCRUSH)
     {
@@ -1373,7 +1373,7 @@ static int stopFloorCrush(void* p, void* context)
         SN_StopSequence(DMU_GetPtrp(floor->sector, DMU_SOUND_ORIGIN));
         P_ToXSector(floor->sector)->specialData = NULL;
         ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(floor->sector)->tag);
-        DD_ThinkerRemove(&floor->thinker);
+        Map_RemoveThinker(Thinker_Map((thinker_t*) floor), (thinker_t*) floor);
         (*found) = true;
     }
 
@@ -1382,10 +1382,9 @@ static int stopFloorCrush(void* p, void* context)
 
 int EV_FloorCrushStop(linedef_t* line, byte* args)
 {
-    boolean             found = false;
-
-    DD_IterateThinkers(T_MoveFloor, stopFloorCrush, &found);
-
+    map_t* map = P_CurrentMap();
+    boolean found = false;
+    Map_IterateThinkers(map, T_MoveFloor, stopFloorCrush, &found);
     return (found? 1 : 0);
 }
 #endif

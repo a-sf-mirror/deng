@@ -874,7 +874,7 @@ void NetSv_SendGameState(int flags, int to)
     if(G_GetGameState() != GS_MAP)
         return;
 
-    gravity = FLT2FIX(P_GetGravity());
+    gravity = FLT2FIX(GameMap_Gravity(P_CurrentMap()));
 
     // Print a short message that describes the game state.
     if(verbose || IS_DEDICATED)

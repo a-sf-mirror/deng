@@ -385,18 +385,19 @@ void P_v13_UnArchivePlayers(void)
 
 void P_v13_UnArchiveWorld(void)
 {
-    uint                i, j;
-    fixed_t             offx, offy;
-    short*              get;
-    sector_t*           sec;
-    xsector_t*          xsec;
-    linedef_t*          line;
-    xlinedef_t*            xline;
+    map_t* map = P_CurrentMap();
+    uint i, j;
+    fixed_t offx, offy;
+    short* get;
+    sector_t* sec;
+    xsector_t* xsec;
+    linedef_t* line;
+    xlinedef_t* xline;
 
-    get = (short *) save_p;
+    get = (short*) save_p;
 
     // Do sectors.
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         sec = DMU_ToPtr(DMU_SECTOR, i);
         xsec = P_ToXSector(sec);
@@ -413,7 +414,7 @@ void P_v13_UnArchiveWorld(void)
     }
 
     // Do lines.
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
         line = DMU_ToPtr(DMU_LINEDEF, i);
         xline = P_ToXLine(line);
@@ -470,11 +471,12 @@ typedef enum
     TC_MOBJ
 } thinkerclass_t;
 
-    byte                tclass;
+    map_t* map = P_CurrentMap();
+    byte tclass;
 
     // Remove all the current thinkers.
-    DD_IterateThinkers(NULL, removeThinker, NULL);
-    DD_InitThinkers();
+    Map_IterateThinkers(map, NULL, removeThinker, NULL);
+    Map_InitThinkers(map);
 
     // read in saved thinkers
     for(;;)
@@ -534,7 +536,7 @@ typedef struct {
     ceiling->thinker.function = T_MoveCeiling;
 
     if(!(temp + V13_THINKER_T_FUNC_OFFSET))
-        DD_ThinkerSetStasis(&ceiling->thinker, true);
+        Thinker_SetStasis(&ceiling->thinker, true);
 
     P_ToXSector(ceiling->sector)->specialData = T_MoveCeiling;
     return true; // Add this thinker.
@@ -659,7 +661,7 @@ typedef struct {
     plat->thinker.function = T_PlatRaise;
 
     if(!(temp + V13_THINKER_T_FUNC_OFFSET))
-        DD_ThinkerSetStasis(&plat->thinker, true);
+        Thinker_SetStasis(&plat->thinker, true);
 
     P_ToXSector(plat->sector)->specialData = T_PlatRaise;
     return true; // Add this thinker.
@@ -784,14 +786,15 @@ enum {
     tc_endspecials
 };
 
-    byte        tclass;
-    ceiling_t  *ceiling;
-    door_t   *door;
-    floor_t *floor;
-    plat_t     *plat;
-    lightflash_t *flash;
-    strobe_t   *strobe;
-    glow_t     *glow;
+    map_t* map = P_CurrentMap();
+    byte tclass;
+    ceiling_t* ceiling;
+    door_t* door;
+    floor_t* floor;
+    plat_t* plat;
+    lightflash_t* flash;
+    strobe_t* strobe;
+    glow_t* glow;
 
     // read in saved thinkers
     for(;;)
@@ -800,14 +803,14 @@ enum {
         switch(tclass)
         {
         case tc_endspecials:
-            return;             // end of list
+            return; // end of list
 
         case tc_ceiling:
             ceiling = Z_Calloc(sizeof(*ceiling), PU_MAP, NULL);
 
             SV_ReadCeiling(ceiling);
 
-            DD_ThinkerAdd(&ceiling->thinker);
+            Map_ThinkerAdd(map, (thinker_t*) ceiling);
             break;
 
         case tc_door:
@@ -815,7 +818,7 @@ enum {
 
             SV_ReadDoor(door);
 
-            DD_ThinkerAdd(&door->thinker);
+            Map_ThinkerAdd(map, (thinker_t*) door);
             break;
 
         case tc_floor:
@@ -823,7 +826,7 @@ enum {
 
             SV_ReadFloor(floor);
 
-            DD_ThinkerAdd(&floor->thinker);
+            Map_ThinkerAdd(map, (thinker_t*) floor);
             break;
 
         case tc_plat:
@@ -831,7 +834,7 @@ enum {
 
             SV_ReadPlat(plat);
 
-            DD_ThinkerAdd(&plat->thinker);
+            Map_ThinkerAdd(map, (thinker_t*) plat);
             break;
 
         case tc_flash:
@@ -839,7 +842,7 @@ enum {
 
             SV_ReadFlash(flash);
 
-            DD_ThinkerAdd(&flash->thinker);
+            Map_ThinkerAdd(map, (thinker_t*) flash);
             break;
 
         case tc_strobe:
@@ -847,7 +850,7 @@ enum {
 
             SV_ReadStrobe(strobe);
 
-            DD_ThinkerAdd(&strobe->thinker);
+            Map_ThinkerAdd(map, (thinker_t*) strobe);
             break;
 
         case tc_glow:
@@ -855,12 +858,11 @@ enum {
 
             SV_ReadGlow(glow);
 
-            DD_ThinkerAdd(&glow->thinker);
+            Map_ThinkerAdd(map, (thinker_t*) glow);
             break;
 
         default:
-            Con_Error("P_UnarchiveSpecials:Unknown tclass %i " "in savegame",
-                      tclass);
+            Con_Error("P_UnarchiveSpecials: Unknown tclass %i " "in savegame", tclass);
         }
     }
 }
@@ -915,7 +917,7 @@ boolean SV_v13_LoadGame(const char* savename)
     Z_Free(savebuffer);
 
     // Spawn particle generators.
-    R_SetupMap(DDSMM_AFTER_LOADING, 0);
+    R_SetupMap(map, DDSMM_AFTER_LOADING, 0);
 
     return true;
 }

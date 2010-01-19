@@ -38,7 +38,6 @@
 #include "de_refresh.h"
 #include "de_defs.h"
 #include "de_misc.h"
-#include "p_sight.h"
 
 #include <math.h>
 
@@ -550,7 +549,7 @@ static void evalPoint(map_t* map, float light[4], vertexillum_t* illum,
         V3_Sum(surfacePoint, surfacePoint, point);
 
         if(useSightCheck &&
-           !P_CheckLineSight(s->pos, surfacePoint, -1, 1,
+           !Map_CheckLineSight(map, s->pos, surfacePoint, -1, 1,
                              LS_PASSOVER_SKY | LS_PASSUNDER_SKY))
         {
             // LOS fail.
@@ -960,7 +959,7 @@ BEGIN_PROF( PROF_BIAS_UPDATE );
             {
                 float minLevel = s->sectorLevel[0];
                 float maxLevel = s->sectorLevel[1];
-                subsector_t* subsector = Map_PointInSubsector(map, s->pos[VX], s->pos[VY]);
+                subsector_t* subsector = Map_PointInSubsector2(map, s->pos[VX], s->pos[VY]);
                 sector_t* sector;
                 float oldIntensity = s->intensity;
 

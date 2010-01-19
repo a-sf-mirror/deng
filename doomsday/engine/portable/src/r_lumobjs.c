@@ -287,6 +287,8 @@ static lumobj_t* allocLumobj(void)
  */
 uint LO_NewLuminous(lumtype_t type, float x, float y, float z, subsector_t* subsector)
 {
+    assert(subsector);
+    {
     lumobj_t* lum = allocLumobj();
 
     lum->type = type;
@@ -301,6 +303,7 @@ uint LO_NewLuminous(lumtype_t type, float x, float y, float z, subsector_t* subs
     LumobjBlockmap_Link(Map_LumobjBlockmap(P_CurrentMap()), lum);
 
     return numLuminous; // == index + 1
+    }
 }
 
 /**
@@ -786,6 +789,7 @@ boolean LO_LumobjsRadiusIterator(subsector_t* subsector, float x, float y,
 
 boolean LOIT_ClipLumObj(void* data, void* context)
 {
+    map_t* map = (map_t*) context;
     lumobj_t* lum = (lumobj_t*) data;
     uint lumIdx = lumToIndex(lum);
     vec3_t pos;
@@ -821,7 +825,7 @@ boolean LOIT_ClipLumObj(void* data, void* context)
         V3_Set(vpos, vx, vz, vy);
 
         luminousClipped[lumIdx] = 1;
-        if(P_CheckLineSight(vpos, pos, -1, 1, LS_PASSLEFT | LS_PASSOVER | LS_PASSUNDER))
+        if(Map_CheckLineSight(map, vpos, pos, -1, 1, LS_PASSLEFT | LS_PASSOVER | LS_PASSUNDER))
         {
             luminousClipped[lumIdx] = 0; // Will have a halo.
         }
@@ -837,7 +841,7 @@ boolean LOIT_ClipLumObj(void* data, void* context)
  */
 void LO_ClipInSubsector(subsector_t* subsector)
 {
-    iterateSubsectorLumObjs(subsector, LOIT_ClipLumObj, NULL);
+    iterateSubsectorLumObjs(subsector, LOIT_ClipLumObj, P_CurrentMap());
 }
 
 boolean LOIT_ClipLumObjBySight(void* data, void* context)
@@ -934,7 +938,7 @@ void LO_UnlinkMobjLumobjs(cvar_t* var)
     if(!useDynlights)
     {
         // Mobjs are always public.
-        Map_IterateThinkers(P_CurrentMap(), gx.MobjThinker, ITF_PUBLIC, LOIT_UnlinkMobjLumobj, NULL);
+        Map_IterateThinkers2(P_CurrentMap(), gx.MobjThinker, ITF_PUBLIC, LOIT_UnlinkMobjLumobj, NULL);
     }
 }
 

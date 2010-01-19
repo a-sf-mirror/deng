@@ -300,7 +300,7 @@ void LightGrid_Init(map_t* map)
                 sample.pos[VX] = lg->origin[VX] + off[VX] + samplePoints[0].pos[VX];
                 sample.pos[VY] = lg->origin[VY] + off[VY] + samplePoints[0].pos[VY];
 
-                ssamples[idx] = Map_PointInSubsector(map, sample.pos[VX], sample.pos[VY])->sector;
+                ssamples[idx] = Map_PointInSubsector2(map, sample.pos[VX], sample.pos[VY])->sector;
                 if(!Sector_PointInside2(ssamples[idx], sample.pos[VX], sample.pos[VY]))
                    ssamples[idx] = NULL;
 
@@ -348,7 +348,7 @@ void LightGrid_Init(map_t* map)
                         sample.pos[VX] = lg->origin[VX] + off[VX] + samplePoints[n].pos[VX];
                         sample.pos[VY] = lg->origin[VY] + off[VY] + samplePoints[n].pos[VY];
 
-                        ssamples[idx] = Map_PointInSubsector(map, sample.pos[VX], sample.pos[VY])->sector;
+                        ssamples[idx] = Map_PointInSubsector2(map, sample.pos[VX], sample.pos[VY])->sector;
                         if(!Sector_PointInside2(ssamples[idx], sample.pos[VX], sample.pos[VY]))
                            ssamples[idx] = NULL;
                     }

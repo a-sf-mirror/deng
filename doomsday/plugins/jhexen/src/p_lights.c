@@ -85,13 +85,13 @@ void T_Light(light_t* light)
             if(P_SectorLight(light->sector) >= light->value1)
             {
                 P_SectorSetLight(light->sector, light->value1);
-                DD_ThinkerRemove(&light->thinker);
+                Map_RemoveThinker(Thinker_Map((thinker_t*) light), (thinker_t*) light);
             }
         }
         else if(P_SectorLight(light->sector) <= light->value1)
         {
             P_SectorSetLight(light->sector, light->value1);
-            DD_ThinkerRemove(&light->thinker);
+            Map_RemoveThinker(Thinker_Map((thinker_t*) light), (thinker_t*) light);
         }
         break;
 
@@ -250,7 +250,7 @@ boolean EV_SpawnLight(linedef_t* line, byte* arg, lighttype_t type)
         if(think)
         {
             light->thinker.function = T_Light;
-            DD_ThinkerAdd(&light->thinker);
+            Map_ThinkerAdd(map, (thinker_t*) light);
         }
         else
         {
@@ -274,11 +274,12 @@ void P_SpawnPhasedLight(sector_t* sector, float base, int index)
 {
     assert(sector);
     {
+    map_t* map = P_CurrentMap();
     phase_t* phase;
 
     phase = Z_Calloc(sizeof(*phase), PU_MAP, 0);
     phase->thinker.function = T_Phase;
-    DD_ThinkerAdd(&phase->thinker);
+    Map_ThinkerAdd(map, (thinker_t*) phase);
 
     phase->sector = sector;
     if(index == -1)

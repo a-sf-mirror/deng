@@ -208,7 +208,7 @@ boolean Sector_PointInside2(const sector_t* sector, float x, float y)
     assert(sector);
     {
     // @todo Subsector should return the map its linked in.
-    const subsector_t* subsector = Map_PointInSubsector(P_CurrentMap(), x, y);
+    const subsector_t* subsector = Map_PointInSubsector2(P_CurrentMap(), x, y);
 
     if(subsector->sector != sector)
         return false; // Wrong sector.

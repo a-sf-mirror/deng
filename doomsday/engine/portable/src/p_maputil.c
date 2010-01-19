@@ -774,8 +774,7 @@ static boolean pathTraverseLineDefs(linedefblockmap_t* blockmap, float x1, float
 boolean Map_PathTraverse(map_t* map, float x1, float y1, float x2, float y2,
                          int flags, boolean (*trav) (intercept_t*))
 {
-    if(!map)
-        return true;
+    assert(map);
 
     P_ClearIntercepts();
 
@@ -800,23 +799,11 @@ boolean Map_PathTraverse(map_t* map, float x1, float y1, float x2, float y2,
 /**
  * @note Part of the Doomsday public API.
  */
-boolean P_PathTraverse(float x1, float y1, float x2, float y2, int flags,
-                       boolean (*trav) (intercept_t*))
+boolean Map_LineDefsBoxIterator(map_t* map, const float box[4],
+                                boolean (*func) (linedef_t*, void*), void* data)
 {
-    return Map_PathTraverse(P_CurrentMap(), x1, y1, x2, y2, flags, trav);
-}
-
-boolean P_MobjsBoxIterator(const float box[4], boolean (*func) (mobj_t*, void*), void* data)
-{
-    return Map_MobjsBoxIterator(P_CurrentMap(), box, func, data);
-}
-
-/**
- * @note Part of the Doomsday public API.
- */
-boolean P_LineDefsBoxIterator(const float box[4], boolean (*func) (linedef_t*, void*),
-                           void* data)
-{
+    assert(map);
+    {
     vec2_t bounds[2];
 
     bounds[0][VX] = box[BOXLEFT];
@@ -824,16 +811,17 @@ boolean P_LineDefsBoxIterator(const float box[4], boolean (*func) (linedef_t*, v
     bounds[1][VX] = box[BOXRIGHT];
     bounds[1][VY] = box[BOXTOP];
 
-    return Map_LineDefsBoxIteratorv(P_CurrentMap(), bounds, func, data, true);
+    return Map_LineDefsBoxIteratorv(map, bounds, func, data, true);
+    }
 }
 
 /**
  * @note Part of the Doomsday public API.
  */
-boolean P_SubsectorsBoxIterator(const float box[4], void* p,
-                                boolean (*func) (subsector_t*, void*),
-                                void* parm)
+boolean Map_SubsectorsBoxIterator(map_t* map, const float box[4], void* p,
+                                  boolean (*func) (subsector_t*, void*),
+                                  void* parm)
 {
-    return Map_SubsectorsBoxIterator(P_CurrentMap(), box,
+    return Map_SubsectorsBoxIterator2(map, box,
         p? ((objectrecord_t*) p)->obj : NULL, func, parm, true);
 }

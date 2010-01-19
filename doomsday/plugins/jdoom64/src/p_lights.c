@@ -77,11 +77,14 @@ void T_FireFlicker(fireflicker_t *flick)
     flick->count = 4;
 }
 
-void P_SpawnFireFlicker(sector_t *sector)
+void P_SpawnFireFlicker(sector_t* sector)
 {
-    float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
-    float               otherLevel = DDMAXFLOAT;
-    fireflicker_t      *flick;
+    assert(sector);
+    {
+    map_t* map = P_CurrentMap();
+    float lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
+    float otherLevel = DDMAXFLOAT;
+    fireflicker_t* flick;
 
     // Note that we are resetting sector attributes.
     // Nothing special about it during gameplay.
@@ -89,7 +92,7 @@ void P_SpawnFireFlicker(sector_t *sector)
 
     flick = Z_Calloc(sizeof(*flick), PU_MAP, 0);
     flick->thinker.function = T_FireFlicker;
-    DD_ThinkerAdd(&flick->thinker);
+    Map_ThinkerAdd(map, &flick->thinker);
 
     flick->sector = sector;
     flick->count = 4;
@@ -101,6 +104,7 @@ void P_SpawnFireFlicker(sector_t *sector)
     else
         flick->minLight = lightLevel;
     flick->minLight += (16.0f/255.0f);
+    }
 }
 
 /**
@@ -130,11 +134,14 @@ void T_LightFlash(lightflash_t *flash)
  * After the map has been loaded, scan each sector for specials that spawn
  * thinkers.
  */
-void P_SpawnLightFlash(sector_t *sector)
+void P_SpawnLightFlash(sector_t* sector)
 {
-    float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
-    float               otherLevel = DDMAXFLOAT;
-    lightflash_t       *flash;
+    assert(sector);
+    {
+    map_t* map = P_CurrentMap();
+    float lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
+    float otherLevel = DDMAXFLOAT;
+    lightflash_t* flash;
 
     // Note that we are resetting sector attributes.
     // Nothing special about it during gameplay.
@@ -142,7 +149,7 @@ void P_SpawnLightFlash(sector_t *sector)
 
     flash = Z_Calloc(sizeof(*flash), PU_MAP, 0);
     flash->thinker.function = T_LightFlash;
-    DD_ThinkerAdd(&flash->thinker);
+    Map_ThinkerAdd(map, &flash->thinker);
 
     flash->sector = sector;
     flash->maxLight = lightLevel;
@@ -155,6 +162,7 @@ void P_SpawnLightFlash(sector_t *sector)
     flash->maxTime = 64;
     flash->minTime = 7;
     flash->count = (P_Random() & flash->maxTime) + 1;
+    }
 }
 
 /**
@@ -182,27 +190,31 @@ void T_LightBlink(lightblink_t *flash)
 /**
  * d64tc
  */
-void P_SpawnLightBlink(sector_t *sector)
+void P_SpawnLightBlink(sector_t* sector)
 {
-    lightblink_t       *blink;
+    assert(sector);
+    {
+    map_t* map = P_CurrentMap();
+    lightblink_t* blink;
 
     blink = Z_Calloc(sizeof(*blink), PU_MAP, 0);
     blink->thinker.function = T_LightBlink;
-    DD_ThinkerAdd(&blink->thinker);
+    Map_ThinkerAdd(map, &blink->thinker);
 
     blink->sector = sector;
     blink->maxLight = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
 
     blink->minLight = 0;
     blink->maxTime = blink->minTime = blink->count = 4;
+    }
 }
 
 /**
  * Strobe light flashing.
  */
-void T_StrobeFlash(strobe_t *flash)
+void T_StrobeFlash(strobe_t* flash)
 {
-    float               lightLevel;
+    float lightLevel;
 
     if(--flash->count)
         return;
@@ -224,15 +236,18 @@ void T_StrobeFlash(strobe_t *flash)
  * After the map has been loaded, scan each sector for specials that spawn
  * thinkers.
  */
-void P_SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int inSync)
+void P_SpawnStrobeFlash(sector_t* sector, int fastOrSlow, int inSync)
 {
-    strobe_t           *flash;
-    float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
-    float               otherLevel = DDMAXFLOAT;
+    assert(sector);
+    {
+    map_t* map = P_CurrentMap();
+    strobe_t* flash;
+    float lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
+    float otherLevel = DDMAXFLOAT;
 
     flash = Z_Calloc(sizeof(*flash), PU_MAP, 0);
     flash->thinker.function = T_StrobeFlash;
-    DD_ThinkerAdd(&flash->thinker);
+    Map_ThinkerAdd(map, &flash->thinker);
 
     flash->sector = sector;
     flash->darkTime = fastOrSlow;
@@ -254,6 +269,7 @@ void P_SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int inSync)
         flash->count = (P_Random() & 7) + 1;
     else
         flash->count = 1;
+    }
 }
 
 /*
@@ -375,13 +391,16 @@ void T_Glow(glow_t* g)
 
 void P_SpawnGlowingLight(sector_t* sector)
 {
-    float               lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
-    float               otherLevel = DDMAXFLOAT;
-    glow_t*             g;
+    assert(sector);
+    {
+    map_t* map = P_CurrentMap();
+    float lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
+    float otherLevel = DDMAXFLOAT;
+    glow_t* g;
 
     g = Z_Calloc(sizeof(*g), PU_MAP, 0);
     g->thinker.function = T_Glow;
-    DD_ThinkerAdd(&g->thinker);
+    Map_ThinkerAdd(map, &g->thinker);
 
     g->sector = sector;
     P_FindSectorSurroundingLowestLight(sector, &otherLevel);
@@ -391,4 +410,5 @@ void P_SpawnGlowingLight(sector_t* sector)
         g->minLight = lightLevel;
     g->maxLight = lightLevel;
     g->direction = -1;
+    }
 }

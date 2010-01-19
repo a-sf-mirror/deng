@@ -256,7 +256,7 @@ void GameMap_RunTick(map_t* map)
        !Get(DD_PLAYBACK) && map->time > 1)
         return;
 
-    DD_RunThinkers();
+    Map_RunThinkers(map);
 
     GameMap_UpdateSpecials(map);
     doDeferredSpawns(map);
@@ -287,13 +287,13 @@ void GameMap_InitPolyobjs(map_t* map)
 
     Con_Message("GameMap_InitPolyobjs: Initializing polyobjects.\n");
 
-    for(i = 0; i < numpolyobjs; ++i)
+    for(i = 0; i < Map_NumPolyobjs(map); ++i)
     {
         const mapspot_t* spot;
         polyobj_t* po;
         uint j;
         
-        po = P_GetPolyobj(i | 0x80000000);
+        po = Map_Polyobj(map, i | 0x80000000);
 
         // Init game-specific properties.
         po->specialData = NULL;

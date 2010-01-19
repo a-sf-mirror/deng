@@ -977,9 +977,6 @@ void* DD_GetVariable(int ddvalue)
         case DD_VIEW_PITCH:
             return &viewPitch;
 
-        case DD_MATERIAL_COUNT:
-            return &numMaterialBinds;
-
         case DD_TRACE_ADDRESS:
             return &traceLOS;
 
@@ -993,7 +990,7 @@ void* DD_GetVariable(int ddvalue)
 
             if(mapInfo && mapInfo->name[0])
             {
-                int                 id;
+                int id;
 
                 if((id = Def_Get(DD_DEF_TEXT, mapInfo->name, NULL)) != -1)
                 {
@@ -1013,38 +1010,6 @@ void* DD_GetVariable(int ddvalue)
                 return mapInfo->author;
             break;
         }
-        case DD_MAP_MIN_X:
-        {
-            map_t  *map = P_CurrentMap();
-            if(map)
-                return &map->bBox[BOXLEFT];
-            else
-                return NULL;
-        }
-        case DD_MAP_MIN_Y:
-        {
-            map_t  *map = P_CurrentMap();
-            if(map)
-                return &map->bBox[BOXBOTTOM];
-            else
-                return NULL;
-        }
-        case DD_MAP_MAX_X:
-        {
-            map_t  *map = P_CurrentMap();
-            if(map)
-                return &map->bBox[BOXRIGHT];
-            else
-                return NULL;
-        }
-        case DD_MAP_MAX_Y:
-        {
-            map_t  *map = P_CurrentMap();
-            if(map)
-                return &map->bBox[BOXTOP];
-            else
-                return NULL;
-        }
         case DD_PSPRITE_OFFSET_X:
             return &pspOffset[VX];
 
@@ -1060,14 +1025,6 @@ void* DD_GetVariable(int ddvalue)
         case DD_CPLAYER_THRUST_MUL:
             return &cplrThrustMul;
 
-        case DD_GRAVITY:
-        {
-            map_t* map = P_CurrentMap();
-            if(map)
-                return &map->globalGravity;
-            else
-                return NULL;
-        }
         case DD_TORCH_RED:
             return &torchColor[CR];
 
@@ -1147,13 +1104,6 @@ void DD_SetVariable(int ddvalue, void *parm)
             cplrThrustMul = *(float*) parm;
             return;
 
-        case DD_GRAVITY:
-        {
-            map_t* map = P_CurrentMap();
-            if(map)
-                map->globalGravity = *(float*) parm;
-            return;
-        }
         case DD_PSPRITE_OFFSET_X:
             pspOffset[VX] = *(float*) parm;
             return;

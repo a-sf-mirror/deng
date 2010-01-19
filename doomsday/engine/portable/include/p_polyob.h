@@ -40,8 +40,6 @@ void            P_InitPolyobj(polyobj_t* po);
 void            P_PolyobjChanged(polyobj_t* po);
 void            P_SetPolyobjCallback(void (*func) (struct mobj_s*, void*, void*));
 
-polyobj_t*      P_GetPolyobj(uint num);
-
 // Polyobject interface.
 boolean         P_PolyobjMove(polyobj_t* po, float x, float y);
 boolean         P_PolyobjRotate(polyobj_t* po, angle_t angle);

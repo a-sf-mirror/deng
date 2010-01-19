@@ -536,7 +536,9 @@ int Cht_MassacreFunc(const int* args, int player)
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
-    P_Massacre();
+    // Only massacre when actually in a level.
+    if(G_GetGameState() == GS_MAP)
+        P_Massacre(P_CurrentMap());
     P_SetMessage(plr, TXT_CHEATMASSACRE, false);
     S_LocalSound(SFX_DORCLS, NULL);
     return true;

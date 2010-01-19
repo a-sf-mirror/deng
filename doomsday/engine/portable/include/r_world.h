@@ -42,7 +42,8 @@ extern float lightModRange[255];
 // Sky flags.
 #define SIF_DRAW_SPHERE     0x1 // Always draw the sky sphere.
 
-void            R_SetupMap(int mode, int flags);
+void            R_BeginSetupMap(void);
+void            R_SetupMap(struct map_s* map, int mode, int flags);
 void            R_UpdatePlanes(void);
 void            R_SetupFog(float start, float end, float density, float* rgb);
 void            R_SetupFogDefaults(void);

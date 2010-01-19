@@ -321,6 +321,18 @@ void Thinker_SetMap(thinker_t* th, map_t* map)
 }
 
 /**
+ * Change the 'in stasis' state of a thinker (stop it from thinking).
+ *
+ * @param th            The thinker to change.
+ * @param on            @c true, put into stasis.
+ */
+void Thinker_SetStasis(thinker_t* th, boolean on)
+{
+    assert(th);
+    Map_ThinkerSetStasis(Thinker_Map(th), th, on);
+}
+
+/**
  * @todo Does not belong in this file?
  */
 boolean P_IsMobjThinker(thinker_t* th, void* context)

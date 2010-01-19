@@ -257,15 +257,16 @@ float R_PointToDist(const float x, const float y)
     return dist;
 }
 
-void* P_PointInSubSector(const float x, const float y)
+void* Map_PointInSubsector(map_t* map, const float x, const float y)
 {
-    return P_ObjectRecord(DMU_SUBSECTOR, Map_PointInSubsector(P_CurrentMap(), x, y));
+    assert(map);
+    return P_ObjectRecord(DMU_SUBSECTOR, Map_PointInSubsector2(map, x, y));
 }
 
-void R_ScaleAmbientRGB(float *out, const float *in, float mul)
+void R_ScaleAmbientRGB(float* out, const float* in, float mul)
 {
-    int                 i;
-    float               val;
+    int i;
+    float val;
 
     if(mul < 0)
         mul = 0;

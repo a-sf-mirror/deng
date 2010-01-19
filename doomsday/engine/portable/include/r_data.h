@@ -345,7 +345,6 @@ boolean         R_UpdateSideDef(struct sidedef_s* side, boolean forceUpdate);
 boolean         R_UpdatePlane(struct plane_s* pln, boolean forceUpdate);
 boolean         R_UpdateSurface(struct surface_s* suf, boolean forceUpdate);
 
-void            R_PrecacheMap(void);
 void            R_PrecacheMobjNum(int mobjtypeNum);
 void            R_PrecachePatch(lumpnum_t lump);
 

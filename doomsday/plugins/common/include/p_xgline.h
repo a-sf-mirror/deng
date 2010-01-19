@@ -334,7 +334,7 @@ extern mobj_t dummyThing;
 void            XG_Register(void);
 
 // Initialize extended lines for the map.
-void            XL_Init(void);
+void            XL_Init(struct map_s* map);
 // Called when reseting engine state.
 void            XL_Update(struct map_s* map);
 

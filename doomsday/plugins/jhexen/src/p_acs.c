@@ -240,15 +240,16 @@ actionscriptinterpreter_t* ActionScriptInterpreter = NULL;
 
 // CODE --------------------------------------------------------------------
 
-static actionscript_thinker_t* createActionScriptThinker(actionscriptid_t scriptId,
-    const int* bytecodePos, int delayCount, int infoIndex, mobj_t* activator,
-    linedef_t* lineDef, int lineSide, const byte* args, int numArgs)
+static actionscript_thinker_t* createActionScriptThinker(map_t* map,
+    actionscriptid_t scriptId, const int* bytecodePos, int delayCount,
+    int infoIndex, mobj_t* activator, linedef_t* lineDef, int lineSide,
+    const byte* args, int numArgs)
 {
     actionscript_thinker_t* script;
 
     script = Z_Calloc(sizeof(*script), PU_MAP, 0);
     script->thinker.function = ActionScriptThinker_Think;
-    DD_ThinkerAdd(&script->thinker);
+    Map_ThinkerAdd(map, (thinker_t*) script);
 
     script->scriptId = scriptId;
     script->bytecodePos = bytecodePos;
@@ -308,8 +309,8 @@ static boolean startScript(actionscriptinterpreter_t* asi,
         return false;
     }
 
-    script = createActionScriptThinker(scriptId, info->entryPoint, 0, infoIndex,
-        activator, lineDef, lineSide, args, info->argCount);
+    script = createActionScriptThinker(P_CurrentMap(), scriptId, info->entryPoint,
+        0, infoIndex, activator, lineDef, lineSide, args, info->argCount);
 
     info->scriptState = SS_RUNNING;
     if(newScript)
@@ -472,8 +473,8 @@ void ActionScriptInterpreter_Load(actionscriptinterpreter_t* asi, int map, lumpn
         {   // Auto-activate
             info->scriptId = scriptId - OPEN_SCRIPTS_BASE;
             // World objects are allotted 1 second for initialization.
-            createActionScriptThinker(info->scriptId, info->entryPoint, TICSPERSEC,
-                i, NULL, NULL, 0, NULL, 0);
+            createActionScriptThinker(P_CurrentMap(), info->scriptId,
+                info->entryPoint, TICSPERSEC, i, NULL, NULL, 0, NULL, 0);
             info->scriptState = SS_RUNNING;
         }
         else
@@ -814,20 +815,20 @@ boolean ActionScriptInterpreter_Suspend(actionscriptinterpreter_t* asi,
     }
 }
 
-void ActionScriptThinker_Think(thinker_t* thinker)
+void ActionScriptThinker_Think(thinker_t* th)
 {
-    assert(thinker);
+    assert(th);
     {
-    actionscript_thinker_t* th = (actionscript_thinker_t*) thinker;
+    actionscript_thinker_t* script = (actionscript_thinker_t*) th;
     actionscriptinterpreter_t* asi = ActionScriptInterpreter;
-    script_info_t* info = &asi->bytecode.scriptInfo[th->infoIndex];
+    script_info_t* info = &asi->bytecode.scriptInfo[script->infoIndex];
     script_action_t action;
 
     if(info->scriptState == SS_TERMINATING)
     {
         info->scriptState = SS_INACTIVE;
-        scriptFinished(asi, th->scriptId);
-        DD_ThinkerRemove(&th->thinker);
+        scriptFinished(asi, script->scriptId);
+        Map_RemoveThinker(Thinker_Map(th), th);
         return;
     }
 
@@ -836,23 +837,23 @@ void ActionScriptThinker_Think(thinker_t* thinker)
         return;
     }
 
-    if(th->delayCount)
+    if(script->delayCount)
     {
-        th->delayCount--;
+        script->delayCount--;
         return;
     }
 
     do
     {
-        script_bytecode_cmdinterpreter_t cmd = bytecodeCommandInterpreters[LONG(*th->bytecodePos++)];
-        action = cmd(th);
+        script_bytecode_cmdinterpreter_t cmd = bytecodeCommandInterpreters[LONG(*script->bytecodePos++)];
+        action = cmd(script);
     } while(action == SA_CONTINUE);
 
     if(action == SA_TERMINATE)
     {
         info->scriptState = SS_INACTIVE;
-        scriptFinished(asi, th->scriptId);
-        DD_ThinkerRemove(&th->thinker);
+        scriptFinished(asi, script->scriptId);
+        Map_RemoveThinker(Thinker_Map(th), th);
     }
     }
 }
@@ -878,7 +879,7 @@ void ActionScriptInterpreter_TagFinished(actionscriptinterpreter_t* asi, int tag
 void ActionScriptInterpreter_PolyobjFinished(actionscriptinterpreter_t* asi, int po)
 {
     assert(asi);
-    if(!PO_Busy(po))
+    if(!PO_Busy(P_CurrentMap(), po))
     {
         int i;
         for(i = 0; i < asi->bytecode.numScripts; ++i)
@@ -910,11 +911,12 @@ static void scriptFinished(actionscriptinterpreter_t* asi, actionscriptid_t scri
 
 static boolean tagBusy(int tag)
 {
+    map_t* map = P_CurrentMap();
     uint k;
 
     // @note We can't use the sector tag lists here as we might already be in an
     // iteration at a higher level.
-    for(k = 0; k < numsectors; ++k)
+    for(k = 0; k < Map_NumSectors(map); ++k)
     {
         sector_t* sec = DMU_ToPtr(DMU_SECTOR, k);
         xsector_t* xsec = P_ToXSector(sec);
@@ -1433,7 +1435,7 @@ static int countMobjsOfType(map_t* map, int type, int tid)
 
         params.type = moType;
         params.count = 0;
-        DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+        Map_IterateThinkers(map, P_MobjThinker, countMobjOfType, &params);
 
         count = params.count;
     }

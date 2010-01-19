@@ -249,16 +249,11 @@ enum {
     DD_MAP_NAME,
     DD_MAP_AUTHOR,
     DD_MAP_MUSIC,
-    DD_MAP_MIN_X,
-    DD_MAP_MIN_Y,
-    DD_MAP_MAX_X,
-    DD_MAP_MAX_Y,
     DD_WINDOW_WIDTH,
     DD_WINDOW_HEIGHT,
     DD_WINDOW_HANDLE,
     DD_DYNLIGHT_TEXTURE,
     DD_GAME_EXPORTS,
-    DD_MATERIAL_COUNT,
     DD_XGFUNC_LINK, // XG line classes
     DD_SHARED_FIXED_TRIGGER,
     DD_GAMETIC,
@@ -272,7 +267,6 @@ enum {
     DD_VIEW_ANGLE,
     DD_VIEW_PITCH,
     DD_CPLAYER_THRUST_MUL,
-    DD_GRAVITY,
     DD_PSPRITE_OFFSET_X, // 10x
     DD_PSPRITE_OFFSET_Y, // 10x
     DD_PSPRITE_LIGHTLEVEL_MULTIPLIER,
@@ -625,19 +619,6 @@ enum /* Do not change the numerical values of the constants! */
     DMU_LAYER2_ANGLE
 };
 
-// Map Update value names:
-enum {
-    DMU_SECTOR_COUNT,
-    DMU_LINE_COUNT,
-    DMU_SIDE_COUNT,
-    DMU_VERTEX_COUNT,
-    DMU_SEG_COUNT,
-    DMU_SUBSECTOR_COUNT,
-    DMU_NODE_COUNT,
-    DMU_POLYOBJ_COUNT,
-    DMU_PLANE_COUNT
-};
-
 // LineDef flags:
 // For use with P_Set/Get(DMU_LINEDEF, n, DMU_FLAGS).
 #define DDLF_BLOCKING           0x0001
@@ -692,7 +673,6 @@ enum
 {
     DDSMM_AFTER_LOADING, // After loading a savegame...
     DDSMM_FINALIZE, // After everything else is done.
-    DDSMM_INITIALIZE, // Before anything else if done.
     DDSMM_AFTER_BUSY // After leaving busy mode, which was used during setup.
 };
 
@@ -729,7 +709,7 @@ typedef enum {
 
 /**
  * @defgroup lineSightFlags Line Sight Flags
- * Flags used to dictate logic within P_CheckLineSight.
+ * Flags used to dictate logic within Map_CheckLineSight.
  */
 /*@{*/
 #define LS_PASSLEFT             0x0001 // Ray may cross one-sided linedefs from left to right.
@@ -821,7 +801,7 @@ typedef boolean (*traverser_t) (intercept_t* in);
     struct nodepile_s* mobjNodes, *lineNodes; /* All kinds of wacky links. */ \
     nodeindex_t*    lineLinks; /* Indices to roots. */ \
 \
-    float           globalGravity; \
+    float           gravity; \
     int             ambientLightLevel; \
 \
     float           skyFixCeiling; \

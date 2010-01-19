@@ -89,7 +89,7 @@ void T_FloorWaggle(waggle_t* waggle)
             P_ChangeSector(waggle->sector, true);
             P_ToXSector(waggle->sector)->specialData = NULL;
             ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(waggle->sector)->tag);
-            DD_ThinkerRemove(&waggle->thinker);
+            Map_RemoveThinker(Thinker_Map((thinker_t*) waggle), (thinker_t*) waggle);
             return;
         }
         break;
@@ -128,7 +128,7 @@ boolean EV_StartFloorWaggle(map_t* map, int tag, int height, int speed,
 
         waggle = Z_Calloc(sizeof(*waggle), PU_MAP, 0);
         waggle->thinker.function = T_FloorWaggle;
-        DD_ThinkerAdd(&waggle->thinker);
+        Map_ThinkerAdd(map, (thinker_t*) waggle);
 
         P_ToXSector(sec)->specialData = waggle;
         waggle->sector = sec;

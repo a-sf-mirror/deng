@@ -441,7 +441,7 @@ static int findMobj(void* p, void* context)
 
 boolean P_LookForMonsters(mobj_t* mo)
 {
-    findmobjparams_t    params;
+    findmobjparams_t params;
 
     if(!P_CheckSight(players[0].plr->mo, mo))
         return false; // Player can't see the monster.
@@ -458,8 +458,8 @@ boolean P_LookForMonsters(mobj_t* mo)
     params.checkLOS = true;
     params.randomSkip = 16;
     params.checkMinotaurTracer = (mo->type == MT_MINOTAUR)?
-        ((player_t *) mo->tracer)->plr->mo : NULL;
-    DD_IterateThinkers(P_MobjThinker, findMobj, &params);
+        ((player_t*) mo->tracer)->plr->mo : NULL;
+    Map_IterateThinkers(P_CurrentMap(), P_MobjThinker, findMobj, &params);
 
     if(params.foundMobj)
     {
@@ -1047,18 +1047,20 @@ static int findMonster(void* p, void* context)
 /**
  * Look for enemy of player.
  */
-void C_DECL A_MinotaurLook(mobj_t *actor)
+void C_DECL A_MinotaurLook(mobj_t* actor)
 {
-    mobj_t*             master = actor->tracer;
+    assert(actor);
+    {
+    mobj_t* master = actor->tracer;
 
     actor->target = NULL;
 
     if(deathmatch) // Quick search for players.
     {
-        int                 i;
-        float               dist;
-        player_t*           player;
-        mobj_t*             mo;
+        int i;
+        float dist;
+        player_t* player;
+        mobj_t* mo;
 
         for(i = 0; i < MAXPLAYERS; ++i)
         {
@@ -1093,7 +1095,7 @@ void C_DECL A_MinotaurLook(mobj_t *actor)
 
     if(!actor->target) // Normal monster search.
     {
-        findmonsterparams_t     params;
+        findmonsterparams_t params;
 
         params.notThis = actor;
         params.notThis2 = master;
@@ -1103,7 +1105,7 @@ void C_DECL A_MinotaurLook(mobj_t *actor)
         params.foundMobj = NULL;
         params.minHealth = 1;
         params.checkMinotaurTracer = actor->tracer;
-        if(!DD_IterateThinkers(P_MobjThinker, findMonster, &params))
+        if(!Map_IterateThinkers(Thinker_Map((thinker_t*) actor), P_MobjThinker, findMonster, &params))
             actor->target = params.foundMobj;
     }
 
@@ -1114,6 +1116,7 @@ void C_DECL A_MinotaurLook(mobj_t *actor)
     else
     {
         P_SetMobjStateNF(actor, S_MNTR_ROAM1);
+    }
     }
 }
 
@@ -1590,17 +1593,14 @@ static int massacreMobj(void* p, void* context)
 /**
  * Kills all monsters.
  */
-int P_Massacre(void)
+int P_Massacre(map_t* map)
 {
-    int                 count = 0;
-
-    // Only massacre when actually in a map.
-    if(G_GetGameState() == GS_MAP)
+    assert(map);
     {
-        DD_IterateThinkers(P_MobjThinker, massacreMobj, &count);
-    }
-
+    int count = 0;
+    Map_IterateThinkers(map, P_MobjThinker, massacreMobj, &count);
     return count;
+    }
 }
 
 void C_DECL A_SkullPop(mobj_t* actor)
@@ -1780,9 +1780,10 @@ void P_InitCreatureCorpseQueue(map_t* map)
 /**
  * Search the thinker list for corpses and place them in this queue.
  */
-void P_AddCreaturesToCorpseQueue(void)
+void P_AddCreaturesToCorpseQueue(map_t* map)
 {
-    DD_IterateThinkers(P_MobjThinker, addMobjToCorpseQueue, NULL);
+    assert(map);
+    Map_IterateThinkers(map, P_MobjThinker, addMobjToCorpseQueue, NULL);
 }
 
 void C_DECL A_AddPlayerCorpse(mobj_t* actor)

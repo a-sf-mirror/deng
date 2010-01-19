@@ -376,7 +376,7 @@ boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
         break;
 
     case 44: // Ceiling Crush Stop
-        success = P_CeilingDeactivate((short) args[0]);
+        success = P_CeilingDeactivate(P_CurrentMap(), (short) args[0]);
         break;
 
     case 45: // Ceiling Crush Raise and Stay
@@ -392,7 +392,7 @@ boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
         break;
 
     case 61: // Plat Stop
-        P_PlatDeactivate((short) args[0]);
+        P_PlatDeactivate(P_CurrentMap(), (short) args[0]);
         break;
 
     case 62: // Plat Down-Wait-Up-Stay
@@ -813,7 +813,7 @@ void GameMap_SpawnSpecials(map_t* map)
 
     // Init special SECTORs.
     GameMap_DestroySectorTagLists(map);
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         sec = DMU_ToPtr(DMU_SECTOR, i);
         xsec = P_ToXSector(sec);
@@ -848,7 +848,7 @@ void GameMap_SpawnSpecials(map_t* map)
     // Init animating line specials.
     P_EmptyIterList(map->_linespecials);
     GameMap_DestroyLineTagLists(map);
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
         line = DMU_ToPtr(DMU_LINEDEF, i);
         xline = P_ToXLine(line);
@@ -885,7 +885,7 @@ void GameMap_AnimateSurfaces(map_t* map)
     linedef_t* line;
 
     // Update scrolling plane materials.
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         xsector_t* sect = P_ToXSector(DMU_ToPtr(DMU_SECTOR, i));
         float texOff[2];
@@ -1061,7 +1061,7 @@ static void P_LightningFlash(map_t* map)
 
         if(lightningFlash)
         {
-            for(i = 0; i < numsectors; ++i)
+            for(i = 0; i < Map_NumSectors(map); ++i)
             {
                 sector_t* sec = DMU_ToPtr(DMU_SECTOR, i);
 
@@ -1079,7 +1079,7 @@ static void P_LightningFlash(map_t* map)
         }
         else
         {   // Remove the alternate lightning flash special.
-            for(i = 0; i < numsectors; ++i)
+            for(i = 0; i < Map_NumSectors(map); ++i)
             {
                 sector_t* sec = DMU_ToPtr(DMU_SECTOR, i);
 
@@ -1101,7 +1101,7 @@ static void P_LightningFlash(map_t* map)
     flashLight = (float) (200 + (P_Random() & 31)) / 255.0f;
     tempLight = lightningLightLevels;
     foundSec = false;
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         sector_t* sec = DMU_ToPtr(DMU_SECTOR, i);
 
@@ -1189,9 +1189,11 @@ void P_ForceLightning(void)
     nextLightningFlash = 0;
 }
 
-void P_InitLightning(void)
+void P_InitLightning(map_t* map)
 {
-    uint                i, secCount;
+    assert(map);
+    {
+    uint i, secCount;
 
     if(!P_GetMapLightning(gameMap))
     {
@@ -1202,9 +1204,9 @@ void P_InitLightning(void)
 
     lightningFlash = 0;
     secCount = 0;
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
-        sector_t*           sec = DMU_ToPtr(DMU_SECTOR, i);
+        sector_t* sec = DMU_ToPtr(DMU_SECTOR, i);
 
         if(isLightningSector(sec))
         {
@@ -1225,5 +1227,6 @@ void P_InitLightning(void)
     else
     {
         mapHasLightning = false;
+    }
     }
 }

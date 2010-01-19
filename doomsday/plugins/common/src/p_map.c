@@ -87,12 +87,12 @@ static void  checkForPushSpecial(linedef_t* line, int side, mobj_t* mobj);
 
 // CODE --------------------------------------------------------------------
 
-float P_GetGravity(void)
+float GameMap_Gravity(map_t* map)
 {
+    assert(map);
     if(IS_NETGAME && cfg.netGravity != -1)
         return (float) cfg.netGravity / 100;
-
-    return *((float*) DD_GetVariable(DD_GRAVITY));
+    return map->gravity;
 }
 
 /**
@@ -110,7 +110,7 @@ static boolean checkReject(map_t* map, subsector_t* a, subsector_t* b)
         // Determine subsector entries in REJECT table.
         s1 = DMU_ToIndex(sec1);
         s2 = DMU_ToIndex(sec2);
-        pnum = s1 * numsectors + s2;
+        pnum = s1 * Map_NumSectors(map) + s2;
         bytenum = pnum >> 3;
         bitnum = 1 << (pnum & 7);
 
@@ -142,6 +142,9 @@ boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
     map_t* map = Thinker_Map((thinker_t*) from);
     float fPos[3];
 
+    if(map != Thinker_Map((thinker_t*) to))
+        return false; // Definetly not.
+
     // If either is unlinked, they can't see each other.
     if(!from->subsector || !to->subsector)
         return false;
@@ -160,7 +163,7 @@ boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
     if(!P_MobjIsCamera(from))
         fPos[VZ] += from->height + -(from->height / 4);
 
-    return P_CheckLineSight(fPos, to->pos, 0, to->height, LS_PASSMIDDLE);
+    return Map_CheckLineSight(map, fPos, to->pos, 0, to->height, LS_PASSMIDDLE);
     }
 }
 
@@ -231,7 +234,7 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
     map->tmBBox[BOXRIGHT]  = map->tm[VX] + map->tmThing->radius;
     map->tmBBox[BOXLEFT]   = map->tm[VX] - map->tmThing->radius;
 
-    newSSec = P_PointInSubSector(map->tm[VX], map->tm[VY]);
+    newSSec = Map_PointInSubsector(map, map->tm[VX], map->tm[VY]);
 
     map->ceilingLine = map->floorLine = NULL;
 #if !__JHEXEN__
@@ -256,7 +259,7 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
 
     // Stomp on any things contacted.
     VALIDCOUNT++;
-    if(!P_MobjsBoxIterator(box, PIT_StompThing, &stomping))
+    if(!Map_MobjsBoxIterator(map, box, PIT_StompThing, &stomping))
         return false;
 
     // The move is ok, so link the thing into its new position.
@@ -356,7 +359,7 @@ boolean P_CheckSides(mobj_t* actor, float x, float y)
     map->tmBBox[BOXBOTTOM] = (map->startPos[VY] < map->endPos[VY]? map->startPos[VY] : map->endPos[VY]);
 
     VALIDCOUNT++;
-    return !P_LineDefsBoxIterator(map->tmBBox, PIT_CrossLine, NULL);
+    return !Map_LineDefsBoxIterator(map, map->tmBBox, PIT_CrossLine, NULL);
     }
 }
 
@@ -1060,7 +1063,7 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
     map->tmBBox[BOXRIGHT]  = map->tm[VX] + map->tmThing->radius;
     map->tmBBox[BOXLEFT]   = map->tm[VX] - map->tmThing->radius;
 
-    newSec = DMU_GetPtrp(P_PointInSubSector(map->tm[VX], map->tm[VY]), DMU_SECTOR);
+    newSec = DMU_GetPtrp(Map_PointInSubsector(map, map->tm[VX], map->tm[VY]), DMU_SECTOR);
 
     map->ceilingLine = map->floorLine = NULL;
 #if !__JHEXEN__
@@ -1104,7 +1107,7 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
 #if __JHEXEN__
         map->blockingMobj = NULL;
 #endif
-        if(!P_MobjsBoxIterator(box, PIT_CheckThing, 0))
+        if(!Map_MobjsBoxIterator(map, box, PIT_CheckThing, 0))
             return false;
 
 /* #if _DEBUG
@@ -1121,7 +1124,7 @@ if(thing->onMobj)
     map->blockingMobj = NULL;
 #endif
 
-    return P_LineDefsBoxIterator(box, PIT_CheckLine, 0);
+    return Map_LineDefsBoxIterator(map, box, PIT_CheckLine, 0);
 }
 
 boolean P_CheckPosition3fv(mobj_t* thing, const float pos[3])
@@ -1565,7 +1568,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
         lineWasHit = true;
 
         // This is the subsector where the trace originates.
-        originSub = P_PointInSubSector(tracePos[VX], tracePos[VY]);
+        originSub = Map_PointInSubsector(map, tracePos[VX], tracePos[VY]);
 
         d[VX] = pos[VX] - tracePos[VX];
         d[VY] = pos[VY] - tracePos[VY];
@@ -1573,7 +1576,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
 
         if(!INRANGE_OF(d[VZ], 0, .0001f)) // Epsilon
         {
-            contact = P_PointInSubSector(pos[VX], pos[VY]);
+            contact = Map_PointInSubsector(map, pos[VX], pos[VY]);
             step = P_ApproxDistance3(d[VX], d[VY], d[VZ]);
             stepv[VX] = d[VX] / step;
             stepv[VY] = d[VY] / step;
@@ -1590,7 +1593,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
                 pos[VX] = tracePos[VX] + d[VX];
                 pos[VY] = tracePos[VY] + d[VY];
                 pos[VZ] = tracePos[VZ] + d[VZ];
-                contact = P_PointInSubSector(pos[VX], pos[VY]);
+                contact = Map_PointInSubsector(map, pos[VX], pos[VY]);
             }
 
             // Should we backtrack to hit a plane instead?
@@ -1941,7 +1944,7 @@ float P_AimLineAttack(mobj_t* t1, angle_t angle, float distance)
     map->attackRange = distance;
     map->lineTarget = NULL;
 
-    P_PathTraverse(t1->pos[VX], t1->pos[VY], pos[VX], pos[VY],
+    Map_PathTraverse(map, t1->pos[VX], t1->pos[VY], pos[VX], pos[VY],
                    PT_ADDLINEDEFS | PT_ADDMOBJS, PTR_AimTraverse);
 
     if(map->lineTarget)
@@ -2000,7 +2003,7 @@ void P_LineAttack(mobj_t* t1, angle_t angle, float distance, float slope,
     map->attackRange = distance;
     map->aimSlope = slope;
 
-    if(P_PathTraverse(t1->pos[VX], t1->pos[VY], targetPos[VX], targetPos[VY],
+    if(Map_PathTraverse(map, t1->pos[VX], t1->pos[VY], targetPos[VX], targetPos[VY],
                       PT_ADDLINEDEFS | PT_ADDMOBJS, PTR_ShootTraverse))
     {
 #if __JHEXEN__
@@ -2131,7 +2134,7 @@ void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage, int distance)
     map->damageSource = canDamageSource;
 #endif
     VALIDCOUNT++;
-    P_MobjsBoxIterator(box, PIT_RadiusAttack, 0);
+    Map_MobjsBoxIterator(map, box, PIT_RadiusAttack, 0);
 }
 
 boolean PTR_UseTraverse(intercept_t* in)
@@ -2224,7 +2227,7 @@ void P_UseLines(player_t* player)
     pos[VX] += USERANGE * FIX2FLT(finecosine[an]);
     pos[VY] += USERANGE * FIX2FLT(finesine[an]);
 
-    P_PathTraverse(mo->pos[VX], mo->pos[VY], pos[VX], pos[VY],
+    Map_PathTraverse(map, mo->pos[VX], mo->pos[VY], pos[VX], pos[VY],
                    PT_ADDLINEDEFS, PTR_UseTraverse);
     }
 }
@@ -2436,13 +2439,13 @@ void P_SlideMove(mobj_t* mo)
 
         map->bestSlideFrac = 1;
 
-        P_PathTraverse(leadpos[VX], leadpos[VY],
+        Map_PathTraverse(map, leadpos[VX], leadpos[VY],
                        leadpos[VX] + mo->mom[MX], leadpos[VY] + mo->mom[MY],
                        PT_ADDLINEDEFS, PTR_SlideTraverse);
-        P_PathTraverse(trailpos[VX], leadpos[VY],
+        Map_PathTraverse(map, trailpos[VX], leadpos[VY],
                        trailpos[VX] + mo->mom[MX], leadpos[VY] + mo->mom[MY],
                        PT_ADDLINEDEFS, PTR_SlideTraverse);
-        P_PathTraverse(leadpos[VX], trailpos[VY],
+        Map_PathTraverse(map, leadpos[VX], trailpos[VY],
                        leadpos[VX] + mo->mom[MX], trailpos[VY] + mo->mom[MY],
                        PT_ADDLINEDEFS, PTR_SlideTraverse);
 
@@ -2756,7 +2759,7 @@ void PIT_ThrustSpike(mobj_t* actor)
 
     // Stomp on any things contacted.
     VALIDCOUNT++;
-    P_MobjsBoxIterator(bbox, PIT_ThrustStompThing, 0);
+    Map_MobjsBoxIterator(map, bbox, PIT_ThrustStompThing, 0);
 }
 
 boolean PIT_CheckOnmobjZ(mobj_t* thing, void* data)
@@ -2815,7 +2818,7 @@ mobj_t* P_CheckOnMobj(mobj_t* thing)
     map->tmBBox[BOXRIGHT]  = pos[VX] + map->tmThing->radius;
     map->tmBBox[BOXLEFT]   = pos[VX] - map->tmThing->radius;
 
-    newSSec = P_PointInSubSector(pos[VX], pos[VY]);
+    newSSec = Map_PointInSubsector(map, pos[VX], pos[VY]);
     map->ceilingLine = map->floorLine = NULL;
 
     // The base floor/ceiling is from the subsector that contains the
@@ -2841,7 +2844,7 @@ mobj_t* P_CheckOnMobj(mobj_t* thing)
     box[BOXTOP]    = map->tmBBox[BOXTOP]    + MAXRADIUS;
 
     VALIDCOUNT++;
-    if(!P_MobjsBoxIterator(box, PIT_CheckOnmobjZ, 0))
+    if(!Map_MobjsBoxIterator(map, box, PIT_CheckOnmobjZ, 0))
     {
         memcpy(map->tmThing, &oldMo, sizeof(mobj_t));
         return map->onMobj;
@@ -2904,16 +2907,16 @@ static void P_FakeZMovement(mobj_t* mo)
     else if(mo->flags2 & MF2_LOGRAV)
     {
         if(mo->mom[MZ] == 0)
-            mo->mom[MZ] = -(P_GetGravity() / 32) * 2;
+            mo->mom[MZ] = -(GameMap_Gravity(Thinker_Map((thinker_t*) mo)) / 32) * 2;
         else
-            mo->mom[MZ] -= P_GetGravity() / 32;
+            mo->mom[MZ] -= GameMap_Gravity(Thinker_Map((thinker_t*) mo)) / 32;
     }
     else if(!(mo->flags & MF_NOGRAVITY))
     {
         if(mo->mom[MZ] == 0)
-            mo->mom[MZ] = -P_GetGravity() * 2;
+            mo->mom[MZ] = -GameMap_Gravity(Thinker_Map((thinker_t*) mo)) * 2;
         else
-            mo->mom[MZ] -= P_GetGravity();
+            mo->mom[MZ] -= GameMap_Gravity(Thinker_Map((thinker_t*) mo));
     }
 
     if(mo->pos[VZ] + mo->height > mo->ceilingZ) // Hit the ceiling.
@@ -3012,7 +3015,7 @@ void P_BounceWall(mobj_t* mo)
         leadPos[VY] -= mo->radius;
 
     map->bestSlideFrac = 1;
-    P_PathTraverse(leadPos[VX], leadPos[VY],
+    Map_PathTraverse(map, leadPos[VX], leadPos[VY],
                    leadPos[VX] + mo->mom[MX], leadPos[VY] + mo->mom[MY],
                    PT_ADDLINEDEFS, PTR_BounceTraverse);
 
@@ -3154,7 +3157,7 @@ boolean P_UsePuzzleItem(player_t* player, int itemType)
     pos2[VX] += FIX2FLT(USERANGE * finecosine[angle]);
     pos2[VY] += FIX2FLT(USERANGE * finesine[angle]);
 
-    P_PathTraverse(pos1[VX], pos1[VY], pos2[VX], pos2[VY],
+    Map_PathTraverse(map, pos1[VX], pos1[VY], pos2[VX], pos2[VY],
                    PT_ADDLINEDEFS | PT_ADDMOBJS, PTR_PuzzleItemTraverse);
 
     if(!map->puzzleActivated)

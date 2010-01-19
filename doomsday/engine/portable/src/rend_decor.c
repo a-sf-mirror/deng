@@ -543,7 +543,7 @@ static uint generateDecorLights(map_t* map, const ded_decorlight_t* def,
             if(NULL != (d = R_CreateSurfaceDecoration(DT_LIGHT, suf)))
             {
                 V3_Copy(d->pos, pos);
-                d->subsector = Map_PointInSubsector(map, d->pos[VX], d->pos[VY]);
+                d->subsector = Map_PointInSubsector2(map, d->pos[VX], d->pos[VY]);
                 DEC_LIGHT(d)->def = def;
 
                 if(!map->_decoratedSurfaceList)
@@ -628,7 +628,7 @@ static uint generateDecorModels(map_t* map, const ded_decormodel_t* def,
             if(NULL != (d = R_CreateSurfaceDecoration(DT_MODEL, suf)))
             {
                 V3_Copy(d->pos, pos);
-                d->subsector = Map_PointInSubsector(map, d->pos[VX], d->pos[VY]);
+                d->subsector = Map_PointInSubsector2(map, d->pos[VX], d->pos[VY]);
                 DEC_MODEL(d)->def = def;
                 DEC_MODEL(d)->mf = mf;
                 DEC_MODEL(d)->pitch = pitch;
@@ -868,6 +868,9 @@ BEGIN_PROF( PROF_DECOR_UPDATE );
         {
             sector_t* sec = map->sectors[i];
             uint j;
+
+            if(sec->lineDefCount < 3)
+                continue;
 
             for(j = 0; j < sec->planeCount; ++j)
             {

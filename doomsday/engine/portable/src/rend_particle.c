@@ -254,7 +254,7 @@ void Rend_RenderGenerators(map_t* map)
     eye[VY] = vz;
     eye[VZ] = vy;
 
-    Map_IterateThinkers(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
+    Map_IterateThinkers2(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
                         drawGeneratorOrigin, eye);
 
     // Restore previous state.

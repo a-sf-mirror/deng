@@ -46,32 +46,13 @@
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static map_t* editMap = NULL;
-
 // CODE --------------------------------------------------------------------
-
-void MPE_SetEditMap(map_t* map)
-{
-    editMap = map;
-}
 
 /**
  * Called to begin the map building process.
  */
-boolean MPE_Begin(void)
+boolean MPE_Begin(map_t* map)
 {
-    return true;
-}
-
-/**
- * Called to complete the map building process.
- */
-boolean MPE_End(void)
-{
-    if(!editMap)
-        return false;
-
-    Map_EditEnd(editMap);
     return true;
 }
 
@@ -84,17 +65,16 @@ boolean MPE_End(void)
  * @return              Index number of the newly created vertex else 0 if
  *                      the vertex could not be created for some reason.
  */
-objectrecordid_t MPE_CreateVertex(float x, float y)
+objectrecordid_t MPE_CreateVertex(map_t* map, float x, float y)
 {
+    assert(map);
+    {
     vertex_t* v;
-    map_t* map = editMap;
-
-    if(!map)
+    if(!map->editActive)
         return 0;
-
     v = Map_CreateVertex(map, x, y);
-
     return v ? ((mvertex_t*) v->data)->index : 0;
+    }
 }
 
 /**
@@ -106,13 +86,12 @@ objectrecordid_t MPE_CreateVertex(float x, float y)
  * @param indices       If not @c NULL, the indices of the newly created
  *                      vertexes will be written back here.
  */
-boolean MPE_CreateVertices(size_t num, float* values, objectrecordid_t* indices)
+boolean MPE_CreateVertices(map_t* map, size_t num, float* values, objectrecordid_t* indices)
 {
+    assert(map);
+    {
     uint n;
-    map_t* map = editMap;
 
-    if(!map)
-        return false;
     if(!num || !values)
         return false;
 
@@ -129,9 +108,10 @@ boolean MPE_CreateVertices(size_t num, float* values, objectrecordid_t* indices)
     }
 
     return true;
+    }
 }
 
-objectrecordid_t MPE_CreateSideDef(objectrecordid_t sector, short flags,
+objectrecordid_t MPE_CreateSideDef(map_t* map, objectrecordid_t sector, short flags,
                                    material_t* topMaterial,
                                    float topOffsetX, float topOffsetY, float topRed,
                                    float topGreen, float topBlue,
@@ -144,12 +124,12 @@ objectrecordid_t MPE_CreateSideDef(objectrecordid_t sector, short flags,
                                    float bottomRed, float bottomGreen,
                                    float bottomBlue)
 {
+    assert(map);
+    {
     sidedef_t* s;
-    map_t* map = editMap;
-
-    if(!map)
+    if(!map->editActive)
         return 0;
-    if(sector > map->numSectors)
+    if(sector > Map_NumSectors(map))
         return 0;
 
     s = Map_CreateSideDef(map, (sector == 0? NULL: map->sectors[sector-1]), flags,
@@ -161,6 +141,7 @@ objectrecordid_t MPE_CreateSideDef(objectrecordid_t sector, short flags,
                           bottomOffsetX, bottomOffsetY, bottomRed, bottomGreen, bottomBlue);
 
     return s ? s->buildData.index : 0;
+    }
 }
 
 /**
@@ -175,24 +156,25 @@ objectrecordid_t MPE_CreateSideDef(objectrecordid_t sector, short flags,
  * @return              Idx of the newly created linedef else @c 0 if there
  *                      was an error.
  */
-objectrecordid_t MPE_CreateLineDef(objectrecordid_t v1, objectrecordid_t v2,
+objectrecordid_t MPE_CreateLineDef(map_t* map, objectrecordid_t v1, objectrecordid_t v2,
                                    uint frontSide, uint backSide, int flags)
 {
+    assert(map);
+    {
     linedef_t* l;
     sidedef_t* front = NULL, *back = NULL;
     vertex_t* vtx1, *vtx2;
     float length, dx, dy;
-    map_t* map = editMap;
 
-    if(!map)
+    if(!map->editActive)
         return 0;
     if(frontSide > map->numSideDefs)
         return 0;
     if(backSide > map->numSideDefs)
         return 0;
-    if(v1 == 0 || v1 > HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)))
+    if(v1 == 0 || v1 > Map_NumVertexes(map))
         return 0;
-    if(v2 == 0 || v2 > HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)))
+    if(v2 == 0 || v2 > Map_NumVertexes(map))
         return 0;
     if(v1 == v2)
         return 0;
@@ -220,49 +202,52 @@ objectrecordid_t MPE_CreateLineDef(objectrecordid_t v1, objectrecordid_t v2,
     l = Map_CreateLineDef(map, vtx1, vtx2, front, back);
 
     return l->buildData.index;
+    }
 }
 
-objectrecordid_t MPE_CreatePlane(float height, material_t* material, float matOffsetX,
+objectrecordid_t MPE_CreatePlane(map_t* map, float height, material_t* material, float matOffsetX,
                                  float matOffsetY, float r, float g, float b, float a,
                                  float normalX, float normalY, float normalZ)
 {
+    assert(map);
+    {
     plane_t* p;
-    map_t* map = editMap;
 
-    if(!map)
+    if(!map->editActive)
         return 0;
 
     p = Map_CreatePlane(map, height, material, matOffsetX, matOffsetY,
                         r, g, b, a, normalX, normalY, normalZ);
     return p ? p->buildData.index : 0;
+    }
 }
 
-objectrecordid_t MPE_CreateSector(float lightLevel, float red, float green, float blue)
+objectrecordid_t MPE_CreateSector(map_t* map, float lightLevel, float red, float green, float blue)
 {
+    assert(map);
+    {
     sector_t* s;
-    map_t* map = editMap;
-
-    if(!map)
+    if(!map->editActive)
         return 0;
-
     s = Map_CreateSector(map, lightLevel, red, green, blue);
-
     return s ? s->buildData.index : 0;
+    }
 }
 
-void MPE_SetSectorPlane(objectrecordid_t sector, uint type, objectrecordid_t plane)
+void MPE_SetSectorPlane(map_t* map, objectrecordid_t sector, uint type, objectrecordid_t plane)
 {
-    map_t* map = editMap;
+    assert(map);
+    {
     sector_t* sec;
     plane_t* pln;
     objectrecord_t* obj;
     uint i;
 
-    if(!map)
+    if(!map->editActive)
         return;
-    if(sector > map->numSectors)
+    if(sector > Map_NumSectors(map))
         return;
-    if(plane > map->numPlanes)
+    if(plane > Map_NumPlanes(map))
         return;
 
     sec = map->sectors[sector - 1];
@@ -284,16 +269,18 @@ void MPE_SetSectorPlane(objectrecordid_t sector, uint type, objectrecordid_t pla
     sec->planes = Z_Realloc(sec->planes, sizeof(plane_t*) * (++sec->planeCount + 1), PU_STATIC);
     sec->planes[type > PLN_CEILING? sec->planeCount-1 : type] = pln;
     sec->planes[sec->planeCount] = NULL; // Terminate.
+    }
 }
 
-objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint lineCount, int tag,
+objectrecordid_t MPE_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,
                                    int sequenceType, float anchorX, float anchorY)
 {
+    assert(map);
+    {
     uint i;
     polyobj_t* po;
-    map_t* map = editMap;
 
-    if(!map)
+    if(!map->editActive)
         return 0;
     if(!lineCount || !lines)
         return 0;
@@ -304,7 +291,7 @@ objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint lineCount, int 
     {
         linedef_t* line;
 
-        if(lines[i] == 0 || lines[i] > map->numLineDefs)
+        if(lines[i] == 0 || lines[i] > Map_NumLineDefs(map))
             return 0;
 
         line = map->lineDefs[lines[i] - 1];
@@ -315,18 +302,20 @@ objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint lineCount, int 
     po = Map_CreatePolyobj(map, lines, lineCount, tag, sequenceType, anchorX, anchorY);
 
     return po ? po->buildData.index : 0;
+    }
 }
 
-boolean MPE_GameObjectRecordProperty(const char* objName, uint idx,
+boolean MPE_GameObjectRecordProperty(map_t* map, const char* objName, uint idx,
                                      const char* propName, valuetype_t type,
                                      void* data)
 {
+    assert(map);
+    {
     uint i;
     size_t len;
     def_gameobject_t* def;
-    map_t* map = editMap;
 
-    if(!map || !map->editActive)
+    if(!map->editActive)
         return false;
     if(!objName || !propName || !data)
         return false; // Hmm...
@@ -352,4 +341,5 @@ boolean MPE_GameObjectRecordProperty(const char* objName, uint idx,
                         def->name, propName));
 
     return false;
+    }
 }

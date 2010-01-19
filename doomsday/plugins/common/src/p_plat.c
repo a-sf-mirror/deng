@@ -99,7 +99,7 @@ static void stopPlat(plat_t* plat)
 #if __JHEXEN__
     ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(plat->sector)->tag);
 #endif
-    DD_ThinkerRemove(&plat->thinker);
+    Map_RemoveThinker(Thinker_Map((thinker_t*) plat), (thinker_t*) plat);
 }
 
 /**
@@ -276,7 +276,7 @@ static int doPlat(linedef_t* line, int tag, plattype_e type, int amount)
 
         plat = Z_Calloc(sizeof(*plat), PU_MAP, 0);
         plat->thinker.function = T_PlatRaise;
-        DD_ThinkerAdd(&plat->thinker);
+        Map_ThinkerAdd(map, &plat->thinker);
 
         plat->type = type;
         plat->sector = sec;
@@ -463,22 +463,22 @@ static int doPlat(linedef_t* line, int tag, plattype_e type, int amount)
  * @param amount: is only used for SOME platforms.
  */
 #if __JHEXEN__
-int EV_DoPlat(linedef_t *line, byte *args, plattype_e type, int amount)
+int EV_DoPlat(linedef_t* line, byte* args, plattype_e type, int amount)
 #else
-int EV_DoPlat(linedef_t *line, plattype_e type, int amount)
+int EV_DoPlat(linedef_t* line, plattype_e type, int amount)
 #endif
 {
 #if __JHEXEN__
     return doPlat(line, (int) args[0], args, type, amount);
 #else
-    int                 rtn = 0;
-    xlinedef_t*            xline = P_ToXLine(line);
+    int rtn = 0;
+    xlinedef_t* xline = P_ToXLine(line);
 
     // Activate all <type> plats that are in stasis.
     switch(type)
     {
     case PT_PERPETUALRAISE:
-        rtn = P_PlatActivate(xline->tag);
+        rtn = P_PlatActivate(P_CurrentMap(), xline->tag);
         break;
 
     default:
@@ -497,13 +497,13 @@ typedef struct {
 
 static int activatePlat(void* p, void* context)
 {
-    plat_t*             plat = (plat_t*) p;
+    plat_t* plat = (plat_t*) p;
     activateplatparams_t* params = (activateplatparams_t*) context;
 
     if(plat->tag == (int) params->tag && plat->thinker.inStasis)
     {
         plat->state = plat->oldState;
-        DD_ThinkerSetStasis(&plat->thinker, false);
+        Thinker_SetStasis(&plat->thinker, false);
         params->count++;
     }
 
@@ -516,15 +516,18 @@ static int activatePlat(void* p, void* context)
  *
  * @param tag           Tag of plats that should be reactivated.
  */
-int P_PlatActivate(short tag)
+int P_PlatActivate(map_t* map, short tag)
 {
+    assert(map);
+    {
     activateplatparams_t params;
 
     params.tag = tag;
     params.count = 0;
-    DD_IterateThinkers(T_PlatRaise, activatePlat, &params);
+    Map_IterateThinkers(map, T_PlatRaise, activatePlat, &params);
 
     return params.count;
+    }
 }
 #endif
 
@@ -535,7 +538,7 @@ typedef struct {
 
 static int deactivatePlat(void* p, void* context)
 {
-    plat_t*             plat = (plat_t*) p;
+    plat_t* plat = (plat_t*) p;
     deactivateplatparams_t* params = (deactivateplatparams_t*) context;
 
 #if __JHEXEN__
@@ -553,7 +556,7 @@ static int deactivatePlat(void* p, void* context)
     {
         // Put it in stasis.
         plat->oldState = plat->state;
-        DD_ThinkerSetStasis(&plat->thinker, true);
+        Thinker_SetStasis(&plat->thinker, true);
         params->count++;
     }
 #endif
@@ -568,13 +571,16 @@ static int deactivatePlat(void* p, void* context)
  *
  * @return              Number of plats put into stasis.
  */
-int P_PlatDeactivate(short tag)
+int P_PlatDeactivate(map_t* map, short tag)
 {
+    assert(map);
+    {
     deactivateplatparams_t params;
 
     params.tag = tag;
     params.count = 0;
-    DD_IterateThinkers(T_PlatRaise, deactivatePlat, &params);
+    Map_IterateThinkers(map, T_PlatRaise, deactivatePlat, &params);
 
     return params.count;
+    }
 }

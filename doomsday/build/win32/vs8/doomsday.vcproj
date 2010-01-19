@@ -3010,10 +3010,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\p_sight.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\include\p_subsector.h"
 				>
 			</File>

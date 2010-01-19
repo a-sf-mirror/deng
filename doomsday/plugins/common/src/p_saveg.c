@@ -283,7 +283,7 @@ static void CopyFile(char *sourceName, char *destName);
 static boolean ExistingFile(char *name);
 #endif
 
-static void unarchiveMap(void);
+static void unarchiveMap(map_t* map);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -563,7 +563,7 @@ typedef struct {
 static int countMobjs(void* p, void* context)
 {
     countmobjsparams_t* params = (countmobjsparams_t*) context;
-    mobj_t*             mo = (mobj_t*) p;
+    mobj_t* mo = (mobj_t*) p;
 
     if(!(mo->player && !params->savePlayers))
         params->count++;
@@ -574,9 +574,9 @@ static int countMobjs(void* p, void* context)
 /**
  * Must be called before saving or loading any data.
  */
-static uint SV_InitThingArchive(boolean load, boolean savePlayers)
+static uint SV_InitThingArchive(map_t* map, boolean load, boolean savePlayers)
 {
-    countmobjsparams_t  params;
+    countmobjsparams_t params;
 
     params.count = 0;
     params.savePlayers = savePlayers;
@@ -593,7 +593,7 @@ static uint SV_InitThingArchive(boolean load, boolean savePlayers)
     else
     {
         // Count the number of mobjs we'll be writing.
-        DD_IterateThinkers(P_MobjThinker, countMobjs, &params);
+        Map_IterateThinkers(map, P_MobjThinker, countMobjs, &params);
     }
 
     thingArchive = calloc(params.count, sizeof(mobj_t*));
@@ -2727,16 +2727,16 @@ static void SV_WritePolyObj(polyobj_t* po)
 
 static int SV_ReadPolyObj(void)
 {
-    int             ver;
-    float           deltaX;
-    float           deltaY;
-    angle_t         angle;
-    polyobj_t*      po;
+    int ver;
+    float deltaX;
+    float deltaY;
+    angle_t angle;
+    polyobj_t* po;
 
     if(saveVersion >= 3)
         ver = SV_ReadByte();
 
-    po = P_GetPolyobj(SV_ReadLong()); // Get polyobj by tag.
+    po = Map_Polyobj(P_CurrentMap(), SV_ReadLong()); // Get polyobj by tag.
     if(!po)
         Con_Error("UnarchivePolyobjs: Invalid polyobj tag");
 
@@ -2758,30 +2758,32 @@ static int SV_ReadPolyObj(void)
  */
 static void P_ArchiveWorld(void)
 {
-    uint                i;
+    map_t* map = P_CurrentMap();
+    uint i;
 
     SV_BeginSegment(ASEG_MATERIAL_ARCHIVE);
     SV_WriteMaterialArchive();
 
     SV_BeginSegment(ASEG_WORLD);
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
         SV_WriteSector(DMU_ToPtr(DMU_SECTOR, i));
 
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
         SV_WriteLine(DMU_ToPtr(DMU_LINEDEF, i));
 
 #if __JHEXEN__
     SV_BeginSegment(ASEG_POLYOBJS);
-    SV_WriteLong(numpolyobjs);
-    for(i = 0; i < numpolyobjs; ++i)
-        SV_WritePolyObj(P_GetPolyobj(i | 0x80000000));
+    SV_WriteLong(Map_NumPolyobjs(map));
+    for(i = 0; i < Map_NumPolyobjs(map); ++i)
+        SV_WritePolyObj(Map_Polyobj(map, i | 0x80000000));
 #endif
 }
 
 static void P_UnArchiveWorld(void)
 {
-    uint                i;
-    int                 matArchiveVer = -1;
+    map_t* map = P_CurrentMap();
+    int matArchiveVer = -1;
+    uint i;
 
     AssertSegment(ASEG_MATERIAL_ARCHIVE);
 
@@ -2800,20 +2802,20 @@ static void P_UnArchiveWorld(void)
 
     AssertSegment(ASEG_WORLD);
     // Load sectors.
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
         SV_ReadSector(DMU_ToPtr(DMU_SECTOR, i));
 
     // Load lines.
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
         SV_ReadLine(DMU_ToPtr(DMU_LINEDEF, i));
 
 #if __JHEXEN__
     // Load polyobjects.
     AssertSegment(ASEG_POLYOBJS);
-    if(SV_ReadLong() != numpolyobjs)
+    if(SV_ReadLong() != Map_NumPolyobjs(map))
         Con_Error("UnarchivePolyobjs: Bad polyobj count");
 
-    for(i = 0; i < numpolyobjs; ++i)
+    for(i = 0; i < Map_NumPolyobjs(map); ++i)
         SV_ReadPolyObj();
 #endif
 }
@@ -2855,7 +2857,7 @@ static int SV_ReadCeiling(ceiling_t* ceiling)
         if(hdr.version == 5)
         {
             if(!SV_ReadByte())
-                DD_ThinkerSetStasis(&ceiling->thinker, true);
+                Thinker_SetStasis(&ceiling->thinker, true);
         }
 #endif
 
@@ -2922,7 +2924,7 @@ static int SV_ReadCeiling(ceiling_t* ceiling)
         ceiling->thinker.function = T_MoveCeiling;
 #if !__JHEXEN__
         if(!junk.function)
-            DD_ThinkerSetStasis(&ceiling->thinker, true);
+            Thinker_SetStasis(&ceiling->thinker, true);
 #endif
     }
 
@@ -3185,7 +3187,7 @@ static int SV_ReadPlat(plat_t *plat)
         if(hdr.version == 5)
         {
         if(!SV_ReadByte())
-            DD_ThinkerSetStasis(&plat->thinker, true);
+            Thinker_SetStasis(&plat->thinker, true);
         }
 #endif
 
@@ -3240,7 +3242,7 @@ static int SV_ReadPlat(plat_t *plat)
         plat->thinker.function = T_PlatRaise;
 #if !__JHEXEN__
         if(!junk.function)
-            DD_ThinkerSetStasis(&plat->thinker, true);
+            Thinker_SetStasis(&plat->thinker, true);
 #endif
     }
 
@@ -4017,9 +4019,9 @@ assert(thInfo->Write);
  *
  * @note Some thinker classes are NEVER saved by clients.
  */
-static void P_ArchiveThinkers(boolean savePlayers)
+static void P_ArchiveThinkers(map_t* map, boolean savePlayers)
 {
-    boolean             localSavePlayers = savePlayers;
+    boolean localSavePlayers = savePlayers;
 
     SV_BeginSegment(ASEG_THINKERS);
 #if __JHEXEN__
@@ -4027,7 +4029,7 @@ static void P_ArchiveThinkers(boolean savePlayers)
 #endif
 
     // Save off the current thinkers.
-    DD_IterateThinkers(NULL, archiveThinker, &localSavePlayers);
+    Map_IterateThinkers(map, NULL, archiveThinker, &localSavePlayers);
 
     // Add a terminating marker.
     SV_WriteLong(TC_END);
@@ -4101,9 +4103,8 @@ static int restoreMobjLinks(void* p, void* context)
 /**
  * Un-Archives thinkers for both client and server.
  */
-static void P_UnArchiveThinkers(void)
+static void P_UnArchiveThinkers(map_t* map)
 {
-    map_t* map = P_CurrentMap();
     uint i;
     byte tClass;
     thinker_t* th = NULL;
@@ -4119,8 +4120,8 @@ static void P_UnArchiveThinkers(void)
     if(IS_SERVER)
 #endif
     {
-        DD_IterateThinkers(NULL, removeThinker, NULL);
-        DD_InitThinkers();
+        Map_IterateThinkers(map, NULL, removeThinker, NULL);
+        Map_InitThinkers(map);
     }
 
 #if __JHEXEN__
@@ -4132,7 +4133,7 @@ static void P_UnArchiveThinkers(void)
 
 #if __JHEXEN__
     targetPlayerAddrs = NULL;
-    SV_InitThingArchive(true, savingPlayers);
+    SV_InitThingArchive(map, true, savingPlayers);
 #endif
 
     // Read in saved thinkers.
@@ -4240,28 +4241,27 @@ static void P_UnArchiveThinkers(void)
                       tClass);
 
         if(knownThinker)
-            DD_ThinkerAdd(th);
+            Map_ThinkerAdd(map, th);
         if(inStasis)
-            DD_ThinkerSetStasis(th, true);
+            Thinker_SetStasis(th, true);
     }
 
     // Update references to things.
 #if __JHEXEN__
-    DD_IterateThinkers(P_MobjThinker, restoreMobjLinks, NULL);
-    P_CreateTIDList(P_CurrentMap());
-    P_AddCreaturesToCorpseQueue();
+    Map_IterateThinkers(map, P_MobjThinker, restoreMobjLinks, NULL);
+    P_CreateTIDList(map);
+    P_AddCreaturesToCorpseQueue(map);
 #else
     if(IS_SERVER)
     {
-        DD_IterateThinkers(P_MobjThinker, restoreMobjLinks, NULL);
+        Map_IterateThinkers(map, P_MobjThinker, restoreMobjLinks, NULL);
 
-        for(i = 0; i < numlines; ++i)
+        for(i = 0; i < Map_NumLineDefs(map); ++i)
         {
             xlinedef_t* xline = P_ToXLine(DMU_ToPtr(DMU_LINEDEF, i));
             if(xline->xg)
                 xline->xg->activator =
-                    SV_GetArchiveThing((int) xline->xg->activator,
-                                       &xline->xg->activator);
+                    SV_GetArchiveThing((int) xline->xg->activator, &xline->xg->activator);
         }
     }
 #endif
@@ -4302,14 +4302,15 @@ static void P_UnArchiveBrain(map_t* map)
 #if !__JHEXEN__
 static void P_ArchiveSoundTargets(void)
 {
-    uint i;
+    map_t* map = P_CurrentMap();
     xsector_t* xsec;
+    uint i;
 
     // Write the total number.
     SV_WriteLong(numSoundTargets);
 
     // Write the mobj references using the mobj archive.
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         xsec = P_ToXSector(DMU_ToPtr(DMU_SECTOR, i));
 
@@ -4323,10 +4324,9 @@ static void P_ArchiveSoundTargets(void)
 
 static void P_UnArchiveSoundTargets(void)
 {
-    uint                i;
-    uint                secid;
-    uint                numsoundtargets;
-    xsector_t*          xsec;
+    map_t* map = P_CurrentMap();
+    uint i, secid, numsoundtargets;
+    xsector_t* xsec;
 
     // Sound Target data was introduced in ver 5
     if(hdr.version < 5)
@@ -4340,7 +4340,7 @@ static void P_UnArchiveSoundTargets(void)
     {
         secid = SV_ReadLong();
 
-        if(secid > numsectors)
+        if(secid > Map_NumSectors(map))
             Con_Error("P_UnArchiveSoundTargets: bad sector number\n");
 
         xsec = P_ToXSector(DMU_ToPtr(DMU_SECTOR, secid));
@@ -4354,10 +4354,11 @@ static void P_UnArchiveSoundTargets(void)
 #if __JHEXEN__
 static void P_ArchiveSounds(void)
 {
-    uint                i;
-    int                 difference;
-    seqnode_t*          node;
-    sector_t*           sec;
+    map_t* map = P_CurrentMap();
+    uint i;
+    int difference;
+    seqnode_t* node;
+    sector_t* sec;
 
     // Save the sound sequences.
     SV_BeginSegment(ASEG_SOUNDS);
@@ -4375,18 +4376,18 @@ static void P_ArchiveSounds(void)
         i = 0;
         if(node->mobj)
         {
-            for(; i < numpolyobjs; ++i)
+            for(; i < Map_NumPolyobjs(map); ++i)
             {
-                if(node->mobj == (mobj_t*) P_GetPolyobj(i | 0x80000000))
+                if(node->mobj == (mobj_t*) Map_Polyobj(map, i | 0x80000000))
                 {
                     break;
                 }
             }
         }
 
-        if(i == numpolyobjs)
+        if(i == Map_NumPolyobjs(map))
         {   // Sound is attached to a sector, not a polyobj.
-            sec = DMU_GetPtrp(P_PointInSubSector(node->mobj->pos[VX], node->mobj->pos[VY]),
+            sec = DMU_GetPtrp(Map_PointInSubsector(map, node->mobj->pos[VX], node->mobj->pos[VY]),
                             DMU_SECTOR);
             difference = DMU_ToIndex(sec);
             SV_WriteLong(0); // 0 -- sector sound origin.
@@ -4400,13 +4401,13 @@ static void P_ArchiveSounds(void)
     }
 }
 
-static void P_UnArchiveSounds(void)
+static void P_UnArchiveSounds(map_t* map)
 {
-    int             i;
-    int             numSequences, sequence, seqOffset;
-    int             delayTics, soundID, volume;
-    int             polySnd, secNum, ver;
-    mobj_t*         sndMobj = NULL;
+    int i;
+    int numSequences, sequence, seqOffset;
+    int delayTics, soundID, volume;
+    int polySnd, secNum, ver;
+    mobj_t* sndMobj = NULL;
 
     AssertSegment(ASEG_SOUNDS);
 
@@ -4432,9 +4433,9 @@ static void P_UnArchiveSounds(void)
         }
         else
         {
-            polyobj_t*          po;
+            polyobj_t* po;
 
-            if((po = P_GetPolyobj(secNum | 0x80000000)))
+            if((po = Map_Polyobj(map, secNum | 0x80000000)))
                 sndMobj = (mobj_t*) po;
         }
 
@@ -4476,10 +4477,10 @@ static void P_ArchiveMap(boolean savePlayers)
     numSoundTargets = 0;
 #endif
 
-    SV_InitMaterialArchives();
+    SV_InitMaterialArchives(map);
 
     P_ArchiveWorld();
-    P_ArchiveThinkers(savePlayers);
+    P_ArchiveThinkers(map, savePlayers);
 
 #if __JHEXEN__
     SV_BeginSegment(ASEG_SCRIPTS);
@@ -4504,9 +4505,8 @@ static void P_ArchiveMap(boolean savePlayers)
     SV_BeginSegment(ASEG_END);
 }
 
-static void P_UnArchiveMap(void)
+static void P_UnArchiveMap(map_t* map)
 {
-    map_t* map = P_CurrentMap();
 #if __JHEXEN__
     int segType = SV_ReadLong();
 
@@ -4534,13 +4534,13 @@ static void P_UnArchiveMap(void)
 #endif
 
     P_UnArchiveWorld();
-    P_UnArchiveThinkers();
+    P_UnArchiveThinkers(map);
 
 #if __JHEXEN__
     AssertSegment(ASEG_SCRIPTS);
     ActionScriptInterpreter_ReadMapState(ActionScriptInterpreter);
 
-    P_UnArchiveSounds();
+    P_UnArchiveSounds(map);
     if(saveVersion < 9)
         P_UnArchiveMisc();
 #else
@@ -4766,7 +4766,7 @@ int SV_SaveGameWorker(void* ptr)
 #endif
 
     // Set the mobj archive numbers
-    SV_InitThingArchive(false, true);
+    SV_InitThingArchive(map, false, true);
 #if !__JHEXEN__
     SV_WriteLong(thingArchiveSize);
 #endif
@@ -4974,7 +4974,7 @@ static boolean SV_LoadGame2(void)
     // Set the time.
     map->time = hdr.mapTime;
 
-    SV_InitThingArchive(true, true);
+    SV_InitThingArchive(map, true, true);
 #endif
 
     P_UnArchivePlayerHeader();
@@ -5003,7 +5003,7 @@ static boolean SV_LoadGame2(void)
 #endif
 
     // Load the current map state.
-    unarchiveMap();
+    unarchiveMap(map);
 
 #if !__JHEXEN__
     // Check consistency.
@@ -5241,17 +5241,17 @@ void SV_LoadClient(unsigned int gameid)
     P_UnArchivePlayerHeader();
     SV_ReadPlayer(cpl);
 
-    P_UnArchiveMap();
+    P_UnArchiveMap(map);
 
     lzClose(savefile);
     free(junkbuffer);
 #endif
 }
 
-static void unarchiveMap(void)
+static void unarchiveMap(map_t* map)
 {
 #if __JHEXEN__
-    filename_t          fileName;
+    filename_t fileName;
 
     // Create the name
     dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02d.hxs", savePath,
@@ -5267,7 +5267,7 @@ static void unarchiveMap(void)
     saveptr.b = saveBuffer;
 #endif
 
-    P_UnArchiveMap();
+    P_UnArchiveMap(map);
 
 #if __JHEXEN__
     // Free mobj list and save buffer
@@ -5276,7 +5276,7 @@ static void unarchiveMap(void)
 #endif
 
     // Spawn particle generators, fix HOMS etc, etc...
-    R_SetupMap(DDSMM_AFTER_LOADING, 0);
+    R_SetupMap(map, DDSMM_AFTER_LOADING, 0);
 }
 
 #if __JHEXEN__
@@ -5309,10 +5309,10 @@ void SV_MapTeleport(int map, int position)
     {
         if(P_GetMapCluster(gameMap) == P_GetMapCluster(map))
         {   // Same cluster - save map without saving player mobjs
-            filename_t          fileName;
+            filename_t fileName;
 
             // Set the mobj archive numbers
-            SV_InitThingArchive(false, false);
+            SV_InitThingArchive(P_CurrentMap(), false, false);
 
             // Open the output file
             dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02d.hxs",
@@ -5357,7 +5357,7 @@ void SV_MapTeleport(int map, int position)
 
     if(revisit)
     {   // Been here before, load the previous map state.
-        unarchiveMap();
+        unarchiveMap(P_CurrentMap());
     }
     else
     {   // First visit.

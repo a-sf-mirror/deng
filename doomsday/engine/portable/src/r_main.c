@@ -296,7 +296,11 @@ void R_Update(void)
         ddpl->pSprites[0].statePtr = ddpl->pSprites[1].statePtr = NULL;
     }
 
-    Map_Update(P_CurrentMap());
+    {
+    map_t* map = P_CurrentMap();
+    if(map)
+        Map_Update(map);
+    }
 
     // The rendering lists have persistent data that has changed during
     // the re-initialization.
@@ -552,7 +556,7 @@ void R_CreateParticleLinks(map_t* map)
 
 BEGIN_PROF( PROF_PARTICLE_INIT_ADD );
 
-    Map_IterateThinkers(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
+    Map_IterateThinkers2(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
                         createObjLinksForParticles, NULL);
 
 END_PROF( PROF_PARTICLE_INIT_ADD );

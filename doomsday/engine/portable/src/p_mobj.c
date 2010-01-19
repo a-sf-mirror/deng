@@ -99,8 +99,6 @@ static mobj_t *slideMo;
 static float tmpDropOffZ;
 static float tmpMom[3];
 
-static mobj_t *unusedMobjs = NULL;
-
 // CODE --------------------------------------------------------------------
 
 /**
@@ -116,18 +114,7 @@ mobj_t* P_MobjCreate(map_t* map, think_t function, float x, float y, float z,
     if(!function)
         Con_Error("P_MobjCreate: Think function invalid, cannot create mobj.");
 
-    // Do we have any unused mobjs we can reuse?
-    if(unusedMobjs)
-    {
-        mo = unusedMobjs;
-        unusedMobjs = unusedMobjs->sNext;
-        memset(mo, 0, MOBJ_SIZE);
-    }
-    else
-    {   // No, we need to allocate another.
-        mo = Z_Calloc(MOBJ_SIZE, PU_STATIC, NULL);
-    }
-
+    mo = Z_Calloc(MOBJ_SIZE, PU_STATIC, NULL);
     mo->pos[VX] = x;
     mo->pos[VY] = y;
     mo->pos[VZ] = z;
@@ -162,19 +149,6 @@ void P_MobjDestroy(mobj_t* mo)
     S_StopSound(0, mo);
 
     Map_RemoveThinker(Thinker_Map((thinker_t*) mo), (thinker_t*) mo);
-}
-
-/**
- * Called when a mobj is actually removed (when it's thinking turn comes around).
- * The mobj is moved to the unused list to be reused later.
- */
-void P_MobjRecycle(mobj_t* mo)
-{
-    assert(mo);
-
-    // The sector next link is used as the unused mobj list links.
-    mo->sNext = unusedMobjs;
-    unusedMobjs = mo;
 }
 
 /**
@@ -367,7 +341,7 @@ boolean P_CheckPosXYZ(mobj_t* mo, float x, float y, float z)
     V2_Set(point, x + mo->radius + DDMOBJ_RADIUS_MAX, y + mo->radius + DDMOBJ_RADIUS_MAX);
     V2_AddToBox(data.box, point);
 
-    newsubsec = Map_PointInSubsector(map, x, y);
+    newsubsec = Map_PointInSubsector2(map, x, y);
 
     // The base floor / ceiling is from the subsector that contains the
     // point. Any contacted lines the step closer together will adjust them.
@@ -418,10 +392,10 @@ boolean P_CheckPosXY(mobj_t *mo, float x, float y)
  * @return              @c true, if the move was successful. Both lines and
  *                      and other mobjs are checked for collisions.
  */
-boolean P_TryMoveXYZ(mobj_t *mo, float x, float y, float z)
+boolean P_TryMoveXYZ(mobj_t* mo, float x, float y, float z)
 {
-    int                 links = 0;
-    boolean             goodPos;
+    int links = 0;
+    boolean goodPos;
 
     blockingMobj = NULL;
 
@@ -851,7 +825,7 @@ void P_MobjMovement2(mobj_t *mo, void *pstate)
 void P_MobjZMovement(mobj_t* mo)
 {
     map_t* map = Thinker_Map((thinker_t*) mo);
-    float gravity = FIX2FLT(map->globalGravity);
+    float gravity = map->gravity;
 
     // Adjust height.
     mo->pos[VZ] += mo->mom[MZ];

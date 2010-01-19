@@ -126,11 +126,11 @@ const terraintype_t* P_MobjGetFloorTerrainType(mobj_t* mo);
 boolean     P_HitFloor(mobj_t* mo);
 
 void        P_NoiseAlert(mobj_t* target, mobj_t* emmiter);
-int         P_Massacre(void);
+int         P_Massacre(struct map_s* map);
 boolean     P_LookForMonsters(mobj_t* mo);
 
 void        P_InitCreatureCorpseQueue(struct map_s* map);
-void        P_AddCreaturesToCorpseQueue(void);
+void        P_AddCreaturesToCorpseQueue(struct map_s* map);
 
 mobj_t*     P_RoughMonsterSearch(mobj_t* mo, int distance);
 

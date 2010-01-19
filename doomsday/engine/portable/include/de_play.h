@@ -48,7 +48,6 @@
 #include "p_maputil.h"
 #include "p_particle.h"
 #include "p_polyob.h"
-#include "p_sight.h"
 #include "p_ticker.h"
 #include "p_players.h"
 #include "p_control.h"

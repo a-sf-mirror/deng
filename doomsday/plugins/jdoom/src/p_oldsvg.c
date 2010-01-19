@@ -375,18 +375,19 @@ void P_v19_UnArchivePlayers(void)
 
 void P_v19_UnArchiveWorld(void)
 {
-    uint                i, j;
-    float               matOffset[2];
-    short              *get;
-    sector_t           *sec;
-    xsector_t          *xsec;
-    linedef_t          *line;
-    xlinedef_t            *xline;
+    map_t* map = P_CurrentMap();
+    uint i, j;
+    float matOffset[2];
+    short* get;
+    sector_t* sec;
+    xsector_t* xsec;
+    linedef_t* line;
+    xlinedef_t* xline;
 
-    get = (short *) savePtr;
+    get = (short*) savePtr;
 
     // Do sectors.
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         sec = DMU_ToPtr(DMU_SECTOR, i);
         xsec = P_ToXSector(sec);
@@ -404,7 +405,7 @@ void P_v19_UnArchiveWorld(void)
     }
 
     // Do lines.
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
         line = DMU_ToPtr(DMU_LINEDEF, i);
         xline = P_ToXLine(line);
@@ -454,11 +455,12 @@ enum thinkerclass_e {
     TC_MOBJ
 };
 
-    byte                tClass;
+    map_t* map = P_CurrentMap();
+    byte tClass;
 
     // Remove all the current thinkers.
-    DD_IterateThinkers(NULL, removeThinker, NULL);
-    DD_InitThinkers();
+    Map_IterateThinkers(map, NULL, removeThinker, NULL);
+    Map_InitThinkers(map);
 
     // Read in saved thinkers.
     for(;;)
@@ -519,7 +521,7 @@ typedef struct {
 
     ceiling->thinker.function = T_MoveCeiling;
     if(!(temp + V19_THINKER_T_FUNC_OFFSET))
-        DD_ThinkerSetStasis(&ceiling->thinker, true);
+        Thinker_SetStasis(&ceiling->thinker, true);
 
     P_ToXSector(ceiling->sector)->specialData = ceiling;
     return true; // Add this thinker.
@@ -641,7 +643,7 @@ typedef struct {
 
     plat->thinker.function = T_PlatRaise;
     if(!(temp + V19_THINKER_T_FUNC_OFFSET))
-        DD_ThinkerSetStasis(&plat->thinker, true);
+        Thinker_SetStasis(&plat->thinker, true);
 
     P_ToXSector(plat->sector)->specialData = plat;
     return true; // Add this thinker.
@@ -763,14 +765,15 @@ void P_v19_UnArchiveSpecials(void)
         tc_endspecials
     };
 
-    byte                tClass;
-    ceiling_t          *ceiling;
-    door_t           *door;
-    floor_t        *floor;
-    plat_t             *plat;
-    lightflash_t       *flash;
-    strobe_t           *strobe;
-    glow_t             *glow;
+    map_t* map = P_CurrentMap();
+    byte tClass;
+    ceiling_t* ceiling;
+    door_t* door;
+    floor_t* floor;
+    plat_t* plat;
+    lightflash_t* flash;
+    strobe_t* strobe;
+    glow_t* glow;
 
     // Read in saved thinkers.
     for(;;)
@@ -787,7 +790,7 @@ void P_v19_UnArchiveSpecials(void)
 
             SV_ReadCeiling(ceiling);
 
-            DD_ThinkerAdd(&ceiling->thinker);
+            Map_ThinkerAdd(map, &ceiling->thinker);
             break;
 
         case tc_door:
@@ -796,7 +799,7 @@ void P_v19_UnArchiveSpecials(void)
 
             SV_ReadDoor(door);
 
-            DD_ThinkerAdd(&door->thinker);
+            Map_ThinkerAdd(map, &door->thinker);
             break;
 
         case tc_floor:
@@ -805,7 +808,7 @@ void P_v19_UnArchiveSpecials(void)
 
             SV_ReadFloor(floor);
 
-            DD_ThinkerAdd(&floor->thinker);
+            Map_ThinkerAdd(map, &floor->thinker);
             break;
 
         case tc_plat:
@@ -814,7 +817,7 @@ void P_v19_UnArchiveSpecials(void)
 
             SV_ReadPlat(plat);
 
-            DD_ThinkerAdd(&plat->thinker);
+            Map_ThinkerAdd(map, &plat->thinker);
             break;
 
         case tc_flash:
@@ -823,7 +826,7 @@ void P_v19_UnArchiveSpecials(void)
 
             SV_ReadFlash(flash);
 
-            DD_ThinkerAdd(&flash->thinker);
+            Map_ThinkerAdd(map, &flash->thinker);
             break;
 
         case tc_strobe:
@@ -832,7 +835,7 @@ void P_v19_UnArchiveSpecials(void)
 
             SV_ReadStrobe(strobe);
 
-            DD_ThinkerAdd(&strobe->thinker);
+            Map_ThinkerAdd(map, &strobe->thinker);
             break;
 
         case tc_glow:
@@ -841,7 +844,7 @@ void P_v19_UnArchiveSpecials(void)
 
             SV_ReadGlow(glow);
 
-            DD_ThinkerAdd(&glow->thinker);
+            Map_ThinkerAdd(map, &glow->thinker);
             break;
 
         default:
@@ -869,7 +872,7 @@ boolean SV_v19_LoadGame(const char* savename)
     sprintf(vcheck, "version %i", SAVE_VERSION);
     if(strcmp((const char*) savePtr, vcheck))
     {
-        int                 saveVer;
+        int saveVer;
 
         sscanf((const char*) savePtr, "version %i", &saveVer);
         if(saveVer >= SAVE_VERSION_BASE)
@@ -914,7 +917,7 @@ boolean SV_v19_LoadGame(const char* savename)
     saveBuffer = NULL;
 
     // Spawn particle generators.
-    R_SetupMap(DDSMM_AFTER_LOADING, 0);
+    R_SetupMap(map, DDSMM_AFTER_LOADING, 0);
 
     return true;
 }

@@ -160,8 +160,7 @@ mobj_t* P_RoughMonsterSearch(mobj_t* mo, int distance)
     float mapOrigin[2], box[4];
     mobjtargetableparams_t params;
 
-    mapOrigin[VX] = *((float*) DD_GetVariable(DD_MAP_MIN_X));
-    mapOrigin[VY] = *((float*) DD_GetVariable(DD_MAP_MIN_Y));
+    Map_Bounds(Thinker_Map((thinker_t*) mo), mapOrigin, NULL);
 
     // The original blockmap generator added a border of 8 units.
     mapOrigin[VX] -= 8;
@@ -184,7 +183,7 @@ mobj_t* P_RoughMonsterSearch(mobj_t* mo, int distance)
 
     // Check the first block.
     VALIDCOUNT++;
-    if(!P_MobjsBoxIterator(box, PIT_MobjTargetable, &params))
+    if(!Map_MobjsBoxIterator(Thinker_Map((thinker_t*) mo), box, PIT_MobjTargetable, &params))
     {   // Found a target right away!
         return params.target;
     }
@@ -202,7 +201,7 @@ mobj_t* P_RoughMonsterSearch(mobj_t* mo, int distance)
         // Trace the first block section (along the top).
         for(i = 0; i < count * 2 + 1; ++i)
         {
-            if(!P_MobjsBoxIterator(box, PIT_MobjTargetable, &params))
+            if(!Map_MobjsBoxIterator(Thinker_Map((thinker_t*) mo), box, PIT_MobjTargetable, &params))
                 return params.target;
 
             if(i < count * 2)
@@ -218,7 +217,7 @@ mobj_t* P_RoughMonsterSearch(mobj_t* mo, int distance)
             box[BOXBOTTOM] += MAPBLOCKUNITS;
             box[BOXTOP]    += MAPBLOCKUNITS;
 
-            if(!P_MobjsBoxIterator(box, PIT_MobjTargetable, &params))
+            if(!Map_MobjsBoxIterator(Thinker_Map((thinker_t*) mo), box, PIT_MobjTargetable, &params))
                 return params.target;
         }
 
@@ -228,7 +227,7 @@ mobj_t* P_RoughMonsterSearch(mobj_t* mo, int distance)
             box[BOXLEFT]  -= MAPBLOCKUNITS;
             box[BOXRIGHT] -= MAPBLOCKUNITS;
 
-            if(!P_MobjsBoxIterator(box, PIT_MobjTargetable, &params))
+            if(!Map_MobjsBoxIterator(Thinker_Map((thinker_t*) mo), box, PIT_MobjTargetable, &params))
                 return params.target;
         }
 
@@ -238,7 +237,7 @@ mobj_t* P_RoughMonsterSearch(mobj_t* mo, int distance)
             box[BOXBOTTOM] -= MAPBLOCKUNITS;
             box[BOXTOP]    -= MAPBLOCKUNITS;
 
-            if(!P_MobjsBoxIterator(box, PIT_MobjTargetable, &params))
+            if(!Map_MobjsBoxIterator(Thinker_Map((thinker_t*) mo), box, PIT_MobjTargetable, &params))
                 return params.target;
         }
     }

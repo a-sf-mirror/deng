@@ -96,7 +96,7 @@ static void stopCeiling(ceiling_t* ceiling)
 #if __JHEXEN__
     ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(ceiling->sector)->tag);
 #endif
-    DD_ThinkerRemove(&ceiling->thinker);
+    Map_RemoveThinker(Thinker_Map((thinker_t*) ceiling), (thinker_t*) ceiling);
 }
 
 void T_MoveCeiling(ceiling_t* ceiling)
@@ -296,7 +296,7 @@ static int EV_DoCeiling2(map_t* map, int tag, float basespeed, ceilingtype_e typ
         // New door thinker.
         ceiling = Z_Calloc(sizeof(*ceiling), PU_MAP, 0);
         ceiling->thinker.function = T_MoveCeiling;
-        DD_ThinkerAdd(&ceiling->thinker);
+        Map_ThinkerAdd(map, &ceiling->thinker);
 
         xsec->specialData = ceiling;
 
@@ -469,7 +469,7 @@ int EV_DoCeiling(linedef_t* line, ceilingtype_e type)
     case CT_SILENTCRUSHANDRAISE:
 # endif
     case CT_CRUSHANDRAISE:
-        rtn = P_CeilingActivate(P_ToXLine(line)->tag);
+        rtn = P_CeilingActivate(map, P_ToXLine(line)->tag);
         break;
 
     default:
@@ -498,7 +498,7 @@ static int activateCeiling(void* p, void* context)
     if(ceiling->tag == (int) params->tag && ceiling->thinker.inStasis)
     {
         ceiling->state = ceiling->oldState;
-        DD_ThinkerSetStasis(&ceiling->thinker, false);
+        Thinker_SetStasis(&ceiling->thinker, false);
         params->count++;
     }
 
@@ -512,15 +512,18 @@ static int activateCeiling(void* p, void* context)
  *
  * @return              @c true, if a ceiling is activated.
  */
-int P_CeilingActivate(short tag)
+int P_CeilingActivate(map_t* map, short tag)
 {
+    assert(map);
+    {
     activateceilingparams_t params;
 
     params.tag = tag;
     params.count = 0;
-    DD_IterateThinkers(T_MoveCeiling, activateCeiling, &params);
+    Map_IterateThinkers(map, T_MoveCeiling, activateCeiling, &params);
 
     return params.count;
+    }
 }
 #endif
 
@@ -531,7 +534,7 @@ typedef struct {
 
 static int deactivateCeiling(void* p, void* context)
 {
-    ceiling_t*          ceiling = (ceiling_t*) p;
+    ceiling_t* ceiling = (ceiling_t*) p;
     deactivateceilingparams_t* params =
         (deactivateceilingparams_t*) context;
 
@@ -547,7 +550,7 @@ static int deactivateCeiling(void* p, void* context)
     if(!ceiling->thinker.inStasis && ceiling->tag == (int) params->tag)
     {   // Put it into stasis.
         ceiling->oldState = ceiling->state;
-        DD_ThinkerSetStasis(&ceiling->thinker, true);
+        Thinker_SetStasis(&ceiling->thinker, true);
         params->count++;
     }
 #endif
@@ -561,13 +564,16 @@ static int deactivateCeiling(void* p, void* context)
  *
  * @return              @c true, if a ceiling put in stasis.
  */
-int P_CeilingDeactivate(short tag)
+int P_CeilingDeactivate(map_t* map, short tag)
 {
+    assert(map);
+    {
     deactivateceilingparams_t params;
 
     params.tag = tag;
     params.count = 0;
-    DD_IterateThinkers(T_MoveCeiling, deactivateCeiling, &params);
+    Map_IterateThinkers(map, T_MoveCeiling, deactivateCeiling, &params);
 
     return params.count;
+    }
 }

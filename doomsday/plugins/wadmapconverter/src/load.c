@@ -125,25 +125,23 @@ static int C_DECL compareMaterialNames(const void* a, const void* b)
 static materialref_t* getMaterial2(const char* regName,
                                    materialref_t* const ** list, size_t size)
 {
-    int                 result;
-    size_t              bottomIdx, topIdx, pivot;
-    materialref_t*      m;
-    boolean             isDone;
-    char                name[9];
+    int result;
+    size_t bottomIdx, topIdx, pivot;
+    materialref_t* m;
+    boolean isDone;
+    char name[9];
 
     if(size == 0)
         return NULL;
 
-    if(map->format == MF_DOOM64)
+    if(wadmap->format == MF_DOOM64)
     {
-        int                 idx = *((int*) regName);
-
+        int idx = *((int*) regName);
         dd_snprintf(name, 9, "UNK%05i", idx);
     }
     else
     {
-        size_t              len = MIN_OF(8, strlen(regName));
-
+        size_t len = MIN_OF(8, strlen(regName));
         strncpy(name, regName, len);
         name[len] = '\0';
     }
@@ -186,14 +184,14 @@ static materialref_t* getMaterial2(const char* regName,
 
 static materialref_t* getMaterial(const char* name, boolean isFlat)
 {
-    return getMaterial2(name, isFlat? &map->flats : &map->textures,
-                        isFlat? map->numFlats : map->numTextures);
+    return getMaterial2(name, isFlat? &wadmap->flats : &wadmap->textures,
+                        isFlat? wadmap->numFlats : wadmap->numTextures);
 }
 
 static void addMaterialToList(materialref_t* m, materialref_t*** list,
                               size_t* size)
 {
-    size_t              i;
+    size_t i;
 
     // Enlarge the list.
     (*list) = realloc((*list), sizeof(m) * ++(*size));
@@ -221,11 +219,11 @@ static __inline boolean isUnknownMaterialRef(const materialref_t* m, boolean isF
 
 const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
 {
-    materialref_t*      m;
+    materialref_t* m;
 
     // When loading DOOM or Hexen format maps check for the special case "-"
     // texture name (no texture).
-    if(!isFlat && (map->format == MF_DOOM || map->format == MF_HEXEN) &&
+    if(!isFlat && (wadmap->format == MF_DOOM || wadmap->format == MF_HEXEN) &&
        !stricmp(name, "-"))
         return NULL;
 
@@ -242,9 +240,9 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
          */
         m = malloc(sizeof(*m));
 
-        if(map->format == MF_DOOM64)
+        if(wadmap->format == MF_DOOM64)
         {
-            int                 idx = *((int*) name);
+            int idx = *((int*) name);
 
             dd_snprintf(m->name, 9, "UNK%05i", idx);
 
@@ -254,7 +252,7 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
         }
         else
         {
-            size_t          len = MIN_OF(8, strlen(name));
+            size_t len = MIN_OF(8, strlen(name));
 
             strncpy(m->name, name, len);
             m->name[len] = '\0';
@@ -265,16 +263,16 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
         }
 
         // Add it to the material reference list.
-        addMaterialToList(m, isFlat? &map->flats : &map->textures,
-                          isFlat? &map->numFlats : &map->numTextures);
+        addMaterialToList(m, isFlat? &wadmap->flats : &wadmap->textures,
+                          isFlat? &wadmap->numFlats : &wadmap->numTextures);
         m->refCount = 1;
 
         if(isUnknownMaterialRef(m, isFlat))
         {
             if(isFlat)
-                ++map->numUnknownFlats;
+                ++wadmap->numUnknownFlats;
             else
-                ++map->numUnknownTextures;
+                ++wadmap->numUnknownTextures;
         }
 
         return m;
@@ -285,34 +283,34 @@ void LogUnknownMaterials(void)
 {
     static const char* nameStr[] = { "name", "names" };
 
-    if(map->numUnknownFlats)
+    if(wadmap->numUnknownFlats)
     {
-        size_t              i;
+        size_t i;
 
         Con_Message("WadMapConverter: Warning: Found %u bad flat %s:\n",
-                    map->numUnknownFlats,
-                    nameStr[map->numUnknownFlats? 1 : 0]);
+                    wadmap->numUnknownFlats,
+                    nameStr[wadmap->numUnknownFlats? 1 : 0]);
 
-        for(i = 0; i < map->numFlats; ++i)
+        for(i = 0; i < wadmap->numFlats; ++i)
         {
-            materialref_t*      m = map->flats[i];
+            materialref_t* m = wadmap->flats[i];
 
             if(isUnknownMaterialRef(m, true))
                 Con_Message(" %4u x \"%s\"\n", m->refCount, m->name);
         }
     }
 
-    if(map->numUnknownTextures)
+    if(wadmap->numUnknownTextures)
     {
         size_t              i;
 
         Con_Message("WadMapConverter: Warning: Found %u bad texture %s:\n",
-                    map->numUnknownTextures,
-                    nameStr[map->numUnknownTextures? 1 : 0]);
+                    wadmap->numUnknownTextures,
+                    nameStr[wadmap->numUnknownTextures? 1 : 0]);
 
-        for(i = 0; i < map->numTextures; ++i)
+        for(i = 0; i < wadmap->numTextures; ++i)
         {
-            materialref_t*      m = map->textures[i];
+            materialref_t*      m = wadmap->textures[i];
 
             if(isUnknownMaterialRef(m, false))
                 Con_Message(" %4u x \"%s\"\n", m->refCount, m->name);
@@ -767,20 +765,20 @@ static boolean createPolyobj(mline_t **lineList, uint num, uint *poIdx,
     /**
      * Link the new polyobj into the global list.
      */
-    newList = malloc(((++map->numPolyobjs) + 1) * sizeof(mpolyobj_t*));
+    newList = malloc(((++wadmap->numPolyobjs) + 1) * sizeof(mpolyobj_t*));
     // Copy the existing list.
-    for(i = 0; i < map->numPolyobjs - 1; ++i)
+    for(i = 0; i < wadmap->numPolyobjs - 1; ++i)
     {
-        newList[i] = map->polyobjs[i];
+        newList[i] = wadmap->polyobjs[i];
     }
     newList[i++] = po; // Add the new polyobj.
     newList[i] = NULL; // Terminate.
 
-    if(map->numPolyobjs-1 > 0)
-        free(map->polyobjs);
-    map->polyobjs = newList;
+    if(wadmap->numPolyobjs-1 > 0)
+        free(wadmap->polyobjs);
+    wadmap->polyobjs = newList;
 
-    po->idx = map->numPolyobjs-1;
+    po->idx = wadmap->numPolyobjs-1;
     po->tag = tag;
     po->seqType = sequenceType;
     po->anchor[VX] = anchorX;
@@ -792,7 +790,7 @@ static boolean createPolyobj(mline_t **lineList, uint num, uint *poIdx,
         // This line is part of a polyobj.
         lineList[i]->aFlags |= LAF_POLYOBJ;
 
-        po->lineIndices[i] = lineList[i] - map->lines;
+        po->lineIndices[i] = lineList[i] - wadmap->lines;
     }
 
     if(poIdx)
@@ -814,15 +812,15 @@ static boolean iterFindPolyLines(int16_t x, int16_t y, mline_t **lineList)
         return true;
     }
 
-    for(i = 0; i < map->numLines; ++i)
+    for(i = 0; i < wadmap->numLines; ++i)
     {
-        mline_t        *line = &map->lines[i];
+        mline_t        *line = &wadmap->lines[i];
         int16_t        v1[2], v2[2];
 
-        v1[VX] = (int16_t) map->vertexes[(line->v[0] - 1) * 2];
-        v1[VY] = (int16_t) map->vertexes[(line->v[0] - 1) * 2 + 1];
-        v2[VX] = (int16_t) map->vertexes[(line->v[1] - 1) * 2];
-        v2[VY] = (int16_t) map->vertexes[(line->v[1] - 1) * 2 + 1];
+        v1[VX] = (int16_t) wadmap->vertexes[(line->v[0] - 1) * 2];
+        v1[VY] = (int16_t) wadmap->vertexes[(line->v[0] - 1) * 2 + 1];
+        v2[VX] = (int16_t) wadmap->vertexes[(line->v[1] - 1) * 2];
+        v2[VY] = (int16_t) wadmap->vertexes[(line->v[1] - 1) * 2 + 1];
 
         if(v1[VX] == x && v1[VY] == y)
         {
@@ -854,9 +852,9 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
 
     uint                i;
 
-    for(i = 0; i < map->numLines; ++i)
+    for(i = 0; i < wadmap->numLines; ++i)
     {
-        mline_t            *line = &map->lines[i];
+        mline_t            *line = &wadmap->lines[i];
 
         if(line->xType == PO_LINE_START && line->xArgs[0] == tag)
         {
@@ -869,10 +867,10 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
             line->xArgs[0] = 0;
             PolyLineCount = 1;
 
-            v1[VX] = (int16_t) map->vertexes[(line->v[0]-1) * 2];
-            v1[VY] = (int16_t) map->vertexes[(line->v[0]-1) * 2 + 1];
-            v2[VX] = (int16_t) map->vertexes[(line->v[1]-1) * 2];
-            v2[VY] = (int16_t) map->vertexes[(line->v[1]-1) * 2 + 1];
+            v1[VX] = (int16_t) wadmap->vertexes[(line->v[0]-1) * 2];
+            v1[VY] = (int16_t) wadmap->vertexes[(line->v[0]-1) * 2 + 1];
+            v2[VX] = (int16_t) wadmap->vertexes[(line->v[1]-1) * 2];
+            v2[VY] = (int16_t) wadmap->vertexes[(line->v[1]-1) * 2 + 1];
             PolyStart[VX] = v1[VX];
             PolyStart[VY] = v1[VY];
             if(!iterFindPolyLines(v2[VX], v2[VY], NULL))
@@ -914,9 +912,9 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
     for(j = 1; j < MAXPOLYLINES; ++j)
     {
         psIndexOld = psIndex;
-        for(i = 0; i < map->numLines; ++i)
+        for(i = 0; i < wadmap->numLines; ++i)
         {
-            mline_t         *line = &map->lines[i];
+            mline_t         *line = &wadmap->lines[i];
 
             if(line->xType == PO_LINE_EXPLICIT &&
                line->xArgs[0] == tag)
@@ -952,9 +950,9 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
         {   // Check if an explicit line order has been skipped
             // A line has been skipped if there are any more explicit
             // lines with the current tag value
-            for(i = 0; i < map->numLines; ++i)
+            for(i = 0; i < wadmap->numLines; ++i)
             {
-                mline_t         *line = &map->lines[i];
+                mline_t         *line = &wadmap->lines[i];
 
                 if(line->xType == PO_LINE_EXPLICIT &&
                    line->xArgs[0] == tag)
@@ -997,9 +995,9 @@ static void findPolyobjs(void)
 
     VERBOSE(Con_Message("WadMapConverter::findPolyobjs: Processing...\n"));
 
-    for(i = 0; i < map->numThings; ++i)
+    for(i = 0; i < wadmap->numThings; ++i)
     {
-        mthing_t           *thing = &map->things[i];
+        mthing_t           *thing = &wadmap->things[i];
 
         if(thing->doomEdNum == PO_ANCHOR_DOOMEDNUM)
         {   // A polyobj anchor.
@@ -1012,7 +1010,7 @@ static void findPolyobjs(void)
 
 void AnalyzeMap(void)
 {
-    if(map->format == MF_HEXEN)
+    if(wadmap->format == MF_HEXEN)
         findPolyobjs();
 }
 
@@ -1023,7 +1021,7 @@ boolean IsSupportedFormat(const int *lumpList, int numLumps)
 
     // Lets first check for format specific lumps, as their prescense
     // determines the format of the map data. Assume DOOM format by default.
-    map->format = MF_DOOM;
+    wadmap->format = MF_DOOM;
     for(i = 0; i < numLumps; ++i)
     {
         const char*         lumpName = W_LumpName(lumpList[i]);
@@ -1033,7 +1031,7 @@ boolean IsSupportedFormat(const int *lumpList, int numLumps)
 
         if(!strncmp(lumpName, "BEHAVIOR", 8))
         {
-            map->format = MF_HEXEN;
+            wadmap->format = MF_HEXEN;
             break;
         }
 
@@ -1041,7 +1039,7 @@ boolean IsSupportedFormat(const int *lumpList, int numLumps)
            !strncmp(lumpName, "LIGHTS", 6) ||
            !strncmp(lumpName, "LEAFS", 5))
         {
-            map->format = MF_DOOM64;
+            wadmap->format = MF_DOOM64;
             break;
         }
     }
@@ -1052,42 +1050,42 @@ boolean IsSupportedFormat(const int *lumpList, int numLumps)
         size_t              elmSize = 0; // Num of bytes.
         const char*         lumpName = W_LumpName(lumpList[i]);
 
-        // Determine the number of map data objects of each data type.
+        // Determine the number of wadmap data objects of each data type.
         ptr = NULL;
         switch(DataTypeForLumpName(lumpName))
         {
         case ML_VERTEXES:
-            ptr = &map->numVertexes;
-            elmSize = (map->format == MF_DOOM64? SIZEOF_64VERTEX :
+            ptr = &wadmap->numVertexes;
+            elmSize = (wadmap->format == MF_DOOM64? SIZEOF_64VERTEX :
                 SIZEOF_VERTEX);
             break;
 
         case ML_THINGS:
-            ptr = &map->numThings;
-            elmSize = (map->format == MF_DOOM64? SIZEOF_64THING :
-                map->format == MF_HEXEN? SIZEOF_XTHING : SIZEOF_THING);
+            ptr = &wadmap->numThings;
+            elmSize = (wadmap->format == MF_DOOM64? SIZEOF_64THING :
+                wadmap->format == MF_HEXEN? SIZEOF_XTHING : SIZEOF_THING);
             break;
 
         case ML_LINEDEFS:
-            ptr = &map->numLines;
-            elmSize = (map->format == MF_DOOM64? SIZEOF_64LINEDEF :
-                map->format == MF_HEXEN? SIZEOF_XLINEDEF : SIZEOF_LINEDEF);
+            ptr = &wadmap->numLines;
+            elmSize = (wadmap->format == MF_DOOM64? SIZEOF_64LINEDEF :
+                wadmap->format == MF_HEXEN? SIZEOF_XLINEDEF : SIZEOF_LINEDEF);
             break;
 
         case ML_SIDEDEFS:
-            ptr = &map->numSides;
-            elmSize = (map->format == MF_DOOM64? SIZEOF_64SIDEDEF :
+            ptr = &wadmap->numSides;
+            elmSize = (wadmap->format == MF_DOOM64? SIZEOF_64SIDEDEF :
                 SIZEOF_SIDEDEF);
             break;
 
         case ML_SECTORS:
-            ptr = &map->numSectors;
+            ptr = &wadmap->numSectors;
             elmSize =
-                (map->format == MF_DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR);
+                (wadmap->format == MF_DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR);
             break;
 
         case ML_LIGHTS:
-            ptr = &map->numLights;
+            ptr = &wadmap->numLights;
             elmSize = SIZEOF_LIGHT;
             break;
 
@@ -1106,8 +1104,8 @@ boolean IsSupportedFormat(const int *lumpList, int numLumps)
         }
     }
 
-    if(map->numVertexes > 0 && map->numLines > 0 && map->numSides > 0 &&
-       map->numSectors > 0)
+    if(wadmap->numVertexes > 0 && wadmap->numLines > 0 && wadmap->numSides > 0 &&
+       wadmap->numSectors > 0)
     {
         supported = true;
     }
@@ -1117,70 +1115,70 @@ boolean IsSupportedFormat(const int *lumpList, int numLumps)
 
 static void freeMapData(void)
 {
-    if(map->vertexes)
-        free(map->vertexes);
-    map->vertexes = NULL;
+    if(wadmap->vertexes)
+        free(wadmap->vertexes);
+    wadmap->vertexes = NULL;
 
-    if(map->lines)
-        free(map->lines);
-    map->lines = NULL;
+    if(wadmap->lines)
+        free(wadmap->lines);
+    wadmap->lines = NULL;
 
-    if(map->sides)
-        free(map->sides);
-    map->sides = NULL;
+    if(wadmap->sides)
+        free(wadmap->sides);
+    wadmap->sides = NULL;
 
-    if(map->sectors)
-        free(map->sectors);
-    map->sectors = NULL;
+    if(wadmap->sectors)
+        free(wadmap->sectors);
+    wadmap->sectors = NULL;
 
-    if(map->things)
-        free(map->things);
-    map->things = NULL;
+    if(wadmap->things)
+        free(wadmap->things);
+    wadmap->things = NULL;
 
-    if(map->polyobjs)
+    if(wadmap->polyobjs)
     {
         uint                i;
-        for(i = 0; i < map->numPolyobjs; ++i)
+        for(i = 0; i < wadmap->numPolyobjs; ++i)
         {
-            mpolyobj_t*         po = map->polyobjs[i];
+            mpolyobj_t*         po = wadmap->polyobjs[i];
             free(po->lineIndices);
             free(po);
         }
-        free(map->polyobjs);
+        free(wadmap->polyobjs);
     }
-    map->polyobjs = NULL;
+    wadmap->polyobjs = NULL;
 
-    if(map->lights)
-        free(map->lights);
-    map->lights = NULL;
+    if(wadmap->lights)
+        free(wadmap->lights);
+    wadmap->lights = NULL;
 
-    /*if(map->macros)
-        free(map->macros);
-    map->macros = NULL;*/
+    /*if(wadmap->macros)
+        free(wadmap->macros);
+    wadmap->macros = NULL;*/
 
-    if(map->textures)
+    if(wadmap->textures)
     {
         size_t              i;
-        for(i = 0; i < map->numTextures; ++i)
+        for(i = 0; i < wadmap->numTextures; ++i)
         {
-            materialref_t*      m = map->textures[i];
+            materialref_t*      m = wadmap->textures[i];
             free(m);
         }
-        free(map->textures);
+        free(wadmap->textures);
     }
-    map->textures = NULL;
+    wadmap->textures = NULL;
 
-    if(map->flats)
+    if(wadmap->flats)
     {
         size_t              i;
-        for(i = 0; i < map->numFlats; ++i)
+        for(i = 0; i < wadmap->numFlats; ++i)
         {
-            materialref_t*      m = map->flats[i];
+            materialref_t*      m = wadmap->flats[i];
             free(m);
         }
-        free(map->flats);
+        free(wadmap->flats);
     }
-    map->flats = NULL;
+    wadmap->flats = NULL;
 }
 
 static boolean loadVertexes(const byte* buf, size_t len)
@@ -1191,24 +1189,24 @@ static boolean loadVertexes(const byte* buf, size_t len)
 
     VERBOSE(Con_Message("WadMapConverter::loadVertexes: Processing...\n"));
 
-    elmSize = (map->format == MF_DOOM64? SIZEOF_64VERTEX : SIZEOF_VERTEX);
+    elmSize = (wadmap->format == MF_DOOM64? SIZEOF_64VERTEX : SIZEOF_VERTEX);
     num = len / elmSize;
-    switch(map->format)
+    switch(wadmap->format)
     {
     default:
     case MF_DOOM:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            map->vertexes[n * 2] = (float) SHORT(*((const int16_t*) (ptr)));
-            map->vertexes[n * 2 + 1] = (float) SHORT(*((const int16_t*) (ptr+2)));
+            wadmap->vertexes[n * 2] = (float) SHORT(*((const int16_t*) (ptr)));
+            wadmap->vertexes[n * 2 + 1] = (float) SHORT(*((const int16_t*) (ptr+2)));
         }
         break;
 
     case MF_DOOM64:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            map->vertexes[n * 2] = FIX2FLT(LONG(*((const int32_t*) (ptr))));
-            map->vertexes[n * 2 + 1] = FIX2FLT(LONG(*((const int32_t*) (ptr+4))));
+            wadmap->vertexes[n * 2] = FIX2FLT(LONG(*((const int32_t*) (ptr))));
+            wadmap->vertexes[n * 2 + 1] = FIX2FLT(LONG(*((const int32_t*) (ptr+4))));
         }
         break;
     }
@@ -1224,18 +1222,18 @@ static boolean loadLinedefs(const byte* buf, size_t len)
 
     VERBOSE(Con_Message("WadMapConverter::loadLinedefs: Processing...\n"));
 
-    elmSize = (map->format == MF_DOOM64? SIZEOF_64LINEDEF :
-        map->format == MF_HEXEN? SIZEOF_XLINEDEF : SIZEOF_LINEDEF);
+    elmSize = (wadmap->format == MF_DOOM64? SIZEOF_64LINEDEF :
+        wadmap->format == MF_HEXEN? SIZEOF_XLINEDEF : SIZEOF_LINEDEF);
     num = len / elmSize;
 
-    switch(map->format)
+    switch(wadmap->format)
     {
     default:
     case MF_DOOM:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
             int                 idx;
-            mline_t*            l = &map->lines[n];
+            mline_t*            l = &wadmap->lines[n];
 
             idx = USHORT(*((const uint16_t*) (ptr)));
             if(idx == 0xFFFF)
@@ -1268,7 +1266,7 @@ static boolean loadLinedefs(const byte* buf, size_t len)
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
             int                 idx;
-            mline_t*            l = &map->lines[n];
+            mline_t*            l = &wadmap->lines[n];
 
             idx = USHORT(*((const uint16_t*) (ptr)));
             if(idx == 0xFFFF)
@@ -1304,7 +1302,7 @@ static boolean loadLinedefs(const byte* buf, size_t len)
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
             int                 idx;
-            mline_t*            l = &map->lines[n];
+            mline_t*            l = &wadmap->lines[n];
 
             idx = USHORT(*((const uint16_t*) (ptr)));
             if(idx == 0xFFFF)
@@ -1348,10 +1346,10 @@ static boolean loadSidedefs(const byte* buf, size_t len)
 
     VERBOSE(Con_Message("WadMapConverter::loadSidedefs: Processing...\n"));
 
-    elmSize = (map->format == MF_DOOM64? SIZEOF_64SIDEDEF : SIZEOF_SIDEDEF);
+    elmSize = (wadmap->format == MF_DOOM64? SIZEOF_64SIDEDEF : SIZEOF_SIDEDEF);
     num = len / elmSize;
 
-    switch(map->format)
+    switch(wadmap->format)
     {
     default:
     case MF_DOOM:
@@ -1359,7 +1357,7 @@ static boolean loadSidedefs(const byte* buf, size_t len)
         {
             int                 idx;
             char                name[9];
-            mside_t*            s = &map->sides[n];
+            mside_t*            s = &wadmap->sides[n];
 
             s->offset[VX] = SHORT(*((const int16_t*) (ptr)));
             s->offset[VY] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1384,7 +1382,7 @@ static boolean loadSidedefs(const byte* buf, size_t len)
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
             int                 idx;
-            mside_t*            s = &map->sides[n];
+            mside_t*            s = &wadmap->sides[n];
 
             s->offset[VX] = SHORT(*((const int16_t*) (ptr)));
             s->offset[VY] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1414,16 +1412,16 @@ static boolean loadSectors(const byte* buf, size_t len)
 
     VERBOSE(Con_Message("WadMapConverter::loadSectors: Processing...\n"));
 
-    elmSize = (map->format == MF_DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR);
+    elmSize = (wadmap->format == MF_DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR);
     num = len / elmSize;
 
-    switch(map->format)
+    switch(wadmap->format)
     {
     default:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
             char                name[9];
-            msector_t*          s = &map->sectors[n];
+            msector_t*          s = &wadmap->sectors[n];
 
             s->floorHeight = SHORT(*((const int16_t*) ptr));
             s->ceilHeight = SHORT(*((const int16_t*) (ptr+2)));
@@ -1443,7 +1441,7 @@ static boolean loadSectors(const byte* buf, size_t len)
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
             int                 idx;
-            msector_t*          s = &map->sectors[n];
+            msector_t*          s = &wadmap->sectors[n];
 
             s->floorHeight = SHORT(*((const int16_t*) ptr));
             s->ceilHeight = SHORT(*((const int16_t*) (ptr+2)));
@@ -1481,11 +1479,11 @@ static boolean loadThings(const byte* buf, size_t len)
 
     VERBOSE(Con_Message("WadMapConverter::loadThings: Processing...\n"));
 
-    elmSize = (map->format == MF_DOOM64? SIZEOF_64THING :
-        map->format == MF_HEXEN? SIZEOF_XTHING : SIZEOF_THING);
+    elmSize = (wadmap->format == MF_DOOM64? SIZEOF_64THING :
+        wadmap->format == MF_HEXEN? SIZEOF_XTHING : SIZEOF_THING);
     num = len / elmSize;
 
-    switch(map->format)
+    switch(wadmap->format)
     {
     default:
     case MF_DOOM:
@@ -1506,7 +1504,7 @@ static boolean loadThings(const byte* buf, size_t len)
 
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            mthing_t*           t = &map->things[n];
+            mthing_t*           t = &wadmap->things[n];
 
             t->pos[VX] = SHORT(*((const int16_t*) (ptr)));
             t->pos[VY] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1553,7 +1551,7 @@ static boolean loadThings(const byte* buf, size_t len)
 
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            mthing_t*           t = &map->things[n];
+            mthing_t*           t = &wadmap->things[n];
 
             t->pos[VX] = SHORT(*((const int16_t*) (ptr)));
             t->pos[VY] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1611,7 +1609,7 @@ static boolean loadThings(const byte* buf, size_t len)
 
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            mthing_t*           t = &map->things[n];
+            mthing_t*           t = &wadmap->things[n];
 
             t->xTID = SHORT(*((const int16_t*) (ptr)));
             t->pos[VX] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1688,7 +1686,7 @@ static boolean loadLights(const byte* buf, size_t len)
     num = len / elmSize;
     for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
     {
-        surfacetint_t*           t = &map->lights[n];
+        surfacetint_t*           t = &wadmap->lights[n];
 
         t->rgb[0] = (float) *(ptr) / 255;
         t->rgb[1] = (float) *(ptr+1) / 255;
@@ -1723,13 +1721,13 @@ boolean LoadMap(const int* lumpList, int numLumps)
     size_t              oldLen = 0;
 
     // Allocate the data structure arrays.
-    map->vertexes = malloc(map->numVertexes * 2 * sizeof(float));
-    map->lines = malloc(map->numLines * sizeof(mline_t));
-    map->sides = malloc(map->numSides * sizeof(mside_t));
-    map->sectors = malloc(map->numSectors * sizeof(msector_t));
-    map->things = malloc(map->numThings * sizeof(mthing_t));
-    if(map->numLights)
-        map->lights = malloc(map->numLights * sizeof(surfacetint_t));
+    wadmap->vertexes = malloc(wadmap->numVertexes * 2 * sizeof(float));
+    wadmap->lines = malloc(wadmap->numLines * sizeof(mline_t));
+    wadmap->sides = malloc(wadmap->numSides * sizeof(mside_t));
+    wadmap->sectors = malloc(wadmap->numSectors * sizeof(msector_t));
+    wadmap->things = malloc(wadmap->numThings * sizeof(mthing_t));
+    if(wadmap->numLights)
+        wadmap->lights = malloc(wadmap->numLights * sizeof(surfacetint_t));
 
     for(i = 0; i < numLumps; ++i)
     {
@@ -1762,7 +1760,7 @@ boolean LoadMap(const int* lumpList, int numLumps)
             break;
 
         case ML_THINGS:
-            if(map->numThings)
+            if(wadmap->numThings)
             {
                 bufferLump(lumpList[i], &buf, &len, &oldLen);
                 loadThings(buf, len);
@@ -1770,7 +1768,7 @@ boolean LoadMap(const int* lumpList, int numLumps)
             break;
 
         case ML_LIGHTS:
-            if(map->numLights)
+            if(wadmap->numLights)
             {
                 bufferLump(lumpList[i], &buf, &len, &oldLen);
                 loadLights(buf, len);
@@ -1795,66 +1793,68 @@ boolean LoadMap(const int* lumpList, int numLumps)
 boolean TransferMap(void)
 {
     uint startTime = Sys_GetRealTime();
+
+    struct map_s* map = P_CurrentMap();
     boolean result;
     uint i;
 
-    // Announce any bad material names we came across while loading the map.
+    // Announce any bad material names we came across while loading.
     LogUnknownMaterials();
 
     VERBOSE(Con_Message("WadMapConverter::TransferMap...\n"));
 
-    MPE_Begin();
+    MPE_Begin(map);
 
     // Create all the data structures.
     VERBOSE(Con_Message("WadMapConverter::Transfering vertexes...\n"));
-    MPE_CreateVertices(map->numVertexes, map->vertexes, NULL);
+    MPE_CreateVertices(map, wadmap->numVertexes, wadmap->vertexes, NULL);
 
     VERBOSE(Con_Message("WadMapConverter::Transfering sectors...\n"));
-    for(i = 0; i < map->numSectors; ++i)
+    for(i = 0; i < wadmap->numSectors; ++i)
     {
-        msector_t* sec = &map->sectors[i];
+        msector_t* sec = &wadmap->sectors[i];
         uint sectorIDX, floorIDX, ceilIDX;
 
-        sectorIDX = MPE_CreateSector((float) sec->lightLevel / 255.0f, 1, 1, 1);
+        sectorIDX = MPE_CreateSector(map, (float) sec->lightLevel / 255.0f, 1, 1, 1);
 
-        floorIDX = MPE_CreatePlane(sec->floorHeight,
+        floorIDX = MPE_CreatePlane(map, sec->floorHeight,
                                    sec->floorMaterial? sec->floorMaterial->material : 0,
                                    0, 0, 1, 1, 1, 1, 0, 0, 1);
-        ceilIDX = MPE_CreatePlane(sec->ceilHeight,
+        ceilIDX = MPE_CreatePlane(map, sec->ceilHeight,
                                   sec->ceilMaterial? sec->ceilMaterial->material : 0,
                                   0, 0, 1, 1, 1, 1, 0, 0, -1);
 
-        MPE_SetSectorPlane(sectorIDX, 0, floorIDX);
-        MPE_SetSectorPlane(sectorIDX, 1, ceilIDX);
+        MPE_SetSectorPlane(map, sectorIDX, 0, floorIDX);
+        MPE_SetSectorPlane(map, sectorIDX, 1, ceilIDX);
 
-        MPE_GameObjectRecordProperty("XSector", i, "ID", DDVT_INT, &i);
-        MPE_GameObjectRecordProperty("XSector", i, "Tag", DDVT_SHORT, &sec->tag);
-        MPE_GameObjectRecordProperty("XSector", i, "Type", DDVT_SHORT, &sec->type);
+        MPE_GameObjectRecordProperty(map, "XSector", i, "ID", DDVT_INT, &i);
+        MPE_GameObjectRecordProperty(map, "XSector", i, "Tag", DDVT_SHORT, &sec->tag);
+        MPE_GameObjectRecordProperty(map, "XSector", i, "Type", DDVT_SHORT, &sec->type);
 
-        if(map->format == MF_DOOM64)
+        if(wadmap->format == MF_DOOM64)
         {
-            MPE_GameObjectRecordProperty("XSector", i, "Flags", DDVT_SHORT, &sec->d64flags);
-            MPE_GameObjectRecordProperty("XSector", i, "CeilingColor", DDVT_SHORT, &sec->d64ceilingColor);
-            MPE_GameObjectRecordProperty("XSector", i, "FloorColor", DDVT_SHORT, &sec->d64floorColor);
-            MPE_GameObjectRecordProperty("XSector", i, "UnknownColor", DDVT_SHORT, &sec->d64unknownColor);
-            MPE_GameObjectRecordProperty("XSector", i, "WallTopColor", DDVT_SHORT, &sec->d64wallTopColor);
-            MPE_GameObjectRecordProperty("XSector", i, "WallBottomColor", DDVT_SHORT, &sec->d64wallBottomColor);
+            MPE_GameObjectRecordProperty(map, "XSector", i, "Flags", DDVT_SHORT, &sec->d64flags);
+            MPE_GameObjectRecordProperty(map, "XSector", i, "CeilingColor", DDVT_SHORT, &sec->d64ceilingColor);
+            MPE_GameObjectRecordProperty(map, "XSector", i, "FloorColor", DDVT_SHORT, &sec->d64floorColor);
+            MPE_GameObjectRecordProperty(map, "XSector", i, "UnknownColor", DDVT_SHORT, &sec->d64unknownColor);
+            MPE_GameObjectRecordProperty(map, "XSector", i, "WallTopColor", DDVT_SHORT, &sec->d64wallTopColor);
+            MPE_GameObjectRecordProperty(map, "XSector", i, "WallBottomColor", DDVT_SHORT, &sec->d64wallBottomColor);
         }
     }
 
     VERBOSE(Con_Message("WadMapConverter::Transfering linedefs...\n"));
-    for(i = 0; i < map->numLines; ++i)
+    for(i = 0; i < wadmap->numLines; ++i)
     {
-        mline_t*            l = &map->lines[i];
-        mside_t*            front, *back;
-        uint                frontIdx = 0, backIdx = 0;
+        mline_t* l = &wadmap->lines[i];
+        mside_t* front, *back;
+        uint frontIdx = 0, backIdx = 0;
 
-        front = (l->sides[RIGHT] != 0? &map->sides[l->sides[RIGHT]-1] : NULL);
+        front = (l->sides[RIGHT] != 0? &wadmap->sides[l->sides[RIGHT]-1] : NULL);
         if(front)
         {
             frontIdx =
-                MPE_CreateSideDef(front->sector,
-                                  (map->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
+                MPE_CreateSideDef(map, front->sector,
+                                  (wadmap->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
                                   front->topMaterial? front->topMaterial->material : 0,
                                   front->offset[VX], front->offset[VY], 1, 1, 1,
                                   front->middleMaterial? front->middleMaterial->material : 0,
@@ -1863,12 +1863,12 @@ boolean TransferMap(void)
                                   front->offset[VX], front->offset[VY], 1, 1, 1);
         }
 
-        back = (l->sides[LEFT] != 0? &map->sides[l->sides[LEFT]-1] : NULL);
+        back = (l->sides[LEFT] != 0? &wadmap->sides[l->sides[LEFT]-1] : NULL);
         if(back)
         {
             backIdx =
-                MPE_CreateSideDef(back->sector,
-                                  (map->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
+                MPE_CreateSideDef(map, back->sector,
+                                  (wadmap->format == MF_DOOM64? SDF_MIDDLE_STRETCH : 0),
                                   back->topMaterial? back->topMaterial->material : 0,
                                   back->offset[VX], back->offset[VY], 1, 1, 1,
                                   back->middleMaterial? back->middleMaterial->material : 0,
@@ -1877,100 +1877,100 @@ boolean TransferMap(void)
                                   back->offset[VX], back->offset[VY], 1, 1, 1);
         }
 
-        MPE_CreateLineDef(l->v[0], l->v[1], frontIdx, backIdx, 0);
+        MPE_CreateLineDef(map, l->v[0], l->v[1], frontIdx, backIdx, 0);
 
-        MPE_GameObjectRecordProperty("XLinedef", i, "ID", DDVT_INT, &i);
-        MPE_GameObjectRecordProperty("XLinedef", i, "Flags", DDVT_SHORT, &l->flags);
+        MPE_GameObjectRecordProperty(map, "XLinedef", i, "ID", DDVT_INT, &i);
+        MPE_GameObjectRecordProperty(map, "XLinedef", i, "Flags", DDVT_SHORT, &l->flags);
 
-        switch(map->format)
+        switch(wadmap->format)
         {
         default:
         case MF_DOOM:
-            MPE_GameObjectRecordProperty("XLinedef", i, "Type", DDVT_SHORT, &l->dType);
-            MPE_GameObjectRecordProperty("XLinedef", i, "Tag", DDVT_SHORT, &l->dTag);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Type", DDVT_SHORT, &l->dType);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Tag", DDVT_SHORT, &l->dTag);
             break;
 
         case MF_DOOM64:
-            MPE_GameObjectRecordProperty("XLinedef", i, "DrawFlags", DDVT_BYTE, &l->d64drawFlags);
-            MPE_GameObjectRecordProperty("XLinedef", i, "TexFlags", DDVT_BYTE, &l->d64texFlags);
-            MPE_GameObjectRecordProperty("XLinedef", i, "Type", DDVT_BYTE, &l->d64type);
-            MPE_GameObjectRecordProperty("XLinedef", i, "UseType", DDVT_BYTE, &l->d64useType);
-            MPE_GameObjectRecordProperty("XLinedef", i, "Tag", DDVT_SHORT, &l->d64tag);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "DrawFlags", DDVT_BYTE, &l->d64drawFlags);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "TexFlags", DDVT_BYTE, &l->d64texFlags);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Type", DDVT_BYTE, &l->d64type);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "UseType", DDVT_BYTE, &l->d64useType);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Tag", DDVT_SHORT, &l->d64tag);
             break;
 
         case MF_HEXEN:
-            MPE_GameObjectRecordProperty("XLinedef", i, "Type", DDVT_BYTE, &l->xType);
-            MPE_GameObjectRecordProperty("XLinedef", i, "Arg0", DDVT_BYTE, &l->xArgs[0]);
-            MPE_GameObjectRecordProperty("XLinedef", i, "Arg1", DDVT_BYTE, &l->xArgs[1]);
-            MPE_GameObjectRecordProperty("XLinedef", i, "Arg2", DDVT_BYTE, &l->xArgs[2]);
-            MPE_GameObjectRecordProperty("XLinedef", i, "Arg3", DDVT_BYTE, &l->xArgs[3]);
-            MPE_GameObjectRecordProperty("XLinedef", i, "Arg4", DDVT_BYTE, &l->xArgs[4]);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Type", DDVT_BYTE, &l->xType);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg0", DDVT_BYTE, &l->xArgs[0]);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg1", DDVT_BYTE, &l->xArgs[1]);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg2", DDVT_BYTE, &l->xArgs[2]);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg3", DDVT_BYTE, &l->xArgs[3]);
+            MPE_GameObjectRecordProperty(map, "XLinedef", i, "Arg4", DDVT_BYTE, &l->xArgs[4]);
             break;
         }
     }
 
     VERBOSE(Con_Message("WadMapConverter::Transfering lights...\n"));
-    for(i = 0; i < map->numLights; ++i)
+    for(i = 0; i < wadmap->numLights; ++i)
     {
-        surfacetint_t*           l = &map->lights[i];
+        surfacetint_t* l = &wadmap->lights[i];
 
-        MPE_GameObjectRecordProperty("Light", i, "ColorR", DDVT_FLOAT, &l->rgb[0]);
-        MPE_GameObjectRecordProperty("Light", i, "ColorG", DDVT_FLOAT, &l->rgb[1]);
-        MPE_GameObjectRecordProperty("Light", i, "ColorB", DDVT_FLOAT, &l->rgb[2]);
-        MPE_GameObjectRecordProperty("Light", i, "XX0", DDVT_BYTE, &l->xx[0]);
-        MPE_GameObjectRecordProperty("Light", i, "XX1", DDVT_BYTE, &l->xx[1]);
-        MPE_GameObjectRecordProperty("Light", i, "XX2", DDVT_BYTE, &l->xx[2]);
+        MPE_GameObjectRecordProperty(map, "Light", i, "ColorR", DDVT_FLOAT, &l->rgb[0]);
+        MPE_GameObjectRecordProperty(map, "Light", i, "ColorG", DDVT_FLOAT, &l->rgb[1]);
+        MPE_GameObjectRecordProperty(map, "Light", i, "ColorB", DDVT_FLOAT, &l->rgb[2]);
+        MPE_GameObjectRecordProperty(map, "Light", i, "XX0", DDVT_BYTE, &l->xx[0]);
+        MPE_GameObjectRecordProperty(map, "Light", i, "XX1", DDVT_BYTE, &l->xx[1]);
+        MPE_GameObjectRecordProperty(map, "Light", i, "XX2", DDVT_BYTE, &l->xx[2]);
     }
 
     VERBOSE(Con_Message("WadMapConverter::Transfering polyobjs...\n"));
-    for(i = 0; i < map->numPolyobjs; ++i)
+    for(i = 0; i < wadmap->numPolyobjs; ++i)
     {
-        mpolyobj_t*         po = map->polyobjs[i];
-        uint                j, *lineList;
+        mpolyobj_t* po = wadmap->polyobjs[i];
+        uint j, *lineList;
 
         lineList = malloc(sizeof(uint) * po->lineCount);
         for(j = 0; j < po->lineCount; ++j)
             lineList[j] = po->lineIndices[j] + 1;
-        MPE_CreatePolyobj(lineList, po->lineCount, po->tag,
+        MPE_CreatePolyobj(map, lineList, po->lineCount, po->tag,
                           po->seqType, (float) po->anchor[VX],
                           (float) po->anchor[VY]);
         free(lineList);
     }
 
     VERBOSE(Con_Message("WadMapConverter::Transfering things...\n"));
-    for(i = 0; i < map->numThings; ++i)
+    for(i = 0; i < wadmap->numThings; ++i)
     {
-        mthing_t*           th = &map->things[i];
+        mthing_t* th = &wadmap->things[i];
 
-        MPE_GameObjectRecordProperty("Thing", i, "X", DDVT_SHORT, &th->pos[VX]);
-        MPE_GameObjectRecordProperty("Thing", i, "Y", DDVT_SHORT, &th->pos[VY]);
-        MPE_GameObjectRecordProperty("Thing", i, "Z", DDVT_SHORT, &th->pos[VZ]);
-        MPE_GameObjectRecordProperty("Thing", i, "Angle", DDVT_ANGLE, &th->angle);
-        MPE_GameObjectRecordProperty("Thing", i, "DoomEdNum", DDVT_SHORT, &th->doomEdNum);
-        MPE_GameObjectRecordProperty("Thing", i, "Flags", DDVT_INT, &th->flags);
+        MPE_GameObjectRecordProperty(map, "Thing", i, "X", DDVT_SHORT, &th->pos[VX]);
+        MPE_GameObjectRecordProperty(map, "Thing", i, "Y", DDVT_SHORT, &th->pos[VY]);
+        MPE_GameObjectRecordProperty(map, "Thing", i, "Z", DDVT_SHORT, &th->pos[VZ]);
+        MPE_GameObjectRecordProperty(map, "Thing", i, "Angle", DDVT_ANGLE, &th->angle);
+        MPE_GameObjectRecordProperty(map, "Thing", i, "DoomEdNum", DDVT_SHORT, &th->doomEdNum);
+        MPE_GameObjectRecordProperty(map, "Thing", i, "Flags", DDVT_INT, &th->flags);
 
-        if(map->format == MF_DOOM64)
+        if(wadmap->format == MF_DOOM64)
         {
-            MPE_GameObjectRecordProperty("Thing", i, "ID", DDVT_SHORT, &th->d64TID);
+            MPE_GameObjectRecordProperty(map, "Thing", i, "ID", DDVT_SHORT, &th->d64TID);
         }
-        else if(map->format == MF_HEXEN)
+        else if(wadmap->format == MF_HEXEN)
         {
 
-            MPE_GameObjectRecordProperty("Thing", i, "Special", DDVT_BYTE, &th->xSpecial);
-            MPE_GameObjectRecordProperty("Thing", i, "ID", DDVT_SHORT, &th->xTID);
-            MPE_GameObjectRecordProperty("Thing", i, "Arg0", DDVT_BYTE, &th->xArgs[0]);
-            MPE_GameObjectRecordProperty("Thing", i, "Arg1", DDVT_BYTE, &th->xArgs[1]);
-            MPE_GameObjectRecordProperty("Thing", i, "Arg2", DDVT_BYTE, &th->xArgs[2]);
-            MPE_GameObjectRecordProperty("Thing", i, "Arg3", DDVT_BYTE, &th->xArgs[3]);
-            MPE_GameObjectRecordProperty("Thing", i, "Arg4", DDVT_BYTE, &th->xArgs[4]);
+            MPE_GameObjectRecordProperty(map, "Thing", i, "Special", DDVT_BYTE, &th->xSpecial);
+            MPE_GameObjectRecordProperty(map, "Thing", i, "ID", DDVT_SHORT, &th->xTID);
+            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg0", DDVT_BYTE, &th->xArgs[0]);
+            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg1", DDVT_BYTE, &th->xArgs[1]);
+            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg2", DDVT_BYTE, &th->xArgs[2]);
+            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg3", DDVT_BYTE, &th->xArgs[3]);
+            MPE_GameObjectRecordProperty(map, "Thing", i, "Arg4", DDVT_BYTE, &th->xArgs[4]);
         }
     }
 
-    // We've now finished with the original map data.
+    // We've now finished with the original wadmap data.
     freeMapData();
 
-    // Let Doomsday know that we've finished with this map.
-    result = MPE_End();
+    // Let Doomsday know that we've finished with this wadmap.
+    result = Map_EditEnd(map);
 
     VERBOSE(
     Con_Message("WadMapConverter::TransferMap: Done in %.2f seconds.\n",

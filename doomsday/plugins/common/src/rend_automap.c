@@ -720,18 +720,19 @@ static boolean drawSegsOfSubsector(subsector_t* ssec, void* context)
  *
  * @params objType      Type of map object being drawn.
  */
-static void renderWalls(const automap_t* map, const automapcfg_t* cfg,
+static void renderWalls(const automap_t* amap, const automapcfg_t* cfg,
                         int player, int objType, boolean addToLists)
 {
-    uint i;
+    map_t* map = P_CurrentMap();
     rendwallseg_params_t params;
+    uint i;
 
     // VALIDCOUNT is used to track which lines have been drawn this frame.
     VALIDCOUNT++;
 
     // Set the vars used during iteration.
     params.plr = &players[player];
-    params.map = map;
+    params.map = amap;
     params.cfg = cfg;
     params.objType = objType;
     params.addToLists = addToLists;
@@ -742,14 +743,14 @@ static void renderWalls(const automap_t* map, const automapcfg_t* cfg,
     {
         float aabb[4];
 
-        Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
+        Automap_GetInViewAABB(amap, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                               &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-        P_SubsectorsBoxIterator(aabb, NULL, drawSegsOfSubsector, &params);
+        Map_SubsectorsBoxIterator(map, aabb, NULL, drawSegsOfSubsector, &params);
     }
     else
     {   // No. As the map lists are considered static we want them to
         // contain all walls, not just those visible *now*.
-        for(i = 0; i < numsubsectors; ++i)
+        for(i = 0; i < Map_NumSubsectors(map); ++i)
         {
             DMU_Iteratep(DMU_ToPtr(DMU_SUBSECTOR, i), DMU_SEG, Rend_AutomapSeg, &params);
         }
@@ -861,9 +862,10 @@ boolean drawLinedefsOfPolyobject(linedef_t* lineDef, void* context)
     return true;
 }
 
-static void renderPolyObjs(const automap_t* map, const automapcfg_t* cfg,
+static void renderPolyObjs(const automap_t* amap, const automapcfg_t* cfg,
                            int player)
 {
+    map_t* map = P_CurrentMap();
     float aabb[4];
     rendwallseg_params_t params;
 
@@ -872,14 +874,14 @@ static void renderPolyObjs(const automap_t* map, const automapcfg_t* cfg,
 
     // Set the vars used during iteration.
     params.plr = &players[player];
-    params.map = map;
+    params.map = amap;
     params.cfg = cfg;
     params.objType = MOL_LINEDEF;
 
     // Next, draw any polyobjects in view.
-    Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
+    Automap_GetInViewAABB(amap, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                           &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-    P_LineDefsBoxIterator(aabb, drawLinedefsOfPolyobject, &params);
+    Map_LineDefsBoxIterator(map, aabb, drawLinedefsOfPolyobject, &params);
 }
 
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
@@ -907,14 +909,14 @@ boolean renderXGLinedef(linedef_t* line, void* context)
 }
 #endif
 
-static void renderXGLinedefs(const automap_t* map, const automapcfg_t* cfg,
+static void renderXGLinedefs(const automap_t* amap, const automapcfg_t* cfg,
                              int player)
 {
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
     float aabb[4];
     rendwallseg_params_t params;
 
-    if(!(map->flags & AMF_REND_XGLINES))
+    if(!(amap->flags & AMF_REND_XGLINES))
         return;
 
     // VALIDCOUNT is used to track which lines have been drawn this frame.
@@ -922,14 +924,14 @@ static void renderXGLinedefs(const automap_t* map, const automapcfg_t* cfg,
 
     // Set the vars used during iteration.
     params.plr = &players[player];
-    params.map = map;
+    params.map = amap;
     params.cfg = cfg;
     params.addToLists = false;
     params.objType = -1;
 
-    Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
+    Automap_GetInViewAABB(amap, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                           &aabb[BOXBOTTOM], &aabb[BOXTOP]);
-    P_LineDefsBoxIterator(aabb, renderXGLinedef, &params);
+    Map_LineDefsBoxIterator(P_CurrentMap(), aabb, renderXGLinedef, &params);
 #endif
 }
 
@@ -1425,10 +1427,10 @@ static void renderMapName(const automap_t* map)
     }
 }
 
-static void renderVertexes(float alpha)
+static void renderVertexes(map_t* map, float alpha)
 {
-    uint                i;
-    float               v[2], oldPointSize;
+    uint i;
+    float v[2], oldPointSize;
 
     DGL_Color4f(.2f, .5f, 1, alpha);
 
@@ -1437,7 +1439,7 @@ static void renderVertexes(float alpha)
     DGL_SetFloat(DGL_POINT_SIZE, 4);
 
     DGL_Begin(DGL_POINTS);
-    for(i = 0; i < numvertexes; ++i)
+    for(i = 0; i < Map_NumVertexes(map); ++i)
     {
         DMU_GetFloatv(DMU_VERTEX, i, DMU_XY, v);
         DGL_TexCoord2f(0, v[VX], v[VY]);
@@ -1455,7 +1457,7 @@ static void renderVertexes(float alpha)
 static void compileObjectLists(rautomap_data_t* rmap, const automap_t* map,
                                const automapcfg_t* cfg, int player)
 {
-    uint                i;
+    uint i;
 
     deleteMapLists(rmap);
 
@@ -1579,13 +1581,13 @@ void Rend_Automap(int player, const automap_t* map)
     DGL_Color4f(1, 1, 1, 1);
 
     if(Automap_GetFlags(map) & AMF_REND_VERTEXES)
-        renderVertexes(Automap_GetOpacity(map));
+        renderVertexes(P_CurrentMap(), Automap_GetOpacity(map));
 
     // Draw the map objects:
     renderPlayers(map, mcfg, player);
     if(Automap_GetFlags(map) & (AMF_REND_THINGS|AMF_REND_KEYS))
     {
-        float               aabb[4];
+        float aabb[4];
         renderthing_params_t params;
 
         params.flags = Automap_GetFlags(map);
@@ -1598,7 +1600,7 @@ void Rend_Automap(int player, const automap_t* map)
         Automap_GetInViewAABB(map, &aabb[BOXLEFT], &aabb[BOXRIGHT],
                               &aabb[BOXBOTTOM], &aabb[BOXTOP]);
         VALIDCOUNT++;
-        P_MobjsBoxIterator(aabb, renderThing, &params);
+        Map_MobjsBoxIterator(P_CurrentMap(), aabb, renderThing, &params);
     }
 
     DGL_SetFloat(DGL_LINE_WIDTH, oldLineWidth);

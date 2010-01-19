@@ -287,7 +287,6 @@
 		<Unit filename="..\..\engine\portable\include\p_sector.h" />
 		<Unit filename="..\..\engine\portable\include\p_seg.h" />
 		<Unit filename="..\..\engine\portable\include\p_sidedef.h" />
-		<Unit filename="..\..\engine\portable\include\p_sight.h" />
 		<Unit filename="..\..\engine\portable\include\p_subsector.h" />
 		<Unit filename="..\..\engine\portable\include\p_surface.h" />
 		<Unit filename="..\..\engine\portable\include\p_think.h" />

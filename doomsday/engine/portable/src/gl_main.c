@@ -877,8 +877,8 @@ void GL_TotalRestore(void)
     GL_InitPalettedTexture();
 
     {
-    map_t*          map = P_CurrentMap();
-    ded_mapinfo_t*      mapInfo = Def_GetMapInfo(Map_ID(map));
+    map_t* map = P_CurrentMap();
+    ded_mapinfo_t* mapInfo = Def_GetMapInfo(Map_ID(map));
 
     // Restore map's fog settings.
     if(!mapInfo || !(mapInfo->flags & MIF_FOG))

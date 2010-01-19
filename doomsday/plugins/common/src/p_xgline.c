@@ -430,10 +430,11 @@ void XG_Dev(const char* format, ...)
 /**
  * Init XG data for the map.
  */
-void XG_Init(void)
+void XG_Init(map_t* map)
 {
-    XL_Init(); // Init lines.
-    XS_Init(); // Init sectors.
+    assert(map);
+    XL_Init(map); // Init lines.
+    XS_Init(map); // Init sectors.
 }
 
 void XG_Ticker(void)
@@ -606,7 +607,10 @@ int findXLThinker(void* p, void* context)
  */
 void XL_SetLineType(linedef_t* line, int id)
 {
-    xlinedef_t*            xline = P_ToXLine(line);
+    assert(line);
+    {
+    map_t* map = P_CurrentMap();
+    xlinedef_t* xline = P_ToXLine(line);
 
     if(XL_GetType(id))
     {
@@ -630,12 +634,12 @@ void XL_SetLineType(linedef_t* line, int id)
                xgClasses[xline->xg->info.lineClass].className, id);
 
         // If there is not already an xlthinker for this line, create one.
-        if(DD_IterateThinkers(XL_Thinker, findXLThinker, line))
+        if(Map_IterateThinkers(map, XL_Thinker, findXLThinker, line))
         {   // Not created one yet.
-            xlthinker_t*    xl = Z_Calloc(sizeof(*xl), PU_MAP, 0);
+            xlthinker_t* xl = Z_Calloc(sizeof(*xl), PU_MAP, 0);
 
             xl->thinker.function = XL_Thinker;
-            DD_ThinkerAdd(&xl->thinker);
+            Map_ThinkerAdd(map, &xl->thinker);
 
             xl->line = line;
         }
@@ -645,15 +649,18 @@ void XL_SetLineType(linedef_t* line, int id)
         XG_Dev("XL_SetLineType: Line %i, type %i NOT DEFINED.",
                DMU_ToIndex(line), id);
     }
+    }
 }
 
 /**
  * Initialize extended lines for the map.
  */
-void XL_Init(void)
+void XL_Init(map_t* map)
 {
-    uint i;
+    assert(map);
+    {
     linedef_t* line;
+    uint i;
 
     memset(&dummyThing, 0, sizeof(dummyThing));
 
@@ -661,12 +668,13 @@ void XL_Init(void)
     if(IS_CLIENT)
         return;
 
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
         line = DMU_ToPtr(DMU_LINEDEF, i);
         P_ToXLine(line)->xg = 0;
 
         XL_SetLineType(line, P_ToXLine(line)->special);
+    }
     }
 }
 
@@ -786,7 +794,7 @@ int XL_TraversePlanes(map_t* map, linedef_t* line, int refType, int ref,
     {
         uint i;
 
-        for(i = 0; i < numsectors; ++i)
+        for(i = 0; i < Map_NumSectors(map); ++i)
         {
             sec = DMU_ToPtr(DMU_SECTOR, i);
             xsec = P_ToXSector(sec);
@@ -943,7 +951,7 @@ int XL_TraverseLines(map_t* map, linedef_t* line, int rtype, int ref,
     }
     else
     {
-        for(i = 0; i < numlines; ++i)
+        for(i = 0; i < Map_NumLineDefs(map); ++i)
         {
             iter = DMU_ToPtr(DMU_LINEDEF, i);
             if(reftype == LREF_ALL)
@@ -2215,14 +2223,17 @@ boolean XL_CheckKeys(mobj_t* mo, int flags2, boolean doMsg, boolean doSfx)
 int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
                  void* data)
 {
-    int                 i;
-    xlinedef_t*            xline;
-    xgline_t*           xg;
-    linetype_t*         info;
-    boolean             active;
-    mobj_t*             activator_thing = (mobj_t *) data;
-    player_t*           activator = 0;
-    boolean             anyTrigger = false;
+    assert(line);
+    {
+    map_t* map = P_CurrentMap();
+    int i;
+    xlinedef_t* xline;
+    xgline_t* xg;
+    linetype_t* info;
+    boolean active;
+    mobj_t* activator_thing = (mobj_t *) data;
+    player_t* activator = 0;
+    boolean anyTrigger = false;
 
     // Clients rely on the server, they don't do XG themselves.
     if(IS_CLIENT)
@@ -2349,7 +2360,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
 
     if(info->flags & LTF_MOBJ_GONE)
     {
-        if(!DD_IterateThinkers(P_MobjThinker, XL_CheckMobjGone, &info->aparm[9]))
+        if(!Map_IterateThinkers(map, P_MobjThinker, XL_CheckMobjGone, &info->aparm[9]))
             return false;
     }
 
@@ -2488,6 +2499,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
 
     XL_ActivateLine(!active, info, line, sidenum, activator_thing, evtype);
     return true;
+    }
 }
 
 /**
@@ -2766,7 +2778,7 @@ void XL_Update(map_t* map)
     uint i;
     
     // It's all PU_MAP memory, so we can just lose it.
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
         xlinedef_t* xline = GameMap_XLineDef(map, i);
 

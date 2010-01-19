@@ -149,7 +149,7 @@ typedef struct {
     int             timer; // Counts down to zero.
 } xgplanemover_t;
 
-void            XS_Init(void);
+void            XS_Init(struct map_s* map);
 void            XS_Update(struct map_s* map);
 
 void            XS_Thinker(xsthinker_t* xs);

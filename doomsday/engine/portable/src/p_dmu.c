@@ -863,87 +863,6 @@ void* P_DummyExtraData(void* dummy)
     return NULL;
 }
 
-void* P_GetVariable(int value)
-{
-    static uint count = 0;
-
-    switch(value)
-    {
-    case DMU_SECTOR_COUNT:
-        {
-        map_t* map = P_CurrentMap();
-        if(map)
-            count = map->numSectors;
-        return &count;
-        }
-    case DMU_LINE_COUNT:
-        {
-        map_t* map = P_CurrentMap();
-        if(map)
-            count = map->numLineDefs;
-        return &count;
-        }
-    case DMU_SIDE_COUNT:
-        {
-        map_t* map = P_CurrentMap();
-        if(map)
-            count = map->numSideDefs;
-        return &count;
-        }
-    case DMU_VERTEX_COUNT:
-        {
-        map_t* map = P_CurrentMap();
-        if(map)
-            count = HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map));
-        return &count;
-        }
-    case DMU_POLYOBJ_COUNT:
-        {
-        map_t* map = P_CurrentMap();
-        if(map)
-            count = map->numPolyObjs;
-        return &count;
-        }
-    case DMU_SEG_COUNT:
-        {
-        map_t* map = P_CurrentMap();
-        if(map)
-            count = map->numSegs;
-        return &count;
-        }
-    case DMU_SUBSECTOR_COUNT:
-        {
-        map_t* map = P_CurrentMap();
-        if(map)
-            count = map->numSubsectors;
-        return &count;
-        }
-    case DMU_NODE_COUNT:
-        {
-        map_t* map = P_CurrentMap();
-        if(map)
-            count = map->numNodes;
-        return &count;
-        }
-    case DMU_PLANE_COUNT:
-        {
-        map_t* map = P_CurrentMap();
-        if(map)
-            count = map->numPlanes;
-        return &count;
-        }
-    default:
-        break;
-    }
-
-    return 0;
-}
-
-void P_SetVariable(int value, void* data)
-{
-    // Stub.
-}
-
 /**
  * Convert pointer to index.
  */
@@ -1155,56 +1074,56 @@ int P_Callback(int type, objectrecordid_t index, int (*callback)(void* p, void* 
     case DMU_VERTEX:
         {
         map_t* map = P_CurrentMap();
-        if(index < HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map)))
+        if(index < Map_NumVertexes(map))
             return callback(P_ObjectRecord(DMU_VERTEX, Map_HalfEdgeDS(map)->vertices[index]), context);
         break;
         }
     case DMU_SEG:
         {
         map_t* map = P_CurrentMap();
-        if(index < map->numSegs)
+        if(index < Map_NumSegs(map))
             return callback(P_ObjectRecord(DMU_SEG, map->segs[index]), context);
         break;
         }
     case DMU_LINEDEF:
         {
         map_t* map = P_CurrentMap();
-        if(index < map->numLineDefs)
+        if(index < Map_NumLineDefs(map))
             return callback(P_ObjectRecord(DMU_LINEDEF, map->lineDefs[index]), context);
         break;
         }
     case DMU_SIDEDEF:
         {
         map_t* map = P_CurrentMap();
-        if(index < map->numSideDefs)
+        if(index < Map_NumSideDefs(map))
             return callback(P_ObjectRecord(DMU_SIDEDEF, map->sideDefs[index]), context);
         break;
         }
     case DMU_NODE:
         {
         map_t* map = P_CurrentMap();
-        if(index < map->numNodes)
+        if(index < Map_NumNodes(map))
             return callback(P_ObjectRecord(DMU_NODE, map->nodes[index]), context);
         break;
         }
     case DMU_SUBSECTOR:
         {
         map_t* map = P_CurrentMap();
-        if(index < map->numSubsectors)
+        if(index < Map_NumSubsectors(map))
             return callback(P_ObjectRecord(DMU_SUBSECTOR, map->subsectors[index]), context);
         break;
         }
     case DMU_SECTOR:
         {
         map_t* map = P_CurrentMap();
-        if(index < map->numSectors)
+        if(index < Map_NumSectors(map))
             return callback(P_ObjectRecord(DMU_SECTOR, map->sectors[index]), context);
         break;
         }
     case DMU_PLANE:
         {
         map_t* map = P_CurrentMap();
-        if(index < map->numPlanes)
+        if(index < Map_NumPlanes(map))
             return callback(P_ObjectRecord(DMU_PLANE, map->planes[index]), context);
         break;
         }

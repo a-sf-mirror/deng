@@ -45,7 +45,7 @@ boolean     P_ActivateLine(linedef_t* ld, mobj_t* mo, int side, int activationTy
 void        P_PlayerInSpecialSector(player_t* plr);
 void        P_PlayerOnSpecialFloor(player_t* plr);
 
-void        P_InitLightning(void);
+void        P_InitLightning(struct map_s* map);
 void        P_ForceLightning(void);
 
 typedef enum {

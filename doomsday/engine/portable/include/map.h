@@ -129,11 +129,22 @@ map_t*          P_CreateMap(const char* mapID);
 void            P_DestroyMap(map_t* map);
 
 boolean         Map_Load(map_t* map);
+void            Map_Precache(map_t* map);
 
 const char*     Map_ID(map_t* map);
 const char*     Map_UniqueName(map_t* map);
 void            Map_Bounds(map_t* map, float* min, float* max);
 int             Map_AmbientLightLevel(map_t* map);
+
+uint            Map_NumSectors(map_t* map);
+uint            Map_NumLineDefs(map_t* map);
+uint            Map_NumSideDefs(map_t* map);
+uint            Map_NumVertexes(map_t* map);
+uint            Map_NumPolyobjs(map_t* map);
+uint            Map_NumSegs(map_t* map);
+uint            Map_NumSubsectors(map_t* map);
+uint            Map_NumNodes(map_t* map);
+uint            Map_NumPlanes(map_t* map);
 
 void            Map_BeginFrame(map_t* map, boolean resetNextViewer);
 void            Map_EndFrame(map_t* map);
@@ -150,17 +161,18 @@ int             Map_UnlinkMobj(map_t* map, struct mobj_s* mo);
 
 void            Map_AddThinker(map_t* map, thinker_t* th, boolean makePublic);
 void            Map_RemoveThinker(map_t* map, thinker_t* th);
+void            Map_ThinkerSetStasis(map_t* map, thinker_t* th, boolean on);
 
 /**
  * @defgroup iterateThinkerFlags Iterate Thinker Flags
- * Used with Map_IterateThinkers to specify which thinkers to iterate.
+ * Used with Map_IterateThinkers2 to specify which thinkers to iterate.
  */
 /*@{*/
 #define ITF_PUBLIC          0x1
 #define ITF_PRIVATE         0x2
 /*@}*/
 
-boolean         Map_IterateThinkers(map_t* map, think_t func, byte flags,
+boolean         Map_IterateThinkers2(map_t* map, think_t func, byte flags,
                                     int (*callback) (void* p, void*),
                                     void* context);
 
@@ -171,7 +183,7 @@ boolean         Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objc
 /**
  * Map Edit interface.
  */
-void            Map_EditEnd(map_t* map);
+boolean         Map_EditEnd(map_t* map);
 vertex_t*       Map_CreateVertex(map_t* map, float x, float y);
 linedef_t*      Map_CreateLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
                                   sidedef_t* front, sidedef_t* back);
@@ -203,7 +215,7 @@ boolean         Map_LineDefsBoxIteratorv(map_t* map, const arvec2_t box,
                                          void* data, boolean retObjRecord);
 
 // Subsectors in bounding box iterators:
-boolean         Map_SubsectorsBoxIterator(map_t* map, const float box[4], sector_t* sector,
+boolean         Map_SubsectorsBoxIterator2(map_t* map, const float box[4], sector_t* sector,
                                           boolean (*func) (subsector_t*, void*),
                                           void* parm, boolean retObjRecord);
 boolean         Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, sector_t* sector,
@@ -212,10 +224,14 @@ boolean         Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, secto
 
 boolean         Map_PathTraverse(map_t* map, float x1, float y1, float x2, float y2,
                                  int flags, boolean (*trav) (intercept_t*));
+boolean         Map_CheckLineSight(map_t* map, const float from[3], const float to[3],
+                                   float bottomSlope, float topSlope, int flags);
 
-subsector_t*    Map_PointInSubsector(map_t* map, float x, float y);
+subsector_t*    Map_PointInSubsector2(map_t* map, float x, float y);
 sector_t*       Map_SectorForOrigin(map_t* map, const void* ddMobjBase);
+
 polyobj_t*      Map_PolyobjForOrigin(map_t* map, const void* ddMobjBase);
+polyobj_t*      Map_Polyobj(map_t* map, uint num);
 
 // @todo the following should be Map private:
 thinkers_t*     Map_Thinkers(map_t* map);
@@ -227,6 +243,7 @@ particleblockmap_t* Map_ParticleBlockmap(map_t* map);
 lumobjblockmap_t* Map_LumobjBlockmap(map_t* map);
 lightgrid_t*    Map_LightGrid(map_t* map);
 
+// protected
 seg_t*          Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge);
 subsector_t*    Map_CreateSubsector(map_t* map, face_t* face, sector_t* sector);
 node_t*         Map_CreateNode(map_t* map, float x, float y, float dX, float dY, float rightAABB[4], float leftAABB[4]);
@@ -238,9 +255,8 @@ gameobjrecords_t* Map_GameObjectRecords(map_t* map);
 void            Map_DestroyGameObjectRecords(map_t* map);
 
 // Old public interface:
-void            DD_InitThinkers(void);
-void            DD_RunThinkers(void);
-void            DD_ThinkerAdd(thinker_t* th);
-void            DD_ThinkerRemove(thinker_t* th);
-void            DD_ThinkerSetStasis(thinker_t* th, boolean on);
+void            Map_InitThinkers(map_t* map);
+void            Map_RunThinkers(map_t* map);
+void            Map_ThinkerAdd(map_t* map, thinker_t* th);
+
 #endif /* DOOMSDAY_MAP_H */

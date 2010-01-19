@@ -600,8 +600,6 @@ int Cht_PigFunc(const int* args, int player)
 int Cht_MassacreFunc(const int* args, int player)
 {
     player_t* plr = &players[player];
-    int count;
-    char buf[80];
 
     if(IS_NETGAME)
         return false;
@@ -610,9 +608,14 @@ int Cht_MassacreFunc(const int* args, int player)
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
 
-    count = P_Massacre();
-    sprintf(buf, "%d MONSTERS KILLED\n", count);
-    P_SetMessage(plr, buf, false);
+    // Only massacre when actually in a map.
+    if(G_GetGameState() == GS_MAP)
+    {
+        char buf[80];
+        int numKilled = P_Massacre(P_CurrentMap());
+        sprintf(buf, "%d MONSTERS KILLED\n", numKilled);
+        P_SetMessage(plr, buf, false);
+    }
     S_LocalSound(SFX_PLATFORM_STOP, NULL);
     return true;
 }

@@ -476,6 +476,8 @@ iterlist_t*         GameMap_SectorIterListForTag(map_t* map, int tag, boolean cr
 xlinedef_t*         GameMap_XLineDef(map_t* map, uint idx);
 xsector_t*          GameMap_XSector(map_t* map, uint idx);
 
+float               GameMap_Gravity(map_t* map);
+
 // @todo Should be private to GameMap.
 iterlist_t*         GameMap_SpecHits(map_t* map);
 

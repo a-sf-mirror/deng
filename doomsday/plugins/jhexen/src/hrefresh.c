@@ -439,72 +439,78 @@ boolean R_GetFilterColor(float rgba[4], int filter)
  */
 void R_SetAllDoomsdayFlags(void)
 {
-    uint                i;
-    mobj_t*             mo;
+    map_t* map = P_CurrentMap();
+    if(map)
+    {
+        uint i;
 
-    // Only visible things are in the sector thinglists, so this is good.
-    for(i = 0; i < numsectors; ++i)
-        for(mo = DMU_GetPtr(DMU_SECTOR, i, DMU_MOBJS); mo; mo = mo->sNext)
+        // Only visible things are in the sector thinglists, so this is good.
+        for(i = 0; i < Map_NumSectors(map); ++i)
         {
-            if(IS_CLIENT && mo->ddFlags & DDMF_REMOTE)
-                continue;
-
-            // Reset the flags for a new frame.
-            mo->ddFlags &= DDMF_CLEAR_MASK;
-
-            if(mo->flags & MF_LOCAL)
-                mo->ddFlags |= DDMF_LOCAL;
-            if(mo->flags & MF_SOLID)
-                mo->ddFlags |= DDMF_SOLID;
-            if(mo->flags & MF_MISSILE)
-                mo->ddFlags |= DDMF_MISSILE;
-            if(mo->flags2 & MF2_FLY)
-                mo->ddFlags |= DDMF_FLY | DDMF_NOGRAVITY;
-            if(mo->flags2 & MF2_FLOATBOB)
-                mo->ddFlags |= DDMF_BOB | DDMF_NOGRAVITY;
-            if(mo->flags2 & MF2_LOGRAV)
-                mo->ddFlags |= DDMF_LOWGRAVITY;
-            if(mo->flags & MF_NOGRAVITY /* || mo->flags2 & MF2_FLY */ )
-                mo->ddFlags |= DDMF_NOGRAVITY;
-
-            // $democam: cameramen are invisible.
-            if(P_MobjIsCamera(mo))
-                mo->ddFlags |= DDMF_DONTDRAW;
-
-            // Choose which ddflags to set.
-            if(mo->flags2 & MF2_DONTDRAW)
+            mobj_t* mo;
+            for(mo = DMU_GetPtr(DMU_SECTOR, i, DMU_MOBJS); mo; mo = mo->sNext)
             {
-                mo->ddFlags |= DDMF_DONTDRAW;
-                continue; // No point in checking the other flags.
+                if(IS_CLIENT && mo->ddFlags & DDMF_REMOTE)
+                    continue;
+
+                // Reset the flags for a new frame.
+                mo->ddFlags &= DDMF_CLEAR_MASK;
+
+                if(mo->flags & MF_LOCAL)
+                    mo->ddFlags |= DDMF_LOCAL;
+                if(mo->flags & MF_SOLID)
+                    mo->ddFlags |= DDMF_SOLID;
+                if(mo->flags & MF_MISSILE)
+                    mo->ddFlags |= DDMF_MISSILE;
+                if(mo->flags2 & MF2_FLY)
+                    mo->ddFlags |= DDMF_FLY | DDMF_NOGRAVITY;
+                if(mo->flags2 & MF2_FLOATBOB)
+                    mo->ddFlags |= DDMF_BOB | DDMF_NOGRAVITY;
+                if(mo->flags2 & MF2_LOGRAV)
+                    mo->ddFlags |= DDMF_LOWGRAVITY;
+                if(mo->flags & MF_NOGRAVITY /* || mo->flags2 & MF2_FLY */ )
+                    mo->ddFlags |= DDMF_NOGRAVITY;
+
+                // $democam: cameramen are invisible.
+                if(P_MobjIsCamera(mo))
+                    mo->ddFlags |= DDMF_DONTDRAW;
+
+                // Choose which ddflags to set.
+                if(mo->flags2 & MF2_DONTDRAW)
+                {
+                    mo->ddFlags |= DDMF_DONTDRAW;
+                    continue; // No point in checking the other flags.
+                }
+
+                if((mo->flags & MF_BRIGHTSHADOW) == MF_BRIGHTSHADOW)
+                    mo->ddFlags |= DDMF_BRIGHTSHADOW;
+                else
+                {
+                    if(mo->flags & MF_SHADOW)
+                        mo->ddFlags |= DDMF_SHADOW;
+                    if(mo->flags & MF_ALTSHADOW ||
+                       (cfg.translucentIceCorpse && mo->flags & MF_ICECORPSE))
+                        mo->ddFlags |= DDMF_ALTSHADOW;
+                }
+
+                if((mo->flags & MF_VIEWALIGN && !(mo->flags & MF_MISSILE)) ||
+                   mo->flags & MF_FLOAT || (mo->flags & MF_MISSILE &&
+                                            !(mo->flags & MF_VIEWALIGN)))
+                    mo->ddFlags |= DDMF_VIEWALIGN;
+
+                R_SetTranslation(mo);
+
+                // An offset for the light emitted by this object.
+                /*          Class = MobjLightOffsets[mo->type];
+                   if(Class < 0) Class = 8-Class;
+                   // Class must now be in range 0-15.
+                   mo->ddFlags |= Class << DDMF_LIGHTOFFSETSHIFT; */
+
+                // The Mage's ice shards need to be a bit smaller.
+                // This'll make them half the normal size.
+                if(mo->type == MT_SHARDFX1)
+                    mo->ddFlags |= 2 << DDMF_LIGHTSCALESHIFT;
             }
-
-            if((mo->flags & MF_BRIGHTSHADOW) == MF_BRIGHTSHADOW)
-                mo->ddFlags |= DDMF_BRIGHTSHADOW;
-            else
-            {
-                if(mo->flags & MF_SHADOW)
-                    mo->ddFlags |= DDMF_SHADOW;
-                if(mo->flags & MF_ALTSHADOW ||
-                   (cfg.translucentIceCorpse && mo->flags & MF_ICECORPSE))
-                    mo->ddFlags |= DDMF_ALTSHADOW;
-            }
-
-            if((mo->flags & MF_VIEWALIGN && !(mo->flags & MF_MISSILE)) ||
-               mo->flags & MF_FLOAT || (mo->flags & MF_MISSILE &&
-                                        !(mo->flags & MF_VIEWALIGN)))
-                mo->ddFlags |= DDMF_VIEWALIGN;
-
-            R_SetTranslation(mo);
-
-            // An offset for the light emitted by this object.
-            /*          Class = MobjLightOffsets[mo->type];
-               if(Class < 0) Class = 8-Class;
-               // Class must now be in range 0-15.
-               mo->ddFlags |= Class << DDMF_LIGHTOFFSETSHIFT; */
-
-            // The Mage's ice shards need to be a bit smaller.
-            // This'll make them half the normal size.
-            if(mo->type == MT_SHARDFX1)
-                mo->ddFlags |= 2 << DDMF_LIGHTSCALESHIFT;
         }
+    }
 }

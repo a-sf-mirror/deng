@@ -56,7 +56,6 @@ mobj_t*         P_MobjCreate(struct map_s* map, think_t function, float x, float
                              angle_t angle, float radius, float height,
                              int ddflags);
 void            P_MobjDestroy(mobj_t* mo);
-void            P_MobjRecycle(mobj_t* mo);
 
 void            P_MobjSetState(mobj_t* mo, int statenum);
 void            P_MobjMovement(mobj_t* mo);

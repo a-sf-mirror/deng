@@ -580,7 +580,7 @@ void Cl_MobjMove(clmobj_t* cmo)
     mobj_t* mo = &cmo->mo;
     boolean collided = false;
     map_t* map = P_CurrentMap();
-    float gravity = FIX2FLT(map->globalGravity);
+    float gravity = map->gravity;
 
     // First do XY movement.
     if(mo->mom[MX] != 0 || mo->mom[MY] != 0)

@@ -3,17 +3,6 @@ NAME            "DOOMSDAY"
 ; Highest ordinal is currently
 ; --> 453 <--
 ; Other free ordinals:
-; 65 formerly P_GetBlockRootIdx
-; 70 formerly P_BlockPolyobjsIterator
-; 73 formeely P_LineMobjsIterator
-; 74 formerly P_SectorTouchingMobjsIterator
-; 77 formerly P_LoadBlockMap
-; 78 formerly P_LoadReject
-; 95 formerly R_FlatNumForName
-; 96 formerly R_CheckTextureNumForName
-; 98 formerly R_TextureNameForNum
-; 99 formerly R_MaterialSetTranslation
-; 100 formerly R_SetTextureTranslation
 ; 105 formerly R_SkyParams
 ; 106 formerly DD_GetDGLProcAddress
 ; 107 formerly GL_DoUpdate
@@ -155,13 +144,45 @@ EXPORTS
     P_CurrentMap                @43 NONAME
     P_SetCurrentMap             @44 NONAME
     P_CreateMap                 @68 NONAME
-	P_DestroyMap                @69 NONAME
+    P_DestroyMap                @69 NONAME
 
     Map_Load                    @254 NONAME
+    Map_Precache                @90 NONAME
 
-; Map building interface.
+	Map_Bounds                  @100 NONAME
+
+    Map_NumSectors              @65 NONAME
+    Map_NumLineDefs             @70 NONAME
+    Map_NumSideDefs             @73 NONAME
+    Map_NumVertexes             @74 NONAME
+    Map_NumPolyobjs             @77 NONAME
+    Map_NumSegs                 @78 NONAME
+    Map_NumSubsectors           @95 NONAME
+    Map_NumNodes                @96 NONAME
+    Map_NumPlanes               @98 NONAME
+
+    Map_Polyobj                 @424 NONAME
+
+    Map_CheckLineSight          @76 NONAME
+    Map_PathTraverse            @75 NONAME
+
+    Map_PointInSubsector        @102 NONAME
+
+    ; Thinkers.
+    Map_ThinkerAdd              @86 NONAME
+    Map_RemoveThinker           @87 NONAME
+    Map_InitThinkers            @85 NONAME
+    Map_IterateThinkers         @425 NONAME
+    Map_RunThinkers             @84 NONAME
+
+    ; Specialized iteration methods
+    Map_MobjsBoxIterator        @346 NONAME
+    Map_LineDefsBoxIterator     @435 NONAME
+    Map_SubsectorsBoxIterator   @345 NONAME
+
+    ; Edit interface.
     MPE_Begin                   @350 NONAME
-    MPE_End                     @351 NONAME
+    Map_EditEnd                 @351 NONAME
 
     MPE_CreateVertex            @352 NONAME
     MPE_CreateVertices          @409 NONAME
@@ -185,8 +206,6 @@ EXPORTS
     P_ApproxDistance3           @243 NONAME
     P_PointOnDivlineSide        @62 NONAME
     P_InterceptVector           @63 NONAME
-    P_PathTraverse              @75 NONAME
-    P_CheckLineSight            @76 NONAME
     P_MobjSetState              @207 NONAME
     P_SpawnDamageParticleGen    @233 NONAME
 
@@ -200,8 +219,6 @@ EXPORTS
     P_AddPropertyToObjectDef    @412 NONAME
 
 ; Play: Map Data Updates and Information Access.
-	P_GetVariable				@449 NONAME
-	P_SetVariable				@450 NONAME
     P_ToIndex                   @256 NONAME
     P_ToPtr                     @257 NONAME
     P_Callback                  @258 NONAME
@@ -209,11 +226,6 @@ EXPORTS
 
     ; iteration methods
     P_Iteratep                  @410 NONAME
-
-    ; specialized iteration methods
-    P_MobjsBoxIterator          @346 NONAME
-    P_LineDefsBoxIterator       @435 NONAME
-    P_SubsectorsBoxIterator     @345 NONAME
 
     ; dummy objects
     P_AllocDummy                @321 NONAME
@@ -321,7 +333,6 @@ EXPORTS
     P_PolyobjLinkLineDefs       @82 NONAME
     P_PolyobjUnlinkLineDefs     @81 NONAME
 
-    P_GetPolyobj                @424 NONAME
     P_SetPolyobjCallback        @83 NONAME
 
 ; Play: Materials.
@@ -334,21 +345,14 @@ EXPORTS
     R_TextureIdForName          @437 NONAME
 
 ; Play: Thinkers.
-    DD_ThinkerAdd               @86 NONAME
-    DD_ThinkerRemove            @87 NONAME
-    DD_ThinkerSetStasis         @426 NONAME	
-
-    DD_InitThinkers             @85 NONAME
-    DD_IterateThinkers          @425 NONAME
-    DD_RunThinkers              @84 NONAME
-
     Thinker_Map                 @45 NONAME
+    Thinker_SetStasis           @426 NONAME
 
 ; Refresh.
     DD_GetFrameRate             @88 NONAME
     R_SetDataPath               @234 NONAME
+    R_BeginSetupMap             @99 NONAME
     R_SetupMap                  @89 NONAME
-    R_PrecacheMap               @90 NONAME
     R_PrecacheMobjNum           @427 NONAME
     R_PrecacheSkinsForState     @240 NONAME
     R_PrecachePatch             @335 NONAME
@@ -359,7 +363,6 @@ EXPORTS
     R_GetSpriteInfo             @94 NONAME
     R_GetPatchInfo              @237 NONAME
     R_PointToAngle2             @101 NONAME
-    P_PointInSubSector          @102 NONAME
     R_HSVToRGB                  @439 NONAME
     R_CreateColorPalette		@444 NONAME
     R_GetColorPaletteNumForName @446 NONAME

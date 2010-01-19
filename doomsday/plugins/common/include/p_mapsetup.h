@@ -31,16 +31,6 @@
 
 #include "gamemap.h"
 
-#define numvertexes (*(uint*) P_GetVariable(DMU_VERTEX_COUNT))
-#define numsectors  (*(uint*) P_GetVariable(DMU_SECTOR_COUNT))
-#define numsubsectors (*(uint*) P_GetVariable(DMU_SUBSECTOR_COUNT))
-#define numnodes    (*(uint*) P_GetVariable(DMU_NODE_COUNT))
-#define numlines    (*(uint*) P_GetVariable(DMU_LINE_COUNT))
-#define numsides    (*(uint*) P_GetVariable(DMU_SIDE_COUNT))
-#define numpolyobjs (*(uint*) P_GetVariable(DMU_POLYOBJ_COUNT))
-
-#define nummaterials (*(uint*) DD_GetVariable(DD_MATERIAL_COUNT))
-
 void            P_SetupForMapData(int type, uint num);
 
 void            P_SetupMap(struct map_s* map, skillmode_t skill);

@@ -189,7 +189,7 @@ static void registerSpecialLine(automapcfg_t* cfg, int cheatLevel, int lineSpeci
 static void setColorAndAlpha(automapcfg_t* cfg, int objectname, float r,
                              float g, float b, float a);
 
-static void     findMinMaxBoundaries(void);
+static void     findMinMaxBoundaries(map_t* map);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -687,7 +687,7 @@ void AM_InitForMap(void)
         return; // nothing to do.
 
     // Find the world boundary points shared by all maps.
-    findMinMaxBoundaries();
+    findMinMaxBoundaries(P_CurrentMap());
 
     // Setup all players' maps.
     for(i = 0; i < MAXPLAYERS; ++i)
@@ -1005,7 +1005,7 @@ void AM_UpdateLinedef(automapid_t id, uint lineIdx, boolean visible)
     if(!(mcfg = getAutomapCFG(id)))
         return;
 
-    if(lineIdx >= numlines)
+    if(lineIdx >= Map_NumLineDefs(P_CurrentMap()))
         return;
 
     xline = P_ToXLine(DMU_ToPtr(DMU_LINEDEF, lineIdx));
@@ -1716,15 +1716,15 @@ void AM_IncMapCheatLevel(automapid_t id)
 /**
  * Determines bounding box of all the map's vertexes.
  */
-static void findMinMaxBoundaries(void)
+static void findMinMaxBoundaries(map_t* map)
 {
-    uint                i;
-    float               pos[2], lowX, hiX, lowY, hiY;
+    uint i;
+    float pos[2], lowX, hiX, lowY, hiY;
 
     lowX = lowY = DDMAXFLOAT;
     hiX = hiY = -DDMAXFLOAT;
 
-    for(i = 0; i < numvertexes; ++i)
+    for(i = 0; i < Map_NumVertexes(map); ++i)
     {
         DMU_GetFloatv(DMU_VERTEX, i, DMU_XY, pos);
 
@@ -1741,10 +1741,10 @@ static void findMinMaxBoundaries(void)
 
     for(i = 0; i < MAXPLAYERS; ++i)
     {
-        automap_t*          map = &automaps[i];
+        automap_t* amap = &automaps[i];
 
-        Automap_SetMinScale(map, 2 * PLAYERRADIUS);
-        Automap_SetWorldBounds(map, lowX, hiX, lowY, hiY);
+        Automap_SetMinScale(amap, 2 * PLAYERRADIUS);
+        Automap_SetWorldBounds(amap, lowX, hiX, lowY, hiY);
     }
 }
 

@@ -138,7 +138,7 @@ typedef enum {
     MF_DOOM64
 } mapformatid_t;
 
-typedef struct map_s {
+typedef struct wadmap_s {
     char            name[9];
     uint            numVertexes;
     uint            numSectors;
@@ -165,9 +165,9 @@ typedef struct map_s {
 
     byte*           rejectMatrix;
     void*           blockMap;
-} map_t;
+} wadmap_t;
 
-extern map_t* map;
+extern wadmap_t* wadmap;
 extern boolean verbose;
 
 boolean         IsSupportedFormat(const int* lumpList, int numLumps);

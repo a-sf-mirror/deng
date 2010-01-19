@@ -535,16 +535,10 @@ static int massacreMobj(void* p, void* context)
 /**
  * Kills all monsters.
  */
-int P_Massacre(void)
+int P_Massacre(map_t* map)
 {
     int count = 0;
-
-    // Only massacre when actually in a map.
-    if(G_GetGameState() == GS_MAP)
-    {
-        DD_IterateThinkers(P_MobjThinker, massacreMobj, &count);
-    }
-
+    Map_IterateThinkers(map, P_MobjThinker, massacreMobj, &count);
     return count;
 }
 
@@ -587,7 +581,7 @@ void P_SpawnBrainTargets(map_t* map)
 {
     assert(map);
     // Find all the target spots.
-    DD_IterateThinkers(P_MobjThinker, findBrainTarget, map);
+    Map_IterateThinkers(map, P_MobjThinker, findBrainTarget, map);
 }
 
 typedef struct {
@@ -618,7 +612,7 @@ void C_DECL A_KeenDie(mobj_t* mo)
     // Check if there are no more Keens left in the map.
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {   // No Keens left alive.
@@ -1208,7 +1202,7 @@ void C_DECL A_VileChase(mobj_t* actor)
         // Call PIT_VileCheck to check whether object is a corpse
         // that can be raised.
         VALIDCOUNT++;
-        if(!P_MobjsBoxIterator(box, PIT_VileCheck, 0))
+        if(!Map_MobjsBoxIterator(map, box, PIT_VileCheck, 0))
         {
             // Got one!
             temp = actor->target;
@@ -1473,7 +1467,7 @@ void C_DECL A_PainShootSkull(mobj_t* actor, angle_t angle)
         // Count total number currently on the map.
         params.type = MT_SKULL;
         params.count = 0;
-        DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+        Map_IterateThinkers(map, P_MobjThinker, countMobjOfType, &params);
 
         if(params.count > 20)
             return; // Too many, don't spit another.
@@ -1717,7 +1711,7 @@ void C_DECL A_BossDeath(mobj_t* mo)
     // Scan the remaining thinkers to see if all bosses are dead.
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(map, P_MobjThinker, countMobjOfType, &params);
 
     if(params.count)
     {   // Other boss not dead.

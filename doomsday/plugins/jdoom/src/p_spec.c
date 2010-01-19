@@ -275,10 +275,10 @@ boolean P_ActivateLine(linedef_t *ld, mobj_t *mo, int side, int actType)
  * Called every time a thing origin is about to cross a line with a non 0
  * special.
  */
-static void crossSpecialLine(linedef_t *line, int side, mobj_t *thing)
+static void crossSpecialLine(linedef_t* line, int side, mobj_t* thing)
 {
-    int                 ok;
-    xlinedef_t            *xline;
+    int ok;
+    xlinedef_t* xline;
 
     // Extended functionality overrides old.
     if(XL_CrossLine(line, side, thing))
@@ -477,7 +477,7 @@ static void crossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 54:
         // Platform Stop.
-        P_PlatDeactivate(xline->tag);
+        P_PlatDeactivate(P_CurrentMap(), xline->tag);
         xline->special = 0;
         break;
 
@@ -489,7 +489,7 @@ static void crossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 57:
         // Ceiling Crush Stop.
-        P_CeilingDeactivate(xline->tag);
+        P_CeilingDeactivate(P_CurrentMap(), xline->tag);
         xline->special = 0;
         break;
 
@@ -586,7 +586,7 @@ static void crossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 74:
         // Ceiling Crush Stop.
-        P_CeilingDeactivate(xline->tag);
+        P_CeilingDeactivate(P_CurrentMap(), xline->tag);
         break;
 
     case 75:
@@ -651,7 +651,7 @@ static void crossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 89:
         // Platform Stop.
-        P_PlatDeactivate(xline->tag);
+        P_PlatDeactivate(P_CurrentMap(), xline->tag);
         break;
 
     case 90:
@@ -919,7 +919,7 @@ void GameMap_SpawnSpecials(map_t* map)
     // Init special sectors.
     GameMap_DestroySectorTagLists(map);
 
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         sec = DMU_ToPtr(DMU_SECTOR, i);
         xsec = P_ToXSector(sec);
@@ -1013,7 +1013,7 @@ void GameMap_SpawnSpecials(map_t* map)
     // Init animating line specials.
     P_EmptyIterList(map->_linespecials);
     GameMap_DestroyLineTagLists(map);
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
         line = DMU_ToPtr(DMU_LINEDEF, i);
         xline = P_ToXLine(line);
@@ -1036,7 +1036,7 @@ void GameMap_SpawnSpecials(map_t* map)
     }
 
     // Init extended generalized lines and sectors.
-    XG_Init();
+    XG_Init(map);
     }
 }
 

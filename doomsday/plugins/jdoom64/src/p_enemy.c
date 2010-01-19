@@ -536,17 +536,14 @@ static int massacreMobj(void* p, void* context)
     return true; // Continue iteration.
 }
 
-int P_Massacre(void)
+int P_Massacre(map_t* map)
 {
-    int                 count = 0;
-
-    // Only massacre when actually in a level.
-    if(G_GetGameState() == GS_MAP)
+    assert(map);
     {
-        DD_IterateThinkers(P_MobjThinker, massacreMobj, &count);
-    }
-
+    int count = 0;
+    Map_IterateThinkers(map, P_MobjThinker, massacreMobj, &count);
     return count;
+    }
 }
 
 typedef struct {
@@ -557,7 +554,7 @@ typedef struct {
 static int countMobjOfType(void* p, void* context)
 {
     countmobjoftypeparams_t* params = (countmobjoftypeparams_t*) context;
-    mobj_t*             mo = (mobj_t*) p;
+    mobj_t* mo = (mobj_t*) p;
 
     if(params->type == mo->type && mo->health > 0)
         params->count++;
@@ -639,7 +636,7 @@ void C_DECL A_RectSpecial(mobj_t* actor)
     // Check if there are no more Bitches left in the map.
     params.type = actor->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(map, P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {   // No Bitches left alive.
@@ -657,21 +654,24 @@ void C_DECL A_RectSpecial(mobj_t* actor)
  */
 void C_DECL A_PossSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4444;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -680,21 +680,24 @@ void C_DECL A_PossSpecial(mobj_t* mo)
  */
 void C_DECL A_SposSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4445;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -703,21 +706,24 @@ void C_DECL A_SposSpecial(mobj_t* mo)
  */
 void C_DECL A_TrooSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = (mo->type == MT_TROOP? 4446 : 4447);
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -726,21 +732,24 @@ void C_DECL A_TrooSpecial(mobj_t* mo)
  */
 void C_DECL A_SargSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4448;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -749,21 +758,24 @@ void C_DECL A_SargSpecial(mobj_t* mo)
  */
 void C_DECL A_HeadSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4450;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -772,21 +784,24 @@ void C_DECL A_HeadSpecial(mobj_t* mo)
  */
 void C_DECL A_SkulSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4452;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -795,21 +810,24 @@ void C_DECL A_SkulSpecial(mobj_t* mo)
  */
 void C_DECL A_Bos2Special(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4453;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -818,21 +836,24 @@ void C_DECL A_Bos2Special(mobj_t* mo)
  */
 void C_DECL A_BossSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4454;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -841,21 +862,24 @@ void C_DECL A_BossSpecial(mobj_t* mo)
  */
 void C_DECL A_PainSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4455;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -864,21 +888,24 @@ void C_DECL A_PainSpecial(mobj_t* mo)
  */
 void C_DECL A_FattSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4456;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -887,21 +914,24 @@ void C_DECL A_FattSpecial(mobj_t* mo)
  */
 void C_DECL A_BabySpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
-        linedef_t*          dummyLine = P_AllocDummyLine();
+        linedef_t* dummyLine = P_AllocDummyLine();
 
         P_ToXLine(dummyLine)->tag = 4457;
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
+    }
     }
 }
 
@@ -910,13 +940,15 @@ void C_DECL A_BabySpecial(mobj_t* mo)
  */
 void C_DECL A_CybrSpecial(mobj_t* mo)
 {
+    assert(mo);
+    {
     countmobjoftypeparams_t params;
 
     A_Fall(mo);
 
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) mo), P_MobjThinker, countMobjOfType, &params);
 
     if(!params.count)
     {
@@ -926,6 +958,7 @@ void C_DECL A_CybrSpecial(mobj_t* mo)
         EV_DoDoor(dummyLine, FT_LOWERTOLOWEST);
         P_FreeDummyLine(dummyLine);
     }
+    }
 }
 
 /**
@@ -933,6 +966,8 @@ void C_DECL A_CybrSpecial(mobj_t* mo)
  */
 void C_DECL A_Look(mobj_t* actor)
 {
+    assert(actor);
+    {
     sector_t* sec = NULL;
     mobj_t* targ;
 
@@ -964,7 +999,7 @@ void C_DECL A_Look(mobj_t* actor)
   seeyou:
     if(actor->info->seeSound)
     {
-        int                 sound;
+        int sound;
 
         switch(actor->info->seeSound)
         {
@@ -995,6 +1030,7 @@ void C_DECL A_Look(mobj_t* actor)
     }
 
     P_MobjChangeState(actor, P_GetState(actor->type, SN_SEE));
+    }
 }
 
 /**
@@ -1002,8 +1038,10 @@ void C_DECL A_Look(mobj_t* actor)
  */
 void C_DECL A_TargetCamera(mobj_t* actor)
 {
-    int                 i;
-    player_t*           player;
+    assert(actor);
+    {
+    int i;
+    player_t* player;
 
     for(i = 0; i < MAXPLAYERS; ++i)
     {
@@ -1018,6 +1056,7 @@ void C_DECL A_TargetCamera(mobj_t* actor)
 
     // Should never get here.
     Con_Error("A_TargetCamera: Could not find suitable target!");
+    }
 }
 
 /**
@@ -1025,13 +1064,15 @@ void C_DECL A_TargetCamera(mobj_t* actor)
  */
 void C_DECL A_Chase(mobj_t* actor)
 {
-    int                 delta;
-    statenum_t          state;
+    assert(actor);
+    {
+    int delta;
+    statenum_t state;
 
     // jd64 >
     if(actor->flags & MF_FLOAT)
     {
-        int                 r = P_Random();
+        int r = P_Random();
 
         if(r < 64)
             actor->mom[MZ] += 1;
@@ -1134,15 +1175,18 @@ void C_DECL A_Chase(mobj_t* actor)
     {
         S_StartSound(actor->info->activeSound, actor);
     }
+    }
 }
 
 void C_DECL A_RectChase(mobj_t* actor)
 {
+    assert(actor);
     A_Chase(actor);
 }
 
-void C_DECL A_FaceTarget(mobj_t *actor)
+void C_DECL A_FaceTarget(mobj_t* actor)
 {
+    assert(actor);
     if(!actor->target)
         return;
 
@@ -1158,14 +1202,15 @@ void C_DECL A_FaceTarget(mobj_t *actor)
 
 void C_DECL A_BspiFaceTarget(mobj_t* actor)
 {
+    assert(actor);
     A_FaceTarget(actor);
 }
 
-void C_DECL A_PosAttack(mobj_t *actor)
+void C_DECL A_PosAttack(mobj_t* actor)
 {
-    int                 damage;
-    angle_t             angle;
-    float               slope;
+    int damage;
+    angle_t angle;
+    float slope;
 
     if(!actor->target)
         return;
@@ -1791,7 +1836,7 @@ void C_DECL A_PainShootSkull(mobj_t* actor, angle_t angle)
         // Count total number currently on the map.
         params.type = MT_SKULL;
         params.count = 0;
-        DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+        Map_IterateThinkers(map, P_MobjThinker, countMobjOfType, &params);
 
         if(params.count > 20)
             return; // Too many, don't spit another.
@@ -2026,7 +2071,7 @@ void C_DECL A_CyberDeath(mobj_t* actor)
     // Scan the remaining thinkers to see if all bosses are dead.
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(map, P_MobjThinker, countMobjOfType, &params);
 
     if(params.count)
     {   // Other boss not dead.
@@ -2122,7 +2167,7 @@ void C_DECL A_BarrelExplode(mobj_t* actor)
     // Scan the remaining thinkers to see if all bosses are dead.
     params.type = actor->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(map, P_MobjThinker, countMobjOfType, &params);
 
     if(params.count)
     {   // Other boss not dead.
@@ -2172,7 +2217,7 @@ void C_DECL A_BossDeath(mobj_t* mo)
     // Scan the remaining thinkers to see if all bosses are dead.
     params.type = mo->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(map, P_MobjThinker, countMobjOfType, &params);
 
     if(params.count)
     {   // Other boss not dead.

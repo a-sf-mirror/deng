@@ -160,7 +160,7 @@ xsector_t* P_ToXSectorOfSubsector(subsector_t* subsector)
 xlinedef_t* GameMap_XLineDef(map_t* map, uint index)
 {
     assert(map);
-    if(index >= numlines)
+    if(index >= Map_NumLineDefs(map))
         return NULL;
     return &map->_xLineDefs[index];
 }
@@ -177,7 +177,7 @@ xlinedef_t* GameMap_XLineDef(map_t* map, uint index)
 xsector_t* GameMap_XSector(map_t* map, uint index)
 {
     assert(map);
-    if(index >= numsectors)
+    if(index >= Map_NumSectors(map))
         return NULL;
     return &map->_xSectors[index];
 }
@@ -220,7 +220,7 @@ void P_SetupForMapData(int type, uint num)
 }
 
 #if __JDOOM64__
-static void getSurfaceColor(uint idx, float rgba[4])
+static void getSurfaceColor(map_t* map, uint idx, float rgba[4])
 {
     if(!idx)
     {
@@ -228,9 +228,9 @@ static void getSurfaceColor(uint idx, float rgba[4])
     }
     else
     {
-        rgba[0] = P_GetObjectRecordFloat(MO_LIGHT, idx-1, MO_COLORR);
-        rgba[1] = P_GetObjectRecordFloat(MO_LIGHT, idx-1, MO_COLORG);
-        rgba[2] = P_GetObjectRecordFloat(MO_LIGHT, idx-1, MO_COLORB);
+        rgba[0] = P_GetObjectRecordFloat(map, MO_LIGHT, idx-1, MO_COLORR);
+        rgba[1] = P_GetObjectRecordFloat(map, MO_LIGHT, idx-1, MO_COLORG);
+        rgba[2] = P_GetObjectRecordFloat(map, MO_LIGHT, idx-1, MO_COLORB);
         rgba[3] = 1;
     }
 }
@@ -249,23 +249,22 @@ int applySurfaceColor(void* obj, void* context)
 
 #define LTF_SWAPCOLORS      4
 
-    linedef_t*          li = (linedef_t*) obj;
+    linedef_t* li = (linedef_t*) obj;
     applysurfacecolorparams_t* params =
         (applysurfacecolorparams_t*) context;
-    byte                dFlags =
-        P_GetObjectRecordByte(MO_XLINEDEF, DMU_ToIndex(li), MO_DRAWFLAGS);
-    byte                tFlags =
-        P_GetObjectRecordByte(MO_XLINEDEF, DMU_ToIndex(li), MO_TEXFLAGS);
+    map_t* map = P_CurrentMap();
+    byte dFlags = P_GetObjectRecordByte(map, MO_XLINEDEF, DMU_ToIndex(li), MO_DRAWFLAGS);
+    byte tFlags = P_GetObjectRecordByte(map, MO_XLINEDEF, DMU_ToIndex(li), MO_TEXFLAGS);
 
     if((dFlags & LDF_BLEND) &&
        params->frontSec == DMU_GetPtrp(li, DMU_FRONT_SECTOR))
     {
-        sidedef_t*          side = DMU_GetPtrp(li, DMU_SIDEDEF0);
+        sidedef_t* side = DMU_GetPtrp(li, DMU_SIDEDEF0);
 
         if(side)
         {
-            int                 flags;
-            float*              top, *bottom;
+            int flags;
+            float* top, *bottom;
 
             top = (tFlags & LTF_SWAPCOLORS)? params->bottomColor :
                 params->topColor;
@@ -288,12 +287,12 @@ int applySurfaceColor(void* obj, void* context)
     if((dFlags & LDF_BLEND) &&
        params->frontSec == DMU_GetPtrp(li, DMU_BACK_SECTOR))
     {
-        sidedef_t*          side = DMU_GetPtrp(li, DMU_SIDEDEF1);
+        sidedef_t* side = DMU_GetPtrp(li, DMU_SIDEDEF1);
 
         if(side)
         {
-            int                 flags;
-            float*              top, *bottom;
+            int flags;
+            float* top, *bottom;
 
             top = /*(tFlags & LTF_SWAPCOLORS)? params->bottomColor :*/
                 params->topColor;
@@ -400,36 +399,36 @@ static void P_LoadMapObjs(map_t* map)
 {
     uint i;
 
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
         xlinedef_t* xl = &map->_xLineDefs[i];
 
-        xl->origID = P_GetObjectRecordInt(MO_XLINEDEF, i, MO_ORIGINALID);
-        xl->flags = P_GetObjectRecordShort(MO_XLINEDEF, i, MO_FLAGS);
+        xl->origID = P_GetObjectRecordInt(map, MO_XLINEDEF, i, MO_ORIGINALID);
+        xl->flags = P_GetObjectRecordShort(map, MO_XLINEDEF, i, MO_FLAGS);
 #if __JHEXEN__
-        xl->special = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_TYPE);
-        xl->arg1 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG0);
-        xl->arg2 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG1);
-        xl->arg3 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG2);
-        xl->arg4 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG3);
-        xl->arg5 = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_ARG4);
+        xl->special = P_GetObjectRecordByte(map, MO_XLINEDEF, i, MO_TYPE);
+        xl->arg1 = P_GetObjectRecordByte(map, MO_XLINEDEF, i, MO_ARG0);
+        xl->arg2 = P_GetObjectRecordByte(map, MO_XLINEDEF, i, MO_ARG1);
+        xl->arg3 = P_GetObjectRecordByte(map, MO_XLINEDEF, i, MO_ARG2);
+        xl->arg4 = P_GetObjectRecordByte(map, MO_XLINEDEF, i, MO_ARG3);
+        xl->arg5 = P_GetObjectRecordByte(map, MO_XLINEDEF, i, MO_ARG4);
 #else
 # if __JDOOM64__
-        xl->special = P_GetObjectRecordByte(MO_XLINEDEF, i, MO_TYPE);
+        xl->special = P_GetObjectRecordByte(map, MO_XLINEDEF, i, MO_TYPE);
 # else
-        xl->special = P_GetObjectRecordShort(MO_XLINEDEF, i, MO_TYPE);
+        xl->special = P_GetObjectRecordShort(map, MO_XLINEDEF, i, MO_TYPE);
 # endif
-        xl->tag = P_GetObjectRecordShort(MO_XLINEDEF, i, MO_TAG);
+        xl->tag = P_GetObjectRecordShort(map, MO_XLINEDEF, i, MO_TAG);
 #endif
     }
 
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         xsector_t* xsec = &map->_xSectors[i];
 
-        xsec->origID = P_GetObjectRecordInt(MO_XSECTOR, i, MO_ORIGINALID);
-        xsec->special = P_GetObjectRecordShort(MO_XSECTOR, i, MO_TYPE);
-        xsec->tag = P_GetObjectRecordShort(MO_XSECTOR, i, MO_TAG);
+        xsec->origID = P_GetObjectRecordInt(map, MO_XSECTOR, i, MO_ORIGINALID);
+        xsec->special = P_GetObjectRecordShort(map, MO_XSECTOR, i, MO_TYPE);
+        xsec->tag = P_GetObjectRecordShort(map, MO_XSECTOR, i, MO_TAG);
 
 #if __JDOOM64__
         {
@@ -437,21 +436,21 @@ static void P_LoadMapObjs(map_t* map)
         float rgba[4];
         sector_t* sec = P_ToPtr(DMU_SECTOR, i);
 
-        getSurfaceColor(TOLIGHTIDX(
-            P_GetObjectRecordShort(MO_XSECTOR, i, MO_FLOORCOLOR)), rgba);
+        getSurfaceColor(map, TOLIGHTIDX(
+            P_GetObjectRecordShort(map, MO_XSECTOR, i, MO_FLOORCOLOR)), rgba);
         DMU_SetFloatpv(sec, DMU_FLOOR_COLOR, rgba);
 
-        getSurfaceColor(TOLIGHTIDX(
-            P_GetObjectRecordShort(MO_XSECTOR, i, MO_CEILINGCOLOR)), rgba);
+        getSurfaceColor(map, TOLIGHTIDX(
+            P_GetObjectRecordShort(map, MO_XSECTOR, i, MO_CEILINGCOLOR)), rgba);
         DMU_SetFloatpv(sec, DMU_CEILING_COLOR, rgba);
 
         // Now set the side surface colors.
         params.frontSec = sec;
-        getSurfaceColor(TOLIGHTIDX(
-            P_GetObjectRecordShort(MO_XSECTOR, i, MO_WALLTOPCOLOR)),
+        getSurfaceColor(map, TOLIGHTIDX(
+            P_GetObjectRecordShort(map, MO_XSECTOR, i, MO_WALLTOPCOLOR)),
                           params.topColor);
-        getSurfaceColor(TOLIGHTIDX(
-            P_GetObjectRecordShort(MO_XSECTOR, i, MO_WALLBOTTOMCOLOR)),
+        getSurfaceColor(map, TOLIGHTIDX(
+            P_GetObjectRecordShort(map, MO_XSECTOR, i, MO_WALLBOTTOMCOLOR)),
                           params.bottomColor);
 
         DMU_Iteratep(sec, DMU_LINEDEF, applySurfaceColor, &params);
@@ -459,7 +458,7 @@ static void P_LoadMapObjs(map_t* map)
 #endif
     }
 
-    map->numSpawnSpots = P_NumObjectRecords(MO_THING);
+    map->numSpawnSpots = P_NumObjectRecords(map, MO_THING);
 
     if(map->numSpawnSpots > 0)
         map->_spawnSpots = Z_Malloc(map->numSpawnSpots * sizeof(mapspot_t), PU_MAP, 0);
@@ -470,22 +469,22 @@ static void P_LoadMapObjs(map_t* map)
     {
         mapspot_t* spot = &map->_spawnSpots[i];
 
-        spot->pos[VX] = P_GetObjectRecordFloat(MO_THING, i, MO_X);
-        spot->pos[VY] = P_GetObjectRecordFloat(MO_THING, i, MO_Y);
-        spot->pos[VZ] = P_GetObjectRecordFloat(MO_THING, i, MO_Z);
+        spot->pos[VX] = P_GetObjectRecordFloat(map, MO_THING, i, MO_X);
+        spot->pos[VY] = P_GetObjectRecordFloat(map, MO_THING, i, MO_Y);
+        spot->pos[VZ] = P_GetObjectRecordFloat(map, MO_THING, i, MO_Z);
 
-        spot->doomEdNum = P_GetObjectRecordInt(MO_THING, i, MO_DOOMEDNUM);
-        spot->flags = P_GetObjectRecordInt(MO_THING, i, MO_FLAGS);
-        spot->angle = P_GetObjectRecordAngle(MO_THING, i, MO_ANGLE);
+        spot->doomEdNum = P_GetObjectRecordInt(map, MO_THING, i, MO_DOOMEDNUM);
+        spot->flags = P_GetObjectRecordInt(map, MO_THING, i, MO_FLAGS);
+        spot->angle = P_GetObjectRecordAngle(map, MO_THING, i, MO_ANGLE);
 
 #if __JHEXEN__
-        spot->tid = P_GetObjectRecordShort(MO_THING, i, MO_ID);
-        spot->special = P_GetObjectRecordByte(MO_THING, i, MO_SPECIAL);
-        spot->arg1 = P_GetObjectRecordByte(MO_THING, i, MO_ARG0);
-        spot->arg2 = P_GetObjectRecordByte(MO_THING, i, MO_ARG1);
-        spot->arg3 = P_GetObjectRecordByte(MO_THING, i, MO_ARG2);
-        spot->arg4 = P_GetObjectRecordByte(MO_THING, i, MO_ARG3);
-        spot->arg5 = P_GetObjectRecordByte(MO_THING, i, MO_ARG4);
+        spot->tid = P_GetObjectRecordShort(map, MO_THING, i, MO_ID);
+        spot->special = P_GetObjectRecordByte(map, MO_THING, i, MO_SPECIAL);
+        spot->arg1 = P_GetObjectRecordByte(map, MO_THING, i, MO_ARG0);
+        spot->arg2 = P_GetObjectRecordByte(map, MO_THING, i, MO_ARG1);
+        spot->arg3 = P_GetObjectRecordByte(map, MO_THING, i, MO_ARG2);
+        spot->arg4 = P_GetObjectRecordByte(map, MO_THING, i, MO_ARG3);
+        spot->arg5 = P_GetObjectRecordByte(map, MO_THING, i, MO_ARG4);
 #endif
 
 #if __JHERETIC__
@@ -499,7 +498,7 @@ static void P_LoadMapObjs(map_t* map)
         // Sound sequence origin?
         if(spot->doomEdNum >= 1400 && spot->doomEdNum < 1410)
         {
-            subsector_t* ssec = P_PointInSubSector(spot->pos[VX], spot->pos[VY]);
+            subsector_t* ssec = Map_PointInSubsector(map, spot->pos[VX], spot->pos[VY]);
             xsector_t* xsector = P_ToXSector(DMU_GetPtrp(ssec, DMU_SECTOR));
 
             xsector->seqType = spot->doomEdNum - 1400;
@@ -647,7 +646,7 @@ static void interpretLinedefFlags(map_t* map)
     uint i;
 
     // Interpret the archived map linedef flags and update accordingly.
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
         xlinedef_t* xline = &map->_xLineDefs[i];
         int flags = 0;
@@ -731,8 +730,7 @@ void GameMap_Precache(map_t* map)
     assert(map);
 
     // Preload graphics.
-    R_PrecacheMap();
-    R_PrecachePSprites();
+    Map_Precache(map);
 
 #if __JDOOM__
     {
@@ -796,7 +794,7 @@ int P_SetupMapWorker(void* ptr)
     map_t* map = p->map;
 
     // Let the engine know that we are about to start setting up a map.
-    R_SetupMap(DDSMM_INITIALIZE, 0);
+    R_BeginSetupMap();
 
     // It begins...
     map->inSetup = true;
@@ -806,7 +804,7 @@ int P_SetupMapWorker(void* ptr)
         return 0; // Failed.
     }
 
-    DD_InitThinkers();
+    Map_InitThinkers(map);
     P_LoadMapObjs(map);
 
 #if __JDOOM__
@@ -856,7 +854,7 @@ int P_SetupMapWorker(void* ptr)
 
     // Someone may want to do something special now that the map has been
     // fully set up.
-    R_SetupMap(DDSMM_FINALIZE, 0);
+    R_SetupMap(map, DDSMM_FINALIZE, 0);
 
     // It ends.
     map->inSetup = false;
@@ -924,7 +922,7 @@ boolean GameMap_Load(map_t* map, skillmode_t skill)
     result = Con_Busy(BUSYF_ACTIVITY | /*BUSYF_PROGRESS_BAR |*/ (verbose? BUSYF_CONSOLE_OUTPUT : 0),
                       "Loading map...", P_SetupMapWorker, &p);
 
-    R_SetupMap(DDSMM_AFTER_BUSY, 0);
+    R_SetupMap(map, DDSMM_AFTER_BUSY, 0);
     return result;
     }
 }
@@ -970,6 +968,7 @@ void P_SetupMap(map_t* map, skillmode_t skill)
 
     loadActionScripts(map->mapID);
 
+    R_PrecachePSprites();
     P_PrintMapBanner(map->episodeNum, map->mapNum);
 
     // @todo startTic should not be set until the first player enters the map.
@@ -1035,7 +1034,7 @@ static void P_FinalizeMap(map_t* map)
     uint i;
     material_t* mat = P_MaterialForName(MN_TEXTURES, "NUKE24");
 
-    for(i = 0; i < numlines; ++i)
+    for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
         linedef_t* line = DMU_ToPtr(DMU_LINEDEF, i);
         uint k;
@@ -1061,7 +1060,7 @@ static void P_FinalizeMap(map_t* map)
 
 #elif __JHEXEN__
     // Check if the map should have lightening.
-    P_InitLightning();
+    P_InitLightning(map);
 
     SN_StopAllSequences();
 #endif

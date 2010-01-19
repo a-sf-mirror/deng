@@ -61,6 +61,7 @@ boolean         Thinkers_Iterate(thinkers_t* thinkers, think_t func, byte flags,
 
 struct map_s*   Thinker_Map(thinker_t* th);
 void            Thinker_SetMap(thinker_t* th, struct map_s* map);
+void            Thinker_SetStasis(thinker_t* th, boolean on);
 
 // @todo Does not belong in this file?
 boolean         P_IsMobjThinker(thinker_t* th, void*);

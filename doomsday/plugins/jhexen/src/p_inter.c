@@ -1335,22 +1335,24 @@ static int findActiveMinotaur(void* p, void* context)
 
 mobj_t* ActiveMinotaur(player_t* master)
 {
+    assert(master);
+    {
     findactiveminotaurparams_t params;
 
     params.master = master;
     params.foundMobj = NULL;
 
-    if(!DD_IterateThinkers(P_MobjThinker, findActiveMinotaur, &params))
+    if(!Map_IterateThinkers(Thinker_Map((thinker_t*) master->plr->mo), P_MobjThinker, findActiveMinotaur, &params))
         return params.foundMobj;
-
     return NULL;
+    }
 }
 
 void P_KillMobj(mobj_t* source, mobj_t* target)
 {
-    int                 dummy;
-    mobj_t*             master;
-    statenum_t          state;
+    int dummy;
+    mobj_t* master;
+    statenum_t state;
 
     if(!target)
         return; // Nothing to kill.

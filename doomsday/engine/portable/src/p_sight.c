@@ -337,14 +337,12 @@ static boolean crossBSPNode(map_t* map, binarytree_t* tree, losdata_t* los)
  * @return              @c true if the traverser function returns @c true
  *                      for all visited lines.
  */
-boolean P_CheckLineSight(const float from[3], const float to[3],
-                         float bottomSlope, float topSlope, int flags)
+boolean Map_CheckLineSight(map_t* map, const float from[3], const float to[3],
+                           float bottomSlope, float topSlope, int flags)
 {
+    assert(map);
+    {
     losdata_t los;
-    map_t* map = P_CurrentMap();
-
-    if(!map)
-        return true;
 
     los.flags = flags;
     los.startZ = from[VZ];
@@ -382,4 +380,5 @@ boolean P_CheckLineSight(const float from[3], const float to[3],
 
     validCount++;
     return crossBSPNode(map, map->_rootNode, &los);
+    }
 }

@@ -88,7 +88,7 @@ int LoadResources(int hookType, int param, void* data);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-map_t theMap, *map = &theMap;
+wadmap_t theMap, *wadmap = &theMap;
 boolean verbose;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
@@ -152,7 +152,7 @@ static int mapLumpTypeForName(const char* name)
         {ML_INVALID,    NULL}
     };
 
-    int         i;
+    int i;
 
     if(!name)
         return ML_INVALID;
@@ -185,9 +185,9 @@ int LoadResources(int hookType, int param, void* data)
  */
 int ConvertMapHook(int hookType, int param, void* data)
 {
-    lumpnum_t           i, numLumps, totalLumps, startLump;
-    lumpnum_t*          lumpList;
-    char*               mapID = (char*) data;
+    lumpnum_t i, numLumps, totalLumps, startLump;
+    lumpnum_t* lumpList;
+    char* mapID = (char*) data;
 
     if((startLump = W_CheckNumForName(mapID)) == -1)
         return false;
@@ -211,8 +211,8 @@ int ConvertMapHook(int hookType, int param, void* data)
     // Keep checking lumps to see if its a map data lump.
     for(i = startLump + 1; i < totalLumps; ++i)
     {
-        int                 lumpType;
-        const char*         lumpName;
+        const char* lumpName;
+        int lumpType;
 
         // Lookup the lump name in our list of known map lump names.
         lumpName = W_LumpName(i);
@@ -234,7 +234,7 @@ int ConvertMapHook(int hookType, int param, void* data)
     verbose = ArgExists("-verbose");
 
     Con_Message("WadMapConverter::Convert: Attempting map conversion...\n");
-    memset(map, 0, sizeof(*map));
+    memset(wadmap, 0, sizeof(*wadmap));
 
     if(!IsSupportedFormat(lumpList, numLumps))
     {
@@ -245,8 +245,8 @@ int ConvertMapHook(int hookType, int param, void* data)
 
     // A supported format.
     Con_Message("WadMapConverter::Convert: %s map format.\n",
-                (map->format == MF_DOOM64? "DOOM64" :
-                 map->format == MF_HEXEN? "Hexen" : "DOOM"));
+                (wadmap->format == MF_DOOM64? "DOOM64" :
+                 wadmap->format == MF_HEXEN? "Hexen" : "DOOM"));
 
     // Load it in.
     if(!LoadMap(lumpList, numLumps))

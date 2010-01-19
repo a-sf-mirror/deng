@@ -35,6 +35,6 @@
 void        P_SpawnBrainTargets(struct map_s* map);
 
 void        P_NoiseAlert(mobj_t* target, mobj_t* emmiter);
-int         P_Massacre(void);
+int         P_Massacre(struct map_s* map);
 
 #endif

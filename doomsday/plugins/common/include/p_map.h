@@ -61,8 +61,6 @@ float           P_AimLineAttack(mobj_t* t1, angle_t angle, float distance);
 void            P_LineAttack(mobj_t* t1, angle_t angle, float distance,
                              float slope, int damage);
 
-float           P_GetGravity(void);
-
 boolean         P_CheckSides(mobj_t* actor, float x, float y);
 
 #if __JHEXEN__

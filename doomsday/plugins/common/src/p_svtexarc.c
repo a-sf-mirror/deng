@@ -139,31 +139,34 @@ void SV_PrepareMaterial(material_t* mat, materialarchive_t* arc)
  * reference to a material which is not currently used on any world surface
  * (for example, thinkers that will change a material at some later time)?
  */
-void SV_InitMaterialArchives(void)
+void SV_InitMaterialArchives(map_t* map)
 {
-    uint                i;
+    assert(map);
+    {
+    uint i;
 
     matArchive.version = MATERIAL_ARCHIVE_VERSION;
 
     initMaterialNameLUT();
 
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         SV_PrepareMaterial(DMU_GetPtr(DMU_SECTOR, i, DMU_FLOOR_MATERIAL), &matArchive);
         SV_PrepareMaterial(DMU_GetPtr(DMU_SECTOR, i, DMU_CEILING_MATERIAL), &matArchive);
     }
 
-    for(i = 0; i < numsides; ++i)
+    for(i = 0; i < Map_NumSideDefs(map); ++i)
     {
         SV_PrepareMaterial(DMU_GetPtr(DMU_SIDEDEF, i, DMU_MIDDLE_MATERIAL), &matArchive);
         SV_PrepareMaterial(DMU_GetPtr(DMU_SIDEDEF, i, DMU_TOP_MATERIAL), &matArchive);
         SV_PrepareMaterial(DMU_GetPtr(DMU_SIDEDEF, i, DMU_BOTTOM_MATERIAL), &matArchive);
     }
+    }
 }
 
 unsigned short SV_SearchArchive(materialarchive_t* arc, const char* name)
 {
-    int                 i;
+    int i;
 
     for(i = 0; i < arc->count; ++i)
     {

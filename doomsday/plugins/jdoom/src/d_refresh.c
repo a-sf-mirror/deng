@@ -513,16 +513,18 @@ void P_SetDoomsdayFlags(mobj_t *mo)
  */
 void R_SetAllDoomsdayFlags(void)
 {
-    uint i;
-    mobj_t* iter;
-
-    // Only visible things are in the sector thinglists, so this is good.
-    for(i = 0; i < numsectors; ++i)
+    map_t* map = P_CurrentMap();
+    if(map)
     {
-        for(iter = DMU_GetPtr(DMU_SECTOR, i, DMU_MOBJS); iter;
-            iter = iter->sNext)
+        uint i;
+        // Only visible things are in the sector thinglists, so this is good.
+        for(i = 0; i < Map_NumSectors(map); ++i)
         {
-            P_SetDoomsdayFlags(iter);
+            mobj_t* iter;
+            for(iter = DMU_GetPtr(DMU_SECTOR, i, DMU_MOBJS); iter; iter = iter->sNext)
+            {
+                P_SetDoomsdayFlags(iter);
+            }
         }
     }
 }

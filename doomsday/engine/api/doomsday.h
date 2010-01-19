@@ -169,14 +169,55 @@ typedef struct material_s { int type; } material_t;
     void            P_DestroyMap(struct map_s* map);
 
     boolean         Map_Load(struct map_s* map);
+    void            Map_Precache(struct map_s* map);
+
+    void            Map_Bounds(struct map_s* map, float* min, float* max);
+
+    uint            Map_NumSectors(struct map_s* map);
+    uint            Map_NumLineDefs(struct map_s* map);
+    uint            Map_NumSideDefs(struct map_s* map);
+    uint            Map_NumVertexes(struct map_s* map);
+    uint            Map_NumPolyobjs(struct map_s* map);
+    uint            Map_NumSegs(struct map_s* map);
+    uint            Map_NumSubsectors(struct map_s* map);
+    uint            Map_NumNodes(struct map_s* map);
+    uint            Map_NumPlanes(struct map_s* map);
+
+    // World: Map: Thinkers.
+    void            Map_InitThinkers(struct map_s* map);
+    int             Map_IterateThinkers(struct map_s* map, think_t func, int (*callback) (void* p, void* ctx), void* context);
+    void            Map_RunThinkers(struct map_s* map);
+
+    void            Map_ThinkerAdd(struct map_s* map, thinker_t* th);
+    void            Map_RemoveThinker(struct map_s* map, thinker_t* th);
+
+    struct polyobj_s* Map_Polyobj(struct map_s* map, uint num);
+
+    struct subsector_s* Map_PointInSubsector(struct map_s* map, float x, float y);
+
+    // Object in bounding box iterators.
+    boolean         Map_MobjsBoxIterator(struct map_s* map, const float box[4],
+                                         boolean (*func) (struct mobj_s*, void*),
+                                         void* data);
+    boolean         Map_LineDefsBoxIterator(struct map_s* map, const float box[4],
+                                            boolean (*func) (struct linedef_s*, void*),
+                                            void* data);
+    boolean         Map_SubsectorsBoxIterator(struct map_s* map, const float box[4], void* p,
+                                              boolean (*func) (subsector_t*, void*),
+                                              void* data);
+
+    boolean         Map_PathTraverse(struct map_s* map, float x1, float y1, float x2, float y2, int flags,
+                                     boolean (*trav) (intercept_t*));
+    boolean         Map_CheckLineSight(struct map_s* map, const float from[3], const float to[3],
+                                       float bottomSlope, float topSlope, int flags);
 
     // Map building interface.
-    boolean         MPE_Begin(void);
-    boolean         MPE_End(void);
+    boolean         MPE_Begin(struct map_s* map);
+    boolean         Map_EditEnd(struct map_s* map);
 
-    objectrecordid_t MPE_CreateVertex(float x, float y);
-    boolean         MPE_CreateVertices(size_t num, float* values, objectrecordid_t* indices);
-    objectrecordid_t MPE_CreateSideDef(objectrecordid_t sector, short flags,
+    objectrecordid_t MPE_CreateVertex(struct map_s* map, float x, float y);
+    boolean         MPE_CreateVertices(struct map_s* map, size_t num, float* values, objectrecordid_t* indices);
+    objectrecordid_t MPE_CreateSideDef(struct map_s* map, objectrecordid_t sector, short flags,
                                       material_t* topMaterial,
                                       float topOffsetX, float topOffsetY, float topRed,
                                       float topGreen, float topBlue,
@@ -188,17 +229,17 @@ typedef struct material_s { int type; } material_t;
                                       float bottomOffsetX, float bottomOffsetY,
                                       float bottomRed, float bottomGreen,
                                       float bottomBlue);
-    objectrecordid_t MPE_CreateLineDef(objectrecordid_t v1, objectrecordid_t v2, objectrecordid_t frontSide,
+    objectrecordid_t MPE_CreateLineDef(struct map_s* map, objectrecordid_t v1, objectrecordid_t v2, objectrecordid_t frontSide,
                                       objectrecordid_t backSide, int flags);
-    objectrecordid_t MPE_CreateSector(float lightlevel, float red, float green, float blue);
-    objectrecordid_t MPE_CreatePlane(float height, material_t* material,
+    objectrecordid_t MPE_CreateSector(struct map_s* map, float lightlevel, float red, float green, float blue);
+    objectrecordid_t MPE_CreatePlane(struct map_s* map, float height, material_t* material,
                                      float matOffsetX, float matOffsetY,
                                      float r, float g, float b, float a,
                                      float normalX, float normalY, float normalZ);
-    void             MPE_SetSectorPlane(objectrecordid_t sector, uint type, objectrecordid_t plane);
-    objectrecordid_t MPE_CreatePolyobj(objectrecordid_t* lines, uint linecount,
+    void             MPE_SetSectorPlane(struct map_s* map, objectrecordid_t sector, uint type, objectrecordid_t plane);
+    objectrecordid_t MPE_CreatePolyobj(struct map_s* map, objectrecordid_t* lines, uint linecount,
                                        int tag, int sequenceType, float anchorX, float anchorY);
-    boolean          MPE_GameObjectRecordProperty(const char* objName, uint idx,
+    boolean          MPE_GameObjectRecordProperty(struct map_s* map, const char* objName, uint idx,
                                          const char* propName, valuetype_t type,
                                          void* data);
 
@@ -226,30 +267,12 @@ typedef struct material_s { int type; } material_t;
     float           P_InterceptVector(divline_t* v2, divline_t* v1);
     void            DMU_LineOpening(void* p);
 
-    // Object in bounding box iterators.
-    boolean         P_MobjsBoxIterator(const float box[4],
-                                       boolean (*func) (struct mobj_s*, void*),
-                                       void* data);
-    boolean         P_LineDefsBoxIterator(const float box[4],
-                                          boolean (*func) (struct linedef_s*, void*),
-                                          void* data);
-    boolean         P_SubsectorsBoxIterator(const float box[4], void* p,
-                                              boolean (*func) (subsector_t*, void*),
-                                              void* data);
-
-    boolean         P_PathTraverse(float x1, float y1, float x2, float y2, int flags,
-                                   boolean (*trav) (intercept_t*));
-    boolean         P_CheckLineSight(const float from[3], const float to[3],
-                                     float bottomSlope, float topSlope, int flags);
-
     // Play: Controls.
     void            P_NewPlayerControl(int id, controltype_t type, const char* name, const char* bindContext);
     void            P_GetControlState(int playerNum, int control, float* pos, float* relativeOffset);
     int             P_GetImpulseControlState(int playerNum, int control);
 
     // Play: Map Data Updates and Information Access.
-    void*           P_GetVariable(int value);
-    void            P_SetVariable(int value, void* data);
     objectrecordid_t P_ToIndex(const void* ptr);
     void*           P_ToPtr(int type, objectrecordid_t index);
     int             P_Callback(int type, objectrecordid_t index,
@@ -267,8 +290,7 @@ typedef struct material_s { int type; } material_t;
     unsigned int    P_MaterialCheckIndexForName(material_namespace_t mnamespace, const char* rawName);
 
     int             P_NewMaterialGroup(int flags);
-    void            P_AddMaterialToGroup(int groupNum, int num,
-                                         int tics, int randomTics);
+    void            P_AddMaterialToGroup(int groupNum, int num, int tics, int randomTics);
     void            P_MaterialPreload(material_t* mat);
 
     // @kludge
@@ -350,13 +372,13 @@ typedef struct material_s { int type; } material_t;
     void            P_GetFloatpv(void* ptr, uint prop, float* params);
     void            P_GetPtrpv(void* ptr, uint prop, void* params);
 
-    uint            P_NumObjectRecords(int identifier);
-    byte            P_GetObjectRecordByte(int identifier, uint elmIdx, int propIdentifier);
-    short           P_GetObjectRecordShort(int identifier, uint elmIdx, int propIdentifier);
-    int             P_GetObjectRecordInt(int identifier, uint elmIdx, int propIdentifier);
-    fixed_t         P_GetObjectRecordFixed(int identifier, uint elmIdx, int propIdentifier);
-    angle_t         P_GetObjectRecordAngle(int identifier, uint elmIdx, int propIdentifier);
-    float           P_GetObjectRecordFloat(int identifier, uint elmIdx, int propIdentifier);
+    uint            P_NumObjectRecords(struct map_s* map, int identifier);
+    byte            P_GetObjectRecordByte(struct map_s* map, int identifier, uint elmIdx, int propIdentifier);
+    short           P_GetObjectRecordShort(struct map_s* map, int identifier, uint elmIdx, int propIdentifier);
+    int             P_GetObjectRecordInt(struct map_s* map, int identifier, uint elmIdx, int propIdentifier);
+    fixed_t         P_GetObjectRecordFixed(struct map_s* map, int identifier, uint elmIdx, int propIdentifier);
+    angle_t         P_GetObjectRecordAngle(struct map_s* map, int identifier, uint elmIdx, int propIdentifier);
+    float           P_GetObjectRecordFloat(struct map_s* map, int identifier, uint elmIdx, int propIdentifier);
 
     // Play: Misc.
     void            P_MergeCommand(ticcmd_t* dest, ticcmd_t* src); // temporary.
@@ -386,27 +408,17 @@ typedef struct material_s { int type; } material_t;
     void            P_PolyobjLinkLineDefs(struct polyobj_s* po);
     void            P_PolyobjUnlinkLineDefs(struct polyobj_s* po);
 
-    struct polyobj_s* P_GetPolyobj(uint num);
     void            P_SetPolyobjCallback(void (*func)(struct mobj_s*, void*, void*));
 
     // Play: Thinkers.
-    void            DD_InitThinkers(void);
-    int             DD_IterateThinkers(think_t func,
-                              int (*callback) (void* p, void* ctx),
-                              void* context);
-    void            DD_RunThinkers(void);
-
-    void            DD_ThinkerAdd(thinker_t* th);
-    void            DD_ThinkerRemove(thinker_t* th);
-    void            DD_ThinkerSetStasis(thinker_t* th, boolean on);
-
     struct map_s*   Thinker_Map(thinker_t* th);
+    void            Thinker_SetStasis(thinker_t* th, boolean on);
 
     // Refresh.
     int             DD_GetFrameRate(void);
     void            R_SetDataPath(const char* path);
-    void            R_SetupMap(int mode, int flags);
-    void            R_PrecacheMap(void);
+    void            R_BeginSetupMap(void);
+    void            R_SetupMap(struct map_s* map, int mode, int flags);
     void            R_PrecacheMobjNum(int mobjtypeNum);
     void            R_PrecachePatch(lumpnum_t lump);
     void            R_PrecacheSkinsForState(int stateIndex);
@@ -420,7 +432,6 @@ typedef struct material_s { int type; } material_t;
     void            R_HSVToRGB(float* rgb, float h, float s, float v);
     angle_t         R_PointToAngle2(float x1, float y1, float x2,
                                     float y2);
-    struct subsector_s* P_PointInSubSector(float x, float y);
 
     colorpaletteid_t R_CreateColorPalette(const char* fmt, const char* name,
                                           const byte* data, size_t num);

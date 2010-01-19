@@ -88,8 +88,6 @@ void*           P_DummyExtraData(void* dummy);
 
 void*           P_ToPtr(int type, objectrecordid_t id);
 objectrecordid_t P_ToIndex(const void* ptr);
-void            P_SetVariable(int value, void* data);
-void*           P_GetVariable(int value);
 const char*     DMU_Str(uint prop);
 void            DMU_SetValue(valuetype_t valueType, void* dst,
                              const setargs_t* args, uint index);

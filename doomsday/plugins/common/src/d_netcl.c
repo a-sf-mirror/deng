@@ -171,9 +171,10 @@ void NetCl_UpdateGameState(byte* data)
 #if !__JHEXEN__
     respawnMonsters = gsRespawn;
 #endif
+    cfg.netGravity = gsGravity;
 
     // Some statistics.
-#if __JHEXEN__ || __JSTRIFE__
+#if __JHEXEN__
     Con_Message("Game state: Map=%i Skill=%i %s\n", gsMap, gsSkill,
                 deathmatch == 1 ? "Deathmatch" : deathmatch ==
                 2 ? "Deathmatch2" : "Co-op");
@@ -194,7 +195,7 @@ void NetCl_UpdateGameState(byte* data)
 #endif
 
     // Start reading after the GS packet.
-#if __JHEXEN__ || __JSTRIFE__
+#if __JHEXEN__
     NetCl_SetReadBuffer(data + 16);
 #else
     NetCl_SetReadBuffer(data + 8);
@@ -211,9 +212,6 @@ void NetCl_UpdateGameState(byte* data)
         gameEpisode = gsEpisode;
         gameMap = gsMap;
     }
-
-    // Set gravity.
-    DD_SetVariable(DD_GRAVITY, &gsGravity);
 
     // Camera init included?
     if(gsFlags & GSF_CAMERA_INIT)

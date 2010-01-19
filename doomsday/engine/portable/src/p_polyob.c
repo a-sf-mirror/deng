@@ -76,35 +76,31 @@ void P_SetPolyobjCallback(void (*func) (struct mobj_s*, void*, void*))
  * @param num               If MSB is set, treat num as an index, ELSE
  *                          num is a tag that *should* match one polyobj.
  */
-polyobj_t* P_GetPolyobj(uint num)
+polyobj_t* Map_Polyobj(map_t* map, uint num)
 {
-    map_t* map = P_CurrentMap();
+    assert(map);
 
-    if(map)
+    if(num & 0x80000000)
     {
-        if(num & 0x80000000)
-        {
-            uint idx = num & 0x7fffffff;
+        uint idx = num & 0x7fffffff;
 
-            if(idx < map->numPolyObjs)
-                return map->polyObjs[idx];
-        }
-        else
-        {
-            uint i;
-
-            for(i = 0; i < map->numPolyObjs; ++i)
-            {
-                polyobj_t* po = map->polyObjs[i];
-
-                if((uint) po->tag == num)
-                {
-                    return po;
-                }
-            }
-        }
+        if(idx < map->numPolyObjs)
+            return map->polyObjs[idx];
+        return NULL;
     }
 
+    {
+    uint i;
+    for(i = 0; i < map->numPolyObjs; ++i)
+    {
+        polyobj_t* po = map->polyObjs[i];
+
+        if((uint) po->tag == num)
+        {
+            return po;
+        }
+    }
+    }
     return NULL;
 }
 
@@ -239,7 +235,7 @@ void P_InitPolyobj(polyobj_t* po)
     avg.pos[VX] /= po->numLineDefs;
     avg.pos[VY] /= po->numLineDefs;
 
-    if((subsector = Map_PointInSubsector(map, avg.pos[VX], avg.pos[VY])))
+    if((subsector = Map_PointInSubsector2(map, avg.pos[VX], avg.pos[VY])))
     {
         if(subsector->polyObj)
         {

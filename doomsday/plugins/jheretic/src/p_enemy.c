@@ -496,7 +496,9 @@ static int findMobj(void* p, void* context)
 
 boolean P_LookForMonsters(mobj_t* mo)
 {
-    findmobjparams_t    params;
+    assert(mo);
+    {
+    findmobjparams_t params;
 
     if(!P_CheckSight(players[0].plr->mo, mo))
         return false; // Player can't see the monster.
@@ -512,7 +514,7 @@ boolean P_LookForMonsters(mobj_t* mo)
     params.compFlags = MF_COUNTKILL;
     params.checkLOS = true;
     params.randomSkip = 16;
-    DD_IterateThinkers(P_MobjThinker, findMobj, &params);
+    Map_IterateThinkers(P_CurrentMap(), P_MobjThinker, findMobj, &params);
 
     if(params.foundMobj)
     {
@@ -521,6 +523,7 @@ boolean P_LookForMonsters(mobj_t* mo)
     }
 
     return false;
+    }
 }
 
 /**
@@ -1399,12 +1402,8 @@ void C_DECL A_GenWizard(mobj_t* actor)
 void C_DECL A_Sor2DthInit(mobj_t* actor)
 {
     assert(actor);
-
-    // Set the animation loop counter.
-    actor->special1 = 7;
-
-    // Kill monsters early.
-    P_Massacre();
+    actor->special1 = 7; // Set the animation loop counter.
+    P_Massacre(Thinker_Map((thinker_t*) actor));
 }
 
 void C_DECL A_Sor2DthLoop(mobj_t* actor)
@@ -2182,17 +2181,14 @@ static int massacreMobj(void* p, void* context)
 /**
  * Kills all monsters.
  */
-int P_Massacre(void)
+int P_Massacre(map_t* map)
 {
-    int                 count = 0;
-
-    // Only massacre when actually in a level.
-    if(G_GetGameState() == GS_MAP)
+    assert(map);
     {
-        DD_IterateThinkers(P_MobjThinker, massacreMobj, &count);
-    }
-
+    int count = 0;
+    Map_IterateThinkers(map, P_MobjThinker, massacreMobj, &count);
     return count;
+    }
 }
 
 typedef struct {
@@ -2225,7 +2221,7 @@ void C_DECL A_BossDeath(mobj_t* actor)
         -1
     };
 
-    linedef_t*          dummyLine;
+    linedef_t* dummyLine;
     countmobjoftypeparams_t params;
 
     // Not a boss level?
@@ -2239,7 +2235,7 @@ void C_DECL A_BossDeath(mobj_t* actor)
     // Scan the remaining thinkers to see if all bosses are dead.
     params.type = actor->type;
     params.count = 0;
-    DD_IterateThinkers(P_MobjThinker, countMobjOfType, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) actor), P_MobjThinker, countMobjOfType, &params);
 
     if(params.count)
     {   // Other boss not dead.
@@ -2248,7 +2244,7 @@ void C_DECL A_BossDeath(mobj_t* actor)
 
     // Kill any remaining monsters.
     if(gameEpisode > 1)
-        P_Massacre();
+        P_Massacre(Thinker_Map((thinker_t*) actor));
 
     dummyLine = P_AllocDummyLine();
     P_ToXLine(dummyLine)->tag = 666;

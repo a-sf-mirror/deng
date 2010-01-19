@@ -727,7 +727,7 @@ void P_MobjMoveZ(mobj_t* mo)
     if(P_CameraZMovement(mo))
         return;
 
-    gravity = P_GetGravity();
+    gravity = GameMap_Gravity(map);
 
     // Check for smooth step up.
     if(mo->player && mo->pos[VZ] < mo->floorZ)
@@ -977,7 +977,7 @@ static void landedOnThing(mobj_t* mo)
         P_FallingDamage(mo->player);
         P_NoiseAlert(mo, mo);
     }
-    else if(mo->mom[MZ] < -P_GetGravity() * 12 && !mo->player->morphTics)
+    else if(mo->mom[MZ] < -GameMap_Gravity(Thinker_Map((thinker_t*) mo)) * 12 && !mo->player->morphTics)
     {
         S_StartSound(SFX_PLAYER_LAND, mo);
         switch(mo->player->class)
@@ -1147,7 +1147,7 @@ void P_MobjThinker(mobj_t* mobj)
             }
             else
             {
-                if(mobj->mom[MZ] < -P_GetGravity() * 8 && !(mobj->flags2 & MF2_FLY))
+                if(mobj->mom[MZ] < -GameMap_Gravity(map) * 8 && !(mobj->flags2 & MF2_FLY))
                 {
                     landedOnThing(mobj);
                 }
@@ -1357,9 +1357,7 @@ void P_CreateTIDList(map_t* map)
     assert(map);
     {
     size_t count = 0;
-
-    DD_IterateThinkers(P_MobjThinker, addToTIDList, &count);
-
+    Map_IterateThinkers(map, P_MobjThinker, addToTIDList, &count);
     // Add termination marker
     map->_TIDList[count] = 0;
     }
@@ -1822,7 +1820,9 @@ static int radiusBlast(void* p, void* context)
  */
 void P_BlastRadius(player_t* pl)
 {
-    mobj_t*             pmo = pl->plr->mo;
+    assert(pl);
+    {
+    mobj_t* pmo = pl->plr->mo;
     radiusblastparams_t params;
 
     S_StartSound(SFX_INVITEM_BLAST, pmo);
@@ -1830,7 +1830,8 @@ void P_BlastRadius(player_t* pl)
 
     params.source = pmo;
     params.maxDistance = BLAST_RADIUS_DIST;
-    DD_IterateThinkers(P_MobjThinker, radiusBlast, &params);
+    Map_IterateThinkers(Thinker_Map((thinker_t*) pmo), P_MobjThinker, radiusBlast, &params);
+    }
 }
 
 typedef struct {
@@ -1842,8 +1843,8 @@ typedef struct {
 static int radiusGiveArmor(void* p, void* context)
 {
     radiusgiveparams_t* params = (radiusgiveparams_t*) context;
-    mobj_t*             mo = (mobj_t*) p;
-    float               dist;
+    mobj_t* mo = (mobj_t*) p;
+    float dist;
 
     if(!mo->player || mo->health <= 0)
         return true; // Continue iteration.
@@ -1924,7 +1925,10 @@ static int radiusGiveMana(void* p, void* context)
  */
 boolean P_HealRadius(player_t* player)
 {
-    mobj_t*             pmo = player->plr->mo;
+    assert(player);
+    {
+    mobj_t* pmo = player->plr->mo;
+    map_t* map = Thinker_Map((thinker_t*) pmo);
     radiusgiveparams_t  params;
 
     params.effective = false;
@@ -1935,15 +1939,15 @@ boolean P_HealRadius(player_t* player)
     switch(player->class)
     {
     case PCLASS_FIGHTER:
-        DD_IterateThinkers(P_MobjThinker, radiusGiveArmor, &params);
+        Map_IterateThinkers(map, P_MobjThinker, radiusGiveArmor, &params);
         break;
 
     case PCLASS_CLERIC:
-        DD_IterateThinkers(P_MobjThinker, radiusGiveBody, &params);
+        Map_IterateThinkers(map, P_MobjThinker, radiusGiveBody, &params);
         break;
 
     case PCLASS_MAGE:
-        DD_IterateThinkers(P_MobjThinker, radiusGiveMana, &params);
+        Map_IterateThinkers(map, P_MobjThinker, radiusGiveMana, &params);
         break;
 
     default:
@@ -1951,6 +1955,7 @@ boolean P_HealRadius(player_t* player)
     }
 
     return params.effective;
+    }
 }
 
 /**

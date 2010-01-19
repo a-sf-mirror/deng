@@ -217,8 +217,8 @@ void SV_WriteXGPlaneMover(thinker_t* th)
     SV_WriteLong(mov->flags);
 
     i = DMU_ToIndex(mov->origin);
-    if(i >= numlines)  // Is it a real line?
-        i = 0;         // No...
+    if(i >= Map_NumLineDefs(Thinker_Map(th))) // Is it a real line?
+        i = 0; // No...
     else
         i++;
 

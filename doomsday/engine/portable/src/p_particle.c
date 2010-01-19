@@ -567,7 +567,7 @@ static void P_NewParticle(generator_t* gen)
             float x = (box[BOXLEFT]   + RNG_RandFloat() * (box[BOXRIGHT] - box[BOXLEFT]));
             float y = (box[BOXBOTTOM] + RNG_RandFloat() * (box[BOXTOP]   - box[BOXBOTTOM]));
 
-            subsector = Map_PointInSubsector(map, x, y);
+            subsector = Map_PointInSubsector2(map, x, y);
 
             if(subsector->sector == gen->sector)
                 break;
@@ -586,7 +586,7 @@ static void P_NewParticle(generator_t* gen)
             pt->pos[VX] = FLT2FIX(x);
             pt->pos[VY] = FLT2FIX(y);
 
-            if(Map_PointInSubsector(map, x, y) == subsector)
+            if(Map_PointInSubsector2(map, x, y) == subsector)
                 break; // This is a good place.
         }
 
@@ -612,7 +612,7 @@ static void P_NewParticle(generator_t* gen)
 
     // The other place where this gets updated is after moving over
     // a two-sided line.
-    pt->subsector = Map_PointInSubsector(map, FIX2FLT(pt->pos[VX]), FIX2FLT(pt->pos[VY]));
+    pt->subsector = Map_PointInSubsector2(map, FIX2FLT(pt->pos[VX]), FIX2FLT(pt->pos[VY]));
 
     // Play a stage sound?
     P_ParticleSound(pt->pos, &def->stages[pt->stage].sound);
@@ -834,7 +834,7 @@ static void P_MoveParticle(generator_t* gen, particle_t* pt)
     P_SpinParticle(gen, pt);
 
     // Changes to momentum.
-    pt->mov[VZ] -= FixedMul(FLT2FIX(map->globalGravity), st->gravity);
+    pt->mov[VZ] -= FixedMul(FLT2FIX(map->gravity), st->gravity);
 
     // Vector force.
     if(stDef->vectorForce[VX] != 0 || stDef->vectorForce[VY] != 0 ||
@@ -1097,7 +1097,7 @@ static void P_MoveParticle(generator_t* gen, particle_t* pt)
 
     // Should we update the sector pointer?
     if(tmcross)
-        pt->subsector = Map_PointInSubsector(map, FIX2FLT(x), FIX2FLT(y));
+        pt->subsector = Map_PointInSubsector2(map, FIX2FLT(x), FIX2FLT(y));
 }
 
 /**
@@ -1148,7 +1148,7 @@ void P_GeneratorThinker(generator_t* gen)
                     Cl_MobjIterator(map, PIT_ClientMobjParticles, gen);
                 }
 
-                Map_IterateThinkers(map, gx.MobjThinker, ITF_PUBLIC, manyNewParticles, gen);
+                Map_IterateThinkers2(map, gx.MobjThinker, ITF_PUBLIC, manyNewParticles, gen);
 
                 // The generator has no real source.
                 gen->source = NULL;

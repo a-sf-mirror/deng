@@ -329,14 +329,22 @@ void MobjBlockmap_Link(mobjblockmap_t* blockmap, mobj_t* mobj)
 
 boolean MobjBlockmap_Unlink(mobjblockmap_t* blockmap, mobj_t* mobj)
 {
-    uint block[2];
-
     assert(blockmap);
     assert(mobj);
+    {
+    boolean result = false;
+    uint dimensions[2], x, y;
 
-    MobjBlockmap_Block2fv(blockmap, block, mobj->pos);
-
-    return unlinkMobjFromBlock(blockmap, block[0], block[1], mobj);
+    Gridmap_Dimensions(blockmap->gridmap, dimensions);
+    for(y = 0; y < dimensions[1]; ++y)
+        for(x = 0; x < dimensions[0]; ++x)
+        {
+            if(unlinkMobjFromBlock(blockmap, x, y, mobj))
+                if(!result)
+                    result = true;
+        }
+    return result;
+    }
 }
 
 void MobjBlockmap_Bounds(mobjblockmap_t* blockmap, pvec2_t min, pvec2_t max)

@@ -331,18 +331,6 @@ static void clearSectorFlags(map_t* map)
     }
 }
 
-static int recycleMobjs(void* ptr, void* context)
-{
-    thinker_t* th = (thinker_t*) ptr;
-    if(th->id)
-    {   // Its a mobj.
-        Thinkers_Remove(Map_Thinkers(Thinker_Map(th)), th);
-        Thinker_SetMap(th, NULL);
-        P_MobjRecycle((mobj_t*) th);
-    }
-    return true; // Continue iteration.
-}
-
 static int destroyGenerator(void* ptr, void* content)
 {
     generator_t* gen = (generator_t*) ptr;
@@ -358,7 +346,7 @@ static int destroyGenerator(void* ptr, void* content)
 map_t* P_CreateMap(const char* mapID)
 {
     map_t* map;
-    
+
     if(!mapID || !mapID[0])
         Con_Error("P_CreateMap: Cannot create Map, a mapID must be specified.");
 
@@ -601,7 +589,6 @@ void P_DestroyMap(map_t* map)
     Thinkers_Iterate(map->_thinkers, (think_t) P_GeneratorThinker, ITF_PRIVATE,
                      destroyGenerator, NULL);
 
-    Thinkers_Iterate(map->_thinkers, NULL, ITF_PUBLIC, recycleMobjs, NULL);
     P_DestroyThinkers(map->_thinkers);
     map->_thinkers = NULL;
 
@@ -745,7 +732,7 @@ void Map_LinkMobj(map_t* map, mobj_t* mo, byte flags)
     assert(map);
     assert(mo);
     {
-    subsector_t* subsector = Map_PointInSubsector(map, mo->pos[VX], mo->pos[VY]);
+    subsector_t* subsector = Map_PointInSubsector2(map, mo->pos[VX], mo->pos[VY]);
 
     // Link into the sector.
     mo->subsector = (subsector_t*) P_ObjectRecord(DMU_SUBSECTOR, subsector);
@@ -888,7 +875,7 @@ void Map_RemoveThinker(map_t* map, thinker_t* th)
  *                      until a callback returns a zero value.
  * @param context       Is passed to the callback function.
  */
-boolean Map_IterateThinkers(map_t* map, think_t func, byte flags,
+boolean Map_IterateThinkers2(map_t* map, think_t func, byte flags,
                             int (*callback) (void* p, void*), void* context)
 {
     assert(map);
@@ -902,7 +889,7 @@ void Map_ThinkerSetStasis(map_t* map, thinker_t* th, boolean on)
     th->inStasis = on;
 }
 
-subsector_t* Map_PointInSubsector(map_t* map, float x, float y)
+subsector_t* Map_PointInSubsector2(map_t* map, float x, float y)
 {
     assert(map);
     {
@@ -1038,7 +1025,7 @@ static boolean P_HasActiveGenerator(sector_t* sector, uint planeID)
     params.planeID = planeID;
 
     // @todo Sector should return the map its linked to.
-    return !Map_IterateThinkers(P_CurrentMap(), (think_t) P_GeneratorThinker, ITF_PRIVATE,
+    return !Map_IterateThinkers2(P_CurrentMap(), (think_t) P_GeneratorThinker, ITF_PRIVATE,
                                 findPlaneGenerator, &params);
 }
 
@@ -1164,7 +1151,7 @@ void Map_Update(map_t* map)
     assert(map);
 
     // Defs might've changed, so update the generators.
-    Map_IterateThinkers(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
+    Map_IterateThinkers2(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
                         updateGenerator, NULL);
     // Re-spawn map generators.
     spawnMapParticleGens(map);
@@ -2859,14 +2846,14 @@ static int addVertexToDMU(vertex_t* vertex, void* context)
     return true; // Continue iteration.
 }
 
-void Map_EditEnd(map_t* map)
+boolean Map_EditEnd(map_t* map)
 {
+    assert(map);
+    {
     uint i;
 
-    if(!map)
-        return;
     if(!map->editActive)
-        return;
+        return true;
 
     /**
      * Perform cleanup on the loaded map data, removing duplicate vertexes,
@@ -2981,6 +2968,8 @@ checkVertexOwnerRings(vertexInfo, numVertices);
     }
 
     map->editActive = false;
+    return true;
+    }
 }
 
 static boolean PIT_ClientMobjTicker(clmobj_t *cmo, void *parm)
@@ -3033,7 +3022,6 @@ void Map_BeginFrame(map_t* map, boolean resetNextViewer)
 void Map_EndFrame(map_t* map)
 {
     assert(map);
-
     if(!freezeRLs)
     {
         // Wrap up with Source, Bias lights.
@@ -3050,9 +3038,7 @@ void Map_EndFrame(map_t* map)
  */
 const char* Map_ID(map_t* map)
 {
-    if(!map)
-        return NULL;
-
+    assert(map);
     return map->mapID;
 }
 
@@ -3061,14 +3047,13 @@ const char* Map_ID(map_t* map)
  */
 const char* Map_UniqueName(map_t* map)
 {
-    if(!map)
-        return NULL;
-
+    assert(map);
     return map->uniqueID;
 }
 
 void Map_Bounds(map_t* map, float* min, float* max)
 {
+    assert(map);
     min[VX] = map->bBox[BOXLEFT];
     min[VY] = map->bBox[BOXBOTTOM];
 
@@ -3081,10 +3066,62 @@ void Map_Bounds(map_t* map, float* min, float* max)
  */
 int Map_AmbientLightLevel(map_t* map)
 {
-    if(!map)
-        return 0;
-
+    assert(map);
     return map->ambientLightLevel;
+}
+
+uint Map_NumSectors(map_t* map)
+{
+    assert(map);
+    return map->numSectors;
+}
+
+uint Map_NumLineDefs(map_t* map)
+{
+    assert(map);
+    return map->numLineDefs;
+}
+
+uint Map_NumSideDefs(map_t* map)
+{
+    assert(map);
+    return map->numSideDefs;
+}
+
+uint Map_NumVertexes(map_t* map)
+{
+    assert(map);
+    return HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map));
+}
+
+uint Map_NumPolyobjs(map_t* map)
+{
+    assert(map);
+    return map->numPolyObjs;
+}
+
+uint Map_NumSegs(map_t* map)
+{
+    assert(map);
+    return map->numSegs;
+}
+
+uint Map_NumSubsectors(map_t* map)
+{
+    assert(map);
+    return map->numSubsectors;
+}
+
+uint Map_NumNodes(map_t* map)
+{
+    assert(map);
+    return map->numNodes;
+}
+
+uint Map_NumPlanes(map_t* map)
+{
+    assert(map);
+    return map->numPlanes;
 }
 
 thinkers_t* Map_Thinkers(map_t* map)
@@ -3762,7 +3799,6 @@ boolean Map_Load(map_t* map)
         }
     }
 
-    MPE_SetEditMap(map);
     if(!DAM_TryMapConversion(map->mapID))
         return false;
 
@@ -3820,13 +3856,13 @@ boolean Map_Load(map_t* map)
         // Setup accordingly.
         if(mapInfo)
         {
-            map->globalGravity = mapInfo->gravity;
+            map->gravity = mapInfo->gravity;
             map->ambientLightLevel = mapInfo->ambient * 255;
         }
         else
         {
             // No map info found, so set some basic stuff.
-            map->globalGravity = 1.0f;
+            map->gravity = 1.0f;
             map->ambientLightLevel = 0;
         }
 
@@ -3934,7 +3970,7 @@ boolean Map_LineDefsBoxIteratorv(map_t* map, const arvec2_t box,
 /**
  * @return              @c false, if the iterator func returns @c false.
  */
-boolean Map_SubsectorsBoxIterator(map_t* map, const float box[4], sector_t* sector,
+boolean Map_SubsectorsBoxIterator2(map_t* map, const float box[4], sector_t* sector,
                                   boolean (*func) (subsector_t*, void*),
                                   void* parm, boolean retObjRecord)
 {
@@ -3994,66 +4030,66 @@ void Map_DestroyGameObjectRecords(map_t* map)
 /**
  * @note Part of the Doomsday public API.
  */
-uint P_NumObjectRecords(int typeIdentifier)
+uint P_NumObjectRecords(map_t* map, int typeIdentifier)
 {
-    return GameObjRecords_Num(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier);
+    return GameObjRecords_Num(Map_GameObjectRecords(map), typeIdentifier);
 }
 
 /**
  * @note Part of the Doomsday public API.
  */
-byte P_GetObjectRecordByte(int typeIdentifier, uint elmIdx, int propIdentifier)
+byte P_GetObjectRecordByte(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return GameObjRecords_GetByte(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetByte(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
  * @note Part of the Doomsday public API.
  */
-short P_GetObjectRecordShort(int typeIdentifier, uint elmIdx, int propIdentifier)
+short P_GetObjectRecordShort(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return GameObjRecords_GetShort(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetShort(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
  * @note Part of the Doomsday public API.
  */
-int P_GetObjectRecordInt(int typeIdentifier, uint elmIdx, int propIdentifier)
+int P_GetObjectRecordInt(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return GameObjRecords_GetInt(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetInt(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
  * @note Part of the Doomsday public API.
  */
-fixed_t P_GetObjectRecordFixed(int typeIdentifier, uint elmIdx, int propIdentifier)
+fixed_t P_GetObjectRecordFixed(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return GameObjRecords_GetFixed(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetFixed(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
  * @note Part of the Doomsday public API.
  */
-angle_t P_GetObjectRecordAngle(int typeIdentifier, uint elmIdx, int propIdentifier)
+angle_t P_GetObjectRecordAngle(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return GameObjRecords_GetAngle(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetAngle(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
  * @note Part of the Doomsday public API.
  */
-float P_GetObjectRecordFloat(int typeIdentifier, uint elmIdx, int propIdentifier)
+float P_GetObjectRecordFloat(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
 {
-    return GameObjRecords_GetFloat(Map_GameObjectRecords(P_CurrentMap()), typeIdentifier, elmIdx, propIdentifier);
+    return GameObjRecords_GetFloat(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
 }
 
 /**
  * Part of the Doomsday public API.
  */
-void DD_InitThinkers(void)
+void Map_InitThinkers(map_t* map)
 {
-    // @todo Map should be specified by the caller.
-    Thinkers_Init(Map_Thinkers(P_CurrentMap()), ITF_PUBLIC); // Init the public thinker lists.
+    assert(map);
+    Thinkers_Init(Map_Thinkers(map), ITF_PUBLIC); // Init the public thinker lists.
 }
 
 static int runThinker(void* p, void* context)
@@ -4064,19 +4100,10 @@ static int runThinker(void* p, void* context)
     if(!th->inStasis)
     {
         if(th->function == (think_t) -1)
-        {
-            // Time to remove it.
+        {   // Time to remove it.
             Thinkers_Remove(Map_Thinkers(Thinker_Map(th)), th);
             Thinker_SetMap(th, NULL);
-
-            if(th->id)
-            {   // Its a mobj.
-                P_MobjRecycle((mobj_t*) th);
-            }
-            else
-            {
-                Z_Free(th);
-            }
+            Z_Free(th);
         }
         else if(th->function)
         {
@@ -4090,49 +4117,25 @@ static int runThinker(void* p, void* context)
 /**
  * Part of the Doomsday public API.
  */
-void DD_RunThinkers(void)
+void Map_RunThinkers(map_t* map)
 {
-    // @todo map should be specified by the caller
-    Map_IterateThinkers(P_CurrentMap(), NULL, ITF_PUBLIC | ITF_PRIVATE,
-                        runThinker, NULL);
+    Map_IterateThinkers2(map, NULL, ITF_PUBLIC | ITF_PRIVATE, runThinker, NULL);
 }
 
 /**
  * Part of the Doomsday public API.
  */
-int DD_IterateThinkers(think_t func, int (*callback) (void* p, void* ctx),
+int Map_IterateThinkers(map_t* map, think_t func, int (*callback) (void* p, void* ctx),
                        void* context)
 {
-    // @todo map should be specified by the caller
-    return Map_IterateThinkers(P_CurrentMap(), func, ITF_PUBLIC, callback, context);
+    return Map_IterateThinkers2(map, func, ITF_PUBLIC, callback, context);
 }
 
 /**
  * Adds a new thinker to the thinker lists.
  * Part of the Doomsday public API.
  */
-void DD_ThinkerAdd(thinker_t* th)
+void Map_ThinkerAdd(map_t* map, thinker_t* th)
 {
-    // @todo map should be specified by the caller
-    Map_AddThinker(P_CurrentMap(), th, true); // This is a public thinker.
-}
-
-/**
- * Removes a thinker from the thinker lists.
- * Part of the Doomsday public API.
- */
-void DD_ThinkerRemove(thinker_t* th)
-{
-    Map_RemoveThinker(Thinker_Map(th), th);
-}
-
-/**
- * Change the 'in stasis' state of a thinker (stop it from thinking).
- *
- * @param th            The thinker to change.
- * @param on            @c true, put into stasis.
- */
-void DD_ThinkerSetStasis(thinker_t* th, boolean on)
-{
-    Map_ThinkerSetStasis(Thinker_Map(th), th, on);
+    Map_AddThinker(map, th, true); // This is a public thinker.
 }

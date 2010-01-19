@@ -41,6 +41,7 @@
 #  include "jhexen.h"
 #endif
 
+#include "gamemap.h"
 #include "d_net.h"
 #include "dmu_lib.h"
 #include "p_plat.h"
@@ -303,23 +304,27 @@ void T_MaterialChanger(materialchanger_t* mchanger)
             DMU_GetPtrp(mchanger->side, DMU_SECTOR), DMU_SOUND_ORIGIN));
 #endif
 
-        DD_ThinkerRemove(&mchanger->thinker);
+        Map_RemoveThinker(Thinker_Map((thinker_t*) mchanger), (thinker_t*) mchanger);
     }
 }
 
 void P_SpawnMaterialChanger(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
                             material_t* mat, int tics)
 {
-    materialchanger_t*  mchanger;
+    assert(side);
+    {
+    map_t* map = P_CurrentMap();
+    materialchanger_t* mchanger;
 
     mchanger = Z_Calloc(sizeof(*mchanger), PU_MAP, 0);
     mchanger->thinker.function = T_MaterialChanger;
-    DD_ThinkerAdd(&mchanger->thinker);
+    Map_ThinkerAdd(map, &mchanger->thinker);
 
     mchanger->side = side;
     mchanger->ssurfaceID = ssurfaceID;
     mchanger->material = mat;
     mchanger->timer = tics;
+    }
 }
 
 typedef struct {
@@ -343,16 +348,20 @@ int findMaterialChanger(void* p, void* data)
 void P_StartButton(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
                    material_t* mat, int tics)
 {
+    assert(side);
+    {
+    map_t* map = P_CurrentMap();
     findmaterialchangerparams_t params;
 
     params.side = side;
     params.ssurfaceID = ssurfaceID;
 
     // See if a material change has already been queued.
-    if(!DD_IterateThinkers(T_MaterialChanger, findMaterialChanger, &params))
+    if(!Map_IterateThinkers(map, T_MaterialChanger, findMaterialChanger, &params))
         return;
 
     P_SpawnMaterialChanger(side, ssurfaceID, mat, tics);
+    }
 }
 
 /**

@@ -286,11 +286,11 @@ int findXSThinker(void* p, void* context)
 
 int destroyXSThinker(void* p, void* context)
 {
-    xsthinker_t*        xs = (xsthinker_t*) p;
+    xsthinker_t* xs = (xsthinker_t*) p;
 
     if(xs->sector == (sector_t*) context)
     {
-        DD_ThinkerRemove(&xs->thinker);
+        Map_RemoveThinker(Thinker_Map((thinker_t*) xs), &xs->thinker);
         return false; // Stop iteration, we're done.
     }
 
@@ -374,12 +374,12 @@ void XS_SetSectorType(sector_t* sec, int special)
         }
 
         // If there is not already an xsthinker for this sector, create one.
-        if(DD_IterateThinkers(XS_Thinker, findXSThinker, sec))
+        if(Map_IterateThinkers(map, XS_Thinker, findXSThinker, sec))
         {   // Not created one yet.
-            xsthinker_t*    xs = Z_Calloc(sizeof(*xs), PU_MAP, 0);
+            xsthinker_t* xs = Z_Calloc(sizeof(*xs), PU_MAP, 0);
 
             xs->thinker.function = XS_Thinker;
-            DD_ThinkerAdd(&xs->thinker);
+            Map_ThinkerAdd(map, &xs->thinker);
 
             xs->sector = sec;
         }
@@ -390,7 +390,7 @@ void XS_SetSectorType(sector_t* sec, int special)
                special);
 
         // If there is an xsthinker for this, destroy it.
-        DD_IterateThinkers(XS_Thinker, destroyXSThinker, sec);
+        Map_IterateThinkers(map, XS_Thinker, destroyXSThinker, sec);
 
         // Free previously allocated XG data.
         if(xsec->xg)
@@ -404,18 +404,19 @@ void XS_SetSectorType(sector_t* sec, int special)
     }
 }
 
-void XS_Init(void)
+void XS_Init(map_t* map)
 {
-    if(numsectors > 0)
+    assert(map);
+    if(Map_NumSectors(map) > 0)
     {   // Allocate stair builder data.
-        uint                i;
-        sector_t           *sec;
-        xsector_t          *xsec;
+        uint i;
+        sector_t* sec;
+        xsector_t* xsec;
 
         /*  // Clients rely on the server, they don't do XG themselves.
            if(IS_CLIENT) return; */
 
-        for(i = 0; i < numsectors; ++i)
+        for(i = 0; i < Map_NumSectors(map); ++i)
         {
             sec = DMU_ToPtr(DMU_SECTOR, i);
             xsec = P_ToXSector(sec);
@@ -454,7 +455,7 @@ void XS_PlaneSound(sector_t* sec, int plane, int snd)
 
 void XS_MoverStopped(xgplanemover_t *mover, boolean done)
 {
-    xlinedef_t    *origin = P_ToXLine(mover->origin);
+    xlinedef_t* origin = P_ToXLine(mover->origin);
 
     XG_Dev("XS_MoverStopped: Sector %i (done=%i, origin line=%i)",
            DMU_ToIndex(mover->sector), done,
@@ -475,7 +476,7 @@ void XS_MoverStopped(xgplanemover_t *mover, boolean done)
         }
 
         // Remove this thinker.
-        DD_ThinkerRemove((thinker_t *) mover);
+        Map_RemoveThinker(Thinker_Map((thinker_t*) mover), (thinker_t*) mover);
     }
     else
     {
@@ -495,7 +496,7 @@ void XS_MoverStopped(xgplanemover_t *mover, boolean done)
         if(mover->flags & (PMF_ACTIVATE_ON_ABORT | PMF_DEACTIVATE_ON_ABORT))
         {
             // Destroy this mover.
-            DD_ThinkerRemove((thinker_t *) mover);
+            Map_RemoveThinker(Thinker_Map((thinker_t*) mover), (thinker_t*) mover);
         }
     }
 }
@@ -627,13 +628,13 @@ typedef struct {
 static int stopPlaneMover(void* p, void* context)
 {
     stopplanemoverparams_t* params = (stopplanemoverparams_t*) context;
-    xgplanemover_t*     mover = (xgplanemover_t *) p;
+    xgplanemover_t* mover = (xgplanemover_t*) p;
 
     if(mover->sector == params->sec &&
        mover->ceiling == params->ceiling)
     {
         XS_MoverStopped(mover, false);
-        DD_ThinkerRemove(p); // Remove it.
+        Map_RemoveThinker(Thinker_Map((thinker_t*) p), (thinker_t*) p); // Remove it.
     }
 
     return true; // Continue iteration.
@@ -643,19 +644,20 @@ static int stopPlaneMover(void* p, void* context)
  * Returns a new thinker for handling the specified plane. Removes any
  * existing thinkers associated with the plane.
  */
-xgplanemover_t *XS_GetPlaneMover(sector_t *sec, boolean ceiling)
+xgplanemover_t* XS_GetPlaneMover(sector_t* sec, boolean ceiling)
 {
-    xgplanemover_t*     mover;
+    map_t* map = P_CurrentMap();
+    xgplanemover_t* mover;
     stopplanemoverparams_t params;
 
     params.sec = sec;
     params.ceiling = ceiling;
-    DD_IterateThinkers(XS_PlaneMover, stopPlaneMover, &params);
+    Map_IterateThinkers(map, XS_PlaneMover, stopPlaneMover, &params);
 
     // Allocate a new thinker.
     mover = Z_Calloc(sizeof(*mover), PU_MAP, 0);
     mover->thinker.function = XS_PlaneMover;
-    DD_ThinkerAdd(&mover->thinker);
+    Map_ThinkerAdd(map, &mover->thinker);
 
     mover->sector = sec;
     mover->ceiling = ceiling;
@@ -857,16 +859,16 @@ int XS_TextureHeight(linedef_t* line, int part)
  *
  * NOTE2: Re-above, obviously that is bad design and should be addressed.
  */
-sector_t *XS_FindTagged(int tag)
+sector_t* XS_FindTagged(map_t* map, int tag)
 {
-    uint        k;
-    uint        foundcount = 0;
-    uint        retsectorid = 0;
-    sector_t   *sec, *retsector;
+    assert(map);
+    {
+    uint k, foundcount = 0, retsectorid = 0;
+    sector_t* sec, *retsector;
 
     retsector = NULL;
 
-    for(k = 0; k < numsectors; ++k)
+    for(k = 0; k < Map_NumSectors(map); ++k)
     {
         sec = DMU_ToPtr(DMU_SECTOR, k);
         if(P_ToXSector(sec)->tag == tag)
@@ -899,22 +901,23 @@ sector_t *XS_FindTagged(int tag)
     }
 
     return NULL;
+    }
 }
 
 /**
  * Returns a pointer to the first sector with the specified act tag.
  */
-sector_t *XS_FindActTagged(int tag)
+sector_t* XS_FindActTagged(map_t* map, int tag)
 {
-    uint        k;
-    uint        foundcount = 0;
-    uint        retsectorid = 0;
-    sector_t   *sec, *retsector;
-    xsector_t  *xsec;
+    assert(map);
+    {
+    uint k, foundcount = 0, retsectorid = 0;
+    sector_t* sec, *retsector;
+    xsector_t* xsec;
 
     retsector = NULL;
 
-    for(k = 0; k < numsectors; ++k)
+    for(k = 0; k < Map_NumSectors(map); ++k)
     {
         sec = DMU_ToPtr(DMU_SECTOR, k);
         xsec = P_ToXSector(sec);
@@ -953,6 +956,7 @@ sector_t *XS_FindActTagged(int tag)
     }
 
     return NULL;
+    }
 }
 
 #define FSETHF_MIN          0x1 // Get min. If not set, get max.
@@ -966,10 +970,10 @@ typedef struct findsectorextremaltextureheightparams_s {
 
 int findSectorExtremalMaterialHeight(void *ptr, void *context)
 {
-    linedef_t          *li = (linedef_t*) ptr;
+    linedef_t* li = (linedef_t*) ptr;
     findsectorextremalmaterialheightparams_t *params =
         (findsectorextremalmaterialheightparams_t*) context;
-    float               height;
+    float height;
 
     // The heights are in real world coordinates.
     height = XS_TextureHeight(li, params->part);
@@ -991,11 +995,12 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
                     uint* refdata, float* height, material_t** mat,
                     sector_t** planeSector)
 {
-    material_t*         otherMat;
-    float               otherHeight;
-    sector_t*           otherSec = NULL, *iter;
-    xlinedef_t*            xline;
-    char                buff[50];
+    map_t* map = P_CurrentMap();
+    material_t* otherMat;
+    float otherHeight;
+    sector_t* otherSec = NULL, *iter;
+    xlinedef_t* xline;
+    char buff[50];
 
     if(refdata)
         sprintf(buff, " : %i", *refdata);
@@ -1027,7 +1032,7 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
     {
     case SPREF_SECTOR_TAGGED_FLOOR:
     case SPREF_SECTOR_TAGGED_CEILING:
-        iter = XS_FindTagged(P_ToXSector(sector)->tag);
+        iter = XS_FindTagged(map, P_ToXSector(sector)->tag);
         if(!iter)
             return false;
         break;
@@ -1037,7 +1042,7 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
         if(!actline)
             return false;
 
-        iter = XS_FindTagged(P_ToXLine(actline)->tag);
+        iter = XS_FindTagged(map, P_ToXLine(actline)->tag);
         if(!iter)
             return false;
         break;
@@ -1050,7 +1055,7 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
             return false;
         }
 
-        iter = XS_FindTagged(*refdata);
+        iter = XS_FindTagged(map, *refdata);
         if(!iter)
             return false;
         break;
@@ -1073,7 +1078,7 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
             return false;
         }
 
-        iter = XS_FindActTagged(xline->xg->info.actTag);
+        iter = XS_FindActTagged(map, xline->xg->info.actTag);
         if(!iter)
             return false;
         break;
@@ -1086,14 +1091,14 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
             return false;
         }
 
-        iter = XS_FindActTagged(*refdata);
+        iter = XS_FindActTagged(map, *refdata);
         if(!iter)
             return false;
         break;
 
     case SPREF_INDEX_FLOOR:
     case SPREF_INDEX_CEILING:
-        if(!refdata || *refdata >= numsectors)
+        if(!refdata || *refdata >= Map_NumSectors(map))
             return false;
         iter = DMU_ToPtr(DMU_SECTOR, *refdata);
         break;
@@ -1527,7 +1532,7 @@ void XS_InitStairBuilder(linedef_t* line)
     map_t* map = P_CurrentMap();
     uint i;
 
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
         GameMap_XSector(map, i)->blFlags = 0;
 }
 
@@ -1661,7 +1666,7 @@ static void markBuiltSectors(map_t* map)
     uint i;
 
     // Mark the sectors of the last step as processed.
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         xsector_t* xsec = GameMap_XSector(map, i);
 
@@ -1692,7 +1697,7 @@ static boolean spreadBuildToNeighborAll(linedef_t* origin, linetype_t* info,
     if(ceiling)
         params.flags |= F_CEILING;
 
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         xsector_t* xsec = GameMap_XSector(map, i);
         sector_t* sec;
@@ -1798,7 +1803,7 @@ boolean spreadBuildToNeighborLowestIDX(linedef_t* origin, linetype_t* info,
     if(ceiling)
         params.flags |= F_CEILING;
 
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         xsector_t* xsec = GameMap_XSector(map, i);
         sector_t* sec;
@@ -1813,7 +1818,7 @@ boolean spreadBuildToNeighborLowestIDX(linedef_t* origin, linetype_t* info,
         sec = DMU_ToPtr(DMU_SECTOR, i);
 
         params.baseSec = sec;
-        params.foundIDX = numlines;
+        params.foundIDX = Map_NumLineDefs(map);
         params.foundSec = NULL;
 
         DMU_Iteratep(sec, DMU_LINEDEF, findBuildNeighbor, &params);
@@ -2931,7 +2936,7 @@ void XS_Thinker(xsthinker_t* xs)
 
             params.sec = sector;
             params.data = XSCE_FLOOR;
-            DD_IterateThinkers(P_MobjThinker, XSTrav_SectorChain, &params);
+            Map_IterateThinkers(Thinker_Map((thinker_t*) xs), P_MobjThinker, XSTrav_SectorChain, &params);
         }
 
         // Ceiling chain. Check any mobjs that are touching the ceiling.
@@ -2941,7 +2946,7 @@ void XS_Thinker(xsthinker_t* xs)
 
             params.sec = sector;
             params.data = XSCE_CEILING;
-            DD_IterateThinkers(P_MobjThinker, XSTrav_SectorChain, &params);
+            Map_IterateThinkers(Thinker_Map((thinker_t*) xs), P_MobjThinker, XSTrav_SectorChain, &params);
         }
 
         // Inside chain. Check any sectorlinked mobjs.
@@ -2951,7 +2956,7 @@ void XS_Thinker(xsthinker_t* xs)
 
             params.sec = sector;
             params.data = XSCE_INSIDE;
-            DD_IterateThinkers(P_MobjThinker, XSTrav_SectorChain, &params);
+            Map_IterateThinkers(Thinker_Map((thinker_t*) xs), P_MobjThinker, XSTrav_SectorChain, &params);
         }
 
         // Ticker chain. Send an activate event if TICKER_D flag is not set.
@@ -3007,25 +3012,25 @@ void XS_Thinker(xsthinker_t* xs)
         xstrav_windparams_t params;
 
         params.sec = sector;
-        DD_IterateThinkers(P_MobjThinker, XSTrav_Wind, &params);
+        Map_IterateThinkers(Thinker_Map((thinker_t*) xs), P_MobjThinker, XSTrav_Wind, &params);
     }
 }
 
 float XS_Gravity(struct sector_s* sec)
 {
-    xsector_t*          xsec;
+    xsector_t* xsec;
 
     if(!sec)
-        return P_GetGravity(); // World gravity.
+        return GameMap_Gravity(P_CurrentMap()); // World gravity.
 
     xsec = P_ToXSector(sec);
     if(!xsec->xg || !(xsec->xg->info.flags & STF_GRAVITY))
     {
-        return P_GetGravity(); // World gravity.
+        return GameMap_Gravity(P_CurrentMap()); // World gravity.
     }
     else
     {   // Sector-specific gravity.
-        float               gravity = xsec->xg->info.gravity;
+        float gravity = xsec->xg->info.gravity;
 
         // Apply gravity modifier.
         if(IS_NETGAME && cfg.netGravity != -1)
@@ -3072,7 +3077,7 @@ void XS_Update(map_t* map)
     uint i;  
 
     // It's all PU_MAP memory, so we can just lose it.
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         xsector_t* xsec = GameMap_XSector(map, i);
 
@@ -3155,9 +3160,8 @@ DEFCC(CCmdMovePlane)
     else if(!stricmp(argv[1], "at") && argc >= 4)
     {
         p = 4;
-        sector =
-            DMU_GetPtrp(P_PointInSubSector((float) strtol(argv[2], 0, 0),
-                                         (float) strtol(argv[3], 0, 0)),
+        sector = DMU_GetPtrp(Map_PointInSubsector(map,
+            (float) strtol(argv[2], 0, 0), (float) strtol(argv[3], 0, 0)),
                       DMU_SECTOR);
     }
     else if(!stricmp(argv[1], "tag") && argc >= 3)

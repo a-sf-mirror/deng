@@ -1014,7 +1014,7 @@ int iterateLinedefsNearMobj(void* p, void* context)
     unstuckmobjinlinedefparams_t params;
 
     // \todo Why not type-prune at an earlier point? We could specify a
-    // custom comparison func for DD_IterateThinkers...
+    // custom comparison func for Map_IterateThinkers...
     if(mo->type != type)
         return true; // Continue iteration.
 
@@ -1029,7 +1029,7 @@ int iterateLinedefsNearMobj(void* p, void* context)
 
     VALIDCOUNT++;
 
-    P_LineDefsBoxIterator(aabb, unstuckMobjInLinedef, &params);
+    Map_LineDefsBoxIterator(Thinker_Map((thinker_t*) mo), aabb, unstuckMobjInLinedef, &params);
 
     if(mo->pos[VX] != params.pos[VX] || mo->pos[VY] != params.pos[VY])
     {
@@ -1067,7 +1067,7 @@ void P_MoveThingsOutOfWalls(map_t* map)
     for(i = 0; types[i] != NUMMOBJTYPES; ++i)
     {
         mobjtype_t type = types[i];
-        DD_IterateThinkers(P_MobjThinker, iterateLinedefsNearMobj, &type);
+        Map_IterateThinkers(map, P_MobjThinker, iterateLinedefsNearMobj, &type);
     }
     }
 }
@@ -1113,7 +1113,7 @@ void P_TurnGizmosAwayFromDoors(map_t* map)
     float closestdist = 0, dist, off, linelen;
     mobj_t* tlist[MAXLIST];
 
-    for(i = 0; i < numsectors; ++i)
+    for(i = 0; i < Map_NumSectors(map); ++i)
     {
         sec = DMU_ToPtr(DMU_SECTOR, i);
         memset(tlist, 0, sizeof(tlist));
@@ -1132,7 +1132,7 @@ void P_TurnGizmosAwayFromDoors(map_t* map)
         for(t = 0; (iter = tlist[t]) != NULL; ++t)
         {
             closestline = NULL;
-            for(l = 0; l < numlines; ++l)
+            for(l = 0; l < Map_NumLineDefs(map); ++l)
             {
                 float d1[2];
 
