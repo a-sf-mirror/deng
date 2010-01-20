@@ -189,31 +189,18 @@ xsector_t* GameMap_XSector(map_t* map, uint index)
  * for lines (the xlines) we'll do all allocation and init here.
  *
  * @param type          (DMU object type) The id of the data type being setup.
- * @param num           The number of elements of "type" Doomsday is creating.
  */
-void P_SetupForMapData(int type, uint num)
+void P_SetupForMapData(map_t* map, int type)
 {
+    assert(map);
     switch(type)
     {
     case DMU_SECTOR:
-        {
-        map_t* map = P_CurrentMap();
-        if(num > 0)
-            map->_xSectors = Z_Calloc(num * sizeof(xsector_t), PU_MAP, 0);
-        else
-            map->_xSectors = NULL;
+        map->_xSectors = Z_Calloc(Map_NumSectors(map) * sizeof(xsector_t), PU_STATIC, 0);
         break;
-        }
     case DMU_LINEDEF:
-        {
-        map_t* map = P_CurrentMap();
-        if(num > 0)
-            map->_xLineDefs = Z_Calloc(num * sizeof(xlinedef_t), PU_MAP, 0);
-        else
-            map->_xLineDefs = NULL;
+        map->_xLineDefs = Z_Calloc(Map_NumLineDefs(map) * sizeof(xlinedef_t), PU_STATIC, 0);
         break;
-        }
-
     default:
         break;
     }

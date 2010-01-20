@@ -111,7 +111,7 @@ typedef struct {
     // (with the number of items to be read) to allow the
     // game do any initialization it needs (eg create an
     // array of its own private data structures).
-    void          (*SetupForMapData) (int type, uint num);
+    void          (*SetupForMapData) (struct map_s* map, int dmuType);
 
     // Post map setup
     // The engine calls this to inform the game of any changes it is

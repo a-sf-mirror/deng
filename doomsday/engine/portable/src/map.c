@@ -4042,9 +4042,9 @@ boolean Map_Load(map_t* map)
         // Call the game's setup routines.
         if(gx.SetupForMapData)
         {
-            gx.SetupForMapData(DMU_LINEDEF, map->numLineDefs);
-            gx.SetupForMapData(DMU_SIDEDEF, map->numSideDefs);
-            gx.SetupForMapData(DMU_SECTOR, map->numSectors);
+            gx.SetupForMapData(map, DMU_LINEDEF);
+            gx.SetupForMapData(map, DMU_SIDEDEF);
+            gx.SetupForMapData(map, DMU_SECTOR);
         }
 
         {

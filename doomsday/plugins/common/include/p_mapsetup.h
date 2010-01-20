@@ -31,7 +31,7 @@
 
 #include "gamemap.h"
 
-void            P_SetupForMapData(int type, uint num);
+void            P_SetupForMapData(struct map_s* map, int type);
 
 void            P_SetupMap(struct map_s* map, skillmode_t skill);
 const char*     P_GetMapNiceName(void);

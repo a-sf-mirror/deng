@@ -227,6 +227,15 @@ map_t* P_CreateGameMap(const char mapID[9], int episodeNum, int mapNum)
 void P_DestroyGameMap(map_t* map)
 {
     assert(map);
+
+    if(map->_xLineDefs)
+        Z_Free(map->_xLineDefs);
+    map->_xLineDefs = NULL;
+
+    if(map->_xSectors)
+        Z_Free(map->_xSectors);
+    map->_xSectors = NULL;
+
     if(map->_spechit)
         P_DestroyIterList(map->_spechit);
     map->_spechit = NULL;
