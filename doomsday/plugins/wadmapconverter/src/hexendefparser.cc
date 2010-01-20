@@ -145,7 +145,7 @@ static void SC_Open(const char* name)
 {
     char fileName[128];
 
-    if(sc_FileScripts == true)
+    if(sc_FileScripts)
     {
         dd_snprintf(fileName, 128, "%s%s.txt", sc_ScriptsDir, name);
         SC_OpenFile(fileName);
@@ -191,7 +191,7 @@ void SC_Close(void)
 {
     if(scriptOpen)
     {
-        if(scriptFreeCLib == true)
+        if(scriptFreeCLib)
         {
             free(scriptBuffer);
         }

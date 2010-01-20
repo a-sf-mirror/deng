@@ -193,7 +193,7 @@ int ConvertMapHook(int hookType, int param, void* data)
         return false;
 
     // Add the marker lump to the list of lumps for this map.
-    lumpList = malloc(sizeof(lumpnum_t));
+    lumpList = (lumpnum_t*) malloc(sizeof(lumpnum_t));
     lumpList[0] = startLump;
     numLumps = 1;
 
@@ -222,7 +222,7 @@ int ConvertMapHook(int hookType, int param, void* data)
 
         if(lumpType != ML_INVALID)
         {   // Its a known map lump.
-            lumpList = realloc(lumpList, sizeof(lumpnum_t) * ++numLumps);
+            lumpList = (lumpnum_t*) realloc(lumpList, sizeof(lumpnum_t) * ++numLumps);
             lumpList[numLumps - 1] = i;
             continue;
         }

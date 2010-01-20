@@ -1,5 +1,5 @@
- .\..\..\plugins\wadmapconverter\src\wadmapconverter.c
- .\..\..\plugins\wadmapconverter\src\animated.c
- .\..\..\plugins\wadmapconverter\src\animdefs.c
- .\..\..\plugins\wadmapconverter\src\hexendefparser.c
- .\..\..\plugins\wadmapconverter\src\load.c
+ .\..\..\plugins\wadmapconverter\src\wadmapconverter.cc
+ .\..\..\plugins\wadmapconverter\src\animated.cc
+ .\..\..\plugins\wadmapconverter\src\animdefs.cc
+ .\..\..\plugins\wadmapconverter\src\hexendefparser.cc
+ .\..\..\plugins\wadmapconverter\src\load.cc

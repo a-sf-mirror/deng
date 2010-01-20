@@ -123,7 +123,7 @@ static int C_DECL compareMaterialNames(const void* a, const void* b)
 }
 
 static materialref_t* getMaterial2(const char* regName,
-                                   materialref_t* const ** list, size_t size)
+                                   materialref_t*** list, size_t size)
 {
     int result;
     size_t bottomIdx, topIdx, pivot;
@@ -194,7 +194,7 @@ static void addMaterialToList(materialref_t* m, materialref_t*** list,
     size_t i;
 
     // Enlarge the list.
-    (*list) = realloc((*list), sizeof(m) * ++(*size));
+    (*list) = (materialref_t**) realloc((*list), sizeof(m) * ++(*size));
 
     // Find insertion point.
     for(i = 0; i < (*size) - 1; ++i)
@@ -238,7 +238,7 @@ const materialref_t* RegisterMaterial(const char* name, boolean isFlat)
         /**
          * A new material.
          */
-        m = malloc(sizeof(*m));
+        m = (materialref_t*) malloc(sizeof(*m));
 
         if(wadmap->format == MF_DOOM64)
         {
@@ -302,7 +302,7 @@ void LogUnknownMaterials(void)
 
     if(wadmap->numUnknownTextures)
     {
-        size_t              i;
+        size_t i;
 
         Con_Message("WadMapConverter: Warning: Found %u bad texture %s:\n",
                     wadmap->numUnknownTextures,
@@ -310,7 +310,7 @@ void LogUnknownMaterials(void)
 
         for(i = 0; i < wadmap->numTextures; ++i)
         {
-            materialref_t*      m = wadmap->textures[i];
+            materialref_t* m = wadmap->textures[i];
 
             if(isUnknownMaterialRef(m, false))
                 Con_Message(" %4u x \"%s\"\n", m->refCount, m->name);
@@ -588,30 +588,30 @@ if(idx < 0 || idx >= (long) map->numLines)
  * Initially all sectors are in individual groups. Next, we scan the linedef
  * list. For each 2-sectored line, merge the two sector groups into one.
  */
-static void buildReject(gamemap_t *map)
+static void buildReject(gamemap_t* map)
 {
 /**
  * \todo We can do something much better now that we are building the BSP.
  */
-    int         i;
-    int         group;
-    int        *secGroups;
-    int         view, target;
-    size_t      rejectSize;
-    byte       *matrix;
+    int i;
+    int group;
+    int* secGroups;
+    int view, target;
+    size_t rejectSize;
+    byte* matrix;
 
     secGroups = M_Malloc(sizeof(int) * numSectors);
     for(i = 0; i < numSectors; ++i)
     {
-        sector_t  *sec = LookupSector(i);
+        sector_t* sec = LookupSector(i);
         secGroups[i] = group++;
         sec->rejNext = sec->rejPrev = sec;
     }
 
     for(i = 0; i < numLinedefs; ++i)
     {
-        linedef_t  *line = LookupLinedef(i);
-        sector_t   *sec1, *sec2, *p;
+        linedef_t* line = LookupLinedef(i);
+        sector_t* sec1, *sec2, *p;
 
         if(!line->sideDefs[FRONT] || !line->sideDefs[BACK])
             continue;
@@ -659,7 +659,7 @@ static void buildReject(gamemap_t *map)
     for(view = 0; view < numSectors; ++view)
         for(target = 0; target < view; ++target)
         {
-            int         p1, p2;
+            int p1, p2;
 
             if(secGroups[view] == secGroups[target])
                 continue;
@@ -676,7 +676,7 @@ static void buildReject(gamemap_t *map)
 }
 #endif
 
-int DataTypeForLumpName(const char* name)
+lumptype_t DataTypeForLumpName(const char* name)
 {
     struct lumptype_s {
         lumptype_t      type;
@@ -704,13 +704,13 @@ int DataTypeForLumpName(const char* name)
         {ML_GLSSECT,    "GL_SSECT"},
         {ML_GLNODES,    "GL_NODES"},
         {ML_GLPVS,      "GL_PVS"},
-        {ML_INVALID,    NULL},
+        {ML_INVALID,    NULL}
     };
-    lumptype_t          i;
+    size_t i;
 
     if(name && name[0])
     {
-        for(i = FIRST_LUMP_TYPE; knownLumps[i].type != ML_INVALID; ++i)
+        for(i = 0; knownLumps[i].name; ++i)
         {
             if(!strncmp(knownLumps[i].name, name, 8))
                 return knownLumps[i].type;
@@ -723,14 +723,14 @@ int DataTypeForLumpName(const char* name)
 /**
  * @return              @c  0 = Unclosed polygon.
  */
-static int isClosedPolygon(mline_t **lineList, size_t num)
+static int isClosedPolygon(mline_t** lineList, size_t num)
 {
-    uint            i;
+    uint i;
 
     for(i = 0; i < num; ++i)
     {
-        mline_t         *line = lineList[i];
-        mline_t         *next = (i == num-1? lineList[0] : lineList[i+1]);
+        mline_t* line = lineList[i];
+        mline_t* next = (i == num-1? lineList[0] : lineList[i+1]);
 
         if(!(line->v[1] == next->v[0]))
              return false;
@@ -743,12 +743,12 @@ static int isClosedPolygon(mline_t **lineList, size_t num)
 /**
  * Create a temporary polyobj (read from the original map data).
  */
-static boolean createPolyobj(mline_t **lineList, uint num, uint *poIdx,
+static boolean createPolyobj(mline_t** lineList, uint num, uint* poIdx,
                              int tag, int sequenceType, int16_t anchorX,
                              int16_t anchorY)
 {
-    uint                i;
-    mpolyobj_t          *po, **newList;
+    uint i;
+    mpolyobj_t* po, **newList;
 
     if(!lineList || num == 0)
         return false;
@@ -760,12 +760,12 @@ static boolean createPolyobj(mline_t **lineList, uint num, uint *poIdx,
     }
 
     // Allocate the new polyobj.
-    po = calloc(1, sizeof(*po));
+    po = (mpolyobj_t*) calloc(1, sizeof(*po));
 
     /**
      * Link the new polyobj into the global list.
      */
-    newList = malloc(((++wadmap->numPolyobjs) + 1) * sizeof(mpolyobj_t*));
+    newList = (mpolyobj_t**) malloc(((++wadmap->numPolyobjs) + 1) * sizeof(mpolyobj_t*));
     // Copy the existing list.
     for(i = 0; i < wadmap->numPolyobjs - 1; ++i)
     {
@@ -784,7 +784,7 @@ static boolean createPolyobj(mline_t **lineList, uint num, uint *poIdx,
     po->anchor[VX] = anchorX;
     po->anchor[VY] = anchorY;
     po->lineCount = num;
-    po->lineIndices = malloc(sizeof(uint) * num);
+    po->lineIndices = (uint*) malloc(sizeof(objectrecordid_t) * num);
     for(i = 0; i < num; ++i)
     {
         // This line is part of a polyobj.
@@ -803,9 +803,9 @@ static boolean createPolyobj(mline_t **lineList, uint num, uint *poIdx,
  * @param lineList      @c NULL, will cause IterFindPolyLines to count
  *                      the number of lines in the polyobj.
  */
-static boolean iterFindPolyLines(int16_t x, int16_t y, mline_t **lineList)
+static boolean iterFindPolyLines(int16_t x, int16_t y, mline_t** lineList)
 {
-    uint                i;
+    uint i;
 
     if(x == PolyStart[VX] && y == PolyStart[VY])
     {
@@ -814,8 +814,8 @@ static boolean iterFindPolyLines(int16_t x, int16_t y, mline_t **lineList)
 
     for(i = 0; i < wadmap->numLines; ++i)
     {
-        mline_t        *line = &wadmap->lines[i];
-        int16_t        v1[2], v2[2];
+        mline_t* line = &wadmap->lines[i];
+        int16_t v1[2], v2[2];
 
         v1[VX] = (int16_t) wadmap->vertexes[(line->v[0] - 1) * 2];
         v1[VY] = (int16_t) wadmap->vertexes[(line->v[0] - 1) * 2 + 1];
@@ -845,23 +845,22 @@ static boolean iterFindPolyLines(int16_t x, int16_t y, mline_t **lineList)
  *
  * @return              @c true = successfully created polyobj.
  */
-static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
-                                    int16_t anchorY)
+static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
 {
 #define MAXPOLYLINES         32
 
-    uint                i;
+    uint i;
 
     for(i = 0; i < wadmap->numLines; ++i)
     {
-        mline_t            *line = &wadmap->lines[i];
+        mline_t* line = &wadmap->lines[i];
 
         if(line->xType == PO_LINE_START && line->xArgs[0] == tag)
         {
-            byte                seqType;
-            mline_t           **lineList;
-            int16_t             v1[2], v2[2];
-            uint                poIdx;
+            byte seqType;
+            mline_t** lineList;
+            int16_t v1[2], v2[2];
+            uint poIdx;
 
             line->xType = 0;
             line->xArgs[0] = 0;
@@ -878,7 +877,7 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
                 Con_Error("WadMapConverter::findAndCreatePolyobj: Found unclosed polyobj.\n");
             }
 
-            lineList = malloc((PolyLineCount+1) * sizeof(mline_t*));
+            lineList = (mline_t**) malloc((PolyLineCount+1) * sizeof(mline_t*));
 
             lineList[0] = line; // Insert the first line.
             iterFindPolyLines(v2[VX], v2[VY], lineList + 1);
@@ -904,9 +903,9 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
      * We'll try another approach...
      */
     {
-    mline_t         *polyLineList[MAXPOLYLINES];
-    uint            lineCount = 0;
-    uint            j, psIndex, psIndexOld;
+    mline_t* polyLineList[MAXPOLYLINES];
+    uint lineCount = 0;
+    uint j, psIndex, psIndexOld;
 
     psIndex = 0;
     for(j = 1; j < MAXPOLYLINES; ++j)
@@ -914,7 +913,7 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
         psIndexOld = psIndex;
         for(i = 0; i < wadmap->numLines; ++i)
         {
-            mline_t         *line = &wadmap->lines[i];
+            mline_t* line = &wadmap->lines[i];
 
             if(line->xType == PO_LINE_EXPLICIT &&
                line->xArgs[0] == tag)
@@ -952,7 +951,7 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
             // lines with the current tag value
             for(i = 0; i < wadmap->numLines; ++i)
             {
-                mline_t         *line = &wadmap->lines[i];
+                mline_t* line = &wadmap->lines[i];
 
                 if(line->xType == PO_LINE_EXPLICIT &&
                    line->xArgs[0] == tag)
@@ -967,13 +966,12 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
 
     if(lineCount)
     {
-        uint            poIdx;
-        int             seqType = polyLineList[0]->xArgs[3];
+        uint poIdx;
+        int seqType = polyLineList[0]->xArgs[3];
 
-        if(createPolyobj(polyLineList, lineCount, &poIdx, tag,
-                         seqType, anchorX, anchorY))
+        if(createPolyobj(polyLineList, lineCount, &poIdx, tag, seqType, anchorX, anchorY))
         {
-            mline_t        *line = polyLineList[0];
+            mline_t* line = polyLineList[0];
 
             // Next, change the polyobjs first line to point to a mirror
             // if it exists.
@@ -991,17 +989,17 @@ static boolean findAndCreatePolyobj(int16_t tag, int16_t anchorX,
 
 static void findPolyobjs(void)
 {
-    uint                i;
+    uint i;
 
     VERBOSE(Con_Message("WadMapConverter::findPolyobjs: Processing...\n"));
 
     for(i = 0; i < wadmap->numThings; ++i)
     {
-        mthing_t           *thing = &wadmap->things[i];
+        mthing_t* thing = &wadmap->things[i];
 
         if(thing->doomEdNum == PO_ANCHOR_DOOMEDNUM)
         {   // A polyobj anchor.
-            int                 tag = thing->angle;
+            int tag = thing->angle;
 
             findAndCreatePolyobj(tag, thing->pos[VX], thing->pos[VY]);
         }
@@ -1014,17 +1012,17 @@ void AnalyzeMap(void)
         findPolyobjs();
 }
 
-boolean IsSupportedFormat(const int *lumpList, int numLumps)
+boolean IsSupportedFormat(const int* lumpList, int numLumps)
 {
-    int                 i;
-    boolean             supported = false;
+    int i;
+    boolean supported = false;
 
     // Lets first check for format specific lumps, as their prescense
     // determines the format of the map data. Assume DOOM format by default.
     wadmap->format = MF_DOOM;
     for(i = 0; i < numLumps; ++i)
     {
-        const char*         lumpName = W_LumpName(lumpList[i]);
+        const char* lumpName = W_LumpName(lumpList[i]);
 
         if(!lumpName || !lumpName[0])
             continue;
@@ -1046,9 +1044,9 @@ boolean IsSupportedFormat(const int *lumpList, int numLumps)
 
     for(i = 0; i < numLumps; ++i)
     {
-        uint*               ptr;
-        size_t              elmSize = 0; // Num of bytes.
-        const char*         lumpName = W_LumpName(lumpList[i]);
+        uint* ptr;
+        size_t elmSize = 0; // Num of bytes.
+        const char* lumpName = W_LumpName(lumpList[i]);
 
         // Determine the number of wadmap data objects of each data type.
         ptr = NULL;
@@ -1095,7 +1093,7 @@ boolean IsSupportedFormat(const int *lumpList, int numLumps)
 
         if(ptr)
         {
-            size_t              lumpLength = W_LumpLength(lumpList[i]);
+            size_t lumpLength = W_LumpLength(lumpList[i]);
 
             if(0 != lumpLength % elmSize)
                 return false; // What is this??
@@ -1137,10 +1135,10 @@ static void freeMapData(void)
 
     if(wadmap->polyobjs)
     {
-        uint                i;
+        uint i;
         for(i = 0; i < wadmap->numPolyobjs; ++i)
         {
-            mpolyobj_t*         po = wadmap->polyobjs[i];
+            mpolyobj_t* po = wadmap->polyobjs[i];
             free(po->lineIndices);
             free(po);
         }
@@ -1158,10 +1156,10 @@ static void freeMapData(void)
 
     if(wadmap->textures)
     {
-        size_t              i;
+        size_t i;
         for(i = 0; i < wadmap->numTextures; ++i)
         {
-            materialref_t*      m = wadmap->textures[i];
+            materialref_t* m = wadmap->textures[i];
             free(m);
         }
         free(wadmap->textures);
@@ -1170,10 +1168,10 @@ static void freeMapData(void)
 
     if(wadmap->flats)
     {
-        size_t              i;
+        size_t i;
         for(i = 0; i < wadmap->numFlats; ++i)
         {
-            materialref_t*      m = wadmap->flats[i];
+            materialref_t* m = wadmap->flats[i];
             free(m);
         }
         free(wadmap->flats);
@@ -1183,9 +1181,9 @@ static void freeMapData(void)
 
 static boolean loadVertexes(const byte* buf, size_t len)
 {
-    uint                num, n;
-    size_t              elmSize;
-    const byte*         ptr;
+    uint num, n;
+    size_t elmSize;
+    const byte* ptr;
 
     VERBOSE(Con_Message("WadMapConverter::loadVertexes: Processing...\n"));
 
@@ -1216,9 +1214,9 @@ static boolean loadVertexes(const byte* buf, size_t len)
 
 static boolean loadLinedefs(const byte* buf, size_t len)
 {
-    uint                num, n;
-    size_t              elmSize;
-    const byte*         ptr;
+    uint num, n;
+    size_t elmSize;
+    const byte* ptr;
 
     VERBOSE(Con_Message("WadMapConverter::loadLinedefs: Processing...\n"));
 
@@ -1232,8 +1230,8 @@ static boolean loadLinedefs(const byte* buf, size_t len)
     case MF_DOOM:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            int                 idx;
-            mline_t*            l = &wadmap->lines[n];
+            int idx;
+            mline_t* l = &wadmap->lines[n];
 
             idx = USHORT(*((const uint16_t*) (ptr)));
             if(idx == 0xFFFF)
@@ -1265,8 +1263,8 @@ static boolean loadLinedefs(const byte* buf, size_t len)
     case MF_DOOM64:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            int                 idx;
-            mline_t*            l = &wadmap->lines[n];
+            int idx;
+            mline_t* l = &wadmap->lines[n];
 
             idx = USHORT(*((const uint16_t*) (ptr)));
             if(idx == 0xFFFF)
@@ -1301,8 +1299,8 @@ static boolean loadLinedefs(const byte* buf, size_t len)
     case MF_HEXEN:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            int                 idx;
-            mline_t*            l = &wadmap->lines[n];
+            int idx;
+            mline_t* l = &wadmap->lines[n];
 
             idx = USHORT(*((const uint16_t*) (ptr)));
             if(idx == 0xFFFF)
@@ -1340,9 +1338,9 @@ static boolean loadLinedefs(const byte* buf, size_t len)
 
 static boolean loadSidedefs(const byte* buf, size_t len)
 {
-    uint                num, n;
-    size_t              elmSize;
-    const byte*         ptr;
+    uint num, n;
+    size_t elmSize;
+    const byte* ptr;
 
     VERBOSE(Con_Message("WadMapConverter::loadSidedefs: Processing...\n"));
 
@@ -1355,9 +1353,9 @@ static boolean loadSidedefs(const byte* buf, size_t len)
     case MF_DOOM:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            int                 idx;
-            char                name[9];
-            mside_t*            s = &wadmap->sides[n];
+            int idx;
+            char name[9];
+            mside_t* s = &wadmap->sides[n];
 
             s->offset[VX] = SHORT(*((const int16_t*) (ptr)));
             s->offset[VY] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1381,8 +1379,8 @@ static boolean loadSidedefs(const byte* buf, size_t len)
     case MF_DOOM64:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            int                 idx;
-            mside_t*            s = &wadmap->sides[n];
+            int idx;
+            mside_t* s = &wadmap->sides[n];
 
             s->offset[VX] = SHORT(*((const int16_t*) (ptr)));
             s->offset[VY] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1406,9 +1404,9 @@ static boolean loadSidedefs(const byte* buf, size_t len)
 
 static boolean loadSectors(const byte* buf, size_t len)
 {
-    uint                num, n;
-    size_t              elmSize;
-    const byte*         ptr;
+    uint num, n;
+    size_t elmSize;
+    const byte* ptr;
 
     VERBOSE(Con_Message("WadMapConverter::loadSectors: Processing...\n"));
 
@@ -1420,8 +1418,8 @@ static boolean loadSectors(const byte* buf, size_t len)
     default:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            char                name[9];
-            msector_t*          s = &wadmap->sectors[n];
+            char name[9];
+            msector_t* s = &wadmap->sectors[n];
 
             s->floorHeight = SHORT(*((const int16_t*) ptr));
             s->ceilHeight = SHORT(*((const int16_t*) (ptr+2)));
@@ -1440,8 +1438,8 @@ static boolean loadSectors(const byte* buf, size_t len)
     case MF_DOOM64:
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            int                 idx;
-            msector_t*          s = &wadmap->sectors[n];
+            int idx;
+            msector_t* s = &wadmap->sectors[n];
 
             s->floorHeight = SHORT(*((const int16_t*) ptr));
             s->ceilHeight = SHORT(*((const int16_t*) (ptr+2)));
@@ -1473,9 +1471,9 @@ static boolean loadThings(const byte* buf, size_t len)
 #define MTF_Z_RANDOM        0x80000000 // Random point between floor and ceiling.
 
 #define ANG45               0x20000000
-    uint                num, n;
-    size_t              elmSize;
-    const byte*         ptr;
+    uint num, n;
+    size_t elmSize;
+    const byte* ptr;
 
     VERBOSE(Con_Message("WadMapConverter::loadThings: Processing...\n"));
 
@@ -1504,7 +1502,7 @@ static boolean loadThings(const byte* buf, size_t len)
 
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            mthing_t*           t = &wadmap->things[n];
+            mthing_t* t = &wadmap->things[n];
 
             t->pos[VX] = SHORT(*((const int16_t*) (ptr)));
             t->pos[VY] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1551,7 +1549,7 @@ static boolean loadThings(const byte* buf, size_t len)
 
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            mthing_t*           t = &wadmap->things[n];
+            mthing_t* t = &wadmap->things[n];
 
             t->pos[VX] = SHORT(*((const int16_t*) (ptr)));
             t->pos[VY] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1609,7 +1607,7 @@ static boolean loadThings(const byte* buf, size_t len)
 
         for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
-            mthing_t*           t = &wadmap->things[n];
+            mthing_t* t = &wadmap->things[n];
 
             t->xTID = SHORT(*((const int16_t*) (ptr)));
             t->pos[VX] = SHORT(*((const int16_t*) (ptr+2)));
@@ -1676,9 +1674,9 @@ static boolean loadThings(const byte* buf, size_t len)
 
 static boolean loadLights(const byte* buf, size_t len)
 {
-    uint                num, n;
-    size_t              elmSize;
-    const byte*         ptr;
+    uint num, n;
+    size_t elmSize;
+    const byte* ptr;
 
     VERBOSE(Con_Message("WadMapConverter::loadLights: Processing...\n"));
 
@@ -1686,7 +1684,7 @@ static boolean loadLights(const byte* buf, size_t len)
     num = len / elmSize;
     for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
     {
-        surfacetint_t*           t = &wadmap->lights[n];
+        surfacetint_t* t = &wadmap->lights[n];
 
         t->rgb[0] = (float) *(ptr) / 255;
         t->rgb[1] = (float) *(ptr+1) / 255;
@@ -1706,7 +1704,7 @@ static void bufferLump(int lumpNum, byte** buf, size_t* len, size_t* oldLen)
     // Need to enlarge our buffer?
     if(*len > *oldLen)
     {
-        *buf = realloc(*buf, *len);
+        *buf = (byte*) realloc(*buf, *len);
         *oldLen = *len;
     }
 
@@ -1716,23 +1714,23 @@ static void bufferLump(int lumpNum, byte** buf, size_t* len, size_t* oldLen)
 
 boolean LoadMap(const int* lumpList, int numLumps)
 {
-    int                 i;
-    byte*               buf = NULL;
-    size_t              oldLen = 0;
+    int i;
+    byte* buf = NULL;
+    size_t oldLen = 0;
 
     // Allocate the data structure arrays.
-    wadmap->vertexes = malloc(wadmap->numVertexes * 2 * sizeof(float));
-    wadmap->lines = malloc(wadmap->numLines * sizeof(mline_t));
-    wadmap->sides = malloc(wadmap->numSides * sizeof(mside_t));
-    wadmap->sectors = malloc(wadmap->numSectors * sizeof(msector_t));
-    wadmap->things = malloc(wadmap->numThings * sizeof(mthing_t));
+    wadmap->vertexes = (float*) malloc(wadmap->numVertexes * 2 * sizeof(float));
+    wadmap->lines = (mline_t*) malloc(wadmap->numLines * sizeof(mline_t));
+    wadmap->sides = (mside_t*) malloc(wadmap->numSides * sizeof(mside_t));
+    wadmap->sectors = (msector_t*) malloc(wadmap->numSectors * sizeof(msector_t));
+    wadmap->things = (mthing_t*) malloc(wadmap->numThings * sizeof(mthing_t));
     if(wadmap->numLights)
-        wadmap->lights = malloc(wadmap->numLights * sizeof(surfacetint_t));
+        wadmap->lights = (surfacetint_t*) malloc(wadmap->numLights * sizeof(surfacetint_t));
 
     for(i = 0; i < numLumps; ++i)
     {
-        size_t              len;
-        lumptype_t          lumpType;
+        size_t len;
+        lumptype_t lumpType;
 
         lumpType = DataTypeForLumpName(W_LumpName(lumpList[i]));
 
@@ -1926,9 +1924,10 @@ boolean TransferMap(void)
     for(i = 0; i < wadmap->numPolyobjs; ++i)
     {
         mpolyobj_t* po = wadmap->polyobjs[i];
-        uint j, *lineList;
+        uint j;
+        objectrecordid_t* lineList;
 
-        lineList = malloc(sizeof(uint) * po->lineCount);
+        lineList = (objectrecordid_t*) malloc(sizeof(objectrecordid_t) * po->lineCount);
         for(j = 0; j < po->lineCount; ++j)
             lineList[j] = po->lineIndices[j] + 1;
         Map_CreatePolyobj(map, lineList, po->lineCount, po->tag,
