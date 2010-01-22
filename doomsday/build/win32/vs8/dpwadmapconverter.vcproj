@@ -64,7 +64,7 @@
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
 				CallingConvention="0"
-				CompileAs="0"
+				CompileAs="2"
 				DisableSpecificWarnings="4996"
 			/>
 			<Tool
@@ -258,7 +258,7 @@
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				CallingConvention="0"
-				CompileAs="0"
+				CompileAs="2"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -429,6 +429,7 @@
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\obj\"
 				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
+				CompileAs="2"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -613,7 +614,7 @@
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				CallingConvention="0"
-				CompileAs="0"
+				CompileAs="2"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -766,23 +767,23 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\animated.c"
+				RelativePath="..\..\..\plugins\wadmapconverter\src\animated.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\animdefs.c"
+				RelativePath="..\..\..\plugins\wadmapconverter\src\animdefs.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\hexendefparser.c"
+				RelativePath="..\..\..\plugins\wadmapconverter\src\hexendefparser.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\load.c"
+				RelativePath="..\..\..\plugins\wadmapconverter\src\load.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\wadmapconverter.c"
+				RelativePath="..\..\..\plugins\wadmapconverter\src\wadmapconverter.cc"
 				>
 			</File>
 		</Filter>

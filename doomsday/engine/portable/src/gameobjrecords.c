@@ -105,7 +105,7 @@ static valuetable_t* getDBTable(valuedb_t* db, valuetype_t type, boolean canCrea
     return tbl;
 }
 
-static uint insertIntoDB(valuedb_t* db, valuetype_t type, void* data)
+static uint insertIntoDB(valuedb_t* db, valuetype_t type, const void* data)
 {
     valuetable_t* tbl = getDBTable(db, type, true);
 
@@ -114,32 +114,32 @@ static uint insertIntoDB(valuedb_t* db, valuetype_t type, void* data)
     {
     case DDVT_BYTE:
         tbl->data = Z_Realloc(tbl->data, ++tbl->numElements, PU_STATIC);
-        ((byte*) tbl->data)[tbl->numElements - 1] = *((byte*) data);
+        ((byte*) tbl->data)[tbl->numElements - 1] = *((const byte*) data);
         break;
 
     case DDVT_SHORT:
         tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(short), PU_STATIC);
-        ((short*) tbl->data)[tbl->numElements - 1] = *((short*) data);
+        ((short*) tbl->data)[tbl->numElements - 1] = *((const short*) data);
         break;
 
     case DDVT_INT:
         tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(int), PU_STATIC);
-        ((int*) tbl->data)[tbl->numElements - 1] = *((int*) data);
+        ((int*) tbl->data)[tbl->numElements - 1] = *((const int*) data);
         break;
 
     case DDVT_FIXED:
         tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(fixed_t), PU_STATIC);
-        ((fixed_t*) tbl->data)[tbl->numElements - 1] = *((fixed_t*) data);
+        ((fixed_t*) tbl->data)[tbl->numElements - 1] = *((const fixed_t*) data);
         break;
 
     case DDVT_ANGLE:
         tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(angle_t), PU_STATIC);
-        ((angle_t*) tbl->data)[tbl->numElements - 1] = *((angle_t*) data);
+        ((angle_t*) tbl->data)[tbl->numElements - 1] = *((const angle_t*) data);
         break;
 
     case DDVT_FLOAT:
         tbl->data = Z_Realloc(tbl->data, ++tbl->numElements * sizeof(float), PU_STATIC);
-        ((float*) tbl->data)[tbl->numElements - 1] = *((float*) data);
+        ((float*) tbl->data)[tbl->numElements - 1] = *((const float*) data);
         break;
 
     default:
@@ -512,7 +512,7 @@ uint GameObjRecords_Num(gameobjrecords_t* records, int identifier)
 
 void GameObjRecords_Update(gameobjrecords_t* records, def_gameobject_t* def,
                            uint propIdx, uint elmIdx, valuetype_t type,
-                           void* data)
+                           const void* data)
 {
     gameobjrecord_property_t* prop;
     gameobjrecord_t* record;

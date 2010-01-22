@@ -240,7 +240,7 @@ typedef struct material_s { int type; } material_t;
     void             Map_SetSectorPlane(struct map_s* map, objectrecordid_t sector, uint type, objectrecordid_t plane);
     boolean          Map_GameObjectRecordProperty(struct map_s* map, const char* objName, uint idx,
                                          const char* propName, valuetype_t type,
-                                         void* data);
+                                         const void* data);
 
     // Custom map object data types.
     boolean         P_CreateObjectDef(int identifier, const char* name);

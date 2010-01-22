@@ -42,7 +42,7 @@ void            P_DestroyGameObjectRecords(gameobjrecords_t* records);
 
 void            GameObjRecords_Update(gameobjrecords_t* records, struct def_gameobject_s* def,
                                       uint propIdx, uint elmIdx, valuetype_t type,
-                                      void* data);
+                                      const void* data);
 uint            GameObjRecords_Num(gameobjrecords_t* records, int typeIdentifier);
 byte            GameObjRecords_GetByte(gameobjrecords_t* records, int typeIdentifier, uint elmIdx, int propIdentifier);
 short           GameObjRecords_GetShort(gameobjrecords_t* records, int typeIdentifier, uint elmIdx, int propIdentifier);
