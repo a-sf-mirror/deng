@@ -4402,7 +4402,7 @@ void Map_SetSectorPlane(map_t* map, objectrecordid_t sector, uint type, objectre
 
 boolean Map_GameObjectRecordProperty(map_t* map, const char* objName, uint idx,
                                      const char* propName, valuetype_t type,
-                                     void* data)
+                                     const void* data)
 {
     assert(map);
     {

@@ -127,16 +127,17 @@ static void loadAnimDefs(animdef_t* animDefs)
                  * numbers and would animate all textures/flats inbetween).
                  */
 
-                VERBOSE(Con_Message("P_InitPicAnims: ADD (\"%s\" > \"%s\" %d)\n",
-                                    animDefs[i].startname, animDefs[i].endname,
-                                    ticsPerFrame));
+                if(ArgExists("-verbose"))
+                    Con_Message("P_InitPicAnims: ADD (\"%s\" > \"%s\" %d)\n",
+                                animDefs[i].startname, animDefs[i].endname,
+                                ticsPerFrame);
 
                 // Add all frames from start to end to the group.
                 if(endFrame > startFrame)
                 {
                     for(n = startFrame; n <= endFrame; n++)
                     {
-                        material_t*         mat = R_MaterialForTextureId(MN_FLATS, n);
+                        material_t* mat = R_MaterialForTextureId(MN_FLATS, n);
 
                         if(mat)
                             P_AddMaterialToGroup(groupNum, P_ToIndex(mat), ticsPerFrame, 0);
@@ -174,9 +175,10 @@ static void loadAnimDefs(animdef_t* animDefs)
             {
                 groupNum = P_NewMaterialGroup(AGF_SMOOTH);
 
-                VERBOSE(Con_Message("P_InitPicAnims: ADD (\"%s\" > \"%s\" %d)\n",
-                                    animDefs[i].startname, animDefs[i].endname,
-                                    ticsPerFrame));
+                if(ArgExists("-verbose"))
+                    Con_Message("P_InitPicAnims: ADD (\"%s\" > \"%s\" %d)\n",
+                                animDefs[i].startname, animDefs[i].endname,
+                                ticsPerFrame);
 
                 if(endFrame > startFrame)
                 {
@@ -198,14 +200,14 @@ static void loadAnimDefs(animdef_t* animDefs)
     }
 }
 
-void LoadANIMATED(void)
+void wadconverter::LoadANIMATED(void)
 {
-    int                 lump;
+    int lump;
 
     // Is there an ANIMATED lump?
     if((lump = W_CheckNumForName("ANIMATED")) > 0)
     {
-        animdef_t*          animDefs;
+        animdef_t* animDefs;
 
         /**
          * We'll support this BOOM extension by reading the data and then

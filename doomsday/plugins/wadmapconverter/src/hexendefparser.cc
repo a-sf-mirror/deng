@@ -36,6 +36,8 @@
 
 #include "wadmapconverter.h"
 
+using namespace wadconverter;
+
 // MACROS ------------------------------------------------------------------
 
 #define MAX_SCRIPTNAME_LEN      (32)
@@ -164,7 +166,7 @@ static void SC_Open(const char* name)
 /**
  * Loads a script (from the WAD files) and prepares it for parsing.
  */
-void SC_OpenLump(lumpnum_t lump)
+void wadconverter::SC_OpenLump(lumpnum_t lump)
 {
     openScriptLump(lump);
 }
@@ -173,7 +175,7 @@ void SC_OpenLump(lumpnum_t lump)
  * Loads a script (from a file) and prepares it for parsing.  Uses the
  * zone memory allocator for memory allocation and de-allocation.
  */
-void SC_OpenFile(const char* name)
+void wadconverter::SC_OpenFile(const char* name)
 {
     openScriptFile(name);
 }
@@ -182,12 +184,12 @@ void SC_OpenFile(const char* name)
  * Loads a script (from a file) and prepares it for parsing.  Uses C
  * library function calls for memory allocation and de-allocation.
  */
-void SC_OpenFileCLib(const char* name)
+void wadconverter::SC_OpenFileCLib(const char* name)
 {
     openScriptCLib(name);
 }
 
-void SC_Close(void)
+void wadconverter::SC_Close(void)
 {
     if(scriptOpen)
     {
@@ -204,12 +206,12 @@ void SC_Close(void)
     }
 }
 
-void SC_SkipToStartOfNextLine(void)
+void wadconverter::SC_SkipToStartOfNextLine(void)
 {
     skipCurrentLine = true;
 }
 
-boolean SC_GetString(void)
+boolean wadconverter::SC_GetString(void)
 {
     char* text;
     boolean foundToken;
@@ -309,7 +311,7 @@ boolean SC_GetString(void)
     return true;
 }
 
-void SC_MustGetString(void)
+void wadconverter::SC_MustGetString(void)
 {
     if(!SC_GetString())
     {
@@ -317,7 +319,7 @@ void SC_MustGetString(void)
     }
 }
 
-void SC_MustGetStringName(char* name)
+void wadconverter::SC_MustGetStringName(char* name)
 {
     SC_MustGetString();
     if(!SC_Compare(name))
@@ -326,7 +328,7 @@ void SC_MustGetStringName(char* name)
     }
 }
 
-static boolean SC_GetNumber(void)
+boolean wadconverter::SC_GetNumber(void)
 {
     char* stopper;
 
@@ -346,7 +348,7 @@ static boolean SC_GetNumber(void)
     return false;
 }
 
-void SC_MustGetNumber(void)
+void wadconverter::SC_MustGetNumber(void)
 {
     if(!SC_GetNumber())
     {
@@ -357,7 +359,7 @@ void SC_MustGetNumber(void)
 /**
  * Assumes there is a valid string in sc_String.
  */
-void SC_UnGet(void)
+void wadconverter::SC_UnGet(void)
 {
     alreadyGot = true;
 }
@@ -394,7 +396,7 @@ static int SC_MustMatchString(char** strings)
     return i;
 }
 
-boolean SC_Compare(char* text)
+boolean wadconverter::SC_Compare(char* text)
 {
     if(strcasecmp(text, sc_String) == 0)
     {
@@ -404,7 +406,7 @@ boolean SC_Compare(char* text)
     return false;
 }
 
-void SC_ScriptError(char* message)
+void wadconverter::SC_ScriptError(char* message)
 {
     if(message == NULL)
     {

@@ -36,6 +36,8 @@
 
 #include "wadmapconverter.h"
 
+using namespace wadconverter;
+
 // MACROS ------------------------------------------------------------------
 
 // TYPES -------------------------------------------------------------------
@@ -138,7 +140,7 @@ static void parseAnimGroup(material_namespace_t mnamespace)
 /**
  * Parse an ANIMDEFS definition for flat/texture animations.
  */
-void LoadANIMDEFS(void)
+void wadconverter::LoadANIMDEFS(void)
 {
     lumpnum_t lump = W_CheckNumForName("ANIMDEFS");
 
