@@ -41,8 +41,6 @@
 
 using namespace wadconverter;
 
-// MACROS ------------------------------------------------------------------
-
 // Size of the map data structures in bytes in the arrived WAD format.
 #define SIZEOF_64VERTEX         (4 * 2)
 #define SIZEOF_VERTEX           (2 * 2)
@@ -63,610 +61,57 @@ using namespace wadconverter;
 
 #define SEQTYPE_NUMSEQ          (10)
 
-// TYPES -------------------------------------------------------------------
-
-/*typedef struct usecrecord_s {
-    sector_t*           sec;
-    double              nearPos[2];
-} usecrecord_t;*/
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-/*bool         registerUnclosedSectorNear(sector_t* sec, double x, double y);
-void            printUnclosedSectorList(void);*/
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-/*static uint numUnclosedSectors;
-static usecrecord_t* unclosedSectors;*/
-
-// CODE --------------------------------------------------------------------
-
-static int C_DECL compareMaterialNames(const void* a, const void* b)
+Map::MaterialRefId Map::getMaterial(const char* _name)
 {
-    return stricmp((*(Map::materialref_t**)a)->name, (*(Map::materialref_t**)b)->name);
-}
-
-Map::materialref_t* Map::getMaterial(const char* regName, bool isFlat)
-{
-    materialref_t*** list = isFlat? &_flats : &_textures;
-    size_t size = isFlat? _numFlats : _numTextures;
-    int result;
-    size_t bottomIdx, topIdx, pivot;
-    Map::materialref_t* m;
-    bool isDone;
     char name[9];
-
-    if(size == 0)
-        return NULL;
+    const char *namePtr;
 
     if(_formatId == DOOM64)
     {
-        int idx = *((int*) regName);
+        int idx = *((int*) _name);
         dd_snprintf(name, 9, "UNK%05i", idx);
+        namePtr = name;
     }
     else
     {
-        size_t len = MIN_OF(8, strlen(regName));
-        strncpy(name, regName, len);
-        name[len] = '\0';
+        namePtr = _name;
     }
 
-    bottomIdx = 0;
-    topIdx = size-1;
-    m = NULL;
-    isDone = false;
-    while(bottomIdx <= topIdx && !isDone)
-    {
-        Map::materialref_t* cand;
-
-        pivot = bottomIdx + (topIdx - bottomIdx)/2;
-        cand = (*list)[pivot];
-
-        result = stricmp(cand->name, name);
-        if(result == 0)
-        {   // Found.
-            m = cand;
-            isDone = true;
-        }
-        else
-        {
-            if(result > 0)
-            {
-                if(pivot == 0)
-                {   // Not present.
-                    isDone = true;
-                }
-                else
-                    topIdx = pivot - 1;
-            }
-            else
-                bottomIdx = pivot + 1;
-        }
+    {MaterialRefId n = 0;
+    for(MaterialRefs::iterator i = _materialRefs.begin();
+        i != _materialRefs.end(); ++i, ++n)
+        if(i->compare(namePtr) == 0)
+            return n+1; // 1-based index.
     }
-
-    return m;
+    return 0;
 }
 
-static void addMaterialToList(Map::materialref_t* m, Map::materialref_t*** list, size_t* size)
+Map::MaterialRefId Map::RegisterMaterial(const char* _name, bool onPlane)
 {
-    size_t i;
-
-    // Enlarge the list.
-    (*list) = (Map::materialref_t**) realloc((*list), sizeof(m) * ++(*size));
-
-    // Find insertion point.
-    for(i = 0; i < (*size) - 1; ++i)
-        if(compareMaterialNames(&(*list)[i], &m) > 0)
-            break;
-
-    // Shift the rest over.
-    if((*size) > 1)
-        memmove(&((*list)[i+1]), &((*list)[i]), sizeof(m) * ((*size)-1-i));
-
-    // Insert the new element.
-    (*list)[i] = m;
-}
-
-/**
- * Is the name of the material reference known to Doomsday?
- */
-static __inline bool isUnknownMaterialRef(const Map::materialref_t* m, bool isFlat)
-{
-    return m->material == NULL ? true : false;
-}
-
-const Map::materialref_t* Map::RegisterMaterial(const char* name, bool isFlat)
-{
-    materialref_t* m;
+    char name[9];
+    memcpy(name, _name, sizeof(name));
+    name[8] = '\0';
 
     // When loading DOOM or Hexen format maps check for the special case "-"
     // texture name (no texture).
-    if(!isFlat && (_formatId == Map::DOOM || _formatId == Map::HEXEN) &&
+    if(!onPlane && (_formatId == Map::DOOM || _formatId == Map::HEXEN) &&
        !stricmp(name, "-"))
-        return NULL;
+        return 0;
 
     // Check if this material has already been registered.
-    if((m = getMaterial(name, isFlat)) != NULL)
-    {
-        m->refCount++;
-        return m;
-    }
+    MaterialRefId refId;
+    if((refId = getMaterial(name)) > 0)
+        return refId;
 
-    /**
-     * A new material.
-     */
-    m = (materialref_t*) malloc(sizeof(*m));
-    memcpy(m->name, name, 8);
-    m->name[8] = '\0';
-
-    // First try the prefered namespace, then any.
-    if(!(m->material = P_MaterialForName((isFlat? MN_FLATS : MN_TEXTURES), m->name)))
-        m->material = P_MaterialForName(MN_ANY, m->name);
-
-    // Add it to the material reference list.
-    addMaterialToList(m, isFlat? &_flats : &_textures,
-                      isFlat? &_numFlats : &_numTextures);
-    m->refCount = 1;
-
-    if(isUnknownMaterialRef(m, isFlat))
-    {
-        if(isFlat)
-            ++_numUnknownFlats;
-        else
-            ++_numUnknownTextures;
-    }
-
-    return m;
+    // A new material.
+    _materialRefs.push_back(std::string(name));
+    return _materialRefs.size(); // 1-based index.
 }
 
-const Map::materialref_t* Map::RegisterMaterial(int idx, bool isFlat)
-{
-    materialref_t* m;
-
-    // Check if this material has already been registered.
-    if((m = getMaterial((const char*) idx, isFlat)) != NULL)
-    {
-        m->refCount++;
-        return m;
-    }
-    else
-    {
-        /**
-         * A new material.
-         */
-        m = (materialref_t*) malloc(sizeof(*m));
-
-        dd_snprintf(m->name, 9, "UNK%05i", idx);
-
-        // First try the prefered namespace, then any.
-        if(!(m->material = R_MaterialForTextureId((isFlat? MN_FLATS : MN_TEXTURES), idx)))
-            m->material = R_MaterialForTextureId(MN_ANY, idx);
-
-        // Add it to the material reference list.
-        addMaterialToList(m, isFlat? &_flats : &_textures,
-                          isFlat? &_numFlats : &_numTextures);
-        m->refCount = 1;
-
-        if(isUnknownMaterialRef(m, isFlat))
-        {
-            if(isFlat)
-                ++_numUnknownFlats;
-            else
-                ++_numUnknownTextures;
-        }
-
-        return m;
-    }
-}
-
-void Map::logUnknownMaterials(void)
-{
-    static const char* nameStr[] = { "name", "names" };
-
-    if(_numUnknownFlats)
-    {
-        size_t i;
-
-        Con_Message("WadMapConverter: Warning: Found %u bad flat %s:\n",
-                    _numUnknownFlats,
-                    nameStr[_numUnknownFlats? 1 : 0]);
-
-        for(i = 0; i < _numFlats; ++i)
-        {
-            Map::materialref_t* m = _flats[i];
-
-            if(isUnknownMaterialRef(m, true))
-                Con_Message(" %4u x \"%s\"\n", m->refCount, m->name);
-        }
-    }
-
-    if(_numUnknownTextures)
-    {
-        size_t i;
-
-        Con_Message("WadMapConverter: Warning: Found %u bad texture %s:\n",
-                    _numUnknownTextures,
-                    nameStr[_numUnknownTextures? 1 : 0]);
-
-        for(i = 0; i < _numTextures; ++i)
-        {
-            Map::materialref_t* m = _textures[i];
-
-            if(isUnknownMaterialRef(m, false))
-                Con_Message(" %4u x \"%s\"\n", m->refCount, m->name);
-        }
-    }
-}
-
-#if 0
-/**
- * Register the specified sector in the list of unclosed _sectors.
- *
- * @param sec           Ptr to the sector to be registered.
- * @param x             Approximate X coordinate to the sector's origin.
- * @param y             Approximate Y coordinate to the sector's origin.
- *
- * @return              @c true, if sector was registered.
- */
-static bool registerUnclosedSectorNear(sector_t* sec, double x, double y)
-{
-    uint i;
-    usecrecord_t* usec;
-
-    if(!sec)
-        return false; // Wha?
-
-    // Has this sector already been registered as unclosed?
-    for(i = 0; i < numUnclosedSectors; ++i)
-    {
-        if(unclosedSectors[i].sec == sec)
-            return true;
-    }
-
-    // A new one.
-    unclosedSectors = M_Realloc(unclosedSectors,
-                                ++numUnclosedSectors * sizeof(usecrecord_t));
-    usec = &unclosedSectors[numUnclosedSectors-1];
-    usec->sec = sec;
-    usec->nearPos[0] = x;
-    usec->nearPos[1] = y;
-
-    return true;
-}
-
-/**
- * Print the list of unclosed _sectors.
- */
-static void printUnclosedSectorList(void)
-{
-    uint i;
-
-    if(!editMapInited)
-        return;
-
-    if(numUnclosedSectors)
-    {
-        Con_Printf("Warning, found %u unclosed _sectors:\n", numUnclosedSectors);
-
-        for(i = 0; i < numUnclosedSectors; ++i)
-        {
-            usecrecord_t* usec = &unclosedSectors[i];
-
-            Con_Printf("  #%d near [%1.1f, %1.1f]\n", usec->sec->buildData.index - 1,
-                       usec->nearPos[0], usec->nearPos[1]);
-        }
-    }
-}
-
-/**
- * Free the list of unclosed _sectors.
- */
-static void freeUnclosedSectorList(void)
-{
-    if(unclosedSectors)
-        M_Free(unclosedSectors);
-    unclosedSectors = NULL;
-    numUnclosedSectors = 0;
-}
-#endif
-
-/**
- * Attempts to load the BLOCKMAP data resource.
- */
-#if 0 // Needs updating.
-static bool loadBlockmap(tempmap_t* map, maplumpinfo_t* maplump)
-{
-#define MAPBLOCKUNITS       128
-
-    bool generateBMap = (createBMap == 2)? true : false;
-
-    Con_Message("WadMapConverter::loadBlockmap: Processing...\n");
-
-    // Do we have a lump to process?
-    if(maplump->lumpNum == -1 || maplump->length == 0)
-        generateBMap = true; // We'll HAVE to generate it.
-
-    // Are we generating new blockmap data?
-    if(generateBMap)
-    {
-        // Only announce if the user has choosen to always generate
-        // new data (we will have already announced it if the lump
-        // was missing).
-        if(maplump->lumpNum != -1)
-            VERBOSE(
-            Con_Message("loadBlockMap: Generating NEW blockmap...\n"));
-    }
-    else
-    {   // No, the existing data is valid - so load it in.
-        uint startTime;
-        blockmap_t* blockmap;
-        uint x, y, width, height;
-        float v[2];
-        vec2_t bounds[2];
-        long* lineListOffsets, i, n, numBlocks, blockIdx;
-        short* blockmapLump;
-
-        VERBOSE(
-        Con_Message("loadBlockMap: Converting existing blockmap...\n"));
-
-        startTime = Sys_GetRealTime();
-
-        blockmapLump =
-            (short *) W_CacheLumpNum(maplump->lumpNum, PU_STATIC);
-
-        v[0] = (float) SHORT(blockmapLump[0]);
-        v[1] = (float) SHORT(blockmapLump[1]);
-        width  = ((SHORT(blockmapLump[2])) & 0xffff);
-        height = ((SHORT(blockmapLump[3])) & 0xffff);
-
-        numBlocks = (long) width * (long) height;
-
-        /**
-         * Expand WAD blockmap into a larger one, by treating all
-         * offsets except -1 as unsigned and zero-extending them.
-         * This potentially doubles the size of blockmaps allowed
-         * because DOOM originally considered the offsets as always
-         * signed.
-         */
-
-        lineListOffsets = M_Malloc(sizeof(long) * numBlocks);
-        n = 4;
-        for(i = 0; i < numBlocks; ++i)
-        {
-            short t = SHORT(blockmapLump[n++]);
-            lineListOffsets[i] = (t == -1? -1 : (long) t & 0xffff);
-        }
-
-        /**
-         * Finally, convert the blockmap into our internal representation.
-         * We'll ensure the blockmap is formed correctly as we go.
-         *
-         * \todo We could gracefully handle malformed blockmaps by
-         * cleaning up and then generating our own.
-         */
-
-        V2_Set(bounds[0], v[0], v[1]);
-        v[0] += (float) (width * MAPBLOCKUNITS);
-        v[1] += (float) (height * MAPBLOCKUNITS);
-        V2_Set(bounds[1], v[0], v[1]);
-
-        blockmap = P_BlockmapCreate(bounds[0], bounds[1],
-                                    width, height);
-        blockIdx = 0;
-        for(y = 0; y < height; ++y)
-            for(x = 0; x < width; ++x)
-            {
-                long offset = lineListOffsets[blockIdx];
-                long idx;
-                uint count;
-
-#if _DEBUG
-if(SHORT(blockmapLump[offset]) != 0)
-{
-    Con_Error("loadBlockMap: Offset (%li) for block %u [%u, %u] "
-              "does not index the beginning of a line list!\n",
-              offset, blockIdx, x, y);
-}
-#endif
-
-                // Count the number of _lineDefs in this block.
-                count = 0;
-                while((idx = SHORT(blockmapLump[offset + 1 + count])) != -1)
-                    count++;
-
-                if(count > 0)
-                {
-                    linedef_t** _lineDefs, **ptr;
-
-                    // A NULL-terminated array of pointers to _lineDefs.
-                    _lineDefs = Z_Malloc((count + 1) * sizeof(linedef_t *), PU_STATIC, NULL);
-
-                    // Copy pointers to the array, delete the nodes.
-                    ptr = _lineDefs;
-                    count = 0;
-                    while((idx = SHORT(blockmapLump[offset + 1 + count])) != -1)
-                    {
-#if _DEBUG
-if(idx < 0 || idx >= (long) map->_numLineDefs)
-{
-    Con_Error("loadBlockMap: Invalid linedef id %li\n!", idx);
-}
-#endif
-                        *ptr++ = &map->_lineDefs[idx];
-                        count++;
-                    }
-                    // Terminate.
-                    *ptr = NULL;
-
-                    // Link it into the BlockMap.
-                    P_BlockmapSetBlock(blockmap, x, y, _lineDefs, NULL);
-                }
-
-                blockIdx++;
-            }
-
-        // Don't need this anymore.
-        M_Free(lineListOffsets);
-
-        map->blockMap = blockmap;
-
-        // How much time did we spend?
-        VERBOSE(Con_Message
-                ("loadBlockMap: Done in %.2f seconds.\n",
-                 (Sys_GetRealTime() - startTime) / 1000.0f));
-    }
-
-    return true;
-
-#undef MAPBLOCKUNITS
-}
-#endif
-
-#if 0
-/**
- * The REJECT resource is a LUT that provides the results of trivial
- * line-of-sight tests between _sectors. This is done with a matrix of sector
- * pairs i.e. if a monster in sector 4 can see the player in sector 2; the
- * inverse should be true.
- *
- * Note however, some PWADS have carefully constructed REJECT data to create
- * special effects. For example it is possible to make a player completely
- * invissible in certain _sectors.
- *
- * The format of the table is a simple matrix of bool values, a (true)
- * value indicates that it is impossible for mobjs in sector A to see mobjs
- * in sector B (and vice-versa). A (false) value indicates that a
- * line-of-sight MIGHT be possible and a more accurate (thus more expensive)
- * calculation will have to be made.
- *
- * The table itself is constructed as follows:
- *
- *     X = sector num player is in
- *     Y = sector num monster is in
- *
- *         X
- *
- *       0 1 2 3 4 ->
- *     0 1 - 1 - -
- *  Y  1 - - 1 - -
- *     2 1 1 - - 1
- *     3 - - - 1 -
- *    \|/
- *
- * These results are read left-to-right, top-to-bottom and are packed into
- * bytes (each byte represents eight results). As are all lumps in WAD the
- * data is in little-endian order.
- *
- * Thus the size of a valid REJECT lump can be calculated as:
- *
- *     ceiling(_numSectors^2)
- *
- * For now we only do very basic reject processing, limited to determining
- * all isolated sector groups (islands that are surrounded by void space).
- *
- * \note Algorithm:
- * Initially all _sectors are in individual groups. Next, we scan the linedef
- * list. For each 2-sectored line, merge the two sector groups into one.
- */
-static void buildReject(gamemap_t* map)
-{
-/**
- * \todo We can do something much better now that we are building the BSP.
- */
-    int i;
-    int group;
-    int* secGroups;
-    int view, target;
-    size_t rejectSize;
-    byte* matrix;
-
-    secGroups = M_Malloc(sizeof(int) * _numSectors);
-    for(i = 0; i < _numSectors; ++i)
-    {
-        sector_t* sec = LookupSector(i);
-        secGroups[i] = group++;
-        sec->rejNext = sec->rejPrev = sec;
-    }
-
-    for(i = 0; i < numLinedefs; ++i)
-    {
-        linedef_t* line = LookupLinedef(i);
-        sector_t* sec1, *sec2, *p;
-
-        if(!line->sideDefs[FRONT] || !line->sideDefs[BACK])
-            continue;
-
-        sec1 = line->sideDefs[FRONT]->sector;
-        sec2 = line->sideDefs[BACK]->sector;
-
-        if(!sec1 || !sec2 || sec1 == sec2)
-            continue;
-
-        // Already in the same group?
-        if(secGroups[sec1->index] == secGroups[sec2->index])
-            continue;
-
-        // Swap _sectors so that the smallest group is added to the biggest
-        // group. This is based on the assumption that sector numbers in
-        // wads will generally increase over the set of linedefs, and so
-        // (by swapping) we'll tend to add small groups into larger
-        // groups, thereby minimising the updates to 'rej_group' fields
-        // that is required when merging.
-        if(secGroups[sec1->index] > secGroups[sec2->index])
-        {
-            p = sec1;
-            sec1 = sec2;
-            sec2 = p;
-        }
-
-        // Update the group numbers in the second group
-        secGroups[sec2->index] = secGroups[sec1->index];
-        for(p = sec2->rejNext; p != sec2; p = p->rejNext)
-            secGroups[p->index] = secGroups[sec1->index];
-
-        // Merge 'em baby...
-        sec1->rejNext->rejPrev = sec2;
-        sec2->rejNext->rejPrev = sec1;
-
-        p = sec1->rejNext;
-        sec1->rejNext = sec2->rejNext;
-        sec2->rejNext = p;
-    }
-
-    rejectSize = (_numSectors * _numSectors + 7) / 8;
-    matrix = Z_Calloc(rejectSize, PU_STATIC, 0);
-
-    for(view = 0; view < _numSectors; ++view)
-        for(target = 0; target < view; ++target)
-        {
-            int p1, p2;
-
-            if(secGroups[view] == secGroups[target])
-                continue;
-
-            // For symmetry, do two bits at a time.
-            p1 = view * _numSectors + target;
-            p2 = target * _numSectors + view;
-
-            matrix[p1 >> 3] |= (1 << (p1 & 7));
-            matrix[p2 >> 3] |= (1 << (p2 & 7));
-        }
-
-    M_Free(secGroups);
-}
-#endif
-
-Map::lumptype_t Map::dataTypeForLumpName(const char* name)
+Map::MapLumpId Map::dataTypeForLumpName(const char* name)
 {
     struct lumptype_s {
-        lumptype_t      type;
+        MapLumpId      type;
         const char*     name;
     } knownLumps[] =
     {
@@ -989,13 +434,7 @@ Map::Map(LumpNums& lumpNums)
       _numSideDefs(0),
       _numPolyobjs(0),
       _numThings(0),
-      _numSurfaceTints(0),
-      _numFlats(0),
-      _numUnknownFlats(0),
-      _flats(NULL),
-      _numTextures(0),
-      _numUnknownTextures(0),
-      _textures(NULL)
+      _numSurfaceTints(0)
 {
     _lumpNums.resize(lumpNums.size());
     std::copy(lumpNums.begin(), lumpNums.end(), _lumpNums.begin());
@@ -1007,7 +446,7 @@ Map::Map(LumpNums& lumpNums)
      */
     for(LumpNums::iterator i = _lumpNums.begin(); i != _lumpNums.end(); ++i)
     {
-        lumptype_t lumpType = dataTypeForLumpName(W_LumpName(*i));
+        MapLumpId lumpType = dataTypeForLumpName(W_LumpName(*i));
         size_t elmSize = 0; // Num of bytes.
         uint* ptr = NULL;
 
@@ -1100,29 +539,7 @@ void Map::clear(void)
         free(macros);
     macros = NULL;*/
 
-    if(_textures)
-    {
-        size_t i;
-        for(i = 0; i < _numTextures; ++i)
-        {
-            materialref_t* m = _textures[i];
-            free(m);
-        }
-        free(_textures);
-    }
-    _textures = NULL;
-
-    if(_flats)
-    {
-        size_t i;
-        for(i = 0; i < _numFlats; ++i)
-        {
-            materialref_t* m = _flats[i];
-            free(m);
-        }
-        free(_flats);
-    }
-    _flats = NULL;
+    _materialRefs.clear();
 }
 
 /**
@@ -1150,7 +567,7 @@ Map* Map::construct(const char* mapID)
     for(lumpnum_t i = startLump + 1; i < W_NumLumps(); ++i)
     {
         const char* lumpName = W_LumpName(i);
-        lumptype_t lumpType = dataTypeForLumpName(lumpName);
+        MapLumpId lumpType = dataTypeForLumpName(lumpName);
 
         /// \todo Do more validity checking.
         if(lumpType != ML_INVALID)
@@ -1308,7 +725,8 @@ bool Map::loadSidedefs(const byte* buf, size_t len)
         break;
 
     case DOOM64:
-        for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
+#pragma message( "Warning: Need to read DOOM64 format SideDefs" )
+        /*for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
             int sectorId = (int) USHORT(*((const uint16_t*) (ptr+10)));
 
@@ -1319,7 +737,7 @@ bool Map::loadSidedefs(const byte* buf, size_t len)
                         RegisterMaterial((int) USHORT(*((const uint16_t*) (ptr+6))), false),
                         RegisterMaterial((int) USHORT(*((const uint16_t*) (ptr+8))), false),
                         sectorId == 0xFFFF? 0 : sectorId+1));
-        }
+        }*/
         break;
     }
 
@@ -1349,7 +767,8 @@ bool Map::loadSectors(const byte* buf, size_t len)
         break;
 
     case DOOM64:
-        for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
+#pragma message( "Warning: Need to read DOOM64 format Sectors" )
+        /*for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
         {
             _sectors.push_back(
                 Sector(SHORT(*((const int16_t*) ptr)),
@@ -1365,7 +784,7 @@ bool Map::loadSectors(const byte* buf, size_t len)
                        USHORT(*((const uint16_t*) (ptr+12))),
                        USHORT(*((const uint16_t*) (ptr+14))),
                        USHORT(*((const uint16_t*) (ptr+16)))));
-        }
+        }*/
         break;
     }
 
@@ -1609,7 +1028,7 @@ bool Map::load(void)
     size_t oldLen = 0;
     for(LumpNums::iterator i = _lumpNums.begin(); i != _lumpNums.end(); ++i)
     {
-        lumptype_t lumpType = dataTypeForLumpName(W_LumpName(*i));
+        MapLumpId lumpType = dataTypeForLumpName(W_LumpName(*i));
         size_t size;
 
         // Process it, transforming it into our local representation.
@@ -1669,15 +1088,24 @@ bool Map::load(void)
     return true; // Read and converted successfully.
 }
 
+material_t* Map::getMaterialForId(MaterialRefId id, bool onPlane)
+{
+    if(id == 0)
+        return NULL;
+
+    const std::string& name = _materialRefs[id-1];
+    // First try the prefered namespace, then any.
+    material_t* material = P_MaterialForName(onPlane? MN_FLATS : MN_TEXTURES, name.c_str());
+    if(material) return material;
+    return P_MaterialForName(MN_ANY, name.c_str());
+}
+
 bool Map::transfer(void)
 {
     uint startTime = Sys_GetRealTime();
 
     struct map_s* deMap = P_CurrentMap();
     bool result;
-
-    // Announce any bad material names we came across while loading.
-    logUnknownMaterials();
 
     Map_EditBegin(deMap);
 
@@ -1695,15 +1123,13 @@ bool Map::transfer(void)
     {uint n = 0;
     for(Sectors::iterator i = _sectors.begin(); i != _sectors.end(); ++i, ++n)
     {
-        uint sectorIDX, floorIDX, ceilIDX;
+        uint sectorIDX = Map_CreateSector(deMap, (float) i->lightLevel / 255.0f, 1, 1, 1);
 
-        sectorIDX = Map_CreateSector(deMap, (float) i->lightLevel / 255.0f, 1, 1, 1);
-
-        floorIDX = Map_CreatePlane(deMap, i->floorHeight,
-                                   i->floorMaterial? i->floorMaterial->material : 0,
+        uint floorIDX = Map_CreatePlane(deMap, i->floorHeight,
+                                   getMaterialForId(i->floorMaterial, true),
                                    0, 0, 1, 1, 1, 1, 0, 0, 1);
-        ceilIDX = Map_CreatePlane(deMap, i->ceilHeight,
-                                  i->ceilMaterial? i->ceilMaterial->material : 0,
+        uint ceilIDX = Map_CreatePlane(deMap, i->ceilHeight,
+                                 getMaterialForId(i->ceilMaterial, true),
                                   0, 0, 1, 1, 1, 1, 0, 0, -1);
 
         Map_SetSectorPlane(deMap, sectorIDX, 0, floorIDX);
@@ -1736,11 +1162,11 @@ bool Map::transfer(void)
             frontIdx =
                 Map_CreateSideDef(deMap, s.sectorId,
                                   (_formatId == DOOM64? SDF_MIDDLE_STRETCH : 0),
-                                  s.topMaterial? s.topMaterial->material : 0,
+                                  getMaterialForId(s.topMaterial, false),
                                   s.offset[0], s.offset[1], 1, 1, 1,
-                                  s.middleMaterial? s.middleMaterial->material : 0,
+                                  getMaterialForId(s.middleMaterial, false),
                                   s.offset[0], s.offset[1], 1, 1, 1, 1,
-                                  s.bottomMaterial? s.bottomMaterial->material : 0,
+                                  getMaterialForId(s.bottomMaterial, false),
                                   s.offset[0], s.offset[1], 1, 1, 1);
         }
 
@@ -1751,11 +1177,11 @@ bool Map::transfer(void)
             backIdx =
                 Map_CreateSideDef(deMap, s.sectorId,
                                   (_formatId == DOOM64? SDF_MIDDLE_STRETCH : 0),
-                                  s.topMaterial? s.topMaterial->material : 0,
+                                  getMaterialForId(s.topMaterial, false),
                                   s.offset[0], s.offset[1], 1, 1, 1,
-                                  s.middleMaterial? s.middleMaterial->material : 0,
+                                  getMaterialForId(s.middleMaterial, false),
                                   s.offset[0], s.offset[1], 1, 1, 1, 1,
-                                  s.bottomMaterial? s.bottomMaterial->material : 0,
+                                  getMaterialForId(s.bottomMaterial, false),
                                   s.offset[0], s.offset[1], 1, 1, 1);
         }
 

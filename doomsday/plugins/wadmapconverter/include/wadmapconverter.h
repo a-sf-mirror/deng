@@ -35,13 +35,14 @@
 
 #include <stdexcept>
 #include <vector>
+#include <string>
 
 namespace wadconverter
 {
     class Map
     {
     public:
-        typedef enum lumptype_e {
+        typedef enum {
             ML_INVALID = -1,
             FIRST_LUMP_TYPE,
             ML_LABEL = FIRST_LUMP_TYPE, // A separator, name, ExMx or MAPxx
@@ -66,13 +67,17 @@ namespace wadconverter
             ML_GLNODES,                 // GL nodes
             ML_GLPVS,                   // GL PVS dataset
             NUM_LUMP_TYPES
-        } lumptype_t;
+        } MapLumpId;
 
-        typedef struct {
-            char            name[9];
-            material_t*     material; // Doomsday's unique identifier for this.
-            uint            refCount;
-        } materialref_t;
+        /// \todo Use a proper String Table/String interning class (perhaps a specialized de::ArrayValue?)
+        typedef std::vector<std::string> MaterialRefs;
+        typedef MaterialRefs::size_type MaterialRefId;
+        MaterialRefs _materialRefs;
+
+        MaterialRefId RegisterMaterial(const char* name, bool onPlane);
+        MaterialRefId getMaterial(const char* name);
+
+        material_t* getMaterialForId(MaterialRefId id, bool onPlane);
 
     private:
         /// Identifier used to describe the determined map data format.
@@ -141,8 +146,8 @@ namespace wadconverter
             int16_t lightLevel;
             int16_t type;
             int16_t tag;
-            const materialref_t* floorMaterial;
-            const materialref_t* ceilMaterial;
+            MaterialRefId floorMaterial;
+            MaterialRefId ceilMaterial;
 
             // DOOM64 format members:
             int16_t d64flags;
@@ -154,7 +159,7 @@ namespace wadconverter
 
             // DOOM format constructor.
             Sector(int16_t floorHeight, int16_t ceilHeight,
-                   const materialref_t* floorMat, const materialref_t* ceilMat,
+                   MaterialRefId floorMat, MaterialRefId ceilMat,
                    int16_t lightLevel, int16_t type, int16_t tag)
                 : floorHeight(floorHeight),
                   ceilHeight(ceilHeight),
@@ -172,7 +177,7 @@ namespace wadconverter
 
             // DOOM64 format constructor.
             Sector(int16_t floorHeight, int16_t ceilHeight,
-                   const materialref_t* floorMat, const materialref_t* ceilMat,
+                   MaterialRefId floorMat, MaterialRefId ceilMat,
                    int16_t lightLevel, int16_t type, int16_t tag,
                    int16_t d64flags, uint16_t d64floorColor,
                    uint16_t d64ceilColor, uint16_t d64unknownColor,
@@ -276,13 +281,13 @@ namespace wadconverter
          */
         struct SideDef {
             int16_t offset[2];
-            const materialref_t* topMaterial;
-            const materialref_t* bottomMaterial;
-            const materialref_t* middleMaterial;
+            MaterialRefId topMaterial;
+            MaterialRefId bottomMaterial;
+            MaterialRefId middleMaterial;
             uint sectorId;
 
-            SideDef(int16_t offX, int16_t offY, const materialref_t* topMat,
-                    const materialref_t* bottomMat, const materialref_t* midMat,
+            SideDef(int16_t offX, int16_t offY, MaterialRefId topMat,
+                    MaterialRefId bottomMat, MaterialRefId midMat,
                     uint sectorId)
                 : topMaterial(topMat),
                   bottomMaterial(bottomMat),
@@ -393,26 +398,12 @@ namespace wadconverter
         typedef std::vector<SurfaceTint> SurfaceTints;
         SurfaceTints _surfaceTints;
 
-        size_t _numFlats, _numUnknownFlats;
-        materialref_t** _flats;
-
-        size_t _numTextures, _numUnknownTextures;
-        materialref_t** _textures;
-
         bool loadVertexes(const byte* buf, size_t len);
         bool loadLinedefs(const byte* buf, size_t len);
         bool loadSidedefs(const byte* buf, size_t len);
         bool loadSectors(const byte* buf, size_t len);
         bool loadThings(const byte* buf, size_t len);
         bool loadLights(const byte* buf, size_t len);
-
-        const materialref_t* RegisterMaterial(const char* name, bool isFlat);
-        materialref_t* getMaterial(const char* name, bool isFlat);
-
-        const materialref_t* RegisterMaterial(int idx, bool isFlat);
-        materialref_t* getMaterial(int idx, bool isFlat);
-
-        void logUnknownMaterials();
 
         void findPolyobjs();
         bool findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY);
@@ -423,9 +414,9 @@ namespace wadconverter
         static Map* construct(const char* mapID);
 
         /**
-         *
+         * Given a lump name return the expected data identifier.
          */
-        static lumptype_t dataTypeForLumpName(const char* name);
+        static MapLumpId dataTypeForLumpName(const char* name);
 
     private:
         static FormatId recognize(const LumpNums& lumpNums);
