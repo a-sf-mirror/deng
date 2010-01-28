@@ -22,44 +22,102 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * load.c: Load and analyzation of the map data structures.
- */
-
-// HEADER FILES ------------------------------------------------------------
-
 #include "doomsday.h"
-#include "dd_api.h"
 
-#include "wadconverter.h"
+#include "Map"
 
-#include <cstdlib>
 #include <cstring>
-#include <cstdio>
 #include <algorithm>
 #include <assert.h>
 
 using namespace wadconverter;
 
-// Size of the map data structures in bytes in the arrived WAD format.
-#define SIZEOF_64VERTEX         (4 * 2)
-#define SIZEOF_VERTEX           (2 * 2)
-#define SIZEOF_64THING          (2 * 7)
-#define SIZEOF_XTHING           (2 * 7 + 1 * 6)
-#define SIZEOF_THING            (2 * 5)
-#define SIZEOF_XLINEDEF         (2 * 5 + 1 * 6)
-#define SIZEOF_64LINEDEF        (2 * 6 + 1 * 4)
-#define SIZEOF_LINEDEF          (2 * 7)
-#define SIZEOF_64SIDEDEF        (2 * 6)
-#define SIZEOF_SIDEDEF          (2 * 3 + 8 * 3)
-#define SIZEOF_64SECTOR         (2 * 12)
-#define SIZEOF_SECTOR           (2 * 5 + 8 * 2)
-#define SIZEOF_LIGHT            (1 * 6)
+/**
+ * \note Map takes ownership of @a lumpNums.
+ */
+Map::Map(LumpNums* lumpNums)
+    : _lumpNums(lumpNums),
+      _numVertexes(0),
+      _numSectors(0),
+      _numLineDefs(0),
+      _numSideDefs(0),
+      _numPolyobjs(0),
+      _numThings(0),
+      _numSurfaceTints(0)
+{
+    assert(_lumpNums);
+    assert(_lumpNums->size() > 0);
 
-#define PO_LINE_START           (1) // polyobj line start special
-#define PO_LINE_EXPLICIT        (5)
+    /**
+     * Determine the number of map data elements in each lump.
+     */
+    _formatId = recognize(*_lumpNums);
+    for(LumpNums::iterator i = _lumpNums->begin(); i != _lumpNums->end(); ++i)
+    {
+        MapLumpId lumpType = dataTypeForLumpName(W_LumpName(*i));
+        size_t elmSize = 0; // Num of bytes.
+        uint* ptr = NULL;
 
-#define SEQTYPE_NUMSEQ          (10)
+        switch(lumpType)
+        {
+        case ML_VERTEXES:
+            ptr = &_numVertexes;
+            elmSize = (_formatId == DOOM64? SIZEOF_64VERTEX : SIZEOF_VERTEX);
+            break;
+
+        case ML_THINGS:
+            ptr = &_numThings;
+            elmSize = (_formatId == DOOM64? SIZEOF_64THING :
+                       _formatId == HEXEN? SIZEOF_XTHING : SIZEOF_THING);
+            break;
+
+        case ML_LINEDEFS:
+            ptr = &_numLineDefs;
+            elmSize = (_formatId == DOOM64? SIZEOF_64LINEDEF :
+                       _formatId == HEXEN? SIZEOF_XLINEDEF : SIZEOF_LINEDEF);
+            break;
+
+        case ML_SIDEDEFS:
+            ptr = &_numSideDefs;
+            elmSize = (_formatId == DOOM64? SIZEOF_64SIDEDEF : SIZEOF_SIDEDEF);
+            break;
+
+        case ML_SECTORS:
+            ptr = &_numSectors;
+            elmSize = (_formatId == DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR);
+            break;
+
+        case ML_LIGHTS:
+            ptr = &_numSurfaceTints;
+            elmSize = SIZEOF_LIGHT;
+            break;
+
+        default:
+            break;
+        }
+
+        if(ptr)
+        {
+            size_t lumpLength = W_LumpLength(*i);
+
+            if(0 != lumpLength % elmSize)
+            {
+                _formatId = UNKNOWN; // What is this??
+                return;
+            }
+
+            *ptr += lumpLength / elmSize;
+        }
+    }
+
+    if(!(_numVertexes > 0 && _numLineDefs > 0 && _numSideDefs > 0 && _numSectors > 0))
+        _formatId = UNKNOWN;
+}
+
+Map::~Map()
+{
+    clear();
+}
 
 Map::MaterialRefId Map::getMaterial(const char* _name)
 {
@@ -110,8 +168,10 @@ Map::MaterialRefId Map::RegisterMaterial(const char* _name, bool onPlane)
 
 Map::MapLumpId Map::dataTypeForLumpName(const char* name)
 {
-    struct lumptype_s {
-        MapLumpId      type;
+    assert(name && name[0]);
+
+    static const struct lumptype_s {
+        MapLumpId       type;
         const char*     name;
     } knownLumps[] =
     {
@@ -138,11 +198,10 @@ Map::MapLumpId Map::dataTypeForLumpName(const char* name)
         {ML_GLPVS,      "GL_PVS"},
         {ML_INVALID,    NULL}
     };
-    size_t i;
 
     if(name && name[0])
     {
-        for(i = 0; knownLumps[i].name; ++i)
+        for(size_t i = 0; knownLumps[i].name; ++i)
         {
             if(!strncmp(knownLumps[i].name, name, 8))
                 return knownLumps[i].type;
@@ -259,6 +318,9 @@ bool Map::iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2],
 bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
 {
 #define MAXPOLYLINES         32
+#define SEQTYPE_NUMSEQ       10
+#define PO_LINE_START        1
+#define PO_LINE_EXPLICIT     5
 
     for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
     {
@@ -365,7 +427,7 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
     if(lineCount)
     {
         LineDef* lineDef = polyLineList[0];
-        // Set Polyobj's first LineDef to point to its mirror (if it exists).       
+        // Set Polyobj's first LineDef to point to its mirror (if it exists).
         lineDef->xArgs[1] = lineDef->xArgs[2];
 
         createPolyobj(polyLineList, lineCount, tag, lineDef->xArgs[3], anchorX, anchorY);
@@ -375,6 +437,9 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
 
     return false;
 
+#undef PO_LINE_EXPLICIT
+#undef PO_LINE_START
+#undef SEQTYPE_NUMSEQ
 #undef MAXPOLYLINES
 }
 
@@ -423,97 +488,10 @@ Map::FormatId Map::recognize(const LumpNums& lumpNums)
     return formatId;
 }
 
-/**
- * \note Map takes ownership of @a lumpNums.
- */
-Map::Map(LumpNums& lumpNums)
-    : _formatId(UNKNOWN),
-      _numVertexes(0),
-      _numSectors(0),
-      _numLineDefs(0),
-      _numSideDefs(0),
-      _numPolyobjs(0),
-      _numThings(0),
-      _numSurfaceTints(0)
-{
-    _lumpNums.resize(lumpNums.size());
-    std::copy(lumpNums.begin(), lumpNums.end(), _lumpNums.begin());
-
-    _formatId = recognize(_lumpNums);
-
-    /**
-     * Determine the number of map data elements in each lump.
-     */
-    for(LumpNums::iterator i = _lumpNums.begin(); i != _lumpNums.end(); ++i)
-    {
-        MapLumpId lumpType = dataTypeForLumpName(W_LumpName(*i));
-        size_t elmSize = 0; // Num of bytes.
-        uint* ptr = NULL;
-
-        switch(lumpType)
-        {
-        case ML_VERTEXES:
-            ptr = &_numVertexes;
-            elmSize = (_formatId == DOOM64? SIZEOF_64VERTEX : SIZEOF_VERTEX);
-            break;
-
-        case ML_THINGS:
-            ptr = &_numThings;
-            elmSize = (_formatId == DOOM64? SIZEOF_64THING :
-                       _formatId == HEXEN? SIZEOF_XTHING : SIZEOF_THING);
-            break;
-
-        case ML_LINEDEFS:
-            ptr = &_numLineDefs;
-            elmSize = (_formatId == DOOM64? SIZEOF_64LINEDEF :
-                       _formatId == HEXEN? SIZEOF_XLINEDEF : SIZEOF_LINEDEF);
-            break;
-
-        case ML_SIDEDEFS:
-            ptr = &_numSideDefs;
-            elmSize = (_formatId == DOOM64? SIZEOF_64SIDEDEF : SIZEOF_SIDEDEF);
-            break;
-
-        case ML_SECTORS:
-            ptr = &_numSectors;
-            elmSize = (_formatId == DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR);
-            break;
-
-        case ML_LIGHTS:
-            ptr = &_numSurfaceTints;
-            elmSize = SIZEOF_LIGHT;
-            break;
-
-        default:
-            break;
-        }
-
-        if(ptr)
-        {
-            size_t lumpLength = W_LumpLength(*i);
-
-            if(0 != lumpLength % elmSize)
-            {
-                _formatId = UNKNOWN; // What is this??
-                return;
-            }
-
-            *ptr += lumpLength / elmSize;
-        }
-    }
-
-    if(!(_numVertexes > 0 && _numLineDefs > 0 && _numSideDefs > 0 && _numSectors > 0))
-        _formatId = UNKNOWN;
-}
-
-Map::~Map()
-{
-    clear();
-}
-
 void Map::clear(void)
 {
-    _lumpNums.clear();
+    _lumpNums->clear();
+    delete _lumpNums;
 
     _lineDefs.clear();
     _numLineDefs = 0;
@@ -548,14 +526,16 @@ void Map::clear(void)
  */
 Map* Map::construct(const char* mapID)
 {
-    lumpnum_t startLump;
+    assert(mapID && mapID[0]);
 
+    lumpnum_t startLump;
     if((startLump = W_CheckNumForName(mapID)) == -1)
         throw std::runtime_error("Failed to locate map data");
 
-    LumpNums lumpNums;   
+    LumpNums* lumpNums = new LumpNums;
+
     // Add the marker lump to the list of lumps for this map.
-    lumpNums.push_back(startLump);
+    lumpNums->push_back(startLump);
 
     /**
      * Find the lumps associated with this map dataset and link them to the
@@ -572,7 +552,7 @@ Map* Map::construct(const char* mapID)
         /// \todo Do more validity checking.
         if(lumpType != ML_INVALID)
         {   // Its a known map lump.
-            lumpNums.push_back(i);
+            lumpNums->push_back(i);
             continue;
         }
 
@@ -580,15 +560,14 @@ Map* Map::construct(const char* mapID)
         break;
     }
 
-    if(recognize(lumpNums) == UNKNOWN)
+    if(recognize(*lumpNums) == UNKNOWN)
     {
-        lumpNums.clear();
+        lumpNums->clear();
+        delete lumpNums;
         throw std::runtime_error("Unknown map data format.");
     }
 
-    Map* map = new Map(lumpNums);
-    lumpNums.clear();
-    return map;
+    return new Map(lumpNums);
 }
 
 bool Map::loadVertexes(const byte* buf, size_t len)
@@ -983,7 +962,7 @@ bool Map::loadLights(const byte* buf, size_t len)
     size_t elmSize = SIZEOF_LIGHT;
     uint n, num = len / elmSize;
     const byte* ptr;
-    
+
     for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
     {
         _surfaceTints.push_back(
@@ -1026,7 +1005,7 @@ bool Map::load(void)
 
     byte* buf = NULL;
     size_t oldLen = 0;
-    for(LumpNums::iterator i = _lumpNums.begin(); i != _lumpNums.end(); ++i)
+    for(LumpNums::iterator i = _lumpNums->begin(); i != _lumpNums->end(); ++i)
     {
         MapLumpId lumpType = dataTypeForLumpName(W_LumpName(*i));
         size_t size;

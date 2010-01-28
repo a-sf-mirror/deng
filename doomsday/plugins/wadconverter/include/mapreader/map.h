@@ -35,6 +35,8 @@ namespace wadconverter
      * Encapsulates the process of reading maps in these formats and
      * recreating them in the Doomsday-internal format by way of the
      * public map editing interface.
+     *
+     * @ingroup mapreader
      */
     class Map
     {
@@ -92,6 +94,23 @@ namespace wadconverter
 
         typedef std::vector<lumpnum_t> LumpNums;
 
+        // Size of the map data structures in bytes in the arrived WAD format.
+        enum {
+            SIZEOF_64VERTEX = (4 * 2),
+            SIZEOF_VERTEX = (2 * 2),
+            SIZEOF_64THING = (2 * 7),
+            SIZEOF_XTHING = (2 * 7 + 1 * 6),
+            SIZEOF_THING = (2 * 5),
+            SIZEOF_XLINEDEF = (2 * 5 + 1 * 6),
+            SIZEOF_64LINEDEF = (2 * 6 + 1 * 4),
+            SIZEOF_LINEDEF = (2 * 7),
+            SIZEOF_64SIDEDEF = (2 * 6),
+            SIZEOF_SIDEDEF = (2 * 3 + 8 * 3),
+            SIZEOF_64SECTOR = (2 * 12),
+            SIZEOF_SECTOR = (2 * 5 + 8 * 2),
+            SIZEOF_LIGHT = (1 * 6)
+        };
+
         /// \todo Use a proper String Table/String interning class (perhaps a specialized de::ArrayValue?)
         typedef std::vector<std::string> MaterialRefs;
         typedef MaterialRefs::size_type MaterialRefId;
@@ -107,7 +126,7 @@ namespace wadconverter
          * Map constructor. Concrete instances cannot be constructed by the
          * caller, instead use the static construct methods (e.g., Map::construct)
          */
-        Map(LumpNums& lumpNums);
+        Map(LumpNums* lumpNums);
 
     public:
         ~Map();
@@ -132,7 +151,7 @@ namespace wadconverter
          * Lump numbers (indices into the engine-owned lump directory) which
          * we have determined to contain map data in a format known to us.
          */
-        LumpNums _lumpNums;
+        LumpNums* _lumpNums;
 
         /// Number of map data elements in found lumps.
         uint _numVertexes;
