@@ -20,13 +20,10 @@
 		<Project filename="dpdehread.cbp">
 			<Depends filename="doomsday.cbp" />
 		</Project>
-		<Project filename="dpwadmapconverter.cbp">
+		<Project filename="dpwadconverter.cbp">
 			<Depends filename="doomsday.cbp" />
 		</Project>
 		<Project filename="dsdirectsound.cbp">
-			<Depends filename="doomsday.cbp" />
-		</Project>
-		<Project filename="dsds9.cbp">
 			<Depends filename="doomsday.cbp" />
 		</Project>
 		<Project filename="dswinmm.cbp">

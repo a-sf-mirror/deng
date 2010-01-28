@@ -1,4 +1,4 @@
- .\..\..\plugins\wadconverter\src\wadmapconverter.cc
+ .\..\..\plugins\wadconverter\src\main.cc
  .\..\..\plugins\wadconverter\src\animated.cc
  .\..\..\plugins\wadconverter\src\animdefs.cc
  .\..\..\plugins\wadconverter\src\hexendefparser.cc

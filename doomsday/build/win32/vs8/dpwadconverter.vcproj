@@ -783,7 +783,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadconverter\src\wadconverter.cc"
+				RelativePath="..\..\..\plugins\wadconverter\src\main.cc"
 				>
 			</File>
 		</Filter>
