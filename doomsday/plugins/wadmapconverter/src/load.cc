@@ -3,8 +3,8 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *\author Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 #include "doomsday.h"
 #include "dd_api.h"
 
-#include "wadmapconverter.h"
+#include "wadconverter.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -282,7 +282,7 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
             polyStart[1] = v1[1];
             if(!iterFindPolyLines(v2[0], v2[1], polyStart, &polyLineCount, NULL))
             {
-                Con_Error("WadMapConverter::findAndCreatePolyobj: Found unclosed polyobj.\n");
+                Con_Error("WadConverter::findAndCreatePolyobj: Found unclosed polyobj.\n");
             }
 
             lineList = (LineDef**) malloc((polyLineCount+1) * sizeof(LineDef*));
@@ -321,7 +321,7 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
                 if(!i->xArgs[1])
                 {
                     Con_Error
-                        ("WadMapConverter::findAndCreatePolyobj: Explicit line missing order number "
+                        ("WadConverter::findAndCreatePolyobj: Explicit line missing order number "
                          "(probably %d) in poly %d.\n",
                          j + 1, tag);
                 }
@@ -335,7 +335,7 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
                     if(psIndex > MAXPOLYLINES)
                     {
                         Con_Error
-                            ("WadMapConverter::findAndCreatePolyobj: psIndex > MAXPOLYLINES\n");
+                            ("WadConverter::findAndCreatePolyobj: psIndex > MAXPOLYLINES\n");
                     }
 
                     // Clear out any special.
@@ -355,7 +355,7 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
                    i->xArgs[0] == tag)
                 {
                     Con_Error
-                        ("WadMapConverter::findAndCreatePolyobj: Missing explicit line %d for poly %d\n",
+                        ("WadConverter::findAndCreatePolyobj: Missing explicit line %d for poly %d\n",
                          j, tag);
                 }
             }
@@ -1276,7 +1276,7 @@ bool Map::transfer(void)
     result = Map_EditEnd(deMap)? true : false;
 
     if(ArgExists("-verbose"))
-        Con_Message("WadMapConverter::TransferMap: Done in %.2f seconds.\n",
+        Con_Message("WadConverter::TransferMap: Done in %.2f seconds.\n",
                     (Sys_GetRealTime() - startTime) / 1000.0f);
 
     return result;

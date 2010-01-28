@@ -22,10 +22,8 @@
  */
 
 /**
- * wadmapconverter.c: Doomsday Plugin for converting DOOM-like format maps.
- *
- * The purpose of a wadmapconverter plugin is to transform a map into
- * Doomsday's native map format by use of the public map editing interface.
+ * wadconverter.h: Doomsday plugin for converting WAD format game data
+ * (DOOM, Hexen and DOOM64).
  */
 
 #ifdef WIN32
@@ -34,7 +32,7 @@
 #endif
 
 #include "doomsday.h"
-#include "wadmapconverter.h"
+#include "wadconverter.h"
 
 /**
  * This function is called when Doomsday is asked to load a map that is not
@@ -60,7 +58,7 @@ int ConvertMap(int hookType, int param, void* data)
         if(map) delete map;
         /// \fixme Obviously we should be re-throwing back to the caller
         /// but for now we'll just log it and signal 'failure'.
-        Con_Message("WadMapConverter::Convert: %s.\n", err.what());
+        Con_Message("WadConverter::Convert: %s.\n", err.what());
         return false;
     }
 
@@ -71,7 +69,7 @@ int LoadResources(int hookType, int param, void* data)
 {
     using namespace wadconverter;
 
-    Con_Message("WadMapConverter::LoadResources: Processing...\n");
+    Con_Message("WadConverter::LoadResources: Processing...\n");
     LoadANIMATED();
     LoadANIMDEFS();
 

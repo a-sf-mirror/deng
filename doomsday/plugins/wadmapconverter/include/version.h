@@ -3,8 +3,8 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *\author Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *\author Copyright © 2006 Jamie Jones <jamie_jones_au@yahoo.com.au>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,30 +23,32 @@
  * Boston, MA  02110-1301  USA
  */
 
+#ifndef WADCONVERTER_VERSION_H
+#define WADCONVERTER_VERSION_H
+
 /**
- * version.h: Version numbering, naming etc.
+ * @file version.h
+ *
+ * Version numbering.
  */
 
-#ifndef __WADMAPCONVERTER_VERSION_H__
-#define __WADMAPCONVERTER_VERSION_H__
-
-#ifndef WADMAPCONVERTER_VER_ID
+#ifndef WADCONVERTER_VER_ID
 #  ifdef _DEBUG
-#    define WADMAPCONVERTER_VER_ID "+D Doomsday"
+#    define WADCONVERTER_VER_ID "+D Doomsday"
 #  else
-#    define WADMAPCONVERTER_VER_ID "Doomsday"
+#    define WADCONVERTER_VER_ID "Doomsday"
 #  endif
 #endif
 
 // Used to derive filepaths.
-#define PLUGIN_NAME         "dpwadmapconverter"
+#define PLUGIN_NAME         "dpwadconverter"
 
 // Presented to the user in dialogs, messages etc.
-#define PLUGIN_NICENAME     "WAD Map Converter"
-#define PLUGIN_DETAILS      "Doomsday plugin for loading WAD format maps."
+#define PLUGIN_NICENAME     "WAD Converter"
+#define PLUGIN_DETAILS      "Doomsday plugin for loading WAD format data."
 
 #define PLUGIN_VERSION_TEXT "1.0.5"
-#define PLUGIN_VERSION_TEXTLONG "Version" PLUGIN_VERSION_TEXT " " __DATE__ " (" WADMAPCONVERTER_VER_ID ")"
+#define PLUGIN_VERSION_TEXTLONG "Version" PLUGIN_VERSION_TEXT " " __DATE__ " (" WADCONVERTER_VER_ID ")"
 #define PLUGIN_VERSION_NUMBER 1,0,5,0 // For WIN32 version info.
 
-#endif
+#endif /* WADCONVERTER_VERSION_H */

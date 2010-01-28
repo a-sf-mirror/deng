@@ -3,8 +3,8 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *\author Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 #include "doomsday.h"
 #include "dd_api.h"
 
-#include "wadmapconverter.h"
+#include "wadconverter.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -217,7 +217,7 @@ void wadconverter::LoadANIMATED(void)
          * Support for this extension should be considered depreciated.
          * All new features should be added, accessed via DED.
          */
-        Con_Message("WadMapConverter::LoadAnimated: Reading animations...\n");
+        Con_Message("WadConverter::LoadAnimated: Reading animations...\n");
 
         animDefs = (animdef_t *)W_CacheLumpNum(lump, PU_STATIC);
         loadAnimDefs(animDefs);
