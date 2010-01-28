@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="dpWadMapConverter"
+	Name="dpWadConverter"
 	ProjectGUID="{1687EE67-7C95-4A57-B891-3136065823EC}"
 	RootNamespace="dpWadMapConverter"
 	TargetFrameworkVersion="131072"
@@ -804,6 +804,14 @@
 				>
 				<File
 					RelativePath="..\..\..\plugins\wadmapconverter\res\resource.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="MapReader"
+				>
+				<File
+					RelativePath="..\..\..\plugins\wadmapconverter\include\MapReader\map.h"
 					>
 				</File>
 			</Filter>

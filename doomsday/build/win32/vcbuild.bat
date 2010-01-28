@@ -104,7 +104,7 @@ GOTO Done
 
 :: *** Cleanup and build all targets.
 :All
-CALL vcbuild.bat cleanup res dmt doomsday dpdehread dpwadmapconverter dsopenal dswinmm dsdirectsound jdoom jheretic jhexen jdoom64 copydep
+CALL vcbuild.bat cleanup res dmt doomsday dpdehread dpwadconverter dsopenal dswinmm dsdirectsound jdoom jheretic jhexen jdoom64 copydep
 GOTO Done
 
 
@@ -139,8 +139,8 @@ ECHO Processing directsound.rc...
 rc /i "%PLATFORM_INC%" /i "%PLATFORM_INC%\mfc" "%DENG_PLUGINS_DIR%\directsound\res\directsound.rc"
 ECHO Processing openal.rc...
 rc /i "%PLATFORM_INC%" /i "%PLATFORM_INC%\mfc" "%DENG_PLUGINS_DIR%\openal\res\openal.rc"
-ECHO Processing wadmapconverter.rc...
-rc /i "%PLATFORM_INC%" /i "%PLATFORM_INC%\mfc" "%DENG_PLUGINS_DIR%\wadmapconverter\res\wadmapconverter.rc"
+ECHO Processing wadconverter.rc...
+rc /i "%PLATFORM_INC%" /i "%PLATFORM_INC%\mfc" "%DENG_PLUGINS_DIR%\wadconverter\res\wadconverter.rc"
 ECHO Processing winmm.rc...
 rc /i "%PLATFORM_INC%" /i "%PLATFORM_INC%\mfc" "%DENG_PLUGINS_DIR%\winmm\res\winmm.rc"
 
@@ -172,9 +172,9 @@ cvtres /out:"%OBJ_DIR%\dsdirectsound\dsdirectsound_res.obj" /MACHINE:X86 "%DENG_
 ECHO Processing openal.res...
 md %OBJ_DIR%\dsopenal
 cvtres /out:"%OBJ_DIR%\dsopenal\dsopenal_res.obj" /MACHINE:X86 "%DENG_PLUGINS_DIR%\openal\res\openal.res"
-ECHO Processing wadmapconverter.res...
-md %OBJ_DIR%\dpwadmapconverter
-cvtres /out:"%OBJ_DIR%\dpwadmapconverter\dpwadmapconverter_res.obj" /MACHINE:X86 "%DENG_PLUGINS_DIR%\wadmapconverter\res\wadmapconverter.res"
+ECHO Processing wadconverter.res...
+md %OBJ_DIR%\dpwadconverter
+cvtres /out:"%OBJ_DIR%\dpwadconverter\dpwadmapconverter_res.obj" /MACHINE:X86 "%DENG_PLUGINS_DIR%\wadconverter\res\wadconverter.res"
 ECHO Processing winmm.res...
 md %OBJ_DIR%\dswinmm
 cvtres /out:"%OBJ_DIR%\dswinmm\dswinmm_res.obj" /MACHINE:X86 "%DENG_PLUGINS_DIR%\winmm\res\winmm.res"
@@ -281,13 +281,13 @@ IF %ERRORLEVEL% == 0 GOTO Done
 GOTO Failure
 
 
-:: *** dpWadMapConverter.dll
-:dpWadMapConverter
+:: *** dpWadConverter.dll
+:dpWadConverter
 ECHO ***************************************************************************
-ECHO *****   Compiling dpWadMapConverter.dll (WAD Map converter plugin)   ******
+ECHO *****   Compiling dpWadConverter.dll (WAD converter plugin)   ******
 ECHO ***************************************************************************
-md %OBJ_DIR%\dpWadMapConverter
-cl /O2 /Ob1 /I "%INCS_ENGINE_API%\\" /I "%DENG_PLUGINS_DIR%\wadmapconverter\include" %DLLDEFINES% /D "DPWADMAPCONVERTER_EXPORTS" /GF /FD /EHsc /MT /Gy /Fo"%OBJ_DIR%\dpwadmapconverter\\" /Fd"%OBJ_DIR%\dpWadMapConverter\\" /W3 /Gd "%OBJ_DIR%\dpwadmapconverter\dpwadmapconverter_res.obj" @dpwadmapconverter_cl.rsp  /link /out:"%BIN_DIR%\dpWadMapConverter.dll" %LFLAGS% /dll /implib:"%BIN_DIR%\dpwadmapconverter.lib" %LIBS% %BIN_DIR%\doomsday.lib
+md %OBJ_DIR%\dpWadConverter
+cl /O2 /Ob1 /I "%INCS_ENGINE_API%\\" /I "%DENG_PLUGINS_DIR%\wadconverter\include" %DLLDEFINES% /D "DPWADCONVERTER_EXPORTS" /GF /FD /EHsc /MT /Gy /Fo"%OBJ_DIR%\dpwadconverter\\" /Fd"%OBJ_DIR%\dpWadConverter\\" /W3 /Gd "%OBJ_DIR%\dpwadconverter\dpwadconverter_res.obj" @dpwadconverter_cl.rsp  /link /out:"%BIN_DIR%\dpWadConverter.dll" %LFLAGS% /dll /implib:"%BIN_DIR%\dpwadconverter.lib" %LIBS% %BIN_DIR%\doomsday.lib
 IF %ERRORLEVEL% == 0 GOTO Done
 GOTO Failure
 

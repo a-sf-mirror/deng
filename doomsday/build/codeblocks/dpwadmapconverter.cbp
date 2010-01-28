@@ -2,14 +2,14 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="dpWadMapConverter" />
+		<Option title="dpWadConverter" />
 		<Option pch_mode="2" />
 		<Option compiler="msvc8" />
 		<Build>
 			<Target title="Debug Win32">
 				<Option platforms="Windows;" />
-				<Option output="bin\Debug Win32\dpWadMapConverter" prefix_auto="1" extension_auto="1" />
-				<Option object_output=".\Obj\Debug Win32\dpWadMapConverter" />
+				<Option output="bin\Debug Win32\dpWadConverter" prefix_auto="1" extension_auto="1" />
+				<Option object_output=".\Obj\Debug Win32\dpWadConverter" />
 				<Option type="3" />
 				<Option compiler="msvc8" />
 				<Option createDefFile="1" />
@@ -27,11 +27,11 @@
 					<Add option="/D_USRDLL" />
 					<Add option="/DDPWADMAPCONVERTER_EXPORTS" />
 					<Add directory="..\..\engine\api" />
-					<Add directory="..\..\plugins\wadmapconverter\include" />
+					<Add directory="..\..\plugins\wadconverter\include" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="..\..\engine\api" />
-					<Add directory="..\..\plugins\wadmapconverter\include" />
+					<Add directory="..\..\plugins\wadconverter\include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/opt:noicf" />
@@ -41,8 +41,8 @@
 			</Target>
 			<Target title="Release Win32">
 				<Option platforms="Windows;" />
-				<Option output="bin\Release Win32\dpWadMapConverter" prefix_auto="1" extension_auto="1" />
-				<Option object_output=".\Obj\Release Win32\dpWadMapConverter" />
+				<Option output="bin\Release Win32\dpWadConverter" prefix_auto="1" extension_auto="1" />
+				<Option object_output=".\Obj\Release Win32\dpWadConverter" />
 				<Option type="3" />
 				<Option compiler="msvc8" />
 				<Option createDefFile="1" />
@@ -58,11 +58,11 @@
 					<Add option="/D_USRDLL" />
 					<Add option="/DDPWADMAPCONVERTER_EXPORTS" />
 					<Add directory="..\..\engine\api" />
-					<Add directory="..\..\plugins\wadmapconverter\include" />
+					<Add directory="..\..\plugins\wadconverter\include" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="..\..\engine\api" />
-					<Add directory="..\..\plugins\wadmapconverter\include" />
+					<Add directory="..\..\plugins\wadconverter\include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/INCREMENTAL:NO" />
@@ -73,12 +73,12 @@
 		<VirtualTargets>
 			<Add alias="All" targets="Debug Win32;Release Win32;" />
 		</VirtualTargets>
-		<Unit filename="..\..\plugins\wadmapconverter\include\wadmapconverter.h" />
-		<Unit filename="..\..\plugins\wadmapconverter\src\wadmapconverter.cc" />
-		<Unit filename="..\..\plugins\wadmapconverter\src\animated.cc" />
-		<Unit filename="..\..\plugins\wadmapconverter\src\animdefs.cc" />
-		<Unit filename="..\..\plugins\wadmapconverter\src\hexendefparser.cc" />
-		<Unit filename="..\..\plugins\wadmapconverter\src\load.cc" />
+		<Unit filename="..\..\plugins\wadconverter\include\wadconverter.h" />
+		<Unit filename="..\..\plugins\wadconverter\src\wadconverter.cc" />
+		<Unit filename="..\..\plugins\wadconverter\src\animated.cc" />
+		<Unit filename="..\..\plugins\wadconverter\src\animdefs.cc" />
+		<Unit filename="..\..\plugins\wadconverter\src\hexendefparser.cc" />
+		<Unit filename="..\..\plugins\wadconverter\src\mapreader/map.cc" />
 		<Extensions>
 			<code_completion />
 			<debugger />
