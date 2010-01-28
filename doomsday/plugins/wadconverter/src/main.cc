@@ -22,7 +22,7 @@
  */
 
 /**
- * wadconverter.h: Doomsday plugin for converting WAD format game data
+ * wadconverter.cc: Doomsday plugin for converting WAD format game data
  * (DOOM, Hexen and DOOM64).
  */
 

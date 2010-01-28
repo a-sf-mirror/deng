@@ -779,13 +779,17 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadconverter\src\load.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\plugins\wadconverter\src\main.cc"
 				>
 			</File>
+			<Filter
+				Name="MapReader"
+				>
+				<File
+					RelativePath="..\..\..\plugins\wadconverter\src\mapreader\map.cc"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -811,7 +815,7 @@
 				Name="MapReader"
 				>
 				<File
-					RelativePath="..\..\..\plugins\wadconverter\include\MapReader\map.h"
+					RelativePath="..\..\..\plugins\wadconverter\include\mapreader\map.h"
 					>
 				</File>
 			</Filter>
