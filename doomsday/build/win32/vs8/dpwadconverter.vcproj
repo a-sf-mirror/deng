@@ -4,7 +4,7 @@
 	Version="9.00"
 	Name="dpWadConverter"
 	ProjectGUID="{1687EE67-7C95-4A57-B891-3136065823EC}"
-	RootNamespace="dpWadMapConverter"
+	RootNamespace="dpWadConverter"
 	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
@@ -46,17 +46,17 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName="./Bin/Debug/dpWadMapConverter.tlb"
+				TypeLibraryName="./Bin/Debug/dpWadConverter.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadmapconverter\include;"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;EXAMPLE_PLUGIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;DPWADMAPCONVERTER_EXPORTS"
+				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;EXAMPLE_PLUGIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;DPWADCONVERTER_EXPORTS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="./Obj/Debug/dpWadMapConverter/dpWadMapConverter.pch"
+				PrecompiledHeaderFile="./Obj/Debug/dpWadConverter/dpWadConverter.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\obj\"
 				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
@@ -91,7 +91,7 @@
 				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="./Bin/Debug/dpWadMapConverter.lib"
+				ImportLibrary="./Bin/Debug/dpWadConverter.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -145,20 +145,20 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName="./Bin/Debug/dpWadMapConverter.tlb"
+				TypeLibraryName="./Bin/Debug/dpWadConverter.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadmapconverter\include;"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;EXAMPLE_PLUGIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;DPWADMAPCONVERTER_EXPORTS"
+				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;EXAMPLE_PLUGIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;DPWADCONVERTER_EXPORTS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="./Obj/Debug/dpWadMapConverter/dpWadMapConverter.pch"
-				AssemblerListingLocation="./Obj/Debug/dpWadMapConverter/"
-				ObjectFile="./Obj/Debug/dpWadMapConverter/"
-				ProgramDataBaseFileName="./Obj/Debug/dpWadMapConverter/"
+				PrecompiledHeaderFile="./Obj/Debug/dpWadConverter/dpWadConverter.pch"
+				AssemblerListingLocation="./Obj/Debug/dpWadConverter/"
+				ObjectFile="./Obj/Debug/dpWadConverter/"
+				ProgramDataBaseFileName="./Obj/Debug/dpWadConverter/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -178,15 +178,15 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="./bin/debug/doomsday.lib"
-				OutputFile="./Bin/Debug/dpWadMapConverter.dll"
+				OutputFile="./Bin/Debug/dpWadConverter.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="./Bin/Debug/dpWadMapConverter.pdb"
+				ProgramDatabaseFile="./Bin/Debug/dpWadConverter.pdb"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="./Bin/Debug/dpWadMapConverter.lib"
+				ImportLibrary="./Bin/Debug/dpWadConverter.lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -240,18 +240,18 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\./Bin/Release/dpWadMapConverter.tlb"
+				TypeLibraryName=".\./Bin/Release/dpWadConverter.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadmapconverter\include;"
-				PreprocessorDefinitions="MAPCONVERTER_PLUGIN;WIN32;NDEBUG;_WINDOWS;_USRDLL;DPWADMAPCONVERTER_EXPORTS"
+				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
+				PreprocessorDefinitions="WADCONVERTER_PLUGIN;WIN32;NDEBUG;_WINDOWS;_USRDLL;DPWADCONVERTER_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\./Obj/Release/dpWadMapConverter/dpWadMapConverter.pch"
+				PrecompiledHeaderFile=".\./Obj/Release/dpWadConverter/dpWadConverter.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\obj\"
 				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
@@ -283,7 +283,7 @@
 				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary=".\./Bin/Release/dpWadMapConverter.lib"
+				ImportLibrary=".\./Bin/Release/dpWadConverter.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -338,21 +338,21 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName=".\./Bin/Release/dpWadMapConverter.tlb"
+				TypeLibraryName=".\./Bin/Release/dpWadConverter.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadmapconverter\include;"
-				PreprocessorDefinitions="MAPCONVERTER_PLUGIN;WIN32;NDEBUG;_WINDOWS;_USRDLL;DPWADMAPCONVERTER_EXPORTS"
+				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
+				PreprocessorDefinitions="WADCONVERTER_PLUGIN;WIN32;NDEBUG;_WINDOWS;_USRDLL;DPWADCONVERTER_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\./Obj/Release/dpWadMapConverter/dpWadMapConverter.pch"
-				AssemblerListingLocation=".\./Obj/Release/dpWadMapConverter/"
-				ObjectFile=".\./Obj/Release/dpWadMapConverter/"
-				ProgramDataBaseFileName=".\./Obj/Release/dpWadMapConverter/"
+				PrecompiledHeaderFile=".\./Obj/Release/dpWadConverter/dpWadConverter.pch"
+				AssemblerListingLocation=".\./Obj/Release/dpWadConverter/"
+				ObjectFile=".\./Obj/Release/dpWadConverter/"
+				ProgramDataBaseFileName=".\./Obj/Release/dpWadConverter/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				CallingConvention="0"
@@ -370,14 +370,14 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="./bin/release/Doomsday.lib"
-				OutputFile=".\./Bin/Release/dpWadMapConverter.dll"
+				OutputFile=".\./Bin/Release/dpWadConverter.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
-				ProgramDatabaseFile=".\./Bin/Release/dpWadMapConverter.pdb"
+				ProgramDatabaseFile=".\./Bin/Release/dpWadConverter.pdb"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary=".\./Bin/Release/dpWadMapConverter.lib"
+				ImportLibrary=".\./Bin/Release/dpWadConverter.lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -501,20 +501,20 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName="./Bin/Debug/dpWadMapConverter.tlb"
+				TypeLibraryName="./Bin/Debug/dpWadConverter.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadmapconverter\include;"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;EXAMPLE_PLUGIN;WIN32;NO_FIXED_ASM;_DEBUG;_WINDOWS;_USRDLL;DPWADMAPCONVERTER_EXPORTS"
+				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;EXAMPLE_PLUGIN;WIN32;NO_FIXED_ASM;_DEBUG;_WINDOWS;_USRDLL;DPWADCONVERTER_EXPORTS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="./Obj/Debug/dpWadMapConverter/dpWadMapConverter.pch"
-				AssemblerListingLocation="./Obj/Debug/dpWadMapConverter/"
-				ObjectFile="./Obj/Debug/dpWadMapConverter/"
-				ProgramDataBaseFileName="./Obj/Debug/dpWadMapConverter/"
+				PrecompiledHeaderFile="./Obj/Debug/dpWadConverter/dpWadConverter.pch"
+				AssemblerListingLocation="./Obj/Debug/dpWadConverter/"
+				ObjectFile="./Obj/Debug/dpWadConverter/"
+				ProgramDataBaseFileName="./Obj/Debug/dpWadConverter/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -534,15 +534,15 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="./bin/debug/doomsday.lib"
-				OutputFile="./Bin/Debug/dpWadMapConverter.dll"
+				OutputFile="./Bin/Debug/dpWadConverter.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="./Bin/Debug/dpWadMapConverter.pdb"
+				ProgramDatabaseFile="./Bin/Debug/dpWadConverter.pdb"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="./Bin/Debug/dpWadMapConverter.lib"
+				ImportLibrary="./Bin/Debug/dpWadConverter.lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -596,18 +596,18 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\./Bin/Release/dpWadMapConverter.tlb"
+				TypeLibraryName=".\./Bin/Release/dpWadConverter.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadmapconverter\include;"
-				PreprocessorDefinitions="MAPCONVERTER_PLUGIN;WIN32;NDEBUG;_WINDOWS;_USRDLL;DPWADMAPCONVERTER_EXPORTS"
+				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
+				PreprocessorDefinitions="WADCONVERTER_PLUGIN;WIN32;NDEBUG;_WINDOWS;_USRDLL;DPWADCONVERTER_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\./Obj/Release/dpWadMapConverter/dpWadMapConverter.pch"
+				PrecompiledHeaderFile=".\./Obj/Release/dpWadConverter/dpWadConverter.pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\obj\"
 				ProgramDataBaseFileName="$(IntDir)\$(TargetFileName).pdb"
@@ -639,7 +639,7 @@
 				ProgramDatabaseFile="$(IntDir)\$(TargetFileName).pdb"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary=".\./Bin/Release/dpWadMapConverter.lib"
+				ImportLibrary=".\./Bin/Release/dpWadConverter.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -694,21 +694,21 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName=".\./Bin/Release/dpWadMapConverter.tlb"
+				TypeLibraryName=".\./Bin/Release/dpWadConverter.tlb"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadmapconverter\include;"
-				PreprocessorDefinitions="MAPCONVERTER_PLUGIN;WIN32;NO_FIXED_ASM;NDEBUG;_WINDOWS;_USRDLL;DPWADMAPCONVERTER_EXPORTS"
+				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
+				PreprocessorDefinitions="WADCONVERTER_PLUGIN;WIN32;NO_FIXED_ASM;NDEBUG;_WINDOWS;_USRDLL;DPWADCONVERTER_EXPORTS"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\./Obj/Release/dpWadMapConverter/dpWadMapConverter.pch"
-				AssemblerListingLocation=".\./Obj/Release/dpWadMapConverter/"
-				ObjectFile=".\./Obj/Release/dpWadMapConverter/"
-				ProgramDataBaseFileName=".\./Obj/Release/dpWadMapConverter/"
+				PrecompiledHeaderFile=".\./Obj/Release/dpWadConverter/dpWadConverter.pch"
+				AssemblerListingLocation=".\./Obj/Release/dpWadConverter/"
+				ObjectFile=".\./Obj/Release/dpWadConverter/"
+				ProgramDataBaseFileName=".\./Obj/Release/dpWadConverter/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				CallingConvention="0"
@@ -726,14 +726,14 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="./bin/release/Doomsday.lib"
-				OutputFile=".\./Bin/Release/dpWadMapConverter.dll"
+				OutputFile=".\./Bin/Release/dpWadConverter.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateManifest="false"
-				ProgramDatabaseFile=".\./Bin/Release/dpWadMapConverter.pdb"
+				ProgramDatabaseFile=".\./Bin/Release/dpWadConverter.pdb"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary=".\./Bin/Release/dpWadMapConverter.lib"
+				ImportLibrary=".\./Bin/Release/dpWadConverter.lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -767,23 +767,23 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\animated.cc"
+				RelativePath="..\..\..\plugins\wadconverter\src\animated.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\animdefs.cc"
+				RelativePath="..\..\..\plugins\wadconverter\src\animdefs.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\hexendefparser.cc"
+				RelativePath="..\..\..\plugins\wadconverter\src\hexendefparser.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\load.cc"
+				RelativePath="..\..\..\plugins\wadconverter\src\load.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\src\wadmapconverter.cc"
+				RelativePath="..\..\..\plugins\wadconverter\src\wadconverter.cc"
 				>
 			</File>
 		</Filter>
@@ -792,18 +792,18 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\include\version.h"
+				RelativePath="..\..\..\plugins\wadconverter\include\version.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\include\wadmapconverter.h"
+				RelativePath="..\..\..\plugins\wadconverter\include\wadconverter.h"
 				>
 			</File>
 			<Filter
 				Name="Win32"
 				>
 				<File
-					RelativePath="..\..\..\plugins\wadmapconverter\res\resource.h"
+					RelativePath="..\..\..\plugins\wadconverter\res\resource.h"
 					>
 				</File>
 			</Filter>
@@ -811,7 +811,7 @@
 				Name="MapReader"
 				>
 				<File
-					RelativePath="..\..\..\plugins\wadmapconverter\include\MapReader\map.h"
+					RelativePath="..\..\..\plugins\wadconverter\include\MapReader\map.h"
 					>
 				</File>
 			</Filter>
@@ -821,7 +821,7 @@
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
 			<File
-				RelativePath="..\..\..\plugins\wadmapconverter\res\wadmapconverter.rc"
+				RelativePath="..\..\..\plugins\wadconverter\res\wadconverter.rc"
 				>
 			</File>
 		</Filter>
