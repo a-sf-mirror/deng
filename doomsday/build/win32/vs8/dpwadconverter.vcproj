@@ -790,6 +790,14 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="Data"
+				>
+				<File
+					RelativePath="..\..\..\plugins\wadconverter\src\data\stringtable.cc"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -816,6 +824,14 @@
 				>
 				<File
 					RelativePath="..\..\..\plugins\wadconverter\include\mapreader\map.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Data"
+				>
+				<File
+					RelativePath="..\..\..\plugins\wadconverter\include\data\stringtable.h"
 					>
 				</File>
 			</Filter>

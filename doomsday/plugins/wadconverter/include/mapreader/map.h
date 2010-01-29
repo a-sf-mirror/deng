@@ -24,9 +24,9 @@
 #ifndef WADCONVERTER_MAP_H
 #define WADCONVERTER_MAP_H
 
-#include <stdexcept>
 #include <vector>
-#include <string>
+
+#include "StringTable"
 
 namespace wadconverter
 {
@@ -112,13 +112,11 @@ namespace wadconverter
         };
 
         /// \todo Use a proper String Table/String interning class (perhaps a specialized de::ArrayValue?)
-        typedef std::vector<std::string> MaterialRefs;
-        typedef MaterialRefs::size_type MaterialRefId;
+        typedef StringTable MaterialRefs;
+        typedef StringTable::StringId MaterialRefId;
         MaterialRefs _materialRefs;
 
-        MaterialRefId RegisterMaterial(const char* name, bool onPlane);
-        MaterialRefId getMaterial(const char* name);
-
+        MaterialRefId registerMaterial(const char* name, bool onPlane);
         material_t* getMaterialForId(MaterialRefId id, bool onPlane);
 
     private:

@@ -29,8 +29,6 @@
 #ifndef WADCONVERTER_H
 #define WADCONVERTER_H
 
-#include "Map"
-
 namespace wadconverter
 {
     void LoadANIMATED(void);

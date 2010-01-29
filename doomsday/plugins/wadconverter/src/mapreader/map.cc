@@ -119,32 +119,7 @@ Map::~Map()
     clear();
 }
 
-Map::MaterialRefId Map::getMaterial(const char* _name)
-{
-    char name[9];
-    const char *namePtr;
-
-    if(_formatId == DOOM64)
-    {
-        int idx = *((int*) _name);
-        dd_snprintf(name, 9, "UNK%05i", idx);
-        namePtr = name;
-    }
-    else
-    {
-        namePtr = _name;
-    }
-
-    {MaterialRefId n = 0;
-    for(MaterialRefs::iterator i = _materialRefs.begin();
-        i != _materialRefs.end(); ++i, ++n)
-        if(i->compare(namePtr) == 0)
-            return n+1; // 1-based index.
-    }
-    return 0;
-}
-
-Map::MaterialRefId Map::RegisterMaterial(const char* _name, bool onPlane)
+Map::MaterialRefId Map::registerMaterial(const char* _name, bool onPlane)
 {
     char name[9];
     memcpy(name, _name, sizeof(name));
@@ -158,12 +133,10 @@ Map::MaterialRefId Map::RegisterMaterial(const char* _name, bool onPlane)
 
     // Check if this material has already been registered.
     MaterialRefId refId;
-    if((refId = getMaterial(name)) > 0)
+    if((refId = _materialRefs.find(name)) > 0)
         return refId;
 
-    // A new material.
-    _materialRefs.push_back(std::string(name));
-    return _materialRefs.size(); // 1-based index.
+    return _materialRefs.insert(name);
 }
 
 Map::MapLumpId Map::dataTypeForLumpName(const char* name)
@@ -492,6 +465,7 @@ void Map::clear(void)
 {
     _lumpNums->clear();
     delete _lumpNums;
+    _lumpNums = NULL;
 
     _lineDefs.clear();
     _numLineDefs = 0;
@@ -696,9 +670,9 @@ bool Map::loadSidedefs(const byte* buf, size_t len)
             _sideDefs.push_back(
                 SideDef(SHORT(*((const int16_t*) (ptr))),
                         SHORT(*((const int16_t*) (ptr+2))),
-                        RegisterMaterial((const char*) (ptr+4), false),
-                        RegisterMaterial((const char*) (ptr+12), false),
-                        RegisterMaterial((const char*) (ptr+20), false),
+                        registerMaterial((const char*) (ptr+4), false),
+                        registerMaterial((const char*) (ptr+12), false),
+                        registerMaterial((const char*) (ptr+20), false),
                         sectorId == 0xFFFF? 0 : sectorId+1));
         }
         break;
@@ -737,8 +711,8 @@ bool Map::loadSectors(const byte* buf, size_t len)
             _sectors.push_back(
                 Sector(SHORT(*((const int16_t*) ptr)),
                        SHORT(*((const int16_t*) (ptr+2))),
-                       RegisterMaterial((const char*) (ptr+4), true),
-                       RegisterMaterial((const char*) (ptr+12), true),
+                       registerMaterial((const char*) (ptr+4), true),
+                       registerMaterial((const char*) (ptr+12), true),
                        SHORT(*((const int16_t*) (ptr+20))),
                        SHORT(*((const int16_t*) (ptr+22))),
                        SHORT(*((const int16_t*) (ptr+24)))));
@@ -1072,7 +1046,7 @@ material_t* Map::getMaterialForId(MaterialRefId id, bool onPlane)
     if(id == 0)
         return NULL;
 
-    const std::string& name = _materialRefs[id-1];
+    const std::string& name = _materialRefs.get(id);
     // First try the prefered namespace, then any.
     material_t* material = P_MaterialForName(onPlane? MN_FLATS : MN_TEXTURES, name.c_str());
     if(material) return material;

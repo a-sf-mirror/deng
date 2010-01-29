@@ -73,12 +73,15 @@
 		<VirtualTargets>
 			<Add alias="All" targets="Debug Win32;Release Win32;" />
 		</VirtualTargets>
+		<Unit filename="..\..\plugins\wadconverter\include\data\stringtable.h" />
+		<Unit filename="..\..\plugins\wadconverter\include\mapreader\map.h" />
 		<Unit filename="..\..\plugins\wadconverter\include\wadconverter.h" />
 		<Unit filename="..\..\plugins\wadconverter\src\main.cc" />
 		<Unit filename="..\..\plugins\wadconverter\src\animated.cc" />
 		<Unit filename="..\..\plugins\wadconverter\src\animdefs.cc" />
+		<Unit filename="..\..\plugins\wadconverter\src\data\stringtable.cc" />
 		<Unit filename="..\..\plugins\wadconverter\src\hexendefparser.cc" />
-		<Unit filename="..\..\plugins\wadconverter\src\mapreader/map.cc" />
+		<Unit filename="..\..\plugins\wadconverter\src\mapreader\map.cc" />
 		<Extensions>
 			<code_completion />
 			<debugger />

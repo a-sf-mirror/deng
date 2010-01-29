@@ -34,6 +34,8 @@
 #include "doomsday.h"
 #include "wadconverter.h"
 
+#include "Map"
+
 extern "C"
 {
     /**
