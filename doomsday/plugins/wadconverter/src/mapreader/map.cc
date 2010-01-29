@@ -121,6 +121,8 @@ Map::~Map()
 
 Map::MaterialRefId Map::registerMaterial(const char* _name, bool onPlane)
 {
+    assert(_name && _name[0]);
+
     char name[9];
     memcpy(name, _name, sizeof(name));
     name[8] = '\0';
@@ -129,12 +131,7 @@ Map::MaterialRefId Map::registerMaterial(const char* _name, bool onPlane)
     // texture name (no texture).
     if(!onPlane && (_formatId == Map::DOOM || _formatId == Map::HEXEN) &&
        !stricmp(name, "-"))
-        return 0;
-
-    // Check if this material has already been registered.
-    MaterialRefId refId;
-    if((refId = _materialRefs.find(name)) > 0)
-        return refId;
+        return MaterialRefs::NONINDEX;
 
     return _materialRefs.insert(name);
 }
@@ -1043,7 +1040,7 @@ bool Map::load(void)
 
 material_t* Map::getMaterialForId(MaterialRefId id, bool onPlane)
 {
-    if(id == 0)
+    if(id == MaterialRefs::NONINDEX)
         return NULL;
 
     const std::string& name = _materialRefs.get(id);

@@ -25,7 +25,7 @@
 #include <iterator>
 #include <assert.h>
 
-#include "stringtable.h"
+#include "StringTable"
 
 StringTable::StringTable()
 {}
@@ -39,7 +39,7 @@ StringTable::StringId StringTable::find(const std::string& name)
 {
     Strings::iterator it = std::find(_strings.begin(), _strings.end(), name);
     if(it != _strings.end())
-        return (static_cast<StringId> (std::distance(it, _strings.end()))) + 1; // 1-based index.
+        return (static_cast<StringId> (std::distance(_strings.begin(), it))) + 1; // 1-based index.
     return StringTable::NONINDEX;
 }
 
@@ -52,9 +52,10 @@ StringTable::StringId StringTable::find(const char* name)
 
 StringTable::StringId StringTable::insert(const std::string& name)
 {
-    if(StringId Id = find(name) != StringTable::NONINDEX)
+    StringId Id;
+    if((Id = find(name)) != StringTable::NONINDEX)
         return Id;
-    _strings.push_back(std::string(name));
+    _strings.push_back(name);
     return static_cast<StringId> (_strings.size()); // 1-based index.
 }
 
@@ -68,7 +69,7 @@ StringTable::StringId StringTable::insert(const char* name)
 const std::string& StringTable::get(StringTable::StringId Id)
 {
     assert(Id != StringTable::NONINDEX);
-    if(Id - 1 < _strings.size())
+    if(Id - 1 > _strings.size())
         throw std::out_of_range("Id outside valid range");
     return _strings[Id-1];
 }

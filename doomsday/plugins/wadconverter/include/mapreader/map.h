@@ -111,7 +111,6 @@ namespace wadconverter
             SIZEOF_LIGHT = (1 * 6)
         };
 
-        /// \todo Use a proper String Table/String interning class (perhaps a specialized de::ArrayValue?)
         typedef StringTable MaterialRefs;
         typedef StringTable::StringId MaterialRefId;
         MaterialRefs _materialRefs;
