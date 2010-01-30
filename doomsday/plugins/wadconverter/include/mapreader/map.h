@@ -111,8 +111,8 @@ namespace wadconverter
             SIZEOF_LIGHT = (1 * 6)
         };
 
-        typedef StringTable MaterialRefs;
-        typedef StringTable::StringId MaterialRefId;
+        typedef de::StringTable MaterialRefs;
+        typedef de::StringTable::StringId MaterialRefId;
         MaterialRefs _materialRefs;
 
         MaterialRefId registerMaterial(const char* name, bool onPlane);
