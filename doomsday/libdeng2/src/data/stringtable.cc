@@ -25,7 +25,7 @@
 #include <iterator>
 #include <assert.h>
 
-#include "StringTable"
+#include "de/StringTable"
 
 using namespace de;
 

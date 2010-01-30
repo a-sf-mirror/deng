@@ -3,4 +3,3 @@
  .\..\..\plugins\wadconverter\src\animdefs.cc
  .\..\..\plugins\wadconverter\src\hexendefparser.cc
  .\..\..\plugins\wadconverter\src\mapreader\map.cc
- .\..\..\plugins\wadconverter\src\data\stringtable.cc

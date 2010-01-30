@@ -26,7 +26,7 @@
 
 #include <vector>
 
-#include "StringTable"
+#include "de/StringTable"
 
 namespace wadconverter
 {

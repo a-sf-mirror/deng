@@ -21,10 +21,10 @@
  * Boston, MA  02110-1301  USA
  */
 
-#ifndef STRINGTABLE_H
-#define STRINGTABLE_H
+#ifndef LIBDENG2_STRINGTABLE_H
+#define LIBDENG2_STRINGTABLE_H
 
-#include "de/String"
+#include "../String"
 
 #include <vector>
 
@@ -33,7 +33,7 @@ namespace de
     /**
      * "String interning" container.
      */
-    class StringTable
+    class LIBDENG2_API StringTable
     {
     private:
         /// The string table itself.
@@ -80,4 +80,4 @@ namespace de
     };
 }
 
-#endif /* STRINGTABLE_H */
+#endif /* LIBDENG2_STRINGTABLE_H */
