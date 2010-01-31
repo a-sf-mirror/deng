@@ -26,7 +26,6 @@
 
 #include "Map"
 
-#include <cstring>
 #include <algorithm>
 #include <assert.h>
 
@@ -119,21 +118,33 @@ Map::~Map()
     clear();
 }
 
-Map::MaterialRefId Map::registerMaterial(const char* _name, bool onPlane)
+Map::MaterialRefId Map::readMaterialReference(de::Reader& from, bool onPlane)
 {
-    assert(_name && _name[0]);
+#pragma message( "Warning: Need to read DOOM64 format material references" )
+// DOOM64 material references are indexes into lump directory (for flats)
+// or offsets in TEXTURES. Read as: (int) USHORT(*((const uint16_t*) (offset)))
 
-    char name[9];
-    memcpy(name, _name, sizeof(name));
-    name[8] = '\0';
-
+    de::String name;
+    de::FixedByteArray byteSeq(name, 0, 8);
+    from >> byteSeq;
     // When loading DOOM or Hexen format maps check for the special case "-"
     // texture name (no texture).
     if(!onPlane && (_formatId == Map::DOOM || _formatId == Map::HEXEN) &&
-       !stricmp(name, "-"))
+       !name.compareWithCase("-"))
         return MaterialRefs::NONINDEX;
-
     return _materialRefs.insert(name);
+}
+
+material_t* Map::getMaterialForId(MaterialRefId id, bool onPlane)
+{
+    if(id == MaterialRefs::NONINDEX)
+        return NULL;
+
+    const std::string& name = _materialRefs.get(id);
+    // First try the prefered namespace, then any.
+    material_t* material = P_MaterialForName(onPlane? MN_FLATS : MN_TEXTURES, name.c_str());
+    if(material) return material;
+    return P_MaterialForName(MN_ANY, name.c_str());
 }
 
 Map::MapLumpId Map::dataTypeForLumpName(const char* name)
@@ -224,7 +235,7 @@ void Map::createPolyobj(LineDef** lineDefs, uint lineDefCount, int tag,
         /// \todo Ugly or what? Revise Polyobj construction interface.
         LineDefs::iterator iter;
         for(iter = _lineDefs.begin(); iter != _lineDefs.end(); ++i)
-            if(&(*iter) == lineDefs[i])
+            if((*iter) == lineDefs[i])
             {
                 lineIndices[i] = distance(iter, _lineDefs.begin());
                 break;
@@ -255,19 +266,19 @@ bool Map::iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2],
 
     for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
     {
+        LineDef* lineDef = (*i);
         int16_t v1[2], v2[2];
-
-        v1[0] = (int16_t) _vertexCoords[(i->v[0] - 1) * 2];
-        v1[1] = (int16_t) _vertexCoords[(i->v[0] - 1) * 2 + 1];
-        v2[0] = (int16_t) _vertexCoords[(i->v[1] - 1) * 2];
-        v2[1] = (int16_t) _vertexCoords[(i->v[1] - 1) * 2 + 1];
+        v1[0] = (int16_t) _vertexCoords[(lineDef->v[0] - 1) * 2];
+        v1[1] = (int16_t) _vertexCoords[(lineDef->v[0] - 1) * 2 + 1];
+        v2[0] = (int16_t) _vertexCoords[(lineDef->v[1] - 1) * 2];
+        v2[1] = (int16_t) _vertexCoords[(lineDef->v[1] - 1) * 2 + 1];
 
         if(v1[0] == x && v1[1] == y)
         {
             if(!lineDefs)
                 *polyLineCount++;
             else
-                *lineDefs++ = &(*i);
+                *lineDefs++ = lineDef;
 
             iterFindPolyLines(v2[0], v2[1], polyStart, polyLineCount, lineDefs);
             return true;
@@ -294,7 +305,8 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
 
     for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
     {
-        if(i->xType == PO_LINE_START && i->xArgs[0] == tag)
+        LineDef* lineDef = (*i);
+        if(lineDef->xType == PO_LINE_START && lineDef->xArgs[0] == tag)
         {
             byte seqType;
             LineDef** lineList;
@@ -302,14 +314,14 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
             uint polyLineCount;
             int16_t polyStart[2];
 
-            i->xType = 0;
-            i->xArgs[0] = 0;
+            lineDef->xType = 0;
+            lineDef->xArgs[0] = 0;
             polyLineCount = 1;
 
-            v1[0] = (int16_t) _vertexCoords[(i->v[0]-1) * 2];
-            v1[1] = (int16_t) _vertexCoords[(i->v[0]-1) * 2 + 1];
-            v2[0] = (int16_t) _vertexCoords[(i->v[1]-1) * 2];
-            v2[1] = (int16_t) _vertexCoords[(i->v[1]-1) * 2 + 1];
+            v1[0] = (int16_t) _vertexCoords[(lineDef->v[0]-1) * 2];
+            v1[1] = (int16_t) _vertexCoords[(lineDef->v[0]-1) * 2 + 1];
+            v2[0] = (int16_t) _vertexCoords[(lineDef->v[1]-1) * 2];
+            v2[1] = (int16_t) _vertexCoords[(lineDef->v[1]-1) * 2 + 1];
             polyStart[0] = v1[0];
             polyStart[1] = v1[1];
             if(!iterFindPolyLines(v2[0], v2[1], polyStart, &polyLineCount, NULL))
@@ -319,11 +331,11 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
 
             lineList = (LineDef**) malloc((polyLineCount+1) * sizeof(LineDef*));
 
-            lineList[0] = &(*i); // Insert the first line.
+            lineList[0] = lineDef; // Insert the first line.
             iterFindPolyLines(v2[0], v2[1], polyStart, &polyLineCount, lineList + 1);
             lineList[polyLineCount] = 0; // Terminate.
 
-            seqType = i->xArgs[2];
+            seqType = lineDef->xArgs[2];
             if(seqType >= SEQTYPE_NUMSEQ)
                 seqType = 0;
 
@@ -347,10 +359,10 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
         psIndexOld = psIndex;
         for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
         {
-            if(i->xType == PO_LINE_EXPLICIT &&
-               i->xArgs[0] == tag)
+            LineDef* lineDef = (*i);
+            if(lineDef->xType == PO_LINE_EXPLICIT && lineDef->xArgs[0] == tag)
             {
-                if(!i->xArgs[1])
+                if(!lineDef->xArgs[1])
                 {
                     Con_Error
                         ("WadConverter::findAndCreatePolyobj: Explicit line missing order number "
@@ -358,10 +370,10 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
                          j + 1, tag);
                 }
 
-                if(i->xArgs[1] == j)
+                if(lineDef->xArgs[1] == j)
                 {
                     // Add this line to the list.
-                    polyLineList[psIndex] = &(*i);
+                    polyLineList[psIndex] = lineDef;
                     lineCount++;
                     psIndex++;
                     if(psIndex > MAXPOLYLINES)
@@ -371,8 +383,8 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
                     }
 
                     // Clear out any special.
-                    i->xType = 0;
-                    i->xArgs[0] = 0;
+                    lineDef->xType = 0;
+                    lineDef->xArgs[0] = 0;
                 }
             }
         }
@@ -383,8 +395,8 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
             // _lineDefs with the current tag value
             for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
             {
-                if(i->xType == PO_LINE_EXPLICIT &&
-                   i->xArgs[0] == tag)
+                LineDef* lineDef = (*i);
+                if(lineDef->xType == PO_LINE_EXPLICIT && lineDef->xArgs[0] == tag)
                 {
                     Con_Error
                         ("WadConverter::findAndCreatePolyobj: Missing explicit line %d for poly %d\n",
@@ -417,9 +429,10 @@ void Map::findPolyobjs(void)
 {
     for(Things::iterator i = _things.begin(); i != _things.end(); ++i)
     {
-        if(i->doomEdNum == Thing::PO_ANCHOR)
+        Thing* thing = (*i);
+        if(thing->doomEdNum == Thing::PO_ANCHOR)
         {   // A polyobj anchor.
-            findAndCreatePolyobj(i->angle, i->pos[0], i->pos[1]);
+            findAndCreatePolyobj(thing->angle, thing->pos[0], thing->pos[1]);
         }
     }
 }
@@ -464,29 +477,36 @@ void Map::clear(void)
     delete _lumpNums;
     _lumpNums = NULL;
 
-    _lineDefs.clear();
     _numLineDefs = 0;
-
-    _sideDefs.clear();
     _numSideDefs = 0;
-
-    _sectors.clear();
     _numSectors = 0;
-
-    _things.clear();
     _numThings = 0;
+    _numSurfaceTints = 0;
+
+    for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
+        delete (*i);
+    _lineDefs.clear();
+
+    for(SideDefs::iterator i = _sideDefs.begin(); i != _sideDefs.end(); ++i)
+        delete (*i);
+    _sideDefs.clear();
+
+    for(Sectors::iterator i = _sectors.begin(); i != _sectors.end(); ++i)
+        delete (*i);
+    _sectors.clear();
+
+    for(Things::iterator i = _things.begin(); i != _things.end(); ++i)
+        delete (*i);
+    _things.clear();
+
+    for(SurfaceTints::iterator i = _surfaceTints.begin(); i != _surfaceTints.end(); ++i)
+        delete (*i);
+    _surfaceTints.clear();
 
     for(Polyobjs::iterator i = _polyobjs.begin(); i != _polyobjs.end(); ++i)
         free(i->lineIndices);
     _polyobjs.clear();
     _numPolyobjs = 0;
-
-    _surfaceTints.clear();
-    _numSurfaceTints = 0;
-
-    /*if(macros)
-        free(macros);
-    macros = NULL;*/
 
     _materialRefs.clear();
 }
@@ -541,207 +561,93 @@ Map* Map::construct(const char* mapID)
     return new Map(lumpNums);
 }
 
-bool Map::loadVertexes(const byte* buf, size_t len)
+Map::SideDef* Map::SideDef::constructFrom(de::Reader& from, Map* map)
 {
-    size_t elmSize = (_formatId == DOOM64? SIZEOF_64VERTEX : SIZEOF_VERTEX);
-    uint n, num = len / elmSize;
-    const byte* ptr;
+    SideDef* s = new SideDef(0, 0, 0, 0, 0, 0);
 
-    switch(_formatId)
-    {
-    default:
-    case DOOM:
-        for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-        {
-            _vertexCoords.push_back((float) SHORT(*((const int16_t*) (ptr))));
-            _vertexCoords.push_back((float) SHORT(*((const int16_t*) (ptr+2))));
-        }
-        break;
+    from >> s->offset[0]
+         >> s->offset[1];
 
-    case DOOM64:
-        for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-        {
-            _vertexCoords.push_back(FIX2FLT(LONG(*((const int32_t*) (ptr)))));
-            _vertexCoords.push_back(FIX2FLT(LONG(*((const int32_t*) (ptr+4)))));
-        }
-        break;
-    }
+    s->topMaterial    = map->readMaterialReference(from, false);
+    s->bottomMaterial = map->readMaterialReference(from, false);
+    s->middleMaterial = map->readMaterialReference(from, false);
 
-    return true;
+    de::dint16 secId;
+    from >> secId; s->sectorId = secId == 0xFFFF? 0 : secId+1;
+    return s;
 }
 
-bool Map::loadLinedefs(const byte* buf, size_t len)
+Map::Sector* Map::Sector::constructFrom(de::Reader& from, Map* map)
 {
-    uint n;
-    const byte* ptr;
+    Sector* s = new Sector(0, 0, 0, 0, 0, 0, 0);
 
-    switch(_formatId)
+    from >> s->floorHeight
+         >> s->ceilHeight;
+
+    s->floorMaterial = map->readMaterialReference(from, true);
+    s->ceilMaterial  = map->readMaterialReference(from, true);
+
+    if(map->_formatId == DOOM64)
     {
-    default:
+        s->lightLevel = 160;
+        from >> s->d64ceilColor
+             >> s->d64floorColor
+             >> s->d64unknownColor
+             >> s->d64wallTopColor
+             >> s->d64wallBottomColor;
+    }
+    else
+        from >> s->lightLevel;
+
+    from >> s->type
+         >> s->tag;
+
+    if(map->_formatId == DOOM64)
+        from >> s->d64flags;
+
+    return s;
+}
+
+Map::LineDef* Map::LineDef::constructFrom(de::Reader& from, Map* map)
+{
+    LineDef* l = new LineDef(0, 0, 0, 0, 0, 0, 0);
+
+    de::dint16 idx;
+    from >> idx; l->v[0] = idx == 0xFFFF? 0 : idx+1;
+    from >> idx; l->v[1] = idx == 0xFFFF? 0 : idx+1;
+
+    from >> l->flags;
+
+    switch(map->_formatId)
+    {
     case DOOM:
-        {uint num = len / SIZEOF_LINEDEF;
-        for(n = 0, ptr = buf; n < num; ++n, ptr += SIZEOF_LINEDEF)
-        {
-            int vtx1Id = (int) USHORT(*((const uint16_t*) (ptr)));
-            int vtx2Id = (int) USHORT(*((const uint16_t*) (ptr+2)));
-            int frontSideId = (int) USHORT(*((const uint16_t*) (ptr+10)));
-            int backSideId = (int) USHORT(*((const uint16_t*) (ptr+12)));
-
-            _lineDefs.push_back(
-                LineDef(vtx1Id == 0xFFFF? 0 : vtx1Id+1,
-                        vtx2Id == 0xFFFF? 0 : vtx2Id+1,
-                        frontSideId == 0xFFFF? 0 : frontSideId+1,
-                        backSideId == 0xFFFF? 0 : backSideId+1,
-                        SHORT(*((const int16_t*) (ptr+4))),
-                        SHORT(*((const int16_t*) (ptr+6))),
-                        SHORT(*((const int16_t*) (ptr+8))) ));
-        }}
+        from >> l->dType
+             >> l->dTag;
         break;
-
     case DOOM64:
-        {uint num = len / SIZEOF_64LINEDEF;
-        for(n = 0, ptr = buf; n < num; ++n, ptr += SIZEOF_64LINEDEF)
-        {
-            int vtx1Id = (int) USHORT(*((const uint16_t*) (ptr)));
-            int vtx2Id = (int) USHORT(*((const uint16_t*) (ptr+2)));
-            int frontSideId = (int) USHORT(*((const uint16_t*) (ptr+12)));
-            int backSideId = (int) USHORT(*((const uint16_t*) (ptr+14)));
-
-            _lineDefs.push_back(
-                LineDef(vtx1Id == 0xFFFF? 0 : vtx1Id+1,
-                        vtx2Id == 0xFFFF? 0 : vtx2Id+1,
-                        frontSideId == 0xFFFF? 0 : frontSideId+1,
-                        backSideId == 0xFFFF? 0 : backSideId+1,
-                        SHORT(*((const int16_t*) (ptr+4))),
-                        *((const byte*) (ptr + 6)),
-                        *((const byte*) (ptr + 7)),
-                        *((const byte*) (ptr + 8)),
-                        *((const byte*) (ptr + 9)),
-                        SHORT(*((const int16_t*) (ptr+10))) ));
-        }}
+        from >> l->d64drawFlags
+             >> l->d64texFlags
+             >> l->d64type
+             >> l->d64useType
+             >> l->d64tag;
         break;
-
     case HEXEN:
-        {uint num = len / SIZEOF_XLINEDEF;
-        for(n = 0, ptr = buf; n < num; ++n, ptr += SIZEOF_XLINEDEF)
-        {
-            int vtx1Id = (int) USHORT(*((const uint16_t*) (ptr)));
-            int vtx2Id = (int) USHORT(*((const uint16_t*) (ptr+2)));
-            int frontSideId = (int) USHORT(*((const uint16_t*) (ptr+12)));
-            int backSideId = (int) USHORT(*((const uint16_t*) (ptr+14)));
-
-            _lineDefs.push_back(
-                LineDef(vtx1Id == 0xFFFF? 0 : vtx1Id+1,
-                        vtx2Id == 0xFFFF? 0 : vtx2Id+1,
-                        frontSideId == 0xFFFF? 0 : frontSideId+1,
-                        backSideId == 0xFFFF? 0 : backSideId+1,
-                        SHORT(*((const int16_t*) (ptr+4))),
-                        *((const byte*) (ptr+6)),
-                        *((const byte*) (ptr+7)),
-                        *((const byte*) (ptr+8)),
-                        *((const byte*) (ptr+9)),
-                        *((const byte*) (ptr+10)),
-                        *((const byte*) (ptr+11)),
-                        false ));
-        }}
+        from >> l->xType
+             >> l->xArgs[0]
+             >> l->xArgs[1]
+             >> l->xArgs[2]
+             >> l->xArgs[3]
+             >> l->xArgs[4];
         break;
     }
 
-    return true;
+    from >> idx; l->sides[0] = idx == 0xFFFF? 0 : idx+1;
+    from >> idx; l->sides[1] = idx == 0xFFFF? 0 : idx+1;
+
+    return l;
 }
 
-bool Map::loadSidedefs(const byte* buf, size_t len)
-{
-    size_t elmSize = (_formatId == DOOM64? SIZEOF_64SIDEDEF : SIZEOF_SIDEDEF);
-    uint n, num = len / elmSize;
-    const byte* ptr;
-
-    switch(_formatId)
-    {
-    default:
-    case DOOM:
-        for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-        {
-            int sectorId = (int) USHORT(*((const uint16_t*) (ptr+28)));
-
-            _sideDefs.push_back(
-                SideDef(SHORT(*((const int16_t*) (ptr))),
-                        SHORT(*((const int16_t*) (ptr+2))),
-                        registerMaterial((const char*) (ptr+4), false),
-                        registerMaterial((const char*) (ptr+12), false),
-                        registerMaterial((const char*) (ptr+20), false),
-                        sectorId == 0xFFFF? 0 : sectorId+1));
-        }
-        break;
-
-    case DOOM64:
-#pragma message( "Warning: Need to read DOOM64 format SideDefs" )
-        /*for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-        {
-            int sectorId = (int) USHORT(*((const uint16_t*) (ptr+10)));
-
-            _sideDefs.push_back(
-                SideDef(SHORT(*((const int16_t*) (ptr))),
-                        SHORT(*((const int16_t*) (ptr+2))),
-                        RegisterMaterial((int) USHORT(*((const uint16_t*) (ptr+4))), false),
-                        RegisterMaterial((int) USHORT(*((const uint16_t*) (ptr+6))), false),
-                        RegisterMaterial((int) USHORT(*((const uint16_t*) (ptr+8))), false),
-                        sectorId == 0xFFFF? 0 : sectorId+1));
-        }*/
-        break;
-    }
-
-    return true;
-}
-
-bool Map::loadSectors(const byte* buf, size_t len)
-{
-    size_t elmSize = (_formatId == DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR);
-    uint n, num = len / elmSize;
-    const byte* ptr;
-
-    switch(_formatId)
-    {
-    default: // DOOM
-        for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-        {
-            _sectors.push_back(
-                Sector(SHORT(*((const int16_t*) ptr)),
-                       SHORT(*((const int16_t*) (ptr+2))),
-                       registerMaterial((const char*) (ptr+4), true),
-                       registerMaterial((const char*) (ptr+12), true),
-                       SHORT(*((const int16_t*) (ptr+20))),
-                       SHORT(*((const int16_t*) (ptr+22))),
-                       SHORT(*((const int16_t*) (ptr+24)))));
-        }
-        break;
-
-    case DOOM64:
-#pragma message( "Warning: Need to read DOOM64 format Sectors" )
-        /*for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-        {
-            _sectors.push_back(
-                Sector(SHORT(*((const int16_t*) ptr)),
-                       SHORT(*((const int16_t*) (ptr+2))),
-                       RegisterMaterial((int) USHORT(*((const uint16_t*) (ptr+4))), false),
-                       RegisterMaterial((int) USHORT(*((const uint16_t*) (ptr+6))), false),
-                       160,
-                       SHORT(*((const int16_t*) (ptr+18))),
-                       SHORT(*((const int16_t*) (ptr+20))),
-                       USHORT(*((const uint16_t*) (ptr+22))),
-                       USHORT(*((const uint16_t*) (ptr+10))),
-                       USHORT(*((const uint16_t*) (ptr+8))),
-                       USHORT(*((const uint16_t*) (ptr+12))),
-                       USHORT(*((const uint16_t*) (ptr+14))),
-                       USHORT(*((const uint16_t*) (ptr+16)))));
-        }*/
-        break;
-    }
-
-    return true;
-}
-
-bool Map::loadThings(const byte* buf, size_t len)
+Map::Thing* Map::Thing::constructFrom(de::Reader& from, Map* map)
 {
 // New flags: \todo get these from a game api header.
 #define MTF_Z_FLOOR         0x20000000 // Spawn relative to floor height.
@@ -750,40 +656,38 @@ bool Map::loadThings(const byte* buf, size_t len)
 
 #define ANG45               0x20000000
 
-    size_t elmSize = (_formatId == DOOM64? SIZEOF_64THING :
-        _formatId == HEXEN? SIZEOF_XTHING : SIZEOF_THING);
-    uint n, num = len / elmSize;
-    const byte* ptr;
+    Thing* t = new Thing(0, 0, 0, 0, 0, 0);
 
-    switch(_formatId)
+    switch(map->_formatId)
     {
     default:
     case DOOM:
+        {
 /**
  * DOOM Thing flags:
  */
-#define MTF_EASY            0x00000001 // Can be spawned in Easy skill modes.
-#define MTF_MEDIUM          0x00000002 // Can be spawned in Medium skill modes.
-#define MTF_HARD            0x00000004 // Can be spawned in Hard skill modes.
-#define MTF_DEAF            0x00000008 // Mobj will be deaf spawned deaf.
-#define MTF_NOTSINGLE       0x00000010 // (BOOM) Can not be spawned in single player gamemodes.
-#define MTF_NOTDM           0x00000020 // (BOOM) Can not be spawned in the Deathmatch gameMode.
-#define MTF_NOTCOOP         0x00000040 // (BOOM) Can not be spawned in the Co-op gameMode.
-#define MTF_FRIENDLY        0x00000080 // (BOOM) friendly monster.
+#define MTF_EASY            0x0001 // Can be spawned in Easy skill modes.
+#define MTF_MEDIUM          0x0002 // Can be spawned in Medium skill modes.
+#define MTF_HARD            0x0004 // Can be spawned in Hard skill modes.
+#define MTF_DEAF            0x0008 // Mobj will be deaf spawned deaf.
+#define MTF_NOTSINGLE       0x0010 // (BOOM) Can not be spawned in single player gamemodes.
+#define MTF_NOTDM           0x0020 // (BOOM) Can not be spawned in the Deathmatch gameMode.
+#define MTF_NOTCOOP         0x0040 // (BOOM) Can not be spawned in the Co-op gameMode.
+#define MTF_FRIENDLY        0x0080 // (BOOM) friendly monster.
 
-#define MASK_UNKNOWN_THING_FLAGS (0xffffffff \
+#define MASK_UNKNOWN_THING_FLAGS (0xffff \
     ^ (MTF_EASY|MTF_MEDIUM|MTF_HARD|MTF_DEAF|MTF_NOTSINGLE|MTF_NOTDM|MTF_NOTCOOP|MTF_FRIENDLY))
 
-        for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-        {
-            _things.push_back(
-                Thing(SHORT(*((const int16_t*) (ptr))),
-                      SHORT(*((const int16_t*) (ptr+2))),
-                      0,
-                      ANG45 * (SHORT(*((const int16_t*) (ptr+4))) / 45),
-                      SHORT(*((const int16_t*) (ptr+6))),
-                      (SHORT(*((const int16_t*) (ptr+8))) & ~MASK_UNKNOWN_THING_FLAGS) | MTF_Z_FLOOR));
-        }
+        from >> t->pos[0]
+             >> t->pos[1];
+
+        de::dint16 ang;
+        from >> ang; t->angle = ANG45 * static_cast<angle_t>(ang / 45);
+
+        from >> t->doomEdNum;
+
+        de::dint16 flags;
+        from >> flags; t->flags = static_cast<de::dint32>(flags & ~MASK_UNKNOWN_THING_FLAGS) | MTF_Z_FLOOR;
 
 #undef MTF_EASY
 #undef MTF_MEDIUM
@@ -795,38 +699,41 @@ bool Map::loadThings(const byte* buf, size_t len)
 #undef MTF_FRIENDLY
 #undef MASK_UNKNOWN_THING_FLAGS
         break;
-
+        }
     case DOOM64:
+        {
 /**
  * DOOM64 Thing flags:
  */
-#define MTF_EASY            0x00000001 // Appears in easy skill modes.
-#define MTF_MEDIUM          0x00000002 // Appears in medium skill modes.
-#define MTF_HARD            0x00000004 // Appears in hard skill modes.
-#define MTF_DEAF            0x00000008 // Thing is deaf.
-#define MTF_NOTSINGLE       0x00000010 // Appears in multiplayer game modes only.
-#define MTF_DONTSPAWNATSTART 0x00000020 // Do not spawn this thing at map start.
-#define MTF_SCRIPT_TOUCH    0x00000040 // Mobjs spawned from this spot will envoke a script when touched.
-#define MTF_SCRIPT_DEATH    0x00000080 // Mobjs spawned from this spot will envoke a script on death.
-#define MTF_SECRET          0x00000100 // A secret (bonus) item.
-#define MTF_NOTARGET        0x00000200 // Mobjs spawned from this spot will not target their attacker when hurt.
-#define MTF_NOTDM           0x00000400 // Can not be spawned in the Deathmatch gameMode.
-#define MTF_NOTCOOP         0x00000800 // Can not be spawned in the Co-op gameMode.
+#define MTF_EASY            0x0001 // Appears in easy skill modes.
+#define MTF_MEDIUM          0x0002 // Appears in medium skill modes.
+#define MTF_HARD            0x0004 // Appears in hard skill modes.
+#define MTF_DEAF            0x0008 // Thing is deaf.
+#define MTF_NOTSINGLE       0x0010 // Appears in multiplayer game modes only.
+#define MTF_DONTSPAWNATSTART 0x0020 // Do not spawn this thing at map start.
+#define MTF_SCRIPT_TOUCH    0x0040 // Mobjs spawned from this spot will envoke a script when touched.
+#define MTF_SCRIPT_DEATH    0x0080 // Mobjs spawned from this spot will envoke a script on death.
+#define MTF_SECRET          0x0100 // A secret (bonus) item.
+#define MTF_NOTARGET        0x0200 // Mobjs spawned from this spot will not target their attacker when hurt.
+#define MTF_NOTDM           0x0400 // Can not be spawned in the Deathmatch gameMode.
+#define MTF_NOTCOOP         0x0800 // Can not be spawned in the Co-op gameMode.
 
-#define MASK_UNKNOWN_THING_FLAGS (0xffffffff \
+#define MASK_UNKNOWN_THING_FLAGS (0xffff \
     ^ (MTF_EASY|MTF_MEDIUM|MTF_HARD|MTF_DEAF|MTF_NOTSINGLE|MTF_DONTSPAWNATSTART|MTF_SCRIPT_TOUCH|MTF_SCRIPT_DEATH|MTF_SECRET|MTF_NOTARGET|MTF_NOTDM|MTF_NOTCOOP))
 
-        for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-        {
-            _things.push_back(
-                Thing(SHORT(*((const int16_t*) (ptr))),
-                      SHORT(*((const int16_t*) (ptr+2))),
-                      SHORT(*((const int16_t*) (ptr+4))),
-                      ANG45 * (SHORT(*((const int16_t*) (ptr+6))) / 45),
-                      SHORT(*((const int16_t*) (ptr+8))),
-                      (SHORT(*((const int16_t*) (ptr+10))) & ~MASK_UNKNOWN_THING_FLAGS) | MTF_Z_FLOOR,
-                      SHORT(*((const int16_t*) (ptr+12)))));
-        }
+        from >> t->pos[0]
+             >> t->pos[1]
+             >> t->pos[2];
+
+        de::dint16 ang;
+        from >> ang; t->angle = ANG45 * static_cast<angle_t>(ang / 45);
+
+        from >> t->doomEdNum;
+
+        de::dint16 flags;
+        from >> flags; t->flags = static_cast<de::dint32>(flags & ~MASK_UNKNOWN_THING_FLAGS) | MTF_Z_FLOOR;
+
+        from >> t->d64TID;
 
 #undef MTF_EASY
 #undef MTF_MEDIUM
@@ -842,64 +749,68 @@ bool Map::loadThings(const byte* buf, size_t len)
 #undef MTF_NOTCOOP
 #undef MASK_UNKNOWN_THING_FLAGS
         break;
-
+        }
     case HEXEN:
+        {
 /**
  * Hexen Thing flags:
  */
-#define MTF_EASY            0x00000001
-#define MTF_NORMAL          0x00000002
-#define MTF_HARD            0x00000004
-#define MTF_AMBUSH          0x00000008
-#define MTF_DORMANT         0x00000010
-#define MTF_FIGHTER         0x00000020
-#define MTF_CLERIC          0x00000040
-#define MTF_MAGE            0x00000080
-#define MTF_GSINGLE         0x00000100
-#define MTF_GCOOP           0x00000200
-#define MTF_GDEATHMATCH     0x00000400
+#define MTF_EASY            0x0001
+#define MTF_NORMAL          0x0002
+#define MTF_HARD            0x0004
+#define MTF_AMBUSH          0x0008
+#define MTF_DORMANT         0x0010
+#define MTF_FIGHTER         0x0020
+#define MTF_CLERIC          0x0040
+#define MTF_MAGE            0x0080
+#define MTF_GSINGLE         0x0100
+#define MTF_GCOOP           0x0200
+#define MTF_GDEATHMATCH     0x0400
 // The following are not currently used.
-#define MTF_SHADOW          0x00000800 // (ZDOOM) Thing is 25% translucent.
-#define MTF_INVISIBLE       0x00001000 // (ZDOOM) Makes the thing invisible.
-#define MTF_FRIENDLY        0x00002000 // (ZDOOM) Friendly monster.
-#define MTF_STILL           0x00004000 // (ZDOOM) Thing stands still (only useful for specific Strife monsters or friendlies).
+#define MTF_SHADOW          0x0800 // (ZDOOM) Thing is 25% translucent.
+#define MTF_INVISIBLE       0x1000 // (ZDOOM) Makes the thing invisible.
+#define MTF_FRIENDLY        0x2000 // (ZDOOM) Friendly monster.
+#define MTF_STILL           0x4000 // (ZDOOM) Thing stands still (only useful for specific Strife monsters or friendlies).
 
-#define MASK_UNKNOWN_THING_FLAGS (0xffffffff \
+#define MASK_UNKNOWN_THING_FLAGS (0xffff \
     ^ (MTF_EASY|MTF_NORMAL|MTF_HARD|MTF_AMBUSH|MTF_DORMANT|MTF_FIGHTER|MTF_CLERIC|MTF_MAGE|MTF_GSINGLE|MTF_GCOOP|MTF_GDEATHMATCH|MTF_SHADOW|MTF_INVISIBLE|MTF_FRIENDLY|MTF_STILL))
 
-        for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-        {
-            int16_t doomEdNum = SHORT(*((const int16_t*) (ptr+10)));
-            angle_t angle = SHORT(*((const int16_t*) (ptr+8)));
+        from >> t->xTID
+             >> t->pos[0]
+             >> t->pos[1]
+             >> t->pos[2];
 
-            /**
-             * Hexen format stores polyobject tags in the angle field in THINGS.
-             * Thus, we cannot translate the angle until we know whether it is a
-             * polyobject type or not.
-             */
-            if(doomEdNum != Thing::PO_ANCHOR &&
-               doomEdNum != Thing::PO_SPAWN &&
-               doomEdNum != Thing::PO_SPAWNCRUSH)
-                angle = ANG45 * (angle / 45);
+        de::dint16 ang;
+        from >> ang;
 
-            // Translate flags:
-            int32_t flags = SHORT(*((const int16_t*) (ptr+12)));
-            flags &= ~MASK_UNKNOWN_THING_FLAGS;
-            // Game type logic is inverted.
-            flags ^= (MTF_GSINGLE|MTF_GCOOP|MTF_GDEATHMATCH);
-            // HEXEN format things spawn relative to the floor by default
-            // unless their type-specific flags override.
-            flags |= MTF_Z_FLOOR;
+        from >> t->doomEdNum;
 
-            _things.push_back(
-                Thing(SHORT(*((const int16_t*) (ptr+2))),
-                      SHORT(*((const int16_t*) (ptr+4))),
-                      SHORT(*((const int16_t*) (ptr+6))),
-                      angle, doomEdNum, flags,
-                      SHORT(*((const int16_t*) (ptr))),
-                      *(ptr+14),
-                      *(ptr+15), *(ptr+16), *(ptr+17), *(ptr+18), *(ptr+19)));
-        }
+        /**
+         * Hexen format stores polyobject tags in the angle field in THINGS.
+         * Thus, we cannot translate the angle until we know whether it is a
+         * polyobject type or not.
+         */
+        if(t->doomEdNum != Thing::PO_ANCHOR &&
+           t->doomEdNum != Thing::PO_SPAWN &&
+           t->doomEdNum != Thing::PO_SPAWNCRUSH)
+            t->angle = ANG45 * static_cast<angle_t>(ang / 45);
+        else
+            t->angle = static_cast<angle_t>(ang);
+
+        // Translate flags:
+        de::dint16 flags;
+        from >> flags;
+        flags &= ~MASK_UNKNOWN_THING_FLAGS;
+        // Game type logic is inverted.
+        flags ^= (MTF_GSINGLE|MTF_GCOOP|MTF_GDEATHMATCH);
+        t->flags = static_cast<de::dint32>(flags) | MTF_Z_FLOOR;
+
+        from >> t->xSpecial
+             >> t->xArgs[0]
+             >> t->xArgs[1]
+             >> t->xArgs[2]
+             >> t->xArgs[3]
+             >> t->xArgs[4];
 
 #undef MTF_EASY
 #undef MTF_NORMAL
@@ -919,109 +830,166 @@ bool Map::loadThings(const byte* buf, size_t len)
 #undef MTF_STILL
 #undef MASK_UNKNOWN_THING_FLAGS
         break;
+        }
     }
 
-    return true;
+    return t;
 
 #undef MTF_Z_FLOOR
 #undef MTF_Z_CEIL
 #undef MTF_Z_RANDOM
 }
 
-bool Map::loadLights(const byte* buf, size_t len)
+Map::SurfaceTint* Map::SurfaceTint::constructFrom(de::Reader& from, Map* map)
 {
-    size_t elmSize = SIZEOF_LIGHT;
-    uint n, num = len / elmSize;
-    const byte* ptr;
+    SurfaceTint* s = new SurfaceTint(0, 0, 0, 0, 0, 0);
 
-    for(n = 0, ptr = buf; n < num; ++n, ptr += elmSize)
-    {
-        _surfaceTints.push_back(
-            SurfaceTint((float) *(ptr) / 255,
-                        (float) *(ptr+1) / 255,
-                        (float) *(ptr+2) / 255,
-                        *(ptr+3), *(ptr+4), *(ptr+5)));
-    }
+    de::dbyte comp;
+    from >> comp; s->rgb[0] = static_cast<de::dfloat>(comp) / 255;
+    from >> comp; s->rgb[1] = static_cast<de::dfloat>(comp) / 255;
+    from >> comp; s->rgb[2] = static_cast<de::dfloat>(comp) / 255;
 
-    return true;
+    from >> s->xx[0]
+         >> s->xx[1]
+         >> s->xx[2];
+
+    return s;
 }
 
-static size_t bufferLump(lumpnum_t lumpNum, byte** buf, size_t* oldLen)
+void Map::loadVertexes(de::Reader& from, de::dsize numElements)
+{
+    _vertexCoords.reserve(numElements * 2);
+    for(de::dsize n = 0; n < numElements; ++n)
+    {
+        de::dfloat x, y;
+
+        if(_formatId == DOOM64)
+        {
+            de::dint32 comp;
+            from >> comp; x = static_cast<de::dfloat>(comp) / FRACUNIT;
+            from >> comp; y = static_cast<de::dfloat>(comp) / FRACUNIT;
+        }
+        else
+        {
+            de::dint16 comp;
+            from >> comp; x = static_cast<de::dfloat>(comp);
+            from >> comp; y = static_cast<de::dfloat>(comp);
+        }
+
+        _vertexCoords.push_back(x);
+        _vertexCoords.push_back(y);
+    }
+}
+
+void Map::loadLinedefs(de::Reader& from, de::dsize numElements)
+{
+    _lineDefs.reserve(numElements);
+    for(de::dsize n = 0; n < numElements; ++n)
+        _lineDefs.push_back(LineDef::constructFrom(from, this));
+}
+
+void Map::loadSidedefs(de::Reader& from, de::dsize numElements)
+{
+    _sideDefs.reserve(numElements);
+    for(de::dsize n = 0; n < numElements; ++n)
+        _sideDefs.push_back(SideDef::constructFrom(from, this));
+}
+
+void Map::loadSectors(de::Reader& from, de::dsize numElements)
+{
+    _sectors.reserve(numElements);
+    for(de::dsize n = 0; n < numElements; ++n)
+        _sectors.push_back(Sector::constructFrom(from, this));
+}
+
+void Map::loadThings(de::Reader& from, de::dsize numElements)
+{
+    _things.reserve(numElements);
+    for(de::dsize n = 0; n < numElements; ++n)
+        _things.push_back(Thing::constructFrom(from, this));
+}
+
+void Map::loadLights(de::Reader& from, de::dsize numElements)
+{
+    _surfaceTints.reserve(numElements);
+    for(de::dsize n = 0; n < numElements; ++n)
+        _surfaceTints.push_back(SurfaceTint::constructFrom(from, this));
+}
+
+static const de::FixedByteArray* bufferLump(de::Block& buffer, lumpnum_t lumpNum)
 {
     size_t lumpLength = W_LumpLength(lumpNum);
-
-    // Need to enlarge our buffer?
-    if(lumpLength > *oldLen)
-    {
-        *buf = (byte*) realloc(*buf, lumpLength);
-        *oldLen = lumpLength;
-    }
-
-    // Buffer the entire lump.
-    W_ReadLump(lumpNum, *buf);
-    return lumpLength;
+    byte* temp = new byte[lumpLength];
+    W_ReadLump(lumpNum, temp);
+    de::FixedByteArray* data = new de::FixedByteArray(buffer, 0, lumpLength);
+    data->set(0, temp, lumpLength);
+    delete [] temp;
+    return data;
 }
 
 bool Map::load(void)
 {
-    // Allocate storage for the map data structures.
-    _vertexCoords.reserve(_numVertexes * 2);
-    _lineDefs.reserve(_numLineDefs);
-    _sideDefs.reserve(_numSideDefs);
-    _sectors.reserve(_numSectors);
-    if(_numThings)
-        _things.reserve(_numThings);
-    if(_numSurfaceTints)
-        _surfaceTints.reserve(_numSurfaceTints);
-
-    byte* buf = NULL;
-    size_t oldLen = 0;
+    de::Block buffer(0);
     for(LumpNums::iterator i = _lumpNums->begin(); i != _lumpNums->end(); ++i)
     {
-        MapLumpId lumpType = dataTypeForLumpName(W_LumpName(*i));
-        size_t size;
+        lumpnum_t lumpNum = (*i);
+        MapLumpId lumpType = dataTypeForLumpName(W_LumpName(lumpNum));
 
-        // Process it, transforming it into our local representation.
         switch(lumpType)
         {
         case ML_VERTEXES:
-            size = bufferLump(*i, &buf, &oldLen);
-            loadVertexes(buf, size);
+            {
+            const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
+            loadVertexes(de::Reader(*cachedLump, de::littleEndianByteOrder),
+                cachedLump->size() / (_formatId == DOOM64? SIZEOF_64VERTEX : SIZEOF_VERTEX));
+            delete cachedLump;
             break;
-
+            }
         case ML_LINEDEFS:
-            size = bufferLump(*i, &buf, &oldLen);
-            loadLinedefs(buf, size);
+            {
+            const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
+            loadLinedefs(de::Reader(*cachedLump, de::littleEndianByteOrder),
+                cachedLump->size() /
+                (_formatId == DOOM64? SIZEOF_64LINEDEF :
+                 _formatId == HEXEN? SIZEOF_XLINEDEF : SIZEOF_LINEDEF));
+            delete cachedLump;
             break;
-
+            }
         case ML_SIDEDEFS:
-            size = bufferLump(*i, &buf, &oldLen);
-            loadSidedefs(buf, size);
+            {
+            const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
+            loadSidedefs(de::Reader(*cachedLump, de::littleEndianByteOrder),
+                cachedLump->size() / (_formatId == DOOM64? SIZEOF_64SIDEDEF : SIZEOF_SIDEDEF));
+            delete cachedLump;
             break;
-
+            }
         case ML_SECTORS:
-            size = bufferLump(*i, &buf, &oldLen);
-            loadSectors(buf, size);
+            {
+            const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
+            loadSectors(de::Reader(*cachedLump, de::littleEndianByteOrder),
+                cachedLump->size() / (_formatId == DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR));
+            delete cachedLump;
             break;
-
+            }
         case ML_THINGS:
             if(_numThings)
             {
-                size = bufferLump(*i, &buf, &oldLen);
-                loadThings(buf, size);
+                const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
+                loadThings(de::Reader(*cachedLump, de::littleEndianByteOrder),
+                    cachedLump->size() /
+                    (_formatId == DOOM64? SIZEOF_64THING :
+                     _formatId == HEXEN? SIZEOF_XTHING : SIZEOF_THING));
+                delete cachedLump;
             }
             break;
-
         case ML_LIGHTS:
             if(_numSurfaceTints)
             {
-                size = bufferLump(*i, &buf, &oldLen);
-                loadLights(buf, size);
+                const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
+                loadLights(de::Reader(*cachedLump, de::littleEndianByteOrder),
+                    cachedLump->size() / SIZEOF_LIGHT);
+                delete cachedLump;
             }
-            break;
-
-        case ML_MACROS:
-            //// \todo Write me!
             break;
 
         default:
@@ -1029,25 +997,10 @@ bool Map::load(void)
         }
     }
 
-    if(buf)
-        free(buf);
-
     if(_formatId == HEXEN)
         findPolyobjs();
 
     return true; // Read and converted successfully.
-}
-
-material_t* Map::getMaterialForId(MaterialRefId id, bool onPlane)
-{
-    if(id == MaterialRefs::NONINDEX)
-        return NULL;
-
-    const std::string& name = _materialRefs.get(id);
-    // First try the prefered namespace, then any.
-    material_t* material = P_MaterialForName(onPlane? MN_FLATS : MN_TEXTURES, name.c_str());
-    if(material) return material;
-    return P_MaterialForName(MN_ANY, name.c_str());
 }
 
 bool Map::transfer(void)
@@ -1073,110 +1026,112 @@ bool Map::transfer(void)
     {uint n = 0;
     for(Sectors::iterator i = _sectors.begin(); i != _sectors.end(); ++i, ++n)
     {
-        uint sectorIDX = Map_CreateSector(deMap, (float) i->lightLevel / 255.0f, 1, 1, 1);
+        Sector* sector = (*i);
+        uint sectorIDX = Map_CreateSector(deMap, (float) sector->lightLevel / 255.0f, 1, 1, 1);
 
-        uint floorIDX = Map_CreatePlane(deMap, i->floorHeight,
-                                   getMaterialForId(i->floorMaterial, true),
+        uint floorIDX = Map_CreatePlane(deMap, sector->floorHeight,
+                                   getMaterialForId(sector->floorMaterial, true),
                                    0, 0, 1, 1, 1, 1, 0, 0, 1);
-        uint ceilIDX = Map_CreatePlane(deMap, i->ceilHeight,
-                                 getMaterialForId(i->ceilMaterial, true),
+        uint ceilIDX = Map_CreatePlane(deMap, sector->ceilHeight,
+                                 getMaterialForId(sector->ceilMaterial, true),
                                   0, 0, 1, 1, 1, 1, 0, 0, -1);
 
         Map_SetSectorPlane(deMap, sectorIDX, 0, floorIDX);
         Map_SetSectorPlane(deMap, sectorIDX, 1, ceilIDX);
 
         Map_GameObjectRecordProperty(deMap, "XSector", n, "ID", DDVT_INT, &n);
-        Map_GameObjectRecordProperty(deMap, "XSector", n, "Tag", DDVT_SHORT, &i->tag);
-        Map_GameObjectRecordProperty(deMap, "XSector", n, "Type", DDVT_SHORT, &i->type);
+        Map_GameObjectRecordProperty(deMap, "XSector", n, "Tag", DDVT_SHORT, &sector->tag);
+        Map_GameObjectRecordProperty(deMap, "XSector", n, "Type", DDVT_SHORT, &sector->type);
 
         if(_formatId == DOOM64)
         {
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "Flags", DDVT_SHORT, &i->d64flags);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "CeilingColor", DDVT_SHORT, &i->d64ceilColor);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "FloorColor", DDVT_SHORT, &i->d64floorColor);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "UnknownColor", DDVT_SHORT, &i->d64unknownColor);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "WallTopColor", DDVT_SHORT, &i->d64wallTopColor);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "WallBottomColor", DDVT_SHORT, &i->d64wallBottomColor);
+            Map_GameObjectRecordProperty(deMap, "XSector", n, "Flags", DDVT_SHORT, &sector->d64flags);
+            Map_GameObjectRecordProperty(deMap, "XSector", n, "CeilingColor", DDVT_SHORT, &sector->d64ceilColor);
+            Map_GameObjectRecordProperty(deMap, "XSector", n, "FloorColor", DDVT_SHORT, &sector->d64floorColor);
+            Map_GameObjectRecordProperty(deMap, "XSector", n, "UnknownColor", DDVT_SHORT, &sector->d64unknownColor);
+            Map_GameObjectRecordProperty(deMap, "XSector", n, "WallTopColor", DDVT_SHORT, &sector->d64wallTopColor);
+            Map_GameObjectRecordProperty(deMap, "XSector", n, "WallBottomColor", DDVT_SHORT, &sector->d64wallBottomColor);
         }
     }}
 
     {uint n = 0;
     for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i, ++n)
     {
+        LineDef* lineDef = (*i);
         uint frontIdx = 0, backIdx = 0;
 
-        if(i->sides[0])
+        if(lineDef->sides[0])
         {
-            const SideDef& s = _sideDefs[i->sides[0]-1];
+            const SideDef* s = _sideDefs[lineDef->sides[0]-1];
 
             frontIdx =
-                Map_CreateSideDef(deMap, s.sectorId,
+                Map_CreateSideDef(deMap, s->sectorId,
                                   (_formatId == DOOM64? SDF_MIDDLE_STRETCH : 0),
-                                  getMaterialForId(s.topMaterial, false),
-                                  s.offset[0], s.offset[1], 1, 1, 1,
-                                  getMaterialForId(s.middleMaterial, false),
-                                  s.offset[0], s.offset[1], 1, 1, 1, 1,
-                                  getMaterialForId(s.bottomMaterial, false),
-                                  s.offset[0], s.offset[1], 1, 1, 1);
+                                  getMaterialForId(s->topMaterial, false),
+                                  s->offset[0], s->offset[1], 1, 1, 1,
+                                  getMaterialForId(s->middleMaterial, false),
+                                  s->offset[0], s->offset[1], 1, 1, 1, 1,
+                                  getMaterialForId(s->bottomMaterial, false),
+                                  s->offset[0], s->offset[1], 1, 1, 1);
         }
 
-        if(i->sides[1])
+        if(lineDef->sides[1])
         {
-            const SideDef& s = _sideDefs[i->sides[1]-1];
+            const SideDef* s = _sideDefs[lineDef->sides[1]-1];
 
             backIdx =
-                Map_CreateSideDef(deMap, s.sectorId,
+                Map_CreateSideDef(deMap, s->sectorId,
                                   (_formatId == DOOM64? SDF_MIDDLE_STRETCH : 0),
-                                  getMaterialForId(s.topMaterial, false),
-                                  s.offset[0], s.offset[1], 1, 1, 1,
-                                  getMaterialForId(s.middleMaterial, false),
-                                  s.offset[0], s.offset[1], 1, 1, 1, 1,
-                                  getMaterialForId(s.bottomMaterial, false),
-                                  s.offset[0], s.offset[1], 1, 1, 1);
+                                  getMaterialForId(s->topMaterial, false),
+                                  s->offset[0], s->offset[1], 1, 1, 1,
+                                  getMaterialForId(s->middleMaterial, false),
+                                  s->offset[0], s->offset[1], 1, 1, 1, 1,
+                                  getMaterialForId(s->bottomMaterial, false),
+                                  s->offset[0], s->offset[1], 1, 1, 1);
         }
 
-        Map_CreateLineDef(deMap, i->v[0], i->v[1], frontIdx, backIdx, 0);
+        Map_CreateLineDef(deMap, lineDef->v[0], lineDef->v[1], frontIdx, backIdx, 0);
 
         Map_GameObjectRecordProperty(deMap, "XLinedef", n, "ID", DDVT_INT, &n);
-        Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Flags", DDVT_SHORT, &i->flags);
+        Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Flags", DDVT_SHORT, &lineDef->flags);
 
         switch(_formatId)
         {
         default:
         case DOOM:
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Type", DDVT_SHORT, &i->dType);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Tag", DDVT_SHORT, &i->dTag);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Type", DDVT_SHORT, &lineDef->dType);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Tag", DDVT_SHORT, &lineDef->dTag);
             break;
 
         case DOOM64:
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "DrawFlags", DDVT_BYTE, &i->d64drawFlags);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "TexFlags", DDVT_BYTE, &i->d64texFlags);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Type", DDVT_BYTE, &i->d64type);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "UseType", DDVT_BYTE, &i->d64useType);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Tag", DDVT_SHORT, &i->d64tag);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "DrawFlags", DDVT_BYTE, &lineDef->d64drawFlags);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "TexFlags", DDVT_BYTE, &lineDef->d64texFlags);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Type", DDVT_BYTE, &lineDef->d64type);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "UseType", DDVT_BYTE, &lineDef->d64useType);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Tag", DDVT_SHORT, &lineDef->d64tag);
             break;
 
         case HEXEN:
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Type", DDVT_BYTE, &i->xType);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg0", DDVT_BYTE, &i->xArgs[0]);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg1", DDVT_BYTE, &i->xArgs[1]);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg2", DDVT_BYTE, &i->xArgs[2]);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg3", DDVT_BYTE, &i->xArgs[3]);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg4", DDVT_BYTE, &i->xArgs[4]);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Type", DDVT_BYTE, &lineDef->xType);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg0", DDVT_BYTE, &lineDef->xArgs[0]);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg1", DDVT_BYTE, &lineDef->xArgs[1]);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg2", DDVT_BYTE, &lineDef->xArgs[2]);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg3", DDVT_BYTE, &lineDef->xArgs[3]);
+            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg4", DDVT_BYTE, &lineDef->xArgs[4]);
             break;
         }
     }}
 
     {uint n = 0;
-    for(SurfaceTints::iterator i = _surfaceTints.begin();
-        i != _surfaceTints.end(); ++i, ++n)
+    for(SurfaceTints::iterator i = _surfaceTints.begin(); i != _surfaceTints.end(); ++i, ++n)
     {
-        Map_GameObjectRecordProperty(deMap, "Light", n, "ColorR", DDVT_FLOAT, &i->rgb[0]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "ColorG", DDVT_FLOAT, &i->rgb[1]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "ColorB", DDVT_FLOAT, &i->rgb[2]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "XX0", DDVT_BYTE, &i->xx[0]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "XX1", DDVT_BYTE, &i->xx[1]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "XX2", DDVT_BYTE, &i->xx[2]);
+        SurfaceTint* surfaceTint = (*i);
+        Map_GameObjectRecordProperty(deMap, "Light", n, "ColorR", DDVT_FLOAT, &surfaceTint->rgb[0]);
+        Map_GameObjectRecordProperty(deMap, "Light", n, "ColorG", DDVT_FLOAT, &surfaceTint->rgb[1]);
+        Map_GameObjectRecordProperty(deMap, "Light", n, "ColorB", DDVT_FLOAT, &surfaceTint->rgb[2]);
+        Map_GameObjectRecordProperty(deMap, "Light", n, "XX0", DDVT_BYTE, &surfaceTint->xx[0]);
+        Map_GameObjectRecordProperty(deMap, "Light", n, "XX1", DDVT_BYTE, &surfaceTint->xx[1]);
+        Map_GameObjectRecordProperty(deMap, "Light", n, "XX2", DDVT_BYTE, &surfaceTint->xx[2]);
     }}
 
     {uint n = 0;
@@ -1196,29 +1151,29 @@ bool Map::transfer(void)
     }}
 
     {uint n = 0;
-    for(Things::iterator i = _things.begin();
-        i != _things.end(); ++i, ++n)
+    for(Things::iterator i = _things.begin(); i != _things.end(); ++i, ++n)
     {
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "X", DDVT_SHORT, &i->pos[0]);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "Y", DDVT_SHORT, &i->pos[1]);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "Z", DDVT_SHORT, &i->pos[2]);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "Angle", DDVT_ANGLE, &i->angle);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "DoomEdNum", DDVT_SHORT, &i->doomEdNum);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "Flags", DDVT_INT, &i->flags);
+        Thing* thing = (*i);
+        Map_GameObjectRecordProperty(deMap, "Thing", n, "X", DDVT_SHORT, &thing->pos[0]);
+        Map_GameObjectRecordProperty(deMap, "Thing", n, "Y", DDVT_SHORT, &thing->pos[1]);
+        Map_GameObjectRecordProperty(deMap, "Thing", n, "Z", DDVT_SHORT, &thing->pos[2]);
+        Map_GameObjectRecordProperty(deMap, "Thing", n, "Angle", DDVT_ANGLE, &thing->angle);
+        Map_GameObjectRecordProperty(deMap, "Thing", n, "DoomEdNum", DDVT_SHORT, &thing->doomEdNum);
+        Map_GameObjectRecordProperty(deMap, "Thing", n, "Flags", DDVT_INT, &thing->flags);
 
         if(_formatId == DOOM64)
         {
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "ID", DDVT_SHORT, &i->d64TID);
+            Map_GameObjectRecordProperty(deMap, "Thing", n, "ID", DDVT_SHORT, &thing->d64TID);
         }
         else if(_formatId == HEXEN)
         {
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Special", DDVT_BYTE, &i->xSpecial);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "ID", DDVT_SHORT, &i->xTID);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg0", DDVT_BYTE, &i->xArgs[0]);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg1", DDVT_BYTE, &i->xArgs[1]);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg2", DDVT_BYTE, &i->xArgs[2]);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg3", DDVT_BYTE, &i->xArgs[3]);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg4", DDVT_BYTE, &i->xArgs[4]);
+            Map_GameObjectRecordProperty(deMap, "Thing", n, "Special", DDVT_BYTE, &thing->xSpecial);
+            Map_GameObjectRecordProperty(deMap, "Thing", n, "ID", DDVT_SHORT, &thing->xTID);
+            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg0", DDVT_BYTE, &thing->xArgs[0]);
+            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg1", DDVT_BYTE, &thing->xArgs[1]);
+            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg2", DDVT_BYTE, &thing->xArgs[2]);
+            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg3", DDVT_BYTE, &thing->xArgs[3]);
+            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg4", DDVT_BYTE, &thing->xArgs[4]);
         }
     }}
 

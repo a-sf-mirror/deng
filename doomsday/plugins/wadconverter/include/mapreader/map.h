@@ -26,7 +26,11 @@
 
 #include <vector>
 
+#include "de/String"
 #include "de/StringTable"
+#include "de/FixedByteArray"
+#include "de/Block"
+#include "de/Reader"
 
 namespace wadconverter
 {
@@ -115,7 +119,7 @@ namespace wadconverter
         typedef de::StringTable::StringId MaterialRefId;
         MaterialRefs _materialRefs;
 
-        MaterialRefId registerMaterial(const char* name, bool onPlane);
+        MaterialRefId readMaterialReference(de::Reader& from, bool onPlane);
         material_t* getMaterialForId(MaterialRefId id, bool onPlane);
 
     private:
@@ -221,9 +225,11 @@ namespace wadconverter
                   d64unknownColor(d64unknownColor),
                   d64wallTopColor(d64wallTopColor),
                   d64wallBottomColor(d64wallBottomColor) {}
+
+            static Sector* constructFrom(de::Reader& from, Map* map);
         };
 
-        typedef std::vector<Sector> Sectors;
+        typedef std::vector<Sector*> Sectors;
         Sectors _sectors;
 
         /**
@@ -297,9 +303,11 @@ namespace wadconverter
                   d64useType(0),
                   d64tag(0)
                 { v[0] = v1; v[1] = v2; sides[0] = frontSide; sides[1] = backSide; xArgs[0] = arg1; xArgs[1] = arg2; xArgs[2] = arg3; xArgs[3] = arg4; xArgs[4] = arg5; }
+
+            static LineDef* constructFrom(de::Reader& from, Map* map);
         };
 
-        typedef std::vector<LineDef> LineDefs;
+        typedef std::vector<LineDef*> LineDefs;
         LineDefs _lineDefs;
 
         /**
@@ -320,9 +328,11 @@ namespace wadconverter
                   middleMaterial(midMat),
                   sectorId(sectorId)
                 { offset[0] = offX; offset[1] = offY; }
+
+            static SideDef* constructFrom(de::Reader& from, Map* map);
         };
 
-        typedef std::vector<SideDef> SideDefs;
+        typedef std::vector<SideDef*> SideDefs;
         SideDefs _sideDefs;
 
         /**
@@ -381,9 +391,11 @@ namespace wadconverter
                   xTID(tid),
                   d64TID(0)
                 { pos[0] = x; pos[1] = y; pos[2] = z; xArgs[0] = arg1; xArgs[1] = arg2; xArgs[2] = arg3; xArgs[3] = arg4; xArgs[4] = arg5; }
+
+            static Thing* constructFrom(de::Reader& from, Map* map);
         };
 
-        typedef std::vector<Thing> Things;
+        typedef std::vector<Thing*> Things;
         Things _things;
 
         /**
@@ -419,17 +431,19 @@ namespace wadconverter
 
             SurfaceTint(float red, float green, float blue, byte x1, byte x2, byte x3)
                 { rgb[0] = red; rgb[1] = green, rgb[2] = blue; xx[0] = x1; xx[1] = x2; xx[2] = x3; }
+
+            static SurfaceTint* constructFrom(de::Reader& from, Map* map);
         };
 
-        typedef std::vector<SurfaceTint> SurfaceTints;
+        typedef std::vector<SurfaceTint*> SurfaceTints;
         SurfaceTints _surfaceTints;
 
-        bool loadVertexes(const byte* buf, size_t len);
-        bool loadLinedefs(const byte* buf, size_t len);
-        bool loadSidedefs(const byte* buf, size_t len);
-        bool loadSectors(const byte* buf, size_t len);
-        bool loadThings(const byte* buf, size_t len);
-        bool loadLights(const byte* buf, size_t len);
+        void loadVertexes(de::Reader& from, de::dsize num);
+        void loadLinedefs(de::Reader& from, de::dsize num);
+        void loadSidedefs(de::Reader& from, de::dsize num);
+        void loadSectors(de::Reader& from, de::dsize num);
+        void loadThings(de::Reader& from, de::dsize num);
+        void loadLights(de::Reader& from, de::dsize num);
 
         void findPolyobjs();
         bool findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY);
