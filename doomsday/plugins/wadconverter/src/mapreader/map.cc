@@ -939,56 +939,56 @@ bool Map::load(void)
         {
         case ML_VERTEXES:
             {
-            const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
-            loadVertexes(de::Reader(*cachedLump, de::littleEndianByteOrder),
-                cachedLump->size() / (_formatId == DOOM64? SIZEOF_64VERTEX : SIZEOF_VERTEX));
-            delete cachedLump;
+            const de::FixedByteArray* lumpHandle = bufferLump(buffer, lumpNum);
+            loadVertexes(de::Reader(*lumpHandle, de::littleEndianByteOrder),
+                lumpHandle->size() / (_formatId == DOOM64? SIZEOF_64VERTEX : SIZEOF_VERTEX));
+            delete lumpHandle;
             break;
             }
         case ML_LINEDEFS:
             {
-            const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
-            loadLinedefs(de::Reader(*cachedLump, de::littleEndianByteOrder),
-                cachedLump->size() /
+            const de::FixedByteArray* lumpHandle = bufferLump(buffer, lumpNum);
+            loadLinedefs(de::Reader(*lumpHandle, de::littleEndianByteOrder),
+                lumpHandle->size() /
                 (_formatId == DOOM64? SIZEOF_64LINEDEF :
                  _formatId == HEXEN? SIZEOF_XLINEDEF : SIZEOF_LINEDEF));
-            delete cachedLump;
+            delete lumpHandle;
             break;
             }
         case ML_SIDEDEFS:
             {
-            const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
-            loadSidedefs(de::Reader(*cachedLump, de::littleEndianByteOrder),
-                cachedLump->size() / (_formatId == DOOM64? SIZEOF_64SIDEDEF : SIZEOF_SIDEDEF));
-            delete cachedLump;
+            const de::FixedByteArray* lumpHandle = bufferLump(buffer, lumpNum);
+            loadSidedefs(de::Reader(*lumpHandle, de::littleEndianByteOrder),
+                lumpHandle->size() / (_formatId == DOOM64? SIZEOF_64SIDEDEF : SIZEOF_SIDEDEF));
+            delete lumpHandle;
             break;
             }
         case ML_SECTORS:
             {
-            const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
-            loadSectors(de::Reader(*cachedLump, de::littleEndianByteOrder),
-                cachedLump->size() / (_formatId == DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR));
-            delete cachedLump;
+            const de::FixedByteArray* lumpHandle = bufferLump(buffer, lumpNum);
+            loadSectors(de::Reader(*lumpHandle, de::littleEndianByteOrder),
+                lumpHandle->size() / (_formatId == DOOM64? SIZEOF_64SECTOR : SIZEOF_SECTOR));
+            delete lumpHandle;
             break;
             }
         case ML_THINGS:
             if(_numThings)
             {
-                const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
-                loadThings(de::Reader(*cachedLump, de::littleEndianByteOrder),
-                    cachedLump->size() /
+                const de::FixedByteArray* lumpHandle = bufferLump(buffer, lumpNum);
+                loadThings(de::Reader(*lumpHandle, de::littleEndianByteOrder),
+                    lumpHandle->size() /
                     (_formatId == DOOM64? SIZEOF_64THING :
                      _formatId == HEXEN? SIZEOF_XTHING : SIZEOF_THING));
-                delete cachedLump;
+                delete lumpHandle;
             }
             break;
         case ML_LIGHTS:
             if(_numSurfaceTints)
             {
-                const de::FixedByteArray* cachedLump = bufferLump(buffer, lumpNum);
-                loadLights(de::Reader(*cachedLump, de::littleEndianByteOrder),
-                    cachedLump->size() / SIZEOF_LIGHT);
-                delete cachedLump;
+                const de::FixedByteArray* lumpHandle = bufferLump(buffer, lumpNum);
+                loadLights(de::Reader(*lumpHandle, de::littleEndianByteOrder),
+                    lumpHandle->size() / SIZEOF_LIGHT);
+                delete lumpHandle;
             }
             break;
 
