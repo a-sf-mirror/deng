@@ -572,7 +572,7 @@ Map::SideDef* Map::SideDef::constructFrom(de::Reader& from, Map* map)
     s->bottomMaterial = map->readMaterialReference(from, false);
     s->middleMaterial = map->readMaterialReference(from, false);
 
-    de::dint16 secId;
+    de::duint16 secId;
     from >> secId; s->sectorId = secId == 0xFFFF? 0 : secId+1;
     return s;
 }
@@ -612,7 +612,7 @@ Map::LineDef* Map::LineDef::constructFrom(de::Reader& from, Map* map)
 {
     LineDef* l = new LineDef(0, 0, 0, 0, 0, 0, 0);
 
-    de::dint16 idx;
+    de::duint16 idx;
     from >> idx; l->v[0] = idx == 0xFFFF? 0 : idx+1;
     from >> idx; l->v[1] = idx == 0xFFFF? 0 : idx+1;
 
