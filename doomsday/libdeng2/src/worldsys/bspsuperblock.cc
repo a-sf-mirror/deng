@@ -25,72 +25,48 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * bsp_superblock.c: GL-friendly BSP node builder. Half-edge blockmap.
- *
- * Originally based on glBSP 2.24 (in turn, based on BSP 2.3).
- */
-
-// HEADER FILES ------------------------------------------------------------
-
-#include "de_base.h"
-#include "de_play.h"
-#include "de_misc.h"
-
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
 
-#include "bsp_node.h"
-#include "bsp_edge.h"
-#include "bsp_superblock.h"
+#include "de/BSPNode"
+#include "de/BSPEdge"
+#include "de/BSPSuperBlock"
+#include "de/Log"
 
-// MACROS ------------------------------------------------------------------
+using namespace de;
 
-// Smallest distance between two points before being considered equal.
-#define DIST_EPSILON        (1.0 / 128.0)
+namespace de
+{
+    // Smallest distance between two points before being considered equal.
+    #define DIST_EPSILON        (1.0 / 128.0)
 
-// TYPES -------------------------------------------------------------------
+    typedef struct superblock_listnode_s {
+        hedge_t*        hEdge;
+        struct superblock_listnode_s* next;
+    } superblock_listnode_t;
 
-typedef struct superblock_listnode_s {
-    hedge_t*        hEdge;
-    struct superblock_listnode_s* next;
-} superblock_listnode_t;
-
-typedef struct evalinfo_s {
-    int         cost;
-    int         splits;
-    int         iffy;
-    int         nearMiss;
-    int         realLeft;
-    int         realRight;
-    int         miniLeft;
-    int         miniRight;
-} evalinfo_t;
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
+    typedef struct evalinfo_s {
+        dint         cost;
+        dint         splits;
+        dint         iffy;
+        dint         nearMiss;
+        dint         realLeft;
+        dint         realRight;
+        dint         miniLeft;
+        dint         miniRight;
+    } evalinfo_t;
+}
 
 static superblock_listnode_t* allocListNode(void)
 {
-    return M_Malloc(sizeof(superblock_listnode_t));
+    return reinterpret_cast<superblock_listnode_t*>(std::malloc(sizeof(superblock_listnode_t)));
 }
 
 static void freeListNode(superblock_listnode_t* node)
 {
-    M_Free(node);
+    std::free(node);
 }
 
 /**
@@ -98,21 +74,18 @@ static void freeListNode(superblock_listnode_t* node)
  */
 static void freeSuperBlock(superblock_t* block)
 {
-    uint num;
-
     // Recursively handle sub-blocks.
-    for(num = 0; num < 2; ++num)
+    for(duint num = 0; num < 2; ++num)
     {
         if(block->subs[num])
             freeSuperBlock(block->subs[num]);
     }
-
-    M_Free(block);
+    std::free(block);
 }
 
 superblock_t* BSP_CreateSuperBlock(void)
 {
-    return M_Calloc(sizeof(superblock_t));
+    return reinterpret_cast<superblock_t*>(std::calloc(1, sizeof(superblock_t)));
 }
 
 void BSP_DestroySuperBlock(superblock_t* block)
@@ -137,19 +110,15 @@ if((node = block->_hEdges))
 {
     do
     {
-        if(node->hEdge == hEdge)
-            Con_Error("SuperBlock_PushHEdge: HEdge %p already linked to "
-                      "SuperBlock %p!", hEdge, block);
+        assert(node->hEdge != hEdge);
     } while((node = node->next));
 }
 #endif
 
-    {
     node = allocListNode();
     node->hEdge = hEdge;
     node->next = block->_hEdges;
     block->_hEdges = node;
-    }
 }
 
 hedge_t* SuperBlock_PopHEdge(superblock_t* block)
@@ -170,7 +139,7 @@ hedge_t* SuperBlock_PopHEdge(superblock_t* block)
  * Increase the counts within the SuperBlock, to account for the given
  * half-edge being split.
  */
-void SuperBlock_IncHEdgeCounts(superblock_t* block, boolean lineLinked)
+void SuperBlock_IncHEdgeCounts(superblock_t* block, bool lineLinked)
 {
     do
     {
@@ -190,8 +159,8 @@ void SuperBlock_IncHEdgeCounts(superblock_t* block, boolean lineLinked)
  *
  * @return              @c true, if a "bad half-edge" was found early.
  */
-static int evalPartitionWorker(const superblock_t* hEdgeList,
-                               hedge_t* partHEdge, int factor, int bestCost,
+static dint evalPartitionWorker(const superblock_t* hEdgeList,
+                               hedge_t* partHEdge, dint factor, dint bestCost,
                                evalinfo_t* info)
 {
 #define ADD_LEFT()  \
@@ -207,9 +176,9 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
       } while (0)
 
     superblock_listnode_t* n;
-    double qnty, a, b, fa, fb;
+    ddouble qnty, a, b, fa, fb;
     hedge_info_t* part = (hedge_info_t*) partHEdge->data;
-    int num;
+    dint num;
 
     /**
      * This is the heart of my SuperBlock idea, it tests the _whole_ block
@@ -302,11 +271,11 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
              */
 
             if(a <= DIST_EPSILON || b <= DIST_EPSILON)
-                qnty = IFFY_LEN / MAX_OF(a, b);
+                qnty = IFFY_LEN / de::max(a, b);
             else
-                qnty = IFFY_LEN / MIN_OF(a, b);
+                qnty = IFFY_LEN / de::min(a, b);
 
-            info->cost += (int) (100 * factor * (qnty * qnty - 1.0));
+            info->cost += (dint) (100 * factor * (qnty * qnty - 1.0));
             continue;
         }
 
@@ -327,11 +296,11 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
 
             // The closer the miss, the higher the cost (see note above).
             if(a >= -DIST_EPSILON || b >= -DIST_EPSILON)
-                qnty = IFFY_LEN / -MIN_OF(a, b);
+                qnty = IFFY_LEN / -de::min(a, b);
             else
-                qnty = IFFY_LEN / -MAX_OF(a, b);
+                qnty = IFFY_LEN / -de::max(a, b);
 
-            info->cost += (int) (70 * factor * (qnty * qnty - 1.0));
+            info->cost += (dint) (70 * factor * (qnty * qnty - 1.0));
             continue;
         }
 
@@ -354,8 +323,8 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
             info->iffy++;
 
             // The closer to the end, the higher the cost.
-            qnty = IFFY_LEN / MIN_OF(fa, fb);
-            info->cost += (int) (140 * factor * (qnty * qnty - 1.0));
+            qnty = IFFY_LEN / de::min(fa, fb);
+            info->cost += (dint) (140 * factor * (qnty * qnty - 1.0));
         }
     }
 
@@ -383,8 +352,8 @@ static int evalPartitionWorker(const superblock_t* hEdgeList,
  * @return              The computed cost, or a negative value if the edge
  *                      should be skipped altogether.
  */
-static int evalPartition(const superblock_t* hEdgeList, hedge_t* part,
-                         int factor, int bestCost)
+static dint evalPartition(const superblock_t* hEdgeList, hedge_t* part,
+                          dint factor, dint bestCost)
 {
     hedge_info_t* data = (hedge_info_t*) part->data;
     evalinfo_t info;
@@ -416,11 +385,11 @@ Con_Message("Eval : No real half-edges on %s%sside\n",
     }
 
     // Increase cost by the difference between left and right.
-    info.cost += 100 * ABS(info.realLeft - info.realRight);
+    info.cost += 100 * de::abs(info.realLeft - info.realRight);
 
     // Allow minihedge counts to affect the outcome, but only to a lesser
     // degree than real half-edges - AJA.
-    info.cost += 50 * ABS(info.miniLeft - info.miniRight);
+    info.cost += 50 * de::abs(info.miniLeft - info.miniRight);
 
     // Another little twist, here we show a slight preference for partition
     // lines that lie either purely horizontally or purely vertically - AJA.
@@ -440,11 +409,11 @@ Con_Message("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d "
 /**
  * @return              @c false, if cancelled.
  */
-static boolean pickHEdgeWorker(const superblock_t* partList,
+static bool pickHEdgeWorker(const superblock_t* partList,
                                const superblock_t* hEdgeList,
-                               int factor, hedge_t** best, int* bestCost)
+                               dint factor, hedge_t** best, dint* bestCost)
 {
-    int num, cost;
+    dint num, cost;
     superblock_listnode_t* n;
 
     // Test each half-edge as a potential partition.
@@ -504,9 +473,9 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
  *
  * @return              hedge_t to use as a partition iff one suitable was found.
  */
-hedge_t* SuperBlock_PickPartition(const superblock_t* hEdgeList, int factor)
+hedge_t* SuperBlock_PickPartition(const superblock_t* hEdgeList, dint factor)
 {
-    int bestCost = INT_MAX;
+    dint bestCost = INT_MAX;
     hedge_t* best = NULL;
 
     validCount++;
@@ -530,40 +499,40 @@ else
     return best;
 }
 
-static void findLimitWorker(const superblock_t* block, float* bbox)
+static void findLimitWorker(const superblock_t* block, dfloat* bbox)
 {
-    uint num;
+    duint num;
     superblock_listnode_t* n;
 
     for(n = block->_hEdges; n; n = n->next)
     {
         hedge_t* cur = n->hEdge;
-        double x1 = cur->vertex->pos[VX];
-        double y1 = cur->vertex->pos[VY];
-        double x2 = cur->twin->vertex->pos[VX];
-        double y2 = cur->twin->vertex->pos[VY];
-        float lx = (float) MIN_OF(x1, x2);
-        float ly = (float) MIN_OF(y1, y2);
-        float hx = (float) MAX_OF(x1, x2);
-        float hy = (float) MAX_OF(y1, y2);
+        ddouble x1 = cur->vertex->pos[VX];
+        ddouble y1 = cur->vertex->pos[VY];
+        ddouble x2 = cur->twin->vertex->pos[VX];
+        ddouble y2 = cur->twin->vertex->pos[VY];
+        dfloat lx = (dfloat) de::min(x1, x2);
+        dfloat ly = (dfloat) de::min(y1, y2);
+        dfloat hx = (dfloat) de::max(x1, x2);
+        dfloat hy = (dfloat) de::max(y1, y2);
 
-        if(lx < bbox[BOXLEFT])
-            bbox[BOXLEFT] = lx;
-        else if(lx > bbox[BOXRIGHT])
-            bbox[BOXRIGHT] = lx;
-        if(ly < bbox[BOXBOTTOM])
-            bbox[BOXBOTTOM] = ly;
-        else if(ly > bbox[BOXTOP])
-            bbox[BOXTOP] = ly;
+        if(lx < bbox[superblock_t::BOXLEFT])
+            bbox[superblock_t::BOXLEFT] = lx;
+        else if(lx > bbox[superblock_t::BOXRIGHT])
+            bbox[superblock_t::BOXRIGHT] = lx;
+        if(ly < bbox[superblock_t::BOXBOTTOM])
+            bbox[superblock_t::BOXBOTTOM] = ly;
+        else if(ly > bbox[superblock_t::BOXTOP])
+            bbox[superblock_t::BOXTOP] = ly;
 
-        if(hx < bbox[BOXLEFT])
-            bbox[BOXLEFT] = hx;
-        else if(hx > bbox[BOXRIGHT])
-            bbox[BOXRIGHT] = hx;
-        if(hy < bbox[BOXBOTTOM])
-            bbox[BOXBOTTOM] = hy;
-        else if(hy > bbox[BOXTOP])
-            bbox[BOXTOP] = hy;
+        if(hx < bbox[superblock_t::BOXLEFT])
+            bbox[superblock_t::BOXLEFT] = hx;
+        else if(hx > bbox[superblock_t::BOXRIGHT])
+            bbox[superblock_t::BOXRIGHT] = hx;
+        if(hy < bbox[superblock_t::BOXBOTTOM])
+            bbox[superblock_t::BOXBOTTOM] = hy;
+        else if(hy > bbox[superblock_t::BOXTOP])
+            bbox[superblock_t::BOXTOP] = hy;
     }
 
     // Recursively handle sub-blocks.
@@ -577,10 +546,10 @@ static void findLimitWorker(const superblock_t* block, float* bbox)
 /**
  * Find the extremes of an axis aligned box containing all half-edges.
  */
-void BSP_FindAABBForHEdges(const superblock_t* hEdgeList, float* bbox)
+void BSP_FindAABBForHEdges(const superblock_t* hEdgeList, dfloat* bbox)
 {
-    bbox[BOXTOP] = bbox[BOXRIGHT] = DDMINFLOAT;
-    bbox[BOXBOTTOM] = bbox[BOXLEFT] = DDMAXFLOAT;
+    bbox[superblock_t::BOXTOP] = bbox[superblock_t::BOXRIGHT] = MINFLOAT;
+    bbox[superblock_t::BOXBOTTOM] = bbox[superblock_t::BOXLEFT] = MAXFLOAT;
     findLimitWorker(hEdgeList, bbox);
 }
 
@@ -588,21 +557,20 @@ void BSP_FindAABBForHEdges(const superblock_t* hEdgeList, float* bbox)
  * For debugging.
  */
 #if _DEBUG
-void SuperBlock_PrintHEdges(superblock_t* block)
+void de::SuperBlock_PrintHEdges(superblock_t* block)
 {
     const superblock_listnode_t* n;
-    int num;
+    dint num;
 
     for(n = block->_hEdges; n; n = n->next)
     {
         const hedge_t* hEdge = n->hEdge;
-        const hedge_info_t* data = hEdge->data;
+        const hedge_info_t* data = reinterpret_cast<hedge_info_t*>(hEdge->data);
 
-        Con_Message("Build: %s %p sector=%d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-                    (data->lineDef? "NORM" : "MINI"), hEdge,
-                    data->sector->buildData.index,
-                    (float) hEdge->vertex->pos[VX], (float) hEdge->vertex->pos[VY],
-                    (float) hEdge->twin->vertex->pos[VX], (float) hEdge->twin->vertex->pos[VY]);
+        LOG_DEBUG("Build: %s %p sector=%d (%1.1f,%1.1f) -> (%1.1f,%1.1f)")
+            << (data->lineDef? "NORM" : "MINI") << hEdge << data->sector->buildData.index
+            << (dfloat) hEdge->vertex->pos[VX] << (dfloat) hEdge->vertex->pos[VY]
+            << (dfloat) hEdge->twin->vertex->pos[VX] << (dfloat) hEdge->twin->vertex->pos[VY];
     }
 
     for(num = 0; num < 2; ++num)
@@ -612,10 +580,10 @@ void SuperBlock_PrintHEdges(superblock_t* block)
     }
 }
 
-static void testSuperWorker(superblock_t* block, uint* real, uint* mini)
+static void testSuperWorker(superblock_t* block, duint* real, duint* mini)
 {
     const superblock_listnode_t* n;
-    uint num;
+    duint num;
 
     for(n = block->_hEdges; n; n = n->next)
     {
@@ -639,13 +607,9 @@ static void testSuperWorker(superblock_t* block, uint* real, uint* mini)
  */
 void testSuper(superblock_t* block)
 {
-    uint realNum = 0, miniNum = 0;
-
+    duint realNum = 0, miniNum = 0;
     testSuperWorker(block, &realNum, &miniNum);
-
-    if(realNum != block->realNum || miniNum != block->miniNum)
-        Con_Error("testSuper: Failed, block=%p %u/%u != %u/%u",
-                  block, block->realNum, block->miniNum, realNum,
-                  miniNum);
+    assert(realNum == block->realNum);
+    assert(miniNum == block->miniNum);
 }
 #endif

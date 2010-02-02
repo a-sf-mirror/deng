@@ -24,68 +24,45 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * bsp_intersection.c: Intersections and cutlists (lists of intersections).
- */
-
-// HEADER FILES ------------------------------------------------------------
-
 #include <math.h>
 
-#include "de_base.h"
-#include "de_play.h"
-#include "de_misc.h"
+#include "de/BSPNode"
+#include "de/BSPEdge"
+#include "de/BSPIntersection"
+#include "de/BSPSuperBlock"
 
-#include "bsp_node.h"
-#include "bsp_edge.h"
-#include "bsp_intersection.h"
-#include "bsp_superblock.h"
+using namespace de;
 
-// MACROS ------------------------------------------------------------------
+namespace de
+{
+    typedef struct cnode_s {
+        void*           data;
+        struct cnode_s* next;
+        struct cnode_s* prev;
+    } cnode_t;
 
-// TYPES -------------------------------------------------------------------
+    /**
+     * An "intersection" remembers the half-edge that intercepts the partition.
+     */
+    typedef struct intersection_s {
+        hedge_t*        hEdge;
 
-typedef struct cnode_s {
-    void*           data;
-    struct cnode_s* next;
-    struct cnode_s* prev;
-} cnode_t;
-
-/**
- * An "intersection" remembers the half-edge that intercepts the partition.
- */
-typedef struct intersection_s {
-    hedge_t*        hEdge;
-
-    // How far along the partition line the intercept point is. Zero is at
-    // the partition half-edge's start point, positive values move in the
-    // same direction as the partition's direction, and negative values move
-    // in the opposite direction.
-    double          distance;
-} intersection_t;
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
+        // How far along the partition line the intercept point is. Zero is at
+        // the partition half-edge's start point, positive values move in the
+        // same direction as the partition's direction, and negative values move
+        // in the opposite direction.
+        ddouble          distance;
+    } intersection_t;
+}
 
 static cnode_t* allocCNode(void)
 {
-    return M_Malloc(sizeof(cnode_t));
+    return reinterpret_cast<cnode_t*>(std::malloc(sizeof(cnode_t)));
 }
 
 static void freeCNode(cnode_t* node)
 {
-    M_Free(node);
+    std::free(node);
 }
 
 static cnode_t* quickAllocCNode(cutlist_t* list)
@@ -110,12 +87,12 @@ static cnode_t* quickAllocCNode(cutlist_t* list)
 
 static intersection_t* allocIntersection(void)
 {
-    return M_Calloc(sizeof(intersection_t));
+    return reinterpret_cast<intersection_t*>(std::calloc(1, sizeof(intersection_t)));
 }
 
 static void freeIntersection(intersection_t* cut)
 {
-    M_Free(cut);
+    std::free(cut);
 }
 
 /**
@@ -137,7 +114,7 @@ static intersection_t* quickAllocIntersection(cutlist_t* list)
     return cut;
 }
 
-static void empty(cutlist_t* list, boolean destroyNodes)
+static void empty(cutlist_t* list, bool destroyNodes)
 {
     cnode_t* node;
 
@@ -146,7 +123,7 @@ static void empty(cutlist_t* list, boolean destroyNodes)
     {
         cnode_t* p = node->next;
 
-        destroyIntersection(list, node->data);
+        destroyIntersection(list, reinterpret_cast<intersection_t*>(node->data));
 
         // Move the list node to the unused node list?
         if(destroyNodes)
@@ -170,7 +147,7 @@ static void empty(cutlist_t* list, boolean destroyNodes)
  *
  * @return              @c true, if successful.
  */
-static boolean insertIntersection(cutlist_t* list, intersection_t* cut)
+static bool insertIntersection(cutlist_t* list, intersection_t* cut)
 {
     cnode_t* newNode = quickAllocCNode(list);
     cnode_t* after;
@@ -231,7 +208,7 @@ void BSP_CutListDestroy(cutlist_t* list)
 /**
  * Create a new intersection.
  */
-void CutList_Intersect(cutlist_t* list, hedge_t* hEdge, double distance)
+void CutList_Intersect(cutlist_t* list, hedge_t* hEdge, ddouble distance)
 {
     assert(list);
     assert(hEdge);
@@ -262,7 +239,7 @@ void CutList_Reset(cutlist_t* list)
  *
  * @return              @c true iff an intersection is found ELSE @c false;
  */
-boolean CutList_Find(cutlist_t* list, hedge_t* hEdge)
+bool CutList_Find(cutlist_t* list, hedge_t* hEdge)
 {
     assert(list);
     assert(hEdge);
@@ -296,7 +273,7 @@ void BSP_MergeOverlappingIntersections(cutlist_t* list)
     {
         intersection_t* cur = node->data;
         intersection_t* next = np->data;
-        double len = next->distance - cur->distance;
+        ddouble len = next->distance - cur->distance;
 
         if(len < -0.1)
         {
@@ -363,7 +340,7 @@ static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle, byte antiClockw
     }
 }
 
-static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
+static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
 {
     /*if(insect->after && ((hedge_info_t*) insect->after->data)->lineDef)
     {
@@ -390,8 +367,8 @@ static boolean isIntersectionOnSelfRefLineDef(const intersection_t* insect)
     return false;
 }
 
-void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
-                             double dX, double dY, const hedge_t* partHEdge,
+void NodeBuilder_ConnectGaps(nodebuilder_t* nb, ddouble x, ddouble y,
+                             ddouble dX, ddouble dY, const hedge_t* partHEdge,
                              superblock_t* rightList, superblock_t* leftList)
 {
     cnode_t* node, *firstNode;
@@ -403,7 +380,7 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
         const intersection_t* next = node->next->data;
         hedge_t* farHEdge, *nearHEdge;
         sector_t* nearSector = NULL, *farSector = NULL;
-        boolean alongPartition = false;
+        bool alongPartition = false;
 
         // Is this half-edge exactly aligned to the partition?
         {
@@ -439,7 +416,7 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
             {
                 if(!isIntersectionOnSelfRefLineDef(cur))
                 {
-                    double pos[2];
+                    ddouble pos[2];
 
                     pos[0] = cur->hEdge->vertex->pos[0] + next->hEdge->vertex->pos[0];
                     pos[1] = cur->hEdge->vertex->pos[1] + next->hEdge->vertex->pos[1];
@@ -457,7 +434,7 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
             {
                 if(!isIntersectionOnSelfRefLineDef(next))
                 {
-                    double pos[2];
+                    ddouble pos[2];
 
                     pos[0] = cur->hEdge->vertex->pos[0] + next->hEdge->vertex->pos[0];
                     pos[1] = cur->hEdge->vertex->pos[1] + next->hEdge->vertex->pos[1];
@@ -487,9 +464,9 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, double x, double y,
 VERBOSE(
 Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
             nearSector->buildData.index - 1,
-            (float) cur->hEdge->vertex->pos[0], (float) cur->hEdge->vertex->pos[1],
+            (dfloat) cur->hEdge->vertex->pos[0], (dfloat) cur->hEdge->vertex->pos[1],
             farSector->buildData.index - 1,
-            (float) next->hEdge->vertex->pos[0], (float) next->hEdge->vertex->pos[1]));
+            (dfloat) next->hEdge->vertex->pos[0], (dfloat) next->hEdge->vertex->pos[1]));
 #endif
                     }
 

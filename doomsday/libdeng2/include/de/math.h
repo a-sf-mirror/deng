@@ -72,6 +72,14 @@ namespace de
         return abs(a - b) < EPSILON;
     }    
 
+    /// Return the first 32-bit integer larger than the specified value.
+    template <typename Type>
+    inline dint ceilpow2(const Type& val) {
+        dint cumul;
+        for(cumul = 1; val > cumul; cumul <<= 1);
+        return cumul;
+    }
+
     /// General comparison function.
     template <typename Type>
     inline dint cmp(const Type& a, const Type& b) {
