@@ -1,7 +1,8 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2004-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2009-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +21,9 @@
 /**
  * @file deng.h
  *
- * Contains common definitions, constants, and types that will be used by libdeng2. 
+ * Contains common definitions, constants, and types that will be used by libdeng2.
  * The deng types should be used instead of the standard C++ types.
- */ 
+ */
 
 #ifndef LIBDENG2_H
 #define LIBDENG2_H
@@ -38,6 +39,11 @@
 #       define LIBDENG2_API __declspec(dllimport)
 #   endif
 #   define LIBDENG2_EXPORT __declspec(dllexport)
+
+    // Function call conventions.
+#   define C_DECL __cdecl
+#   define STD_CALL __stdcall
+#   define FAST_CALL __fastcall
 
     // Disable warnings about non-exported (C++ standard library) base classes.
 #   pragma warning(disable: 4275)
@@ -59,6 +65,10 @@
 #else
 #   define LIBDENG2_API
 #   define LIBDENG2_EXPORT
+
+#   define C_DECL
+#   define STD_CALL
+#   define FAST_CALL
 
     // Standard integer types.
 #   include <stdint.h>
@@ -97,14 +107,14 @@
  * The @c de namespace contains all the classes, functions and other
  * identifiers of libdeng2.
  */
-namespace de 
+namespace de
 {
     /**
      * @defgroup types Basic Types
-     * 
+     *
      * Basic data types.
      */
-    
+
     //@{
     /// @ingroup types
     typedef int8_t                  dchar;      ///< 8-bit signed integer.
@@ -126,6 +136,16 @@ namespace de
     typedef double                  ddouble;    ///< 64-bit floating point number.
     typedef size_t                  dsize;
     //@}
+
+    const dchar MAXCHAR     = (dchar) 0x7f;
+    const dshort MAXSHORT   = (dshort) 0x7fff;
+    const dint MAXINT       = (dint) 0x7fffffff; // max pos 32-bit int
+    const dfloat MAXFLOAT   = (dfloat) 1E+37;
+
+    const dchar MINCHAR     = (dchar) 0x80;
+    const dshort MINSHORT   = (dshort) 0x8000;
+    const dint MININT       = (dint) 0x80000000; // max negative 32-bit integer
+    const dfloat MINFLOAT   = (dfloat) -(1E+37);
 }
 
 #include "Error"

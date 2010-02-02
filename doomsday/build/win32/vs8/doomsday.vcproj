@@ -877,18 +877,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\bsp_intersection.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\bsp_node.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\bsp_superblock.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\cl_frame.c"
 				>
 			</File>
@@ -1049,10 +1037,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\gameobjrecords.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\gl_defer.c"
 				>
 			</File>
@@ -1090,18 +1074,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\gl_tga.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\halfedgeds.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\linedefblockmap.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\lumobjblockmap.c"
 				>
 			</File>
 			<File
@@ -1173,10 +1145,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\mobjblockmap.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\net_buf.c"
 				>
 			</File>
@@ -1201,10 +1169,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\node.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\p_cmd.c"
 				>
 			</File>
@@ -1218,10 +1182,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\p_intercept.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\p_linedef.c"
 				>
 			</File>
 			<File
@@ -1245,10 +1205,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\p_plane.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\p_players.c"
 				>
 			</File>
@@ -1257,27 +1213,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\p_sector.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\p_seg.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\p_sidedef.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\p_sight.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\p_subsector.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\p_surface.c"
 				>
 			</File>
 			<File
@@ -1286,14 +1222,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\p_ticker.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\p_vertex.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\particleblockmap.c"
 				>
 			</File>
 			<File
@@ -1434,10 +1362,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\s_wav.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\subsectorblockmap.c"
 				>
 			</File>
 			<File
@@ -2562,22 +2486,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\bsp_edge.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\bsp_intersection.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\bsp_node.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\bsp_superblock.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\include\cl_def.h"
 				>
 			</File>
@@ -2827,10 +2735,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\gl_tga.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\halfedgeds.h"
 				>
 			</File>
 			<File
