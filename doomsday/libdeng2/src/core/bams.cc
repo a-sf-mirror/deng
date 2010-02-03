@@ -1,8 +1,8 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright Â© 2003-2010 Jaakko KerÃ¤nen <jaakko.keranen@iki.fi>
- * Copyright Â© 2005-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2005-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
