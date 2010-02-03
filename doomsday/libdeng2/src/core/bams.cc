@@ -1,8 +1,8 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
- * Copyright © 2005-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright Â© 2003-2010 Jaakko KerÃ¤nen <jaakko.keranen@iki.fi>
+ * Copyright Â© 2005-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 
 #include "de/math.h"
 
+#include "math.h"
+
 using namespace de;
 
 namespace de
@@ -27,12 +29,9 @@ namespace de
     #define BAMS_TABLE_ACCURACY_SHIFT   13
     #define BAMS_TABLE_ACCURACY         (1 << BAMS_TABLE_ACCURACY_SHIFT)
 
-    static binangle_t atantable[BAMS_TABLE_ACCURACY];
+    static dbinangle atantable[BAMS_TABLE_ACCURACY];
 }
 
-/**
- * Fills the BAM LUTs.
- */
 void de::InitBAMLUTs(void)
 {
     dfloat fbta = (dfloat) BAMS_TABLE_ACCURACY;
@@ -42,7 +41,7 @@ void de::InitBAMLUTs(void)
     }
 }
 
-binangle_t de::bamsAtan2(dint y, dint x)
+dbinangle de::bamsAtan2(dint y, dint x)
 {
     if(!x && !y)
         return BANG_0; // Indeterminate.
@@ -56,7 +55,7 @@ binangle_t de::bamsAtan2(dint y, dint x)
 
     // We'll first determine what the angle is in the first quadrant.
     // That's what the tables are for.
-    binangle_t bang;
+    dbinangle bang;
     if(!absy)
         bang = BANG_0;
     else if(absy == absx)
@@ -65,8 +64,7 @@ binangle_t de::bamsAtan2(dint y, dint x)
         bang = BANG_90;
     else
     {
-        // The special cases didn't help. Use the tables.
-        // absx and absy can't be zero here.
+        // Use the tables. absx and absy can't be zero here.
         if(absy > absx)
             bang = BANG_90 -
                 atantable[(absx << BAMS_TABLE_ACCURACY_SHIFT) / absy];
@@ -82,9 +80,8 @@ binangle_t de::bamsAtan2(dint y, dint x)
     }
     if(y < 0) // Flip vertically?
     {
-        // At the moment bang must be smaller than 180.
+        // Bang must be smaller than 180.
         bang = BANG_180 + BANG_180 - bang;
     }
-    // This is the final angle.
     return bang;
 }
