@@ -1,7 +1,8 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2009-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,17 +44,17 @@ App* App::_singleton = 0;
 
 App::App(const CommandLine& commandLine, const String& configPath, const String& homeSubFolder,
          Log::LogLevel defaultLogLevel)
-    : _commandLine(commandLine), 
+    : _commandLine(commandLine),
       _logBuffer(0),
-      _memory(0), 
-      _fs(0), 
+      _memory(0),
+      _fs(0),
       _config(0),
       _gameLib(0),
-      _currentMap(0), 
-      _video(0), 
+      _currentMap(0),
+      _video(0),
       _audio(0),
-      _runMainLoop(true), 
-      _firstIteration(true), 
+      _runMainLoop(true),
+      _firstIteration(true),
       _exitCode(0)
 {
     if(_singleton)
@@ -94,7 +95,7 @@ App::App(const CommandLine& commandLine, const String& configPath, const String&
         // Define built-in constructors.
         Thinker::define(Thinker::THINKER, Thinker::construct);
         Thinker::define(Thinker::OBJECT, Object::construct);
-        
+
         // The memory zone.
         std::auto_ptr<Zone> memoryPtr(new Zone);
         _memory = memoryPtr.get();
@@ -107,7 +108,7 @@ App::App(const CommandLine& commandLine, const String& configPath, const String&
             DirectoryFeed::changeWorkingDir(_commandLine.at(0).fileNamePath() + "/..");
         }
 #endif
-    
+
         // Now we can proceed with the members.
         std::auto_ptr<FS> fsPtr(new FS);
         _fs = fsPtr.get();
@@ -134,28 +135,31 @@ App::App(const CommandLine& commandLine, const String& configPath, const String&
         //fs_->getFolder("/modules").attach(new DirectoryFeed("data\\modules"));
 #endif
 
-        /// @todo  /home should really be under the native user home dir (~/.deng2, 
+        /// @todo  /home should really be under the native user home dir (~/.deng2,
         /// C:\\Documents and Settings\\..., ~/Library/Application Support/Doomsday2/)
         _fs->getFolder("/home").attach(new DirectoryFeed(
-            String("home").concatenateNativePath(homeSubFolder), 
+            String("home").concatenateNativePath(homeSubFolder),
             DirectoryFeed::ALLOW_WRITE | DirectoryFeed::CREATE_IF_MISSING));
 
         _fs->refresh();
-        
+
         // The configuration.
         std::auto_ptr<Config> configPtr(new Config(configPath));
         _config = configPtr.get();
         _config->read();
-        
+
         // Update the log buffer max entry count.
         _logBuffer->setMaxEntryCount(_config->getui("deng.log.bufferSize"));
-        
+
         // Set the log output file.
         _logBuffer->setOutputFile(_config->gets("deng.log.file"));
-        
+
         // The level of enabled messages.
         _logBuffer->enable(Log::LogLevel(_config->getui("deng.log.level")));
-        
+
+        // Build LUTs for binary angle math.
+        InitBAMLUTs();
+
         // Load the basic plugins.
         loadPlugins();
 
@@ -163,7 +167,7 @@ App::App(const CommandLine& commandLine, const String& configPath, const String&
         memoryPtr.release();
         fsPtr.release();
         configPtr.release();
-        
+
         LOG_VERBOSE("libdeng2::App ") << LIBDENG2_VERSION << " initialized.";
     }
     catch(const Error& err)
@@ -183,14 +187,14 @@ App::~App()
 
     clearModules();
 
-    // Deleting the file system will unload everything owned by the files, including 
+    // Deleting the file system will unload everything owned by the files, including
     // all remaining plugin libraries.
     delete _fs;
     _fs = 0;
-    
+
     delete _memory;
     _memory = 0;
- 
+
     // Shut down SDL.
     SDLNet_Quit();
     SDL_Quit();
@@ -204,14 +208,14 @@ App::~App()
 void App::loadPlugins()
 {
     LOG_AS("App::loadPlugins");
-    
+
     // Names of preferred plugins.
     String gameName = "doom"; /// @todo There is no default game, really...
     _commandLine.getParameter("--game", gameName);
-    
+
     String videoName = config().gets("deng.video");
     _commandLine.getParameter("--video", videoName);
-    
+
     String audioName = config().gets("deng.audio");
     _commandLine.getParameter("--audio", audioName);
 
@@ -272,8 +276,8 @@ void App::loadPlugins()
                     libFile.clear();
                     continue;
                 }
-            }      
-            
+            }
+
             LOG_VERBOSE("Loaded ") << libFile.path() << " [" << libFile.library().type() << "]";
         }
     }
@@ -310,13 +314,13 @@ void App::unloadGame()
 void App::unloadPlugins()
 {
     LOG_AS("App::unloadPlugins");
-    
+
     clearSubsystems();
     unloadGame();
-    
+
     // Get the index of libraries.
     const FS::Index& index = _fs->indexFor(TYPE_NAME(LibraryFile));
-    
+
     FOR_EACH(i, index, FS::Index::const_iterator)
     {
         LibraryFile& libFile = *static_cast<LibraryFile*>(i->second);
@@ -335,7 +339,7 @@ dint App::mainLoop()
         // Now running the main loop.
         _runMainLoop = true;
         _firstIteration = true;
-    
+
         while(_runMainLoop)
         {
             // Determine elapsed time.
@@ -354,7 +358,7 @@ dint App::mainLoop()
 
             // Do the loop iteration.
             iterate(elapsed);
-        
+
             // Update subsystems (draw graphics, update sounds, etc.).
             FOR_EACH(i, _subsystems, Subsystems::iterator)
             {
@@ -364,7 +368,7 @@ dint App::mainLoop()
     }
     catch(const Error& err)
     {
-        LOG_ERROR("Main loop stopped: ") << err.what();        
+        LOG_ERROR("Main loop stopped: ") << err.what();
     }
     return _exitCode;
 }
@@ -395,9 +399,9 @@ Version App::version()
     return ver;
 }
 
-CommandLine& App::commandLine() 
-{ 
-    return app()._commandLine; 
+CommandLine& App::commandLine()
+{
+    return app()._commandLine;
 }
 
 LogBuffer& App::logBuffer()
@@ -414,11 +418,11 @@ Zone& App::memory()
     return *self._memory;
 }
 
-FS& App::fileSystem() 
-{ 
+FS& App::fileSystem()
+{
     App& self = app();
     assert(self._fs != 0);
-    return *self._fs; 
+    return *self._fs;
 }
 
 Folder& App::fileRoot()
@@ -439,7 +443,7 @@ Config& App::config()
 {
     App& self = app();
     assert(self._config != 0);
-    return *self._config; 
+    return *self._config;
 }
 
 Protocol& App::protocol()
@@ -473,7 +477,7 @@ void App::setCurrentMap(Map* map)
 {
     App& self = app();
     self._currentMap = map;
-    
+
     if(map)
     {
         LOG_VERBOSE("Current map set: ") << map->name();
@@ -489,20 +493,20 @@ Video& App::video()
     App& self = app();
     if(!self._video)
     {
-        /// @throw NoVideoError The video subsystem is not available. 
+        /// @throw NoVideoError The video subsystem is not available.
         throw NoVideoError("App::video", "No video subsystem available");
     }
     return *self._video;
 }
 
-bool App::hasGame() 
-{ 
+bool App::hasGame()
+{
     return app()._gameLib != 0;
 }
 
-bool App::hasVideo() 
-{ 
-    return app()._video != 0; 
+bool App::hasVideo()
+{
+    return app()._video != 0;
 }
 
 bool App::hasCurrentMap()
@@ -523,27 +527,27 @@ static int sortFilesByModifiedAt(const File* a, const File* b)
 Record& App::importModule(const String& name, const String& fromPath)
 {
     LOG_AS("App::importModule");
-    
+
     App& self = app();
-    
+
     // There are some special modules.
     if(name == "Config")
     {
         return self.config().names();
     }
-    
+
     // Maybe we already have this module?
     Modules::iterator found = self._modules.find(name);
     if(found != self._modules.end())
     {
         return found->second->names();
     }
-    
+
     /// @todo  Move this path searching logic to FS.
 
     // Fall back on the default if the libdeng2 module hasn't been imported yet.
     std::auto_ptr<ArrayValue> defaultImportPath(new ArrayValue);
-    defaultImportPath->add("");    
+    defaultImportPath->add("");
     defaultImportPath->add("*"); // Newest module with a matching name.
     ArrayValue* importPath = defaultImportPath.get();
     try
@@ -552,7 +556,7 @@ Record& App::importModule(const String& name, const String& fromPath)
     }
     catch(const Record::NotFoundError&)
     {}
-    
+
     // Search the import path (array of paths).
     FOR_EACH(i, importPath->elements(), ArrayValue::Elements::const_iterator)
     {
@@ -565,7 +569,7 @@ Record& App::importModule(const String& name, const String& fromPath)
             if(!fromPath.empty())
             {
                 // Try the local folder.
-                p = fromPath.fileNamePath() / name;            
+                p = fromPath.fileNamePath() / name;
             }
             else
             {
@@ -598,6 +602,6 @@ Record& App::importModule(const String& name, const String& fromPath)
             return module->names();
         }
     }
-    
+
     throw NotFoundError("App::importModule", "Cannot find module '" + name + "'");
 }
