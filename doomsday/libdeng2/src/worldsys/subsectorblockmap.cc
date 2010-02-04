@@ -23,63 +23,45 @@
  * Boston, MA  02110-1301  USA
  */
 
-// HEADER FILES ------------------------------------------------------------
+#include "de/SubsectorBlockmap"
 
-#include "de_base.h"
-#include "de_play.h"
+using namespace de;
 
-#include "subsectorblockmap.h"
-
-// MACROS ------------------------------------------------------------------
-
-//// \todo This stuff is obsolete and needs to be removed!
-#define MAPBLOCKUNITS   128
-#define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT   (FRACBITS+7)
-#define MAPBMASK        (MAPBLOCKSIZE-1)
-#define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
-
-// TYPES -------------------------------------------------------------------
-
-typedef struct listnode_s {
-    struct listnode_s* next;
-    void*           data;
-} listnode_t;
-
-typedef struct {
-    uint            size;
-    listnode_t*     head;
-} linklist_t;
-
-typedef struct {
-    boolean       (*func) (subsector_t*, void*);
-    void*           context;
-    arvec2_t        box;
-    sector_t*       sector;
-    int             localValidCount;
-    boolean         retObjRecord;
-} iteratesubsectors_args_t;
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
-
-static subsectorblockmap_t* allocBlockmap(void)
+namespace de
 {
-    return Z_Calloc(sizeof(subsectorblockmap_t), PU_STATIC, 0);
+    //// \todo This stuff is obsolete and needs to be removed!
+    #define MAPBLOCKUNITS   128
+    #define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
+    #define MAPBLOCKSHIFT   (FRACBITS+7)
+    #define MAPBMASK        (MAPBLOCKSIZE-1)
+    #define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
+
+    typedef struct listnode_s {
+        struct listnode_s* next;
+        void*           data;
+    } listnode_t;
+
+    typedef struct {
+        uint            size;
+        listnode_t*     head;
+    } linklist_t;
+
+    typedef struct {
+        boolean       (*func) (Subsector*, void*);
+        void*           context;
+        arvec2_t        box;
+        Sector*       sector;
+        int             localValidCount;
+        boolean         retObjRecord;
+    } iteratesubsectors_args_t;
 }
 
-static void freeBlockmap(subsectorblockmap_t* bmap)
+static SubsectorBlockmap* allocBlockmap(void)
+{
+    return Z_Calloc(sizeof(SubsectorBlockmap), PU_STATIC, 0);
+}
+
+static void freeBlockmap(SubsectorBlockmap* bmap)
 {
     Z_Free(bmap);
 }
@@ -113,7 +95,7 @@ static void freeList(linklist_t* list)
     Z_Free(list);
 }
 
-static void listPushFront(linklist_t* list, subsector_t* subsector)
+static void listPushFront(linklist_t* list, Subsector* subsector)
 {
     listnode_t* node = allocListNode();
     
@@ -125,7 +107,7 @@ static void listPushFront(linklist_t* list, subsector_t* subsector)
     list->size += 1;
 }
 
-static boolean listRemove(linklist_t* list, subsector_t* subsector)
+static boolean listRemove(linklist_t* list, Subsector* subsector)
 {
     if(list->head)
     {
@@ -155,8 +137,8 @@ static uint listSize(linklist_t* list)
     return list->size;
 }
 
-static void linkSubsectorToBlock(subsectorblockmap_t* blockmap, uint x, uint y,
-                                 subsector_t* subsector)
+static void linkSubsectorToBlock(SubsectorBlockmap* blockmap, uint x, uint y,
+                                 Subsector* subsector)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
@@ -166,8 +148,8 @@ static void linkSubsectorToBlock(subsectorblockmap_t* blockmap, uint x, uint y,
     listPushFront(list, subsector);
 }
 
-static boolean unlinkSubsectorFromBlock(subsectorblockmap_t* blockmap, uint x, uint y,
-                                        subsector_t* subsector)
+static boolean unlinkSubsectorFromBlock(SubsectorBlockmap* blockmap, uint x, uint y,
+                                        Subsector* subsector)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
@@ -201,7 +183,7 @@ static boolean iterateSubsectors(void* ptr, void* context)
 
             if(node->data)
             {
-                subsector_t* subsector = (subsector_t*) node->data;
+                Subsector* subsector = (Subsector*) node->data;
 
                 if(subsector->validCount != args->localValidCount)
                 {
@@ -252,7 +234,7 @@ static boolean freeSubsectorBlockData(void* data, void* context)
     return true; // Continue iteration.
 }
 
-static void boxToBlocks(subsectorblockmap_t* bmap, uint blockBox[4], const arvec2_t box)
+static void boxToBlocks(SubsectorBlockmap* bmap, uint blockBox[4], const arvec2_t box)
 {
     uint dimensions[2];
     vec2_t min, max;
@@ -272,10 +254,10 @@ static void boxToBlocks(subsectorblockmap_t* bmap, uint blockBox[4], const arvec
     blockBox[BOXTOP]    = MINMAX_OF(0, (max[1] - bmap->aabb[0][1]) / bmap->blockSize[1], dimensions[1]);
 }
 
-subsectorblockmap_t* P_CreateSubsectorBlockmap(const pvec2_t min, const pvec2_t max,
+SubsectorBlockmap* P_CreateSubsectorBlockmap(const pvec2_t min, const pvec2_t max,
                                                uint width, uint height)
 {
-    subsectorblockmap_t* blockmap;
+    SubsectorBlockmap* blockmap;
 
     assert(min);
     assert(max);
@@ -292,7 +274,7 @@ subsectorblockmap_t* P_CreateSubsectorBlockmap(const pvec2_t min, const pvec2_t 
     return blockmap;
 }
 
-void P_DestroySubsectorBlockmap(subsectorblockmap_t* blockmap)
+void P_DestroySubsectorBlockmap(SubsectorBlockmap* blockmap)
 {
     assert(blockmap);
 
@@ -302,7 +284,7 @@ void P_DestroySubsectorBlockmap(subsectorblockmap_t* blockmap)
     Z_Free(blockmap);
 }
 
-void SubsectorBlockmap_BoxToBlocks(subsectorblockmap_t* blockmap, uint blockBox[4],
+void SubsectorBlockmap_BoxToBlocks(SubsectorBlockmap* blockmap, uint blockBox[4],
                                    const arvec2_t box)
 {
     assert(blockmap);
@@ -315,7 +297,7 @@ void SubsectorBlockmap_BoxToBlocks(subsectorblockmap_t* blockmap, uint blockBox[
 /**
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
-boolean SubsectorBlockmap_Block2f(subsectorblockmap_t* blockmap, uint dest[2], float x, float y)
+boolean SubsectorBlockmap_Block2f(SubsectorBlockmap* blockmap, uint dest[2], float x, float y)
 {
     assert(blockmap);
 
@@ -334,12 +316,12 @@ boolean SubsectorBlockmap_Block2f(subsectorblockmap_t* blockmap, uint dest[2], f
 /**
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
-boolean SubsectorBlockmap_Block2fv(subsectorblockmap_t* blockmap, uint dest[2], const float pos[2])
+boolean SubsectorBlockmap_Block2fv(SubsectorBlockmap* blockmap, uint dest[2], const float pos[2])
 {
     return SubsectorBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
 }
 
-void SubsectorBlockmap_Link(subsectorblockmap_t* blockmap, subsector_t* subsector)
+void SubsectorBlockmap_Link(SubsectorBlockmap* blockmap, Subsector* subsector)
 {
     uint x, y, minBlock[2], maxBlock[2], dimensions[2];
 
@@ -362,7 +344,7 @@ void SubsectorBlockmap_Link(subsectorblockmap_t* blockmap, subsector_t* subsecto
         }
 }
 
-boolean SubsectorBlockmap_Unlink(subsectorblockmap_t* blockmap, subsector_t* subsector)
+boolean SubsectorBlockmap_Unlink(SubsectorBlockmap* blockmap, Subsector* subsector)
 {
     uint x, y, dimensions[2];
 
@@ -379,7 +361,7 @@ boolean SubsectorBlockmap_Unlink(subsectorblockmap_t* blockmap, subsector_t* sub
     return true;    
 }
 
-void SubsectorBlockmap_Bounds(subsectorblockmap_t* blockmap, pvec2_t min, pvec2_t max)
+void SubsectorBlockmap_Bounds(SubsectorBlockmap* blockmap, pvec2_t min, pvec2_t max)
 {
     assert(blockmap);
 
@@ -389,7 +371,7 @@ void SubsectorBlockmap_Bounds(subsectorblockmap_t* blockmap, pvec2_t min, pvec2_
         V2_Copy(max, blockmap->aabb[1]);
 }
 
-void SubsectorBlockmap_BlockSize(subsectorblockmap_t* blockmap, pvec2_t blockSize)
+void SubsectorBlockmap_BlockSize(SubsectorBlockmap* blockmap, pvec2_t blockSize)
 {
     assert(blockmap);
     assert(blockSize);
@@ -397,14 +379,14 @@ void SubsectorBlockmap_BlockSize(subsectorblockmap_t* blockmap, pvec2_t blockSiz
     V2_Copy(blockSize, blockmap->blockSize);
 }
 
-void SubsectorBlockmap_Dimensions(subsectorblockmap_t* blockmap, uint v[2])
+void SubsectorBlockmap_Dimensions(SubsectorBlockmap* blockmap, uint v[2])
 {
     assert(blockmap);
 
     Gridmap_Dimensions(blockmap->gridmap, v);
 }
 
-uint SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, uint x, uint y)
+uint SubsectorBlockmap_NumInBlock(SubsectorBlockmap* blockmap, uint x, uint y)
 {
     linklist_t* list;
 
@@ -417,10 +399,10 @@ uint SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, uint x, uint y)
     return 0;
 }
 
-boolean SubsectorBlockmap_Iterate(subsectorblockmap_t* blockmap, const uint block[2],
-                                  sector_t* sector, const arvec2_t box,
+boolean SubsectorBlockmap_Iterate(SubsectorBlockmap* blockmap, const uint block[2],
+                                  Sector* sector, const arvec2_t box,
                                   int localValidCount,
-                                  boolean (*func) (subsector_t*, void*),
+                                  boolean (*func) (Subsector*, void*),
                                   void* context)
 {
     iteratesubsectors_args_t args;
@@ -439,11 +421,11 @@ boolean SubsectorBlockmap_Iterate(subsectorblockmap_t* blockmap, const uint bloc
     return iterateSubsectors(Gridmap_Block(blockmap->gridmap, block[0], block[1]), &args);
 }
 
-boolean SubsectorBlockmap_BoxIterate(subsectorblockmap_t* blockmap,
+boolean SubsectorBlockmap_BoxIterate(SubsectorBlockmap* blockmap,
                                      const uint blockBox[4],
-                                     sector_t* sector,  const arvec2_t box,
+                                     Sector* sector,  const arvec2_t box,
                                      int localValidCount,
-                                     boolean (*func) (subsector_t*, void*),
+                                     boolean (*func) (Subsector*, void*),
                                      void* context, boolean retObjRecord)
 {
     iteratesubsectors_args_t args;

@@ -24,10 +24,29 @@
 #ifndef LIBDENG2_GAMEOBJRECORDS_H
 #define LIBDENG2_GAMEOBJRECORDS_H
 
+#include "deng.h"
+
 namespace de
 {
+    typedef enum // Value types.
+    {
+        DDVT_NONE = -1, // Not a read/writeable value type.
+        DDVT_BOOL,
+        DDVT_BYTE,
+        DDVT_SHORT,
+        DDVT_INT,    // 32 or 64
+        DDVT_UINT,
+        DDVT_FIXED,
+        DDVT_ANGLE,
+        DDVT_FLOAT,
+        DDVT_LONG,
+        DDVT_ULONG,
+        DDVT_PTR,
+        DDVT_BLENDMODE
+    } valuetype_t;
+
     typedef struct {
-        duint           num;
+        duint num;
         struct valuetable_s**  tables;
     } valuedb_t;
 
@@ -47,8 +66,8 @@ namespace de
     dbyte           GameObjRecords_GetByte(gameobjrecords_t* records, dint typeIdentifier, duint elmIdx, dint propIdentifier);
     dshort          GameObjRecords_GetShort(gameobjrecords_t* records, dint typeIdentifier, duint elmIdx, dint propIdentifier);
     dint            GameObjRecords_GetInt(gameobjrecords_t* records, dint typeIdentifier, duint elmIdx, dint propIdentifier);
-    //fixed_t         GameObjRecords_GetFixed(gameobjrecords_t* records, dint typeIdentifier, duint elmIdx, dint propIdentifier);
-    //angle_t         GameObjRecords_GetAngle(gameobjrecords_t* records, dint typeIdentifier, duint elmIdx, dint propIdentifier);
+    //dfixed         GameObjRecords_GetFixed(gameobjrecords_t* records, dint typeIdentifier, duint elmIdx, dint propIdentifier);
+    //dangle         GameObjRecords_GetAngle(gameobjrecords_t* records, dint typeIdentifier, duint elmIdx, dint propIdentifier);
     dfloat          GameObjRecords_GetFloat(gameobjrecords_t* records, dint typeIdentifier, duint elmIdx, dint propIdentifier);
 }
 

@@ -23,6 +23,8 @@
 
 #include <de/deng.h>
 
+#include <cmath>
+
 #ifdef min
 #   undef min
 #endif
@@ -87,6 +89,43 @@ namespace de
         if(a < b) return -1;
         if(a > b) return 1;
         return 0;
+    }
+
+    /**
+     * 16.16 fixed point math.
+     */
+    typedef dint dfixed;
+
+    static const dfixed FRACBITS = 16;
+    static const dfixed FRACUNIT = (1<<FRACBITS);
+
+#define FIX2FLT(x)      ( (x) / (dfloat) FRACUNIT )
+#define Q_FIX2FLT(x)    ( (dfloat)((x)>>FRACBITS) )
+#define FLT2FIX(x)      ( (dfixed) ((x)*FRACUNIT) )
+
+    typedef duint dangle;
+    static const dangle FINEANGLES = 8192;
+    static const dangle ANGLETOFINESHIFT = 19; // 0x100000000 to 0x2000
+
+    static const dangle ANGLE_45  = 0x20000000;
+    static const dangle ANGLE_90  = 0x40000000;
+    static const dangle ANGLE_180 = 0x80000000;
+    static const dangle ANGLE_270 = 0xc0000000;
+    static const dangle ANGLE_MAX = 0xffffffff;
+    static const dangle ANGLE_1   = (ANGLE_45/45);
+    static const dangle ANGLE_60  = (ANGLE_180/3);
+
+    /**
+     * Translate (dx, dy) into an angle value (degrees).
+     */
+    inline ddouble slopeToAngle(ddouble dx, ddouble dy)
+    {       
+        if(dx == 0)
+            return (dy > 0? 90.0 : 270.0);
+        ddouble angle = atan2(dy, dx) * 180.0 / PI;
+        if(angle < 0)
+            return angle + 360.0;
+        return angle;
     }
 
     /**
@@ -164,7 +203,7 @@ namespace de
         return static_cast<dfloat>(bang / (dfloat) BANG_180 * 180);
     }
 
-    void            InitBAMLUTs(void); // Fill in the tables.
+    void           InitBAMLUTs(void); // Fill in the tables.
     dbinangle      bamsAtan2(dint y, dint x);
 }
 

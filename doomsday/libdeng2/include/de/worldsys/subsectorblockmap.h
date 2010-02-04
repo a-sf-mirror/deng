@@ -26,41 +26,37 @@
 #define LIBDENG2_SUBSECTORBLOCKMAP_H
 
 #include "../Gridmap"
+#include "../Vector"
+#include "../Subsector"
 
 namespace de
 {
-    typedef struct subsectorblockmap_s {
-        vec2_t          aabb[2];
-        vec2_t          blockSize;
-        gridmap_t*      gridmap;
-    } subsectorblockmap_t;
+    class SubsectorBlockmap
+    {
+    public: 
+        SubsectorBlockmap(const Vector2<dfloat>& min, const Vector2<dfloat>& max, duint width, duint height);
+        ~SubsectorBlockmap();
 
-    subsectorblockmap_t* P_CreateSubsectorBlockmap(const pvec2_t min, const pvec2_t max,
-                                                   duint width, duint height);
-    void            P_DestroySubsectorBlockmap(subsectorblockmap_t* blockmap);
+        duint numInBlock(duint x, duint y) const;
+        void link(Subsector* subsector);
+        bool unlink(Subsector* subsector);
 
-    duint           SubsectorBlockmap_NumInBlock(subsectorblockmap_t* blockmap, duint x, duint y);
-    void            SubsectorBlockmap_Link(subsectorblockmap_t* blockmap, struct subsector_s* subsector);
-    bool            SubsectorBlockmap_Unlink(subsectorblockmap_t* blockmap, struct subsector_s* subsector);
+        void bounds(Vector2<dfloat>& min, Vector2<dfloat>& max) const;
+        void blockSize(Vector2<dfloat>& blockSize) const;
+        void dimensions(Vector2<duint>& dimensions) const;
 
-    void            SubsectorBlockmap_Bounds(subsectorblockmap_t* blockmap, pvec2_t min, pvec2_t max);
-    void            SubsectorBlockmap_BlockSize(subsectorblockmap_t* blockmap, pvec2_t blockSize);
-    void            SubsectorBlockmap_Dimensions(subsectorblockmap_t* blockmap, duint v[2]);
+        bool block(Vector2<duint>& block, dfloat x, dfloat y);
+        bool block(Vector2<duint>& block, const Vector2<dfloat>& pos);
 
-    bool            SubsectorBlockmap_Block2f(subsectorblockmap_t* blockmap, duint block[2], dfloat x, dfloat y);
-    bool            SubsectorBlockmap_Block2fv(subsectorblockmap_t* blockmap, duint block[2], const dfloat pos[2]);
-    void            SubsectorBlockmap_BoxToBlocks(subsectorblockmap_t* blockmap, duint blockBox[4],
-                                                  const arvec2_t box);
-    bool            SubsectorBlockmap_Iterate(subsectorblockmap_t* blockmap, const duint block[2],
-                                              struct sector_s* sector, const arvec2_t box,
-                                              dint localValidCount,
-                                              bool (*func) (struct subsector_s*, void*),
-                                              void* data);
-    bool            SubsectorBlockmap_BoxIterate(subsectorblockmap_t* blockmap, const duint blockBox[4],
-                                                 struct sector_s* sector, const arvec2_t box,
-                                                 dint localValidCount,
-                                                 bool (*func) (struct subsector_s*, void*),
-                                                 void* data, bool retObjRecord);
+        //void boxToBlocks(duint blockBox[4], const arvec2_t box);
+        //bool iterate(const Vector2<duint>& block, Sector* sector, const arvec2_t box, dint localValidCount, bool (*func) (Subsector*, void*), void* data);
+        //bool boxIterate(const duint blockBox[4], Sector* sector, const arvec2_t box, dint localValidCount, bool (*func) (Subsector*, void*), void* data, bool retObjRecord);
+
+    private:
+        Vector2<dfloat> _aabb[2];
+        Vector2<dfloat> _blockSize;
+        Gridmap<Subsector*> _gridmap;
+    };
 }
 
 #endif /* LIBDENG2_SUBSECTORBLOCKMAP_H */

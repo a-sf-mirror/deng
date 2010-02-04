@@ -35,57 +35,80 @@ namespace de
     };
 
     typedef struct vertex_s {
-        struct hedge_s* hEdge;
-        ddouble         pos[2]; // @todo Move out of the base class.
-        void*           data;
-    } vertex_t;
+        class HalfEdge* hEdge;
+        ddouble pos[2]; // @todo Move out of the base class.
+        void* data;
+    } Vertex;
 
-    typedef struct hedge_s {
-        struct vertex_s* vertex;
-        struct hedge_s* twin;
-        struct hedge_s* next;
-        struct hedge_s* prev;
-        struct face_s*  face;
-        void*           data;
-    } hedge_t;
+    void testVertexHEdgeRings(Vertex* v);
 
-    typedef struct face_s {
-        hedge_t*        hEdge; // First half-edge of this face.
-        void*           data;
-    } face_t;
+    class HalfEdge
+    {
+    public:
+        Vertex* vertex;
+        HalfEdge* twin;
+        HalfEdge* next;
+        HalfEdge* prev;
+        class Face* face;
+        void* data;
+    };
 
-    typedef struct halfedgeds_s {
-        duint           _numVertices;
-        vertex_t**      vertices;
+    class Face
+    {
+    public:
+        HalfEdge* hEdge; // First half-edge of this face.
+        void* data;
 
-        duint           _numHEdges;
-        hedge_t**       _hEdges;
+        void linkHEdge(HalfEdge* hEdge);
+        void unlinkHEdge(HalfEdge* hEdge);
+        void switchToHEdgeLinks();
+        bool getAveragedCoords(ddouble* x, ddouble* y);
 
-        duint           _numFaces;
-        face_t**        _faces;
-    } halfedgeds_t;
+        /**
+         * Sort the list of half-edges in the leaf into clockwise order, based on
+         * their position/orientation around the mid point in the leaf.
+         */
+        void sortHEdgesByAngleAroundMidPoint();
+    };
 
-    halfedgeds_t*       P_CreateHalfEdgeDS(void);
-    void                P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS);
+    /// Smallest degrees between two angles before being considered equal.
+    static const ddouble ANG_EPSILON = (1.0 / 1024.0);
 
-    vertex_t*           HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS);
-    hedge_t*            HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS, vertex_t* vertex);
-    face_t*             HalfEdgeDS_CreateFace(halfedgeds_t* halfEdgeDS);
+    class HalfEdgeDS
+    {
+    public:
+        duint _numVertices;
+        Vertex** vertices;
 
-    duint               HalfEdgeDS_NumVertices(halfedgeds_t* halfEdgeDS);
-    duint               HalfEdgeDS_NumHEdges(halfedgeds_t* halfEdgeDS);
-    duint               HalfEdgeDS_NumFaces(halfedgeds_t* halfEdgeDS);
-    dint                HalfEdgeDS_IterateVertices(halfedgeds_t* halfEdgeDS, dint (*callback) (vertex_t*, void*), void* context);
-    dint                HalfEdgeDS_IterateHEdges(halfedgeds_t* halfEdgeDS, dint (*callback) (hedge_t*, void*), void* context);
-    dint                HalfEdgeDS_IterateFaces(halfedgeds_t* halfEdgeDS, dint (*callback) (face_t*, void*), void* context);
+        HalfEdgeDS();
 
-    hedge_t*            HEdge_Split(halfedgeds_t* halfEdgeDS, hedge_t* oldHEdge);
+        /**
+         * \note Only releases memory for the data structure itself, any objects linked
+         * to the component parts of the data structure will remain (therefore this is
+         * the responsibility of the owner).
+         */
+        ~HalfEdgeDS();
 
-    void                Face_LinkHEdge(face_t* face, hedge_t* hEdge);
-    void                Face_UnlinkHEdge(face_t* face, hedge_t* hEdge);
-    void                Face_SwitchToHEdgeLinks(face_t* face);
+        Vertex* createVertex();
+        HalfEdge* createHEdge(Vertex* vertex);
+        Face* createFace();
 
-    void                testVertexHEdgeRings(vertex_t* v);
+        duint numVertices() const;
+        duint numHEdges() const;
+        duint numFaces() const;
+        dint iterateVertices(dint (*callback) (Vertex*, void*), void* context);
+        dint iterateHEdges(dint (*callback) (HalfEdge*, void*), void* context);
+        dint iterateFaces(dint (*callback) (Face*, void*), void* context);
+
+    private:
+        duint _numHEdges;
+        HalfEdge** _hEdges;
+
+        duint _numFaces;
+        Face** _faces;
+    };
+
+    HalfEdge* HEdge_Split(HalfEdgeDS& halfEdgeDS, HalfEdge* oldHEdge);
 }
 
 #endif /* DOOMSDAY_HALFEDGEDS_H */

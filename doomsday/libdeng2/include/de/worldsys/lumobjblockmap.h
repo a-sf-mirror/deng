@@ -26,39 +26,38 @@
 #define LIBDENG2_LUMOBJBLOCKMAP_H
 
 #include "../Gridmap"
+#include "../Vector"
 
 namespace de
 {
-    typedef struct lumobjblockmap_s {
-        vec2_t          aabb[2];
-        vec2_t          blockSize;
-        gridmap_t*      gridmap;
-    } lumobjblockmap_t;
+    class LumObjBlockmap
+    {
+    public:
+        LumObjBlockmap(const Vector2<dfloat>& min, const Vector2<dfloat>& max, duint width, duint height);
+        ~LumObjBlockmap();
 
-    lumobjblockmap_t* P_CreateLumobjBlockmap(const pvec2_t min, const pvec2_t max,
-                                                 duint width, duint height);
-    void            P_DestroyLumobjBlockmap(lumobjblockmap_t* blockmap);
+        void empty();
 
-    void            LumobjBlockmap_Empty(lumobjblockmap_t* blockmap);
+        duint numInBlock(duint x, duint y) const;
+        void link(struct lumobj_s* lum);
+        bool unlink(struct lumobj_s* lum);
 
-    duint           LumobjBlockmap_NumInBlock(lumobjblockmap_t* blockmap, duint x, duint y);
-    void            LumobjBlockmap_Link(lumobjblockmap_t* blockmap, struct lumobj_s* lum);
-    bool            LumobjBlockmap_Unlink(lumobjblockmap_t* blockmap, struct lumobj_s* lum);
+        void bounds(Vector2<dfloat>& min, Vector2<dfloat>& max) const;
+        void blockSize(Vector2<dfloat>& blockSize) const;
+        void dimensions(Vector2<duint>& dimensions) const;
 
-    void            LumobjBlockmap_Bounds(lumobjblockmap_t* blockmap, pvec2_t min, pvec2_t max);
-    void            LumobjBlockmap_BlockSize(lumobjblockmap_t* blockmap, pvec2_t blockSize);
-    void            LumobjBlockmap_Dimensions(lumobjblockmap_t* blockmap, duint v[2]);
+        bool block(Vector2<duint>& block, dfloat x, dfloat y) const;
+        bool block(Vector2<duint>& block, const Vector2<dfloat>& pos) const;
+        //void boxToBlocks(duint blockBox[4], const arvec2_t box);
 
-    bool            LumobjBlockmap_Block2f(lumobjblockmap_t* blockmap, duint block[2], dfloat x, dfloat y);
-    bool            LumobjBlockmap_Block2fv(lumobjblockmap_t* blockmap, duint block[2], const dfloat pos[2]);
-    void            LumobjBlockmap_BoxToBlocks(lumobjblockmap_t* blockmap, duint blockBox[4],
-                                               const arvec2_t box);
-    bool            LumobjBlockmap_Iterate(lumobjblockmap_t* blockmap, const duint block[2],
-                                           bool (*func) (struct lumobj_s*, void*),
-                                           void* data);
-    bool            LumobjBlockmap_BoxIterate(lumobjblockmap_t* blockmap, const duint blockBox[4],
-                                              bool (*func) (struct lumobj_s*, void*),
-                                              void* data);
+        bool iterate(const Vector2<duint>& block, bool (*func) (struct lumobj_s*, void*), void* data);
+        //bool boxIterate(const duint blockBox[4], bool (*func) (struct lumobj_s*, void*), void* data);
+
+    private:
+        Vector2<dfloat> _aabb[2];
+        Vector2<dfloat> _blockSize;
+        Gridmap<struct lumobj_s*> _gridmap;
+    };
 }
 
 #endif /* LIBDENG2_LUMOBJBLOCKMAP_H */

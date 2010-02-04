@@ -74,18 +74,18 @@ namespace de
     superblock_t*   BSP_CreateSuperBlock(void);
     void            BSP_DestroySuperBlock(superblock_t* block);
 
-    void            SuperBlock_PushHEdge(superblock_t* SuperBlock, hedge_t* hEdge);
-    hedge_t*        SuperBlock_PopHEdge(superblock_t* block);
+    void            SuperBlock_PushHEdge(superblock_t* SuperBlock, HalfEdge* hEdge);
+    HalfEdge*        SuperBlock_PopHEdge(superblock_t* block);
     #if _DEBUG
     void            SuperBlock_PrintHEdges(superblock_t* SuperBlock);
     #endif
 
     void            SuperBlock_IncHEdgeCounts(superblock_t* SuperBlock, bool lineLinked);
 
-    hedge_t*        SuperBlock_PickPartition(const superblock_t* SuperBlock, dint factor);
+    HalfEdge*        SuperBlock_PickPartition(const superblock_t* SuperBlock, dint factor);
 
-    // @todo Should be private to nodebuilder_t
-    void            BSP_AddHEdgeToSuperBlock(superblock_t* block, hedge_t* hEdge);
+    // @todo Should be private to NodeBuilder
+    void            BSP_AddHEdgeToSuperBlock(superblock_t* block, HalfEdge* hEdge);
     void            BSP_FindAABBForHEdges(const superblock_t* hEdgeList, dfloat* bbox);
 }
 

@@ -33,6 +33,8 @@
 #include "../BSPIntersection"
 #include "../BSPSuperBlock"
 #include "../BinaryTree"
+#include "../Node"
+#include "../Map"
 
 namespace de
 {
@@ -45,35 +47,128 @@ namespace de
 
     /**
      * BSP node builder.
-     * Based on glBSP 2.24 (in turn, based on BSP 2.3), which is hosted on
-     * SourceForge: http://sourceforge.net/projects/glbsp/
+     * Originally based on glBSP 2.24 (in turn, based on BSP 2.3), which is
+     * hosted on SourceForge: http://sourceforge.net/projects/glbsp/
      */
-    typedef struct nodebuilder_s {
-        dint            bspFactor;
-        binarytree_t*   rootNode;
-        dsize           numHalfEdgeInfo;
+    class NodeBuilder
+    {
+    public:
+        BinaryTree<void*>* rootNode;
+
+        dsize numHalfEdgeInfo;
         struct hedge_info_s** halfEdgeInfo;
 
-        struct map_s*   _map;
+        NodeBuilder(Map& map, dint splitFactor=7);
+        ~NodeBuilder();
+
+        void build();
+
+        // @todo Should be private to NodeBuilder
+        void connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge, struct superblock_s* rightList, struct superblock_s* leftList);
+        HalfEdge* createHEdge(LineDef* line, LineDef* sourceLine, Vertex* start, Sector* sec, bool back);
+        HalfEdge* splitHEdge(HalfEdge* oldHEdge, ddouble x, ddouble y);
+        void updateHEdgeInfo(const HalfEdge* hEdge);
+
+    private:
+        /**
+         * Initially create all half-edges, one for each side of a linedef.
+         */
+        void createInitialHEdges();
+
+        void createInitialHEdgesAndAddtoSuperBlockmap();
+
+        /**
+         * Takes the half-edge list and determines if it is convex, possibly
+         * converting it into a subsector. Otherwise, the list is divided into two
+         * halves and recursion will continue on the new sub list.
+         *
+         * @param hEdgeList     Ptr to the list of half edges at the current node.
+         * @param cutList       Ptr to the cutlist to use for storing new segment
+         *                      intersections (cuts).
+         * @return              Ptr to the newly created subtree ELSE @c NULL.
+         */
+        BinaryTree<void*>* buildNodes(superblock_t* hEdgeList);
+
+        /**
+         * Analyze the intersection list, and add any needed minihedges to the given
+         * half-edge lists (one minihedge on each side).
+         */
+        void addMiniHEdges(ddouble x, ddouble y, ddouble dX, ddouble dY,
+            const HalfEdge* partHEdge, superblock_t* bRight,
+            superblock_t* bLeft);
+
+        /**
+         * Partition the given edge and perform any further necessary action (moving
+         * it into either the left list, right list, or splitting it).
+         *
+         * Take the given half-edge 'cur', compare it with the partition line, and
+         * determine it's fate: moving it into either the left or right lists
+         * (perhaps both, when splitting it in two). Handles the twin as well.
+         * Updates the intersection list if the half-edge lies on or crosses the
+         * partition line.
+         *
+         * \note
+         * I have rewritten this routine based on evalPartition() (which I've also
+         * reworked, heavily). I think it is important that both these routines
+         * follow the exact same logic when determining which half-edges should go
+         * left, right or be split. - AJA
+         */
+        void divideOneHEdge(HalfEdge* curHEdge, ddouble x,
+           ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge,
+           superblock_t* bRight, superblock_t* bLeft);
+
+        void divideHEdges(superblock_t* hEdgeList, ddouble x, ddouble y,
+            ddouble dX, ddouble dY, const HalfEdge* partHEdge,
+            superblock_t* rights, superblock_t* lefts);
+
+        /**
+         * Remove all the half-edges from the list, partitioning them into the left
+         * or right lists based on the given partition line. Adds any intersections
+         * onto the intersection list as it goes.
+         */
+        void partitionHEdges(superblock_t* hEdgeList, ddouble x,
+            ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge,
+            superblock_t** right, superblock_t** left);
+
+        void takeHEdgesFromSuperBlock(Face* face, superblock_t* block);
+
+        void attachHEdgeInfo(HalfEdge* hEdge, LineDef* line,
+            LineDef* sourceLine, Sector* sec, bool back);
+
+        /**
+         * Create a new leaf from a list of half-edges.
+         */
+        Face* createBSPLeaf(Face* face, superblock_t* hEdgeList);
+
+        /**
+         * Free all the SuperBlocks on the quick-alloc list.
+         */
+        void destroyUnusedSuperBlocks();
+
+        /**
+         * Free all memory allocated for the specified SuperBlock.
+         */
+        void moveSuperBlockToQuickAllocList(superblock_t* block);
+
+        /**
+         * Acquire memory for a new SuperBlock.
+         */
+        superblock_t* createSuperBlock();
+
+        void destroySuperBlock(superblock_t* block);
+
+        void createSuperBlockmap();
+
+        void destroySuperBlockmap();
+
+    private:
+        dint _splitFactor;
+
+        Map& _map;
         struct cutlist_s* _cutList;
         struct superblock_s* _superBlockmap;
-
         struct superblock_s* _quickAllocSupers;
-    } nodebuilder_t;
-
-    nodebuilder_t*  P_CreateNodeBuilder(struct map_s* map, dint bspFactor);
-    void            P_DestroyNodeBuilder(nodebuilder_t* nb);
-
-    void            NodeBuilder_Build(nodebuilder_t* nb);
-
-    // @todo Should be private to nodebuilder_t
-    void            NodeBuilder_ConnectGaps(nodebuilder_t* nb, ddouble x, ddouble y, ddouble dX, ddouble dY,
-                                            const hedge_t* partHEdge, struct superblock_s* rightList,
-                                            struct superblock_s* leftList);
-    hedge_t*        NodeBuilder_CreateHEdge(nodebuilder_t* nb, struct linedef_s* line, struct linedef_s* sourceLine,
-                                            vertex_t* start, struct sector_s* sec, bool back);
-    hedge_t*        NodeBuilder_SplitHEdge(nodebuilder_t* nb, hedge_t* oldHEdge, ddouble x, ddouble y);
-    void            BSP_UpdateHEdgeInfo(const hedge_t* hEdge);
+    };
 }
 
 #endif /* LIBDENG2_NODEBUILDER_H */

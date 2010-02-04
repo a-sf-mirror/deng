@@ -30,22 +30,18 @@
 #include "de/BSPEdge"
 #include "de/BSPIntersection"
 #include "de/BSPSuperBlock"
+#include "de/Log"
+#include "de/Sector"
 
 using namespace de;
 
 namespace de
 {
-    typedef struct cnode_s {
-        void*           data;
-        struct cnode_s* next;
-        struct cnode_s* prev;
-    } cnode_t;
-
     /**
      * An "intersection" remembers the half-edge that intercepts the partition.
      */
     typedef struct intersection_s {
-        hedge_t*        hEdge;
+        HalfEdge*        hEdge;
 
         // How far along the partition line the intercept point is. Zero is at
         // the partition half-edge's start point, positive values move in the
@@ -53,6 +49,12 @@ namespace de
         // in the opposite direction.
         ddouble          distance;
     } intersection_t;
+
+    typedef struct cnode_s {
+        intersection_t* data;
+        struct cnode_s* next;
+        struct cnode_s* prev;
+    } cnode_t;
 }
 
 static cnode_t* allocCNode(void)
@@ -192,7 +194,7 @@ static bool insertIntersection(cutlist_t* list, intersection_t* cut)
  */
 cutlist_t* BSP_CutListCreate(void)
 {
-    return M_Calloc(sizeof(cutlist_t));
+    return reinterpret_cast<cutlist_t*>(std::calloc(1, sizeof(cutlist_t)));
 }
 
 /**
@@ -202,24 +204,22 @@ void BSP_CutListDestroy(cutlist_t* list)
 {
     assert(list);
     empty(list, true);
-    M_Free(list);
+    std::free(list);
 }
 
 /**
  * Create a new intersection.
  */
-void CutList_Intersect(cutlist_t* list, hedge_t* hEdge, ddouble distance)
+void CutList_Intersect(cutlist_t* list, HalfEdge* hEdge, ddouble distance)
 {
     assert(list);
     assert(hEdge);
-    {
-    intersection_t* cut = quickAllocIntersection(list);
 
+    intersection_t* cut = quickAllocIntersection(list);
     cut->distance = distance;
     cut->hEdge = hEdge;
 
     insertIntersection(list, cut);
-    }
 }
 
 /**
@@ -239,17 +239,15 @@ void CutList_Reset(cutlist_t* list)
  *
  * @return              @c true iff an intersection is found ELSE @c false;
  */
-bool CutList_Find(cutlist_t* list, hedge_t* hEdge)
+bool CutList_Find(cutlist_t* list, HalfEdge* hEdge)
 {
     assert(list);
     assert(hEdge);
-    {
-    cnode_t* node;
 
-    node = list->head;
+    cnode_t* node = list->head;
     while(node)
     {
-        intersection_t *cut = node->data;
+        intersection_t* cut = node->data;
 
         if(cut->hEdge == hEdge)
             return true;
@@ -258,15 +256,13 @@ bool CutList_Find(cutlist_t* list, hedge_t* hEdge)
     }
 
     return false;
-    }
 }
 
 void BSP_MergeOverlappingIntersections(cutlist_t* list)
 {
     assert(list);
-    {
-    cnode_t* firstNode, *node, *np;
 
+    cnode_t* firstNode, *node, *np;
     node = firstNode = list->head;
     np = node->next;
     while(node && np)
@@ -277,8 +273,8 @@ void BSP_MergeOverlappingIntersections(cutlist_t* list)
 
         if(len < -0.1)
         {
-            Con_Error("mergeOverlappingIntersections: Bad order in intersect list "
-                      "%1.3f > %1.3f\n", cur->distance, next->distance);
+            LOG_ERROR("mergeOverlappingIntersections: Bad order in intersect list %1.3f > %1.3f")
+                << dfloat(cur->distance) << dfloat(next->distance);
         }
         else if(len > 0.2)
         {
@@ -288,11 +284,8 @@ void BSP_MergeOverlappingIntersections(cutlist_t* list)
         }
 /*        else if(len > DIST_EPSILON)
         {
-#if _DEBUG
-Con_Message(" Skipping very short half-edge (len=%1.3f) near "
-            "(%1.1f,%1.1f)\n", len, cur->vertex->V_pos[VX],
-            cur->vertex->V_pos[VY]);
-#endif
+LOG_DEBUG("Skipping very short half-edge (len=%1.3f) near (%1.1f,%1.1f)")
+    << len << dfloat(cur->vertex->V_pos[VX]) << dfloat(cur->vertex->V_pos[VY]);
         }*/
 
         // Free the unused cut.
@@ -302,15 +295,14 @@ Con_Message(" Skipping very short half-edge (len=%1.3f) near "
 
         np = node->next;
     }
-    }
 }
 
 /**
  * Look for the first half-edge whose angle is past that required.
  */
-static hedge_t* vertexCheckOpen(vertex_t* vertex, angle_g angle, byte antiClockwise)
+static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockwise)
 {
-    hedge_t* hEdge, *first;
+    HalfEdge* hEdge, *first;
 
     first = vertex->hEdge;
     hEdge = first->twin->next;
@@ -344,7 +336,7 @@ static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
 {
     /*if(insect->after && ((hedge_info_t*) insect->after->data)->lineDef)
     {
-        linedef_t* lineDef = ((hedge_info_t*) insect->after->data)->lineDef;
+        LineDef* lineDef = ((hedge_info_t*) insect->after->data)->lineDef;
 
         if(lineDef->buildData.sideDefs[FRONT] &&
            lineDef->buildData.sideDefs[BACK] &&
@@ -355,7 +347,7 @@ static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
 
     if(insect->before && ((hedge_info_t*) insect->before->data)->lineDef)
     {
-        linedef_t* lineDef = ((hedge_info_t*) insect->before->data)->lineDef;
+        LineDef* lineDef = ((hedge_info_t*) insect->before->data)->lineDef;
 
         if(lineDef->buildData.sideDefs[FRONT] &&
            lineDef->buildData.sideDefs[BACK] &&
@@ -367,27 +359,26 @@ static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
     return false;
 }
 
-void NodeBuilder_ConnectGaps(nodebuilder_t* nb, ddouble x, ddouble y,
-                             ddouble dX, ddouble dY, const hedge_t* partHEdge,
-                             superblock_t* rightList, superblock_t* leftList)
+void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
+    const HalfEdge* partHEdge, superblock_t* rightList, superblock_t* leftList)
 {
     cnode_t* node, *firstNode;
 
-    node = firstNode = nb->_cutList->head;
+    node = firstNode = _cutList->head;
     while(node && node->next)
     {
         const intersection_t* cur = node->data;
         const intersection_t* next = node->next->data;
-        hedge_t* farHEdge, *nearHEdge;
-        sector_t* nearSector = NULL, *farSector = NULL;
+        HalfEdge* farHEdge, *nearHEdge;
+        Sector* nearSector = NULL, *farSector = NULL;
         bool alongPartition = false;
 
         // Is this half-edge exactly aligned to the partition?
         {
-        hedge_t* hEdge;
+        HalfEdge* hEdge;
         angle_g angle;
 
-        angle = M_SlopeToAngle(-dX, -dY);
+        angle = slopeToAngle(-dX, -dY);
         hEdge = next->hEdge;
         do
         {
@@ -402,8 +393,8 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, ddouble x, ddouble y,
 
         if(!alongPartition)
         {
-            farHEdge = vertexCheckOpen(next->hEdge->vertex, M_SlopeToAngle(-dX, -dY), false);
-            nearHEdge = vertexCheckOpen(cur->hEdge->vertex, M_SlopeToAngle(dX, dY), true);
+            farHEdge = vertexCheckOpen(next->hEdge->vertex, slopeToAngle(-dX, -dY), false);
+            nearHEdge = vertexCheckOpen(cur->hEdge->vertex, slopeToAngle(dX, dY), true);
 
             nearSector = nearHEdge ? ((hedge_info_t*) nearHEdge->data)->sector : NULL;
             farSector = farHEdge? ((hedge_info_t*) farHEdge->data)->sector : NULL;
@@ -423,11 +414,10 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, ddouble x, ddouble y,
                     pos[0] /= 2;
                     pos[1] /= 2;
 
-                    nearSector->flags |= SECF_UNCLOSED;
+                    nearSector->flags |= Sector::UNCLOSED;
 
-                    VERBOSE(
-                    Con_Message("Warning: Unclosed sector #%d near [%1.1f, %1.1f]\n",
-                                nearSector->buildData.index - 1, pos[0], pos[1]))
+                    LOG_VERBOSE("Warning: Unclosed sector #%d near [%1.1f, %1.1f]")
+                        << nearSector->buildData.index - 1 << dfloat(pos[0]) << dfloat(pos[1]);
                 }
             }
             else if(!nearSector && farSector)
@@ -441,11 +431,10 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, ddouble x, ddouble y,
                     pos[0] /= 2;
                     pos[1] /= 2;
 
-                    farSector->flags |= SECF_UNCLOSED;
+                    farSector->flags |= Sector::UNCLOSED;
 
-                    VERBOSE(
-                    Con_Message("Warning: Unclosed sector #%d near [%1.1f, %1.1f]\n",
-                                farSector->buildData.index - 1, pos[0], pos[1]))
+                    LOG_VERBOSE("Warning: Unclosed sector #%d near [%1.1f, %1.1f]")
+                        << (farSector->buildData.index - 1) << dfloat(pos[0]) << dfloat(pos[1]);
                 }
             }
             else
@@ -460,14 +449,10 @@ void NodeBuilder_ConnectGaps(nodebuilder_t* nb, ddouble x, ddouble y,
                     if(!isIntersectionOnSelfRefLineDef(cur) &&
                        !isIntersectionOnSelfRefLineDef(next))
                     {
-#if _DEBUG
-VERBOSE(
-Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
-            nearSector->buildData.index - 1,
-            (dfloat) cur->hEdge->vertex->pos[0], (dfloat) cur->hEdge->vertex->pos[1],
-            farSector->buildData.index - 1,
-            (dfloat) next->hEdge->vertex->pos[0], (dfloat) next->hEdge->vertex->pos[1]));
-#endif
+                        LOG_DEBUG("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)")
+                            << (nearSector->buildData.index - 1) << (dfloat) cur->hEdge->vertex->pos[0]
+                            << (dfloat) cur->hEdge->vertex->pos[1] << (farSector->buildData.index - 1)
+                            << (dfloat) next->hEdge->vertex->pos[0] << (dfloat) next->hEdge->vertex->pos[1];
                     }
 
                     // Choose the non-self-referencing sector when we can.
@@ -479,10 +464,10 @@ Con_Message("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)\n",
                 }
 
                 {
-                hedge_t* right, *left;
+                HalfEdge* right, *left;
 
-                right = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->side);
-                left = NodeBuilder_CreateHEdge(nb, NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->hEdge->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->side);
+                right = createHEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->side? true : false);
+                left = createHEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->hEdge->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->side? true : false);
 
                 // Twin the half-edges together.
                 right->twin = left;

@@ -1,10 +1,8 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- libdeng2
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2005-2009 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2005-2009 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,40 +24,39 @@
 #define LIBDENG2_PARTICLEBLOCKMAP_H
 
 #include "../Gridmap"
+#include "../Vector"
 
 namespace de
 {
-    typedef struct particleblockmap_s {
-        vec2_t          aabb[2];
-        vec2_t          blockSize;
-        gridmap_t*      gridmap;
-    } particleblockmap_t;
+    class ParticleBlockmap
+    {
+    public:
+        ParticleBlockmap(const Vector2<dfloat>& min, const Vector2<dfloat>& max, duint width, duint height);
+        ~ParticleBlockmap();
 
-    particleblockmap_t* P_CreateParticleBlockmap(const pvec2_t min, const pvec2_t max,
-                                                 duint width, duint height);
-    void            P_DestroyParticleBlockmap(particleblockmap_t* blockmap);
+        void incValidcount();
+        void empty();
 
-    void            ParticleBlockmap_IncValidcount(particleblockmap_t* blockmap);
-    void            ParticleBlockmap_Empty(particleblockmap_t* blockmap);
+        duint numInBlock(duint x, duint y) const;
+        void link(struct particle_s* particle);
+        bool unlink(struct particle_s* particle);
 
-    duint           ParticleBlockmap_NumInBlock(particleblockmap_t* blockmap, duint x, duint y);
-    void            ParticleBlockmap_Link(particleblockmap_t* blockmap, struct particle_s* particle);
-    bool            ParticleBlockmap_Unlink(particleblockmap_t* blockmap, struct particle_s* particle);
+        void bounds(Vector2<dfloat>& min, Vector2<dfloat>& max) const;
+        void blockSize(Vector2<dfloat>& blockSize) const;
+        void dimensions(Vector2<duint> dimensions) const;
 
-    void            ParticleBlockmap_Bounds(particleblockmap_t* blockmap, pvec2_t min, pvec2_t max);
-    void            ParticleBlockmap_BlockSize(particleblockmap_t* blockmap, pvec2_t blockSize);
-    void            ParticleBlockmap_Dimensions(particleblockmap_t* blockmap, duint v[2]);
+        bool block(Vector2<duint>& block, dfloat x, dfloat y) const;
+        bool block(Vector2<duint>& block, const Vector2<dfloat>& pos) const;
+        //void boxToBlocks(duint blockBox[4], const arvec2_t box);
 
-    bool            ParticleBlockmap_Block2f(particleblockmap_t* blockmap, duint block[2], dfloat x, dfloat y);
-    bool            ParticleBlockmap_Block2fv(particleblockmap_t* blockmap, duint block[2], const dfloat pos[2]);
-    void            ParticleBlockmap_BoxToBlocks(particleblockmap_t* blockmap, duint blockBox[4],
-                                                 const arvec2_t box);
-    bool            ParticleBlockmap_Iterate(particleblockmap_t* blockmap, const duint block[2],
-                                             bool (*func) (struct particle_s*, void*),
-                                             void* data);
-    bool            ParticleBlockmap_BoxIterate(particleblockmap_t* blockmap, const duint blockBox[4],
-                                                bool (*func) (struct particle_s*, void*),
-                                                void* data);
+        bool iterate(const Vector2<duint>& block, bool (*func) (struct particle_s*, void*), void* data);
+        bool iterate(const Vector2<duint>& bottomLeft, const Vector2<duint>& topRight, bool (*func) (struct particle_s*, void*), void* data);
+
+    private:
+        Vector2<dfloat> _aabb[2];
+        Vector2<dfloat> _blockSize;
+        Gridmap<struct particle_s*> _gridmap;
+    };
 }
 
 #endif /* LIBDENG2_PARTICLEBLOCKMAP_H */

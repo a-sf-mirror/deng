@@ -3,8 +3,8 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *\author Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *\author Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
  *\author Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
  *\author Copyright © 1993-1996 by id Software, Inc.
@@ -25,65 +25,54 @@
  * Boston, MA  02110-1301  USA
  */
 
-// HEADER FILES ------------------------------------------------------------
 
-#include <math.h>
+#include <cmath>
 
-#include "de_base.h"
-#include "de_play.h"
+#include "de/LineDefBlockmap"
 
-#include "linedefblockmap.h"
+using namespace de;
 
-// MACROS ------------------------------------------------------------------
-
-//// \todo This stuff is obsolete and needs to be removed!
-#define MAPBLOCKUNITS   128
-#define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT   (FRACBITS+7)
-#define MAPBMASK        (MAPBLOCKSIZE-1)
-#define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
-
-// TYPES -------------------------------------------------------------------
-
-typedef struct listnode_s {
-    struct listnode_s* next;
-    void*           data;
-} listnode_t;
-
-typedef struct {
-    uint            size;
-    listnode_t*     head;
-} linklist_t;
-
-typedef struct {
-    boolean        (*func) (linedef_t*, void*);
-    boolean         retObjRecord;
-    int             localValidCount;
-    void*           context;
-} iteratelinedefs_args_t;
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
-
-static linedefblockmap_t* allocBlockmap(void)
+namespace de
 {
-    return Z_Calloc(sizeof(linedefblockmap_t), PU_STATIC, 0);
+    //// \todo This stuff is obsolete and needs to be removed!
+    #define MAPBLOCKUNITS   128
+    #define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
+    #define MAPBLOCKSHIFT   (FRACBITS+7)
+    #define MAPBMASK        (MAPBLOCKSIZE-1)
+    #define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
+
+    typedef struct listnode_s {
+        struct listnode_s* next;
+        void* data;
+    } listnode_t;
+
+    typedef struct {
+        duint size;
+        listnode_t* head;
+    } linklist_t;
+
+    typedef struct {
+        bool (*func) (LineDef*, void*);
+        bool retObjRecord;
+        dint localValidCount;
+        void* context;
+    } iteratelinedefs_args_t;
 }
 
-static void freeBlockmap(linedefblockmap_t* bmap)
+LineDefBlockmap::LineDefBlockmap(const Vector2<dfloat>& min,
+    const Vector2<dfloat>& max, duint width, duint height)
+  : _gridmap(width, height),
+    _bottomLeft(min),
+    _topRight(max)
 {
-    Z_Free(bmap);
+    _blockSize = _topRight - _bottomLeft;
+    _blockSize.x /= width;
+    _blockSize.y /= height;
+}
+
+LineDefBlockmap::~LineDefBlockmap()
+{
+    _gridmap.iterate(freeLineDefBlockData, NULL);
 }
 
 static listnode_t* allocListNode(void)
@@ -115,7 +104,7 @@ static void freeList(linklist_t* list)
     Z_Free(list);
 }
 
-static void listPushFront(linklist_t* list, linedef_t* lineDef)
+static void listPushFront(linklist_t* list, LineDef* lineDef)
 {
     listnode_t* node = allocListNode();
 
@@ -127,7 +116,7 @@ static void listPushFront(linklist_t* list, linedef_t* lineDef)
     list->size += 1;
 }
 
-static boolean listRemove(linklist_t* list, linedef_t* lineDef)
+static bool listRemove(linklist_t* list, LineDef* lineDef)
 {
     if(list->head)
     {
@@ -152,12 +141,12 @@ static boolean listRemove(linklist_t* list, linedef_t* lineDef)
     return false; // LineDef was not linked.
 }
 
-static uint listSize(linklist_t* list)
+static duint listSize(linklist_t* list)
 {
     return list->size;
 }
 
-static boolean listSearch(linklist_t* list, linedef_t* lineDef)
+static bool listSearch(linklist_t* list, LineDef* lineDef)
 {
     if(list->head)
     {
@@ -177,8 +166,8 @@ static boolean listSearch(linklist_t* list, linedef_t* lineDef)
     return false;
 }
 
-static void linkLineDefToBlock(linedefblockmap_t* blockmap, uint x, uint y,
-                               linedef_t* lineDef)
+static void linkLineDefToBlock(LineDefBlockmap* blockmap, duint x, duint y,
+                               LineDef* lineDef)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
@@ -188,14 +177,14 @@ static void linkLineDefToBlock(linedefblockmap_t* blockmap, uint x, uint y,
     listPushFront(list, lineDef);
 }
 
-static boolean unlinkLineDefFromBlock(linedefblockmap_t* blockmap, uint x, uint y,
-                                      linedef_t* lineDef)
+static bool unlinkLineDefFromBlock(LineDefBlockmap* blockmap, duint x, duint y,
+                                      LineDef* lineDef)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
     if(list)
     {
-        boolean result = listRemove(list, lineDef);
+        bool result = listRemove(list, lineDef);
         if(result && !list->head)
         {
             freeList(list);
@@ -208,8 +197,8 @@ static boolean unlinkLineDefFromBlock(linedefblockmap_t* blockmap, uint x, uint 
     return false;
 }
 
-static boolean isLineDefLinkedToBlock(linedefblockmap_t* blockmap, uint x, uint y,
-                                      linedef_t* lineDef)
+static bool isLineDefLinkedToBlock(LineDefBlockmap* blockmap, duint x, duint y,
+                                      LineDef* lineDef)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
     if(list)
@@ -217,7 +206,7 @@ static boolean isLineDefLinkedToBlock(linedefblockmap_t* blockmap, uint x, uint 
     return false;
 }
 
-static boolean iterateLineDefs(void* ptr, void* context)
+static bool iterateLineDefs(void* ptr, void* context)
 {
     linklist_t* list = (linklist_t*) ptr;
     iteratelinedefs_args_t* args = (iteratelinedefs_args_t*) context;
@@ -232,7 +221,7 @@ static boolean iterateLineDefs(void* ptr, void* context)
 
             if(node->data)
             {
-                linedef_t* lineDef = (linedef_t*) node->data;
+                LineDef* lineDef = (LineDef*) node->data;
 
                 if(lineDef->validCount != args->localValidCount)
                 {
@@ -257,138 +246,75 @@ static boolean iterateLineDefs(void* ptr, void* context)
     return true;
 }
 
-static boolean freeLineDefBlockData(void* data, void* context)
+static bool freeLineDefBlockData(void* data, void* context)
 {
     linklist_t* list = (linklist_t*) data;
-
     if(list)
         freeList(list);
-
     return true; // Continue iteration.
 }
 
-static void boxToBlocks(linedefblockmap_t* bmap, uint blockBox[4], const arvec2_t box)
+void LineDefBlockmap::boxToBlocks(Vector2<duint>& bottomLeft,
+    Vector2<duint>& topRight, const arvec2_t box) const
 {
-    uint dimensions[2];
-    vec2_t min, max;
+    Vector2<duint> dimensions;
+    _gridmap.dimensions(dimensions);
 
-    Gridmap_Dimensions(bmap->gridmap, dimensions);
+    Vector2<dfloat> min = Vector2(max(_bottomLeft.x, box[0][0]), max(_bottomLeft.y, box[0][1]));
+    Vector2<dfloat> max = Vector2(min(_topRight.x, box[1][0]), min(_topRight.y, box[1][1]));
 
-    V2_Set(min, MAX_OF(bmap->aabb[0][0], box[0][0]),
-                MAX_OF(bmap->aabb[0][1], box[0][1]));
+    bottomLeft.x = clamp(0, (min.x - _bottomLeft.x) / _blockSize.x, dimensions.x);
+    bottomLeft.y = clamp(0, (min.y - _bottomLeft.y) / _blockSize.y, dimensions.y);
 
-    V2_Set(max, MIN_OF(bmap->aabb[1][0], box[1][0]),
-                MIN_OF(bmap->aabb[1][1], box[1][1]));
-
-    blockBox[BOXLEFT]   = MINMAX_OF(0, (min[0] - bmap->aabb[0][0]) / bmap->blockSize[0], dimensions[0]);
-    blockBox[BOXBOTTOM] = MINMAX_OF(0, (min[1] - bmap->aabb[0][1]) / bmap->blockSize[1], dimensions[1]);
-
-    blockBox[BOXRIGHT]  = MINMAX_OF(0, (max[0] - bmap->aabb[0][0]) / bmap->blockSize[0], dimensions[0]);
-    blockBox[BOXTOP]    = MINMAX_OF(0, (max[1] - bmap->aabb[0][1]) / bmap->blockSize[1], dimensions[1]);
+    topRight.x = clamp(0, (max.x - _bottomLeft.x) / _blockSize.x, dimensions.x);
+    topRight.y = clamp(0, (max.y - _bottomLeft.y) / _blockSize.y, dimensions.y);
 }
 
-linedefblockmap_t* P_CreateLineDefBlockmap(const pvec2_t min, const pvec2_t max,
-                                           uint width, uint height)
+bool LineDefBlockmap::block(Vector2<duint>& dest, dfloat x, dfloat y) const
 {
-    linedefblockmap_t* blockmap;
-
-    assert(min);
-    assert(max);
-
-    blockmap = allocBlockmap();
-    V2_Copy(blockmap->aabb[0], min);
-    V2_Copy(blockmap->aabb[1], max);
-    V2_Set(blockmap->blockSize,
-           (blockmap->aabb[1][0] - blockmap->aabb[0][0]) / width,
-           (blockmap->aabb[1][1] - blockmap->aabb[0][1]) / height);
-
-    blockmap->gridmap = M_CreateGridmap(width, height, PU_STATIC);
-
-    return blockmap;
-}
-
-void P_DestroyLineDefBlockmap(linedefblockmap_t* blockmap)
-{
-    assert(blockmap);
-
-    Gridmap_Iterate(blockmap->gridmap, freeLineDefBlockData, NULL);
-
-    M_DestroyGridmap(blockmap->gridmap);
-    Z_Free(blockmap);
-}
-
-void LineDefBlockmap_BoxToBlocks(linedefblockmap_t* blockmap, uint blockBox[4],
-                                 const arvec2_t box)
-{
-    assert(blockmap);
-    assert(blockBox);
-    assert(box);
-
-    boxToBlocks(blockmap, blockBox, box);
-}
-
-/**
- * Given a world coordinate, output the blockmap block[x, y] it resides in.
- */
-boolean LineDefBlockmap_Block2f(linedefblockmap_t* blockmap, uint dest[2], float x, float y)
-{
-    assert(blockmap);
-
-    if(!(x < blockmap->aabb[0][0] || x >= blockmap->aabb[1][0] ||
-         y < blockmap->aabb[0][1] || y >= blockmap->aabb[1][1]))
+    if(!(x < _bottomLeft.x || x >= _topRight.x ||
+         y < _bottomLeft.y || y >= _topRight.y))
     {
-        dest[0] = (x - blockmap->aabb[0][0]) / blockmap->blockSize[0];
-        dest[1] = (y - blockmap->aabb[0][1]) / blockmap->blockSize[1];
-
+        dest.x = (x - _bottomLeft.x) / _blockSize.x;
+        dest.y = (y - _bottomLeft.y) / _blockSize.y;
         return true;
     }
-
     return false;
 }
 
-/**
- * Given a world coordinate, output the blockmap block[x, y] it resides in.
- */
-boolean LineDefBlockmap_Block2fv(linedefblockmap_t* blockmap, uint dest[2], const float pos[2])
+void LineDefBlockmap::tryLinkLineDefToBlock(duint x, duint y, LineDef* lineDef)
 {
-    return LineDefBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
-}
-
-static void tryLinkLineDefToBlock(linedefblockmap_t* blockmap, uint x, uint y, linedef_t* lineDef)
-{
-    if(isLineDefLinkedToBlock(blockmap, x, y, lineDef))
+    if(isLineDefLinkedToBlock(x, y, lineDef))
         return; // Already linked.
 
-    linkLineDefToBlock(blockmap, x, y, lineDef);
+    linkLineDefToBlock(x, y, lineDef);
 }
 
-static void linkLineDef(linedefblockmap_t* blockmap, linedef_t* lineDef,
-                        const int vtx1[2], const int vtx2[2])
+void LineDefBlockmap::linkLineDef(LineDef* lineDef, const Vector2<dint>& vtx1, const Vector2<dint>& vtx2)
 {
 #define BLKSHIFT                7 // places to shift rel position for cell num
 #define BLKMASK                 ((1<<BLKSHIFT)-1) // mask for rel position within cell
 
-    uint i, blockBox[2][2], dimensions[2];
-    int vert, horiz;
-    int origin[2], aabb[2][2], delta[2];
-    boolean slopePos, slopeNeg;
+    duint i, blockBox[2][2], dimensions[2];
+    dint vert, horiz;
+    dint origin[2], aabb[2][2], delta[2];
+    bool slopePos, slopeNeg;
 
-    assert(blockmap);
     assert(lineDef);
 
-    origin[0] = (int) blockmap->aabb[0][0];
-    origin[1] = (int) blockmap->aabb[0][1];
+    origin[0] = (dint) blockmap->_bottomLeft.x;
+    origin[1] = (dint) blockmap->_bottomLeft.y;
     Gridmap_Dimensions(blockmap->gridmap, dimensions);
 
     // Determine all blocks it touches and add the lineDef number to those blocks.
-    aabb[0][0] = MIN_OF(vtx1[0], vtx2[0]);
-    aabb[0][1] = MIN_OF(vtx1[1], vtx2[1]);
+    _bottomLeft.x = MIN_OF(vtx1[0], vtx2[0]);
+    _bottomLeft.y = MIN_OF(vtx1[1], vtx2[1]);
 
-    aabb[1][0] = MAX_OF(vtx1[0], vtx2[0]);
-    aabb[1][1] = MAX_OF(vtx1[1], vtx2[1]);
+    _topRight.x = MAX_OF(vtx1[0], vtx2[0]);
+    _topRight.y = MAX_OF(vtx1[1], vtx2[1]);
 
-    LineDefBlockmap_Block2f(blockmap, blockBox[0], aabb[0][0], aabb[0][1]);
-    LineDefBlockmap_Block2f(blockmap, blockBox[1], aabb[1][0], aabb[1][1]);
+    LineDefBlockmap_Block2f(blockmap, blockBox[0], _bottomLeft.x, _bottomLeft.y);
+    LineDefBlockmap_Block2f(blockmap, blockBox[1], _topRight.x, _topRight.y);
 
     delta[0] = vtx2[0] - vtx1[0];
     delta[1] = vtx2[1] - vtx1[1];
@@ -414,11 +340,11 @@ static void linkLineDef(linedefblockmap_t* blockmap, linedef_t* lineDef,
             // intersection of LineDef with x=origin[0]+(i<<BLKSHIFT)
             // (y-vtx1[1])*delta[0] = delta[1]*(x-vtx1[0])
             // y = delta[1]*(x-vtx1[0])+vtx1[1]*delta[0];
-            int x = origin[0] + (i << BLKSHIFT);
-            int y, yb, yp;
+            dint x = origin[0] + (i << BLKSHIFT);
+            dint y, yb, yp;
 
             // Does the lineDef touch this column at all?
-            if(x < aabb[0][0] || x > aabb[1][0])
+            if(x < _bottomLeft.x || x > _topRight.x)
                 continue;
 
             y = (delta[1] * (x - vtx1[0])) / delta[0] + vtx1[1];
@@ -442,24 +368,24 @@ static void linkLineDef(linedefblockmap_t* blockmap, linedef_t* lineDef,
                 // Intersection occured at a corner
                 if(slopeNeg) //   \ - blocks x,y-, x-,y
                 {
-                    if(yb > 0 && aabb[0][1] < y)
+                    if(yb > 0 && _bottomLeft.y < y)
                         tryLinkLineDefToBlock(blockmap, i, yb - 1, lineDef);
 
-                    if(i > 0 && aabb[0][0] < x)
+                    if(i > 0 && _bottomLeft.x < x)
                         tryLinkLineDefToBlock(blockmap, i - 1, yb, lineDef);
                 }
                 else if(slopePos) //   / - block x-,y-
                 {
-                    if(yb > 0 && i > 0 && aabb[0][0] < x)
+                    if(yb > 0 && i > 0 && _bottomLeft.x < x)
                         tryLinkLineDefToBlock(blockmap, i - 1, yb - 1, lineDef);
                 }
                 else if(horiz) //   - - block x-,y
                 {
-                    if(i > 0 && aabb[0][0] < x)
+                    if(i > 0 && _bottomLeft.x < x)
                         tryLinkLineDefToBlock(blockmap, i - 1, yb, lineDef);
                 }
             }
-            else if(i > 0 && aabb[0][0] < x)
+            else if(i > 0 && _bottomLeft.x < x)
             {
                 // Else not at corner: x-,y
                 tryLinkLineDefToBlock(blockmap, i - 1, yb, lineDef);
@@ -476,11 +402,11 @@ static void linkLineDef(linedefblockmap_t* blockmap, linedef_t* lineDef,
             // intersection of LineDef with y=origin[1]+(i<<BLKSHIFT)
             // (x,y) on LineDef satisfies: (y-vtx1[1])*delta[0] = delta[1]*(x-vtx1[0])
             // x = delta[0]*(y-vtx1[1])/delta[1]+vtx1[0];
-            int y = origin[1] + (i << BLKSHIFT); // (x,y) is intersection
-            int x, xb, xp;
+            dint y = origin[1] + (i << BLKSHIFT); // (x,y) is intersection
+            dint x, xb, xp;
 
             // Touches this row?
-            if(y < aabb[0][1] || y > aabb[1][1])
+            if(y < _bottomLeft.y || y > _topRight.y)
                 continue;
 
             x = (delta[0] * (y - vtx1[1])) / delta[1] + vtx1[0];
@@ -503,24 +429,24 @@ static void linkLineDef(linedefblockmap_t* blockmap, linedef_t* lineDef,
                 // Intersection occured at a corner
                 if(slopeNeg) //   \ - blocks x,y-, x-,y
                 {
-                    if(i > 0 && aabb[0][1] < y)
+                    if(i > 0 && _bottomLeft.y < y)
                         tryLinkLineDefToBlock(blockmap, xb, i - 1, lineDef);
 
-                    if(xb > 0 && aabb[0][0] < x)
+                    if(xb > 0 && _bottomLeft.x < x)
                         tryLinkLineDefToBlock(blockmap, xb - 1, i, lineDef);
                 }
                 else if(vert) //   | - block x,y-
                 {
-                    if(i > 0 && aabb[0][1] < y)
+                    if(i > 0 && _bottomLeft.y < y)
                         tryLinkLineDefToBlock(blockmap, xb, i - 1, lineDef);
                 }
                 else if(slopePos) //   / - block x-,y-
                 {
-                    if(xb > 0 && i > 0 && aabb[0][1] < y)
+                    if(xb > 0 && i > 0 && _bottomLeft.y < y)
                         tryLinkLineDefToBlock(blockmap, xb - 1, i - 1, lineDef);
                 }
             }
-            else if(i > 0 && aabb[0][1] < y)
+            else if(i > 0 && _bottomLeft.y < y)
             {
                 // Else not on a corner: x, y-
                 tryLinkLineDefToBlock(blockmap, xb, i - 1, lineDef);
@@ -532,43 +458,43 @@ static void linkLineDef(linedefblockmap_t* blockmap, linedef_t* lineDef,
 #undef BLKMASK
 }
 
-void LineDefBlockmap_Link(linedefblockmap_t* blockmap, linedef_t* lineDef)
+void LineDefBlockmap_Link(LineDefBlockmap* blockmap, LineDef* lineDef)
 {
     assert(blockmap);
     assert(lineDef);
     {
-    int vtx1[2], vtx2[2];
+    dint vtx1[2], vtx2[2];
 
-    vtx1[0] = (int) lineDef->buildData.v[0]->pos[0];
-    vtx1[1] = (int) lineDef->buildData.v[0]->pos[1];
+    vtx1[0] = (dint) lineDef->buildData.v[0]->pos[0];
+    vtx1[1] = (dint) lineDef->buildData.v[0]->pos[1];
 
-    vtx2[0] = (int) lineDef->buildData.v[1]->pos[0];
-    vtx2[1] = (int) lineDef->buildData.v[1]->pos[1];
+    vtx2[0] = (dint) lineDef->buildData.v[1]->pos[0];
+    vtx2[1] = (dint) lineDef->buildData.v[1]->pos[1];
 
     linkLineDef(blockmap, lineDef, vtx1, vtx2);
     }
 }
 
-void LineDefBlockmap_Link2(linedefblockmap_t* blockmap, linedef_t* lineDef)
+void LineDefBlockmap_Link2(LineDefBlockmap* blockmap, LineDef* lineDef)
 {
     assert(blockmap);
     assert(lineDef);
     {
-    int vtx1[2], vtx2[2];
+    dint vtx1[2], vtx2[2];
 
-    vtx1[0] = (int) lineDef->L_v1->pos[0];
-    vtx1[1] = (int) lineDef->L_v1->pos[1];
+    vtx1[0] = (dint) lineDef->L_v1->pos[0];
+    vtx1[1] = (dint) lineDef->L_v1->pos[1];
 
-    vtx2[0] = (int) lineDef->L_v2->pos[0];
-    vtx2[1] = (int) lineDef->L_v2->pos[1];
+    vtx2[0] = (dint) lineDef->L_v2->pos[0];
+    vtx2[1] = (dint) lineDef->L_v2->pos[1];
 
     linkLineDef(blockmap, lineDef, vtx1, vtx2);
     }
 }
 
-boolean LineDefBlockmap_Unlink(linedefblockmap_t* blockmap, linedef_t* lineDef)
+bool LineDefBlockmap_Unlink(LineDefBlockmap* blockmap, LineDef* lineDef)
 {
-    uint x, y, dimensions[2];
+    duint x, y, dimensions[2];
 
     assert(blockmap);
     assert(lineDef);
@@ -583,7 +509,7 @@ boolean LineDefBlockmap_Unlink(linedefblockmap_t* blockmap, linedef_t* lineDef)
     return true;
 }
 
-void LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t max)
+void LineDefBlockmap_Bounds(LineDefBlockmap* blockmap, pvec2_t min, pvec2_t max)
 {
     assert(blockmap);
 
@@ -593,7 +519,7 @@ void LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t ma
         V2_Copy(max, blockmap->aabb[1]);
 }
 
-void LineDefBlockmap_BlockSize(linedefblockmap_t* blockmap, pvec2_t blockSize)
+void LineDefBlockmap_BlockSize(LineDefBlockmap* blockmap, pvec2_t blockSize)
 {
     assert(blockmap);
     assert(blockSize);
@@ -601,14 +527,14 @@ void LineDefBlockmap_BlockSize(linedefblockmap_t* blockmap, pvec2_t blockSize)
     V2_Copy(blockSize, blockmap->blockSize);
 }
 
-void LineDefBlockmap_Dimensions(linedefblockmap_t* blockmap, uint v[2])
+void LineDefBlockmap_Dimensions(LineDefBlockmap* blockmap, duint v[2])
 {
     assert(blockmap);
 
     Gridmap_Dimensions(blockmap->gridmap, v);
 }
 
-uint LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, uint x, uint y)
+duint LineDefBlockmap_NumInBlock(LineDefBlockmap* blockmap, duint x, duint y)
 {
     linklist_t* list;
 
@@ -621,9 +547,9 @@ uint LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, uint x, uint y)
     return 0;
 }
 
-boolean LineDefBlockmap_Iterate(linedefblockmap_t* blockmap, const uint block[2],
-                                boolean (*func) (linedef_t*, void*),
-                                void* context, boolean retObjRecord)
+bool LineDefBlockmap_Iterate(LineDefBlockmap* blockmap, const duint block[2],
+                                bool (*func) (LineDef*, void*),
+                                void* context, bool retObjRecord)
 {
     iteratelinedefs_args_t args;
 
@@ -640,9 +566,9 @@ boolean LineDefBlockmap_Iterate(linedefblockmap_t* blockmap, const uint block[2]
                            (void*) &args);
 }
 
-boolean LineDefBlockmap_BoxIterate(linedefblockmap_t* blockmap, const uint blockBox[4],
-                                   boolean (*func) (linedef_t*, void*),
-                                   void* context, boolean retObjRecord)
+bool LineDefBlockmap_BoxIterate(LineDefBlockmap* blockmap, const duint blockBox[4],
+                                   bool (*func) (LineDef*, void*),
+                                   void* context, bool retObjRecord)
 {
     iteratelinedefs_args_t args;
 
@@ -665,9 +591,9 @@ boolean LineDefBlockmap_BoxIterate(linedefblockmap_t* blockmap, const uint block
  *
  * @return              @c true if earlyout and a solid line hit.
  */
-static boolean addLineIntercepts(linedef_t* ld, void* data)
+static bool addLineIntercepts(LineDef* ld, void* data)
 {
-    int s[2];
+    dint s[2];
     float frac;
     divline_t dl;
 
@@ -706,15 +632,15 @@ static boolean addLineIntercepts(linedef_t* ld, void* data)
     return true; // Continue iteration.
 }
 
-boolean LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const uint originBlock[2],
-                                     const uint destBlock[2], const float origin[2],
+bool LineDefBlockmap_PathTraverse(LineDefBlockmap* blockmap, const duint originBlock[2],
+                                     const duint destBlock[2], const float origin[2],
                                      const float dest[2],
-                                     boolean (*func) (intercept_t*))
+                                     bool (*func) (intercept_t*))
 {
-    uint count, block[2];
+    duint count, block[2];
     float delta[2], partial;
-    fixed_t intercept[2], step[2];
-    int stepDir[2];
+    dfixed intercept[2], step[2];
+    dint stepDir[2];
 
     if(destBlock[0] > originBlock[0])
     {

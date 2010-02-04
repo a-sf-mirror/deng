@@ -29,29 +29,34 @@
 
 #include "deng.h"
 
+#include "de/LineDef"
+
 namespace de
 {
     typedef struct hedge_info_s {
+        static const dbyte FRONT = 0;
+        static const dbyte BACK = 1;
+
         // The SuperBlock that contains this half-edge, or NULL if the half-edge
         // is no longer in any SuperBlock (e.g., now in a leaf).
         struct superblock_s* block;
 
         // Precomputed data for faster calculations.
-        ddouble              pDX, pDY;
-        ddouble              pLength;
-        ddouble              pAngle;
-        ddouble              pPara;
-        ddouble              pPerp;
+        ddouble             pDX, pDY;
+        ddouble             pLength;
+        ddouble             pAngle;
+        ddouble             pPara;
+        ddouble             pPerp;
 
         // LineDef that this half-edge goes along, or NULL if miniseg.
-        struct linedef_s*   lineDef;
+        LineDef*            lineDef;
 
         // LineDef that this half-edge initially comes from.
         // For "real" half-edges, this is just the same as the 'linedef' field
         // above. For "miniedges", this is the linedef of the partition line.
-        struct linedef_s*   sourceLine;
+        LineDef*            sourceLine;
 
-        struct sector_s*    sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
+        Sector*    sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
         dbyte               side; // 0 for right, 1 for left.
     } hedge_info_t;
 }

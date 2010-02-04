@@ -70,12 +70,12 @@ typedef struct {
 
 // CODE --------------------------------------------------------------------
 
-static particleblockmap_t* allocBlockmap(void)
+static ParticleBlockmap* allocBlockmap(void)
 {
-    return Z_Calloc(sizeof(particleblockmap_t), PU_STATIC, 0);
+    return Z_Calloc(sizeof(ParticleBlockmap), PU_STATIC, 0);
 }
 
-static void freeBlockmap(particleblockmap_t* bmap)
+static void freeBlockmap(ParticleBlockmap* bmap)
 {
     Z_Free(bmap);
 }
@@ -151,7 +151,7 @@ static uint listSize(linklist_t* list)
     return list->size;
 }
 
-static void linkParticleToBlock(particleblockmap_t* blockmap, uint x, uint y,
+static void linkParticleToBlock(ParticleBlockmap* blockmap, uint x, uint y,
                                 particle_t* particle)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
@@ -162,7 +162,7 @@ static void linkParticleToBlock(particleblockmap_t* blockmap, uint x, uint y,
     listPushFront(list, particle);
 }
 
-static boolean unlinkParticleFromBlock(particleblockmap_t* blockmap, uint x, uint y,
+static boolean unlinkParticleFromBlock(ParticleBlockmap* blockmap, uint x, uint y,
                                        particle_t* particle)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
@@ -216,7 +216,7 @@ static boolean freeParticleBlockData(void* data, void* context)
     return true; // Continue iteration.
 }
 
-static void boxToBlocks(particleblockmap_t* bmap, uint blockBox[4], const arvec2_t box)
+static void boxToBlocks(ParticleBlockmap* bmap, uint blockBox[4], const arvec2_t box)
 {
     uint dimensions[2];
     vec2_t min, max;
@@ -236,10 +236,10 @@ static void boxToBlocks(particleblockmap_t* bmap, uint blockBox[4], const arvec2
     blockBox[BOXTOP]    = MINMAX_OF(0, (max[1] - bmap->aabb[0][1]) / bmap->blockSize[1], dimensions[1]);
 }
 
-particleblockmap_t* P_CreateParticleBlockmap(const pvec2_t min, const pvec2_t max,
+ParticleBlockmap* P_CreateParticleBlockmap(const pvec2_t min, const pvec2_t max,
                                              uint width, uint height)
 {
-    particleblockmap_t* blockmap;
+    ParticleBlockmap* blockmap;
 
     assert(min);
     assert(max);
@@ -256,7 +256,7 @@ particleblockmap_t* P_CreateParticleBlockmap(const pvec2_t min, const pvec2_t ma
     return blockmap;
 }
 
-void P_DestroyParticleBlockmap(particleblockmap_t* blockmap)
+void P_DestroyParticleBlockmap(ParticleBlockmap* blockmap)
 {
     assert(blockmap);
 
@@ -266,14 +266,14 @@ void P_DestroyParticleBlockmap(particleblockmap_t* blockmap)
     Z_Free(blockmap);
 }
 
-void ParticleBlockmap_Empty(particleblockmap_t* blockmap)
+void ParticleBlockmap_Empty(ParticleBlockmap* blockmap)
 {
     assert(blockmap);
     Gridmap_Iterate(blockmap->gridmap, freeParticleBlockData, NULL);
     Gridmap_Empty(blockmap->gridmap);
 }
 
-void ParticleBlockmap_BoxToBlocks(particleblockmap_t* blockmap, uint blockBox[4],
+void ParticleBlockmap_BoxToBlocks(ParticleBlockmap* blockmap, uint blockBox[4],
                                   const arvec2_t box)
 {
     assert(blockmap);
@@ -286,7 +286,7 @@ void ParticleBlockmap_BoxToBlocks(particleblockmap_t* blockmap, uint blockBox[4]
 /**
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
-boolean ParticleBlockmap_Block2f(particleblockmap_t* blockmap, uint dest[2], float x, float y)
+boolean ParticleBlockmap_Block2f(ParticleBlockmap* blockmap, uint dest[2], float x, float y)
 {
     assert(blockmap);
 
@@ -305,12 +305,12 @@ boolean ParticleBlockmap_Block2f(particleblockmap_t* blockmap, uint dest[2], flo
 /**
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
-boolean ParticleBlockmap_Block2fv(particleblockmap_t* blockmap, uint dest[2], const float pos[2])
+boolean ParticleBlockmap_Block2fv(ParticleBlockmap* blockmap, uint dest[2], const float pos[2])
 {
     return ParticleBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
 }
 
-void ParticleBlockmap_Link(particleblockmap_t* blockmap, particle_t* particle)
+void ParticleBlockmap_Link(ParticleBlockmap* blockmap, particle_t* particle)
 {
     uint block[2], dimensions[2];
     vec2_t pos;
@@ -326,7 +326,7 @@ void ParticleBlockmap_Link(particleblockmap_t* blockmap, particle_t* particle)
         linkParticleToBlock(blockmap, block[0], block[1], particle);
 }
 
-boolean ParticleBlockmap_Unlink(particleblockmap_t* blockmap, particle_t* particle)
+boolean ParticleBlockmap_Unlink(ParticleBlockmap* blockmap, particle_t* particle)
 {
     uint x, y, dimensions[2];
 
@@ -343,7 +343,7 @@ boolean ParticleBlockmap_Unlink(particleblockmap_t* blockmap, particle_t* partic
     return true;
 }
 
-void ParticleBlockmap_Bounds(particleblockmap_t* blockmap, pvec2_t min, pvec2_t max)
+void ParticleBlockmap_Bounds(ParticleBlockmap* blockmap, pvec2_t min, pvec2_t max)
 {
     assert(blockmap);
 
@@ -353,7 +353,7 @@ void ParticleBlockmap_Bounds(particleblockmap_t* blockmap, pvec2_t min, pvec2_t 
         V2_Copy(max, blockmap->aabb[1]);
 }
 
-void ParticleBlockmap_BlockSize(particleblockmap_t* blockmap, pvec2_t blockSize)
+void ParticleBlockmap_BlockSize(ParticleBlockmap* blockmap, pvec2_t blockSize)
 {
     assert(blockmap);
     assert(blockSize);
@@ -361,14 +361,14 @@ void ParticleBlockmap_BlockSize(particleblockmap_t* blockmap, pvec2_t blockSize)
     V2_Copy(blockSize, blockmap->blockSize);
 }
 
-void ParticleBlockmap_Dimensions(particleblockmap_t* blockmap, uint v[2])
+void ParticleBlockmap_Dimensions(ParticleBlockmap* blockmap, uint v[2])
 {
     assert(blockmap);
 
     Gridmap_Dimensions(blockmap->gridmap, v);
 }
 
-uint ParticleBlockmap_NumInBlock(particleblockmap_t* blockmap, uint x, uint y)
+uint ParticleBlockmap_NumInBlock(ParticleBlockmap* blockmap, uint x, uint y)
 {
     linklist_t* list;
 
@@ -381,7 +381,7 @@ uint ParticleBlockmap_NumInBlock(particleblockmap_t* blockmap, uint x, uint y)
     return 0;
 }
 
-boolean ParticleBlockmap_Iterate(particleblockmap_t* blockmap, const uint block[2],
+boolean ParticleBlockmap_Iterate(ParticleBlockmap* blockmap, const uint block[2],
                                  boolean (*func) (particle_t*, void*),
                                  void* context)
 {
@@ -397,7 +397,7 @@ boolean ParticleBlockmap_Iterate(particleblockmap_t* blockmap, const uint block[
     return iterateParticles(Gridmap_Block(blockmap->gridmap, block[0], block[1]), &args);
 }
 
-boolean ParticleBlockmap_BoxIterate(particleblockmap_t* blockmap,
+boolean ParticleBlockmap_BoxIterate(ParticleBlockmap* blockmap,
                                     const uint blockBox[4],
                                     boolean (*func) (particle_t*, void*),
                                     void* context)

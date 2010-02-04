@@ -26,40 +26,52 @@
 #define LIBDENG2_LINEDEFBLOCKMAP_H
 
 #include "../Gridmap"
+#include "../Vector"
+#include "../Rectangle"
+#include "../LineDef"
 
 namespace de
 {
-    typedef struct linedefblockmap_s {
-        vec2_t          aabb[2];
-        vec2_t          blockSize;
-        gridmap_t*      gridmap;
-    } linedefblockmap_t;
+    class LineDefBlockmap
+    {
+    public:
+        LineDefBlockmap(const Vector2f& min, const Vector2f& max, duint width, duint height);
+        ~LineDefBlockmap();
 
-    linedefblockmap_t* P_CreateLineDefBlockmap(const pvec2_t min, const pvec2_t max,
-                                               duint width, duint height);
-    void            P_DestroyLineDefBlockmap(linedefblockmap_t* blockmap);
+        duint numInBlock(duint x, duint y) const;
 
-    duint           LineDefBlockmap_NumInBlock(linedefblockmap_t* blockmap, duint x, duint y);
-    void            LineDefBlockmap_Link(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
-    void            LineDefBlockmap_Link2(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
-    bool            LineDefBlockmap_Unlink(linedefblockmap_t* blockmap, struct linedef_s* lineDef);
-    void            LineDefBlockmap_Bounds(linedefblockmap_t* blockmap, pvec2_t min, pvec2_t max);
-    void            LineDefBlockmap_BlockSize(linedefblockmap_t* blockmap, pvec2_t blockSize);
-    void            LineDefBlockmap_Dimensions(linedefblockmap_t* blockmap, duint v[2]);
+        void link(LineDef* lineDef);
+        void link2(LineDef* lineDef);
+        bool unlink(LineDef* lineDef);
 
-    bool            LineDefBlockmap_Block2f(linedefblockmap_t* blockmap, duint block[2], dfloat x, dfloat y);
-    bool            LineDefBlockmap_Block2fv(linedefblockmap_t* blockmap, duint block[2], const dfloat pos[2]);
-    void            LineDefBlockmap_BoxToBlocks(linedefblockmap_t* blockmap, duint blockBox[4], const arvec2_t box);
-    bool            LineDefBlockmap_Iterate(linedefblockmap_t* blockmap, const duint block[2],
-                                            bool (*func) (struct linedef_s*, void*),
-                                            void* data, bool retObjRecord);
-    bool            LineDefBlockmap_BoxIterate(linedefblockmap_t* blockmap, const duint blockBox[4],
-                                               bool (*func) (struct linedef_s*, void*),
-                                               void* data, bool retObjRecord);
-    bool            LineDefBlockmap_PathTraverse(linedefblockmap_t* blockmap, const duint originBlock[2],
-                                                 const duint block[2], const dfloat origin[2],
-                                                 const dfloat dest[2],
-                                                 bool (*func) (intercept_t*));
+        void bounds(Vector2f& min, Vector2f& max) const;
+        void blockSize(Vector2f& blockSize) const;
+        void dimensions(Vector2ui& dimensions) const;
+
+        /**
+         * Given a world coordinate, output the blockmap block[x, y] it resides in.
+         */
+        bool block(Vector2ui& block, dfloat x, dfloat y) const;
+
+        /*bool block(Vector2ui& block, const Vector2f& pos) const {
+            return block(block, pos.x, pos.y);
+        }*/
+
+        void boxToBlocks(Rectangle<Vector2ui>& blocks, const Rectangle<Vector2f>& box) const;
+
+        bool iterate(const Vector2ui& block, bool (*func) (LineDef*, void*), void* data, bool retObjRecord);
+        bool iterate(const Rectangle<Vector2ui>& blocks, bool (*func) (LineDef*, void*), void* data, bool retObjRecord);
+        //bool pathTraverse(const Vector2ui& originBlock, const Vector2ui& block, const Vector2f& origin, const Vector2f& dest, bool (*func) (intercept_t*));
+
+    private:
+        Rectangle<Vector2f> _aaBB;
+        Vector2f _blockSize;
+        Gridmap<LineDef*> _gridmap;
+
+    private:
+        void tryLinkLineDefToBlock(duint x, duint y, LineDef* lineDef);
+        void linkLineDef(LineDef* lineDef, const Vector2i& vtx1, const Vector2i& vtx2);
+    };
 }
 
 #endif /* LIBDENG2_LINEDEFBLOCKMAP_H */

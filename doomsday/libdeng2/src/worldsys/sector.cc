@@ -3,8 +3,8 @@
  * License: GPL
  * Online License Link: http://www.gnu.org/licenses/gpl.html
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ *\author Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ *\author Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,37 +22,16 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * p_sector.c: World sectors.
- */
+#include "de/Sector"
+#include "de/Log"
 
-// HEADER FILES ------------------------------------------------------------
+using namespace de;
 
-#include "de_base.h"
-#include "de_refresh.h"
-#include "de_play.h"
-#include "de_network.h"
-
-// MACROS ------------------------------------------------------------------
-
-// TYPES -------------------------------------------------------------------
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// @fixme Not thread safe.
-static boolean noFit;
-
-// CODE --------------------------------------------------------------------
+namespace de
+{
+    // @fixme Not thread safe.
+    static bool noFit;
+}
 
 /**
  * Takes a valid mobj and adjusts the mobj->floorZ, mobj->ceilingZ, and
@@ -60,9 +39,9 @@ static boolean noFit;
  * changes height. If the mobj doesn't fit, the z will be set to the lowest
  * value and false will be returned.
  */
-static boolean heightClip(mobj_t* mo)
+static bool heightClip(mobj_t* mo)
 {
-    boolean onfloor;
+    bool onfloor;
 
     // During demo playback the player gets preferential treatment.
     if(mo->dPlayer == &ddPlayers[consolePlayer].shared && playback)
@@ -105,7 +84,7 @@ static boolean heightClip(mobj_t* mo)
  *
  * If anything doesn't fit anymore, true will be returned.
  */
-static int PIT_SectorPlanesChanged(void* obj, void* data)
+static dint PIT_SectorPlanesChanged(void* obj, void* data)
 {
     mobj_t* mo = (mobj_t*) obj;
 
@@ -121,25 +100,20 @@ static int PIT_SectorPlanesChanged(void* obj, void* data)
  * Called whenever a sector's planes are moved. This will update the mobjs
  * inside the sector and do crushing.
  */
-boolean Sector_PlanesChanged(sector_t* sector)
+bool Sector::planesChanged()
 {
     noFit = false;
-
     // We'll use validCount to make sure mobjs are only checked once.
     validCount++;
     Sector_IterateMobjsTouching(sector, PIT_SectorPlanesChanged, 0);
-
     return noFit;
 }
 
-float Sector_LightLevel(sector_t* sec)
+dfloat Sector::lightLevel()
 {
-    assert(sec);
-
     if(mapFullBright)
         return 1.0f;
-
-    return sec->lightLevel;
+    return _lightLevel;
 }
 
 /**
@@ -153,17 +127,13 @@ float Sector_LightLevel(sector_t* sec)
  *
  * @return              @c true, if the point is inside the sector.
  */
-boolean Sector_PointInside(const sector_t* sector, float x, float y)
+bool Sector::pointInside(dfloat x, dfloat y) const
 {
-    assert(sector);
+    bool isOdd = false;
+    for(duint i = 0; i < sector->lineDefCount; ++i)
     {
-    boolean isOdd = false;
-    uint i;
-
-    for(i = 0; i < sector->lineDefCount; ++i)
-    {
-        linedef_t* line = sector->lineDefs[i];
-        vertex_t* vtx[2];
+        LineDef* line = sector->lineDefs[i];
+        Vertex* vtx[2];
 
         // Skip lines that aren't sector boundaries.
         if(LINE_SELFREF(line))
@@ -187,7 +157,6 @@ boolean Sector_PointInside(const sector_t* sector, float x, float y)
 
     // The point is inside if the number of crossed nodes is odd.
     return isOdd;
-    }
 }
 
 /**
@@ -203,68 +172,56 @@ boolean Sector_PointInside(const sector_t* sector, float x, float y)
  *
  * @return              @c true, if the point is inside the sector.
  */
-boolean Sector_PointInside2(const sector_t* sector, float x, float y)
+bool Sector::pointInside2(dfloat x, dfloat y) const
 {
-    assert(sector);
-    {
     // @todo Subsector should return the map its linked in.
-    const subsector_t* subsector = Map_PointInSubsector2(P_CurrentMap(), x, y);
-
-    if(subsector->sector != sector)
+    const Subsector* subsector = Map_PointInSubsector2(P_CurrentMap(), x, y);
+    if(subsector->sector != this)
         return false; // Wrong sector.
-
-    return Subsector_PointInside(subsector, x, y);
-    }
+    return subsector->pointInside(x, y);
 }
 
 /**
  * @pre Sector bounds must be setup before this is called!
  */
-void Sector_Bounds(sector_t* sec, float* min, float* max)
+void Sector::bounds(dfloat* min, dfloat* max) const
 {
-    assert(sec);
-
     if(min)
     {
-        min[VX] = sec->bBox[BOXLEFT];
-        min[VY] = sec->bBox[BOXBOTTOM];
+        min[VX] = bBox[BOXLEFT];
+        min[VY] = bBox[BOXBOTTOM];
     }
     if(max)
     {
-        max[VX] = sec->bBox[BOXRIGHT];
-        max[VY] = sec->bBox[BOXTOP];
+        max[VX] = bBox[BOXRIGHT];
+        max[VY] = bBox[BOXTOP];
     }
 }
 
 /**
  * @pre Lines in sector must be setup before this is called!
  */
-void Sector_UpdateBounds(sector_t* sec)
+void Sector::updateBounds()
 {
-    uint i;
-    float* bbox;
-    vertex_t* vtx;
-
-    assert(sec);
-
-    bbox = sec->bBox;
+    dfloat* bbox = bBox;
 
     if(!(sec->lineDefCount > 0))
     {
-        memset(sec->bBox, 0, sizeof(sec->bBox));
+        memset(bBox, 0, sizeof(bBox));
         return;
     }
 
-    bbox[BOXLEFT] = DDMAXFLOAT;
-    bbox[BOXRIGHT] = DDMINFLOAT;
+    bbox[BOXLEFT]   = DDMAXFLOAT;
+    bbox[BOXRIGHT]  = DDMINFLOAT;
     bbox[BOXBOTTOM] = DDMAXFLOAT;
-    bbox[BOXTOP] = DDMINFLOAT;
+    bbox[BOXTOP]    = DDMINFLOAT;
 
-    for(i = 1; i < sec->lineDefCount; ++i)
+    for(duint i = 1; i < lineDefCount; ++i)
     {
-        linedef_t* li = sec->lineDefs[i];
+        LineDef* li = lineDefs[i];
+        Vertex* vtx;
 
-        if(li->inFlags & LF_POLYOBJ)
+        if(li->polyobjOwned)
             continue;
 
         vtx = li->L_v1;
@@ -280,108 +237,93 @@ void Sector_UpdateBounds(sector_t* sec)
     }
 
     // This is very rough estimate of sector area.
-    sec->approxArea = ((bbox[BOXRIGHT] - bbox[BOXLEFT]) / 128) *
+    approxArea = ((bbox[BOXRIGHT] - bbox[BOXLEFT]) / 128) *
         ((bbox[BOXTOP] - bbox[BOXBOTTOM]) / 128);
 }
 
-/**
- * Update the sector, property is selected by DMU_* name.
- */
-boolean Sector_SetProperty(sector_t *sec, const setargs_t *args)
+bool Sector::setProperty(const setargs_t* args)
 {
     switch(args->prop)
     {
     case DMU_COLOR:
-        DMU_SetValue(DMT_SECTOR_RGB, &sec->rgb[0], args, 0);
-        DMU_SetValue(DMT_SECTOR_RGB, &sec->rgb[1], args, 1);
-        DMU_SetValue(DMT_SECTOR_RGB, &sec->rgb[2], args, 2);
+        DMU_SetValue(DMT_SECTOR_RGB, &rgb[0], args, 0);
+        DMU_SetValue(DMT_SECTOR_RGB, &rgb[1], args, 1);
+        DMU_SetValue(DMT_SECTOR_RGB, &rgb[2], args, 2);
         break;
     case DMU_COLOR_RED:
-        DMU_SetValue(DMT_SECTOR_RGB, &sec->rgb[0], args, 0);
+        DMU_SetValue(DMT_SECTOR_RGB, &rgb[0], args, 0);
         break;
     case DMU_COLOR_GREEN:
-        DMU_SetValue(DMT_SECTOR_RGB, &sec->rgb[1], args, 0);
+        DMU_SetValue(DMT_SECTOR_RGB, &rgb[1], args, 0);
         break;
     case DMU_COLOR_BLUE:
-        DMU_SetValue(DMT_SECTOR_RGB, &sec->rgb[2], args, 0);
+        DMU_SetValue(DMT_SECTOR_RGB, &rgb[2], args, 0);
         break;
     case DMU_LIGHT_LEVEL:
-        DMU_SetValue(DMT_SECTOR_LIGHTLEVEL, &sec->lightLevel, args, 0);
+        DMU_SetValue(DMT_SECTOR_LIGHTLEVEL, &lightLevel, args, 0);
         break;
     case DMU_VALID_COUNT:
-        DMU_SetValue(DMT_SECTOR_VALIDCOUNT, &sec->validCount, args, 0);
+        DMU_SetValue(DMT_SECTOR_VALIDCOUNT, &validCount, args, 0);
         break;
     default:
-        Con_Error("Sector_SetProperty: Property %s is not writable.\n",
-                  DMU_Str(args->prop));
+        LOG_ERROR("Sector::setProperty: Property %s is not writable.")
+            << DMU_Str(args->prop);
     }
 
     return true; // Continue iteration.
 }
 
-/**
- * Get the value of a sector property, selected by DMU_* name.
- */
-boolean Sector_GetProperty(const sector_t *sec, setargs_t *args)
+bool Sector::getProperty(setargs_t* args) const
 {
     switch(args->prop)
     {
     case DMU_LIGHT_LEVEL:
-        DMU_GetValue(DMT_SECTOR_LIGHTLEVEL, &sec->lightLevel, args, 0);
+        DMU_GetValue(DMT_SECTOR_LIGHTLEVEL, &_lightLevel, args, 0);
         break;
     case DMU_COLOR:
-        DMU_GetValue(DMT_SECTOR_RGB, &sec->rgb[0], args, 0);
-        DMU_GetValue(DMT_SECTOR_RGB, &sec->rgb[1], args, 1);
-        DMU_GetValue(DMT_SECTOR_RGB, &sec->rgb[2], args, 2);
+        DMU_GetValue(DMT_SECTOR_RGB, &rgb[0], args, 0);
+        DMU_GetValue(DMT_SECTOR_RGB, &rgb[1], args, 1);
+        DMU_GetValue(DMT_SECTOR_RGB, &rgb[2], args, 2);
         break;
     case DMU_COLOR_RED:
-        DMU_GetValue(DMT_SECTOR_RGB, &sec->rgb[0], args, 0);
+        DMU_GetValue(DMT_SECTOR_RGB, &rgb[0], args, 0);
         break;
     case DMU_COLOR_GREEN:
-        DMU_GetValue(DMT_SECTOR_RGB, &sec->rgb[1], args, 0);
+        DMU_GetValue(DMT_SECTOR_RGB, &rgb[1], args, 0);
         break;
     case DMU_COLOR_BLUE:
-        DMU_GetValue(DMT_SECTOR_RGB, &sec->rgb[2], args, 0);
+        DMU_GetValue(DMT_SECTOR_RGB, &rgb[2], args, 0);
         break;
     case DMU_SOUND_ORIGIN:
     {
-        const ddmobj_base_t* dmo = &sec->soundOrg;
+        const ddmobj_base_t* dmo = &soundOrg;
         DMU_GetValue(DMT_SECTOR_SOUNDORG, &dmo, args, 0);
         break;
     }
     case DMU_LINEDEF_COUNT:
     {
-        int val = (int) sec->lineDefCount;
+        dint val = (dint) lineDefCount;
         DMU_GetValue(DDVT_INT, &val, args, 0);
         break;
     }
     case DMU_MOBJS:
-        DMU_GetValue(DMT_SECTOR_MOBJLIST, &sec->mobjList, args, 0);
+        DMU_GetValue(DMT_SECTOR_MOBJLIST, &mobjList, args, 0);
         break;
     case DMU_VALID_COUNT:
-        DMU_GetValue(DMT_SECTOR_VALIDCOUNT, &sec->validCount, args, 0);
+        DMU_GetValue(DMT_SECTOR_VALIDCOUNT, &validCount, args, 0);
         break;
     default:
-        Con_Error("Sector_GetProperty: No property %s.\n",
-                  DMU_Str(args->prop));
+        LOG_ERROR("Sector::getProperty: No property %s.")
+            << DMU_Str(args->prop);
     }
 
     return true; // Continue iteration.
 }
 
-/**
- * Increment validCount before using this. 'func' is called for each mobj
- * that is (even partly) inside the sector. This is not a 3D test, the
- * mobjs may actually be above or under the sector.
- *
- * (Lovely name; actually this is a combination of SectorMobjs and
- * a bunch of LineMobjs iterations.)
- */
-boolean Sector_IterateMobjsTouching(sector_t* sector, int (*func) (void*, void*), void* data)
+bool Sector::iterateMobjsTouching(dint (*func) (void*, void*), void* data)
 {
-    assert(sector);
     assert(func);
-    {
+
 /**
  * Linkstore is list of pointers gathered when iterating stuff.
  * This is pretty much the only way to avoid *all* potential problems
@@ -397,17 +339,15 @@ boolean Sector_IterateMobjsTouching(sector_t* sector, int (*func) (void*, void*)
     void* linkstore[MAXLINKED];
     void** end = linkstore, **it;
     mobj_t* mo;
-    linedef_t* li;
+    LineDef* li;
     nodeindex_t root, nix;
-    map_t* map;
+    Map* map;
 
-    if(!sector)
-        return true;
     if(!func)
         return true;
 
     // First process the mobjs that obviously are in the sector.
-    for(mo = sector->mobjList; mo; mo = mo->sNext)
+    for(mo = mobjList; mo; mo = mo->sNext)
     {
         if(mo->validCount == validCount)
             continue;
@@ -418,11 +358,11 @@ boolean Sector_IterateMobjsTouching(sector_t* sector, int (*func) (void*, void*)
 
     // Then check the sector's lines.
     map = P_CurrentMap();
-    for(i = 0; i < sector->lineDefCount; ++i)
+    for(i = 0; i < lineDefCount; ++i)
     {
         linknode_t* ln;
 
-        li = sector->lineDefs[i];
+        li = lineDefs[i];
 
         // @fixme LineDef should tell us which map it belongs to.
         ln = map->lineNodes->nodes;

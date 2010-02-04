@@ -25,25 +25,18 @@
  * Boston, MA  02110-1301  USA
  */
 
-// HEADER FILES ------------------------------------------------------------
-
 #include <math.h>
 
-#include "de_base.h"
-#include "de_play.h"
+#include "de/MobjBlockmap"
 
-#include "mobjblockmap.h"
+using namespace de;
 
-// MACROS ------------------------------------------------------------------
-
-//// \todo This stuff is obsolete and needs to be removed!
+/// \todo This stuff is obsolete and needs to be removed!
 #define MAPBLOCKUNITS   128
 #define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
 #define MAPBLOCKSHIFT   (FRACBITS+7)
 #define MAPBMASK        (MAPBLOCKSIZE-1)
 #define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
-
-// TYPES -------------------------------------------------------------------
 
 typedef struct listnode_s {
     struct listnode_s* next;
@@ -61,26 +54,12 @@ typedef struct {
     void*           context;
 } iteratemobjs_args_t;
 
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
-
-static mobjblockmap_t* allocBlockmap(void)
+static MobjBlockmap* allocBlockmap(void)
 {
-    return Z_Calloc(sizeof(mobjblockmap_t), PU_STATIC, 0);
+    return Z_Calloc(sizeof(MobjBlockmap), PU_STATIC, 0);
 }
 
-static void freeBlockmap(mobjblockmap_t* bmap)
+static void freeBlockmap(MobjBlockmap* bmap)
 {
     Z_Free(bmap);
 }
@@ -156,7 +135,7 @@ static uint listSize(linklist_t* list)
     return list->size;
 }
 
-static void linkMobjToBlock(mobjblockmap_t* blockmap, uint x, uint y, mobj_t* mobj)
+static void linkMobjToBlock(MobjBlockmap* blockmap, uint x, uint y, mobj_t* mobj)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
@@ -166,7 +145,7 @@ static void linkMobjToBlock(mobjblockmap_t* blockmap, uint x, uint y, mobj_t* mo
     listPushFront(list, mobj);
 }
 
-static boolean unlinkMobjFromBlock(mobjblockmap_t* blockmap, uint x, uint y, mobj_t* mobj)
+static boolean unlinkMobjFromBlock(MobjBlockmap* blockmap, uint x, uint y, mobj_t* mobj)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
 
@@ -228,7 +207,7 @@ static boolean freeMobjBlockData(void* data, void* context)
     return true; // Continue iteration.
 }
 
-static void boxToBlocks(mobjblockmap_t* bmap, uint blockBox[4], const arvec2_t box)
+static void boxToBlocks(MobjBlockmap* bmap, uint blockBox[4], const arvec2_t box)
 {
     uint dimensions[2];
     vec2_t min, max;
@@ -248,10 +227,10 @@ static void boxToBlocks(mobjblockmap_t* bmap, uint blockBox[4], const arvec2_t b
     blockBox[BOXTOP]    = MINMAX_OF(0, (max[1] - bmap->aabb[0][1]) / bmap->blockSize[1], dimensions[1]);
 }
 
-mobjblockmap_t* P_CreateMobjBlockmap(const pvec2_t min, const pvec2_t max,
+MobjBlockmap* P_CreateMobjBlockmap(const pvec2_t min, const pvec2_t max,
                                      uint width, uint height)
 {
-    mobjblockmap_t* blockmap;
+    MobjBlockmap* blockmap;
 
     assert(min);
     assert(max);
@@ -268,7 +247,7 @@ mobjblockmap_t* P_CreateMobjBlockmap(const pvec2_t min, const pvec2_t max,
     return blockmap;
 }
 
-void P_DestroyMobjBlockmap(mobjblockmap_t* blockmap)
+void P_DestroyMobjBlockmap(MobjBlockmap* blockmap)
 {
     assert(blockmap);
 
@@ -278,7 +257,7 @@ void P_DestroyMobjBlockmap(mobjblockmap_t* blockmap)
     Z_Free(blockmap);
 }
 
-void MobjBlockmap_BoxToBlocks(mobjblockmap_t* blockmap, uint blockBox[4],
+void MobjBlockmap_BoxToBlocks(MobjBlockmap* blockmap, uint blockBox[4],
                               const arvec2_t box)
 {
     assert(blockmap);
@@ -291,7 +270,7 @@ void MobjBlockmap_BoxToBlocks(mobjblockmap_t* blockmap, uint blockBox[4],
 /**
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
-boolean MobjBlockmap_Block2f(mobjblockmap_t* blockmap, uint dest[2], float x, float y)
+boolean MobjBlockmap_Block2f(MobjBlockmap* blockmap, uint dest[2], float x, float y)
 {
     assert(blockmap);
 
@@ -310,12 +289,12 @@ boolean MobjBlockmap_Block2f(mobjblockmap_t* blockmap, uint dest[2], float x, fl
 /**
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
-boolean MobjBlockmap_Block2fv(mobjblockmap_t* blockmap, uint dest[2], const float pos[2])
+boolean MobjBlockmap_Block2fv(MobjBlockmap* blockmap, uint dest[2], const float pos[2])
 {
     return MobjBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
 }
 
-void MobjBlockmap_Link(mobjblockmap_t* blockmap, mobj_t* mobj)
+void MobjBlockmap_Link(MobjBlockmap* blockmap, mobj_t* mobj)
 {
     uint block[2];
 
@@ -327,7 +306,7 @@ void MobjBlockmap_Link(mobjblockmap_t* blockmap, mobj_t* mobj)
     linkMobjToBlock(blockmap, block[0], block[1], mobj);
 }
 
-boolean MobjBlockmap_Unlink(mobjblockmap_t* blockmap, mobj_t* mobj)
+boolean MobjBlockmap_Unlink(MobjBlockmap* blockmap, mobj_t* mobj)
 {
     assert(blockmap);
     assert(mobj);
@@ -347,7 +326,7 @@ boolean MobjBlockmap_Unlink(mobjblockmap_t* blockmap, mobj_t* mobj)
     }
 }
 
-void MobjBlockmap_Bounds(mobjblockmap_t* blockmap, pvec2_t min, pvec2_t max)
+void MobjBlockmap_Bounds(MobjBlockmap* blockmap, pvec2_t min, pvec2_t max)
 {
     assert(blockmap);
 
@@ -357,7 +336,7 @@ void MobjBlockmap_Bounds(mobjblockmap_t* blockmap, pvec2_t min, pvec2_t max)
         V2_Copy(max, blockmap->aabb[1]);
 }
 
-void MobjBlockmap_BlockSize(mobjblockmap_t* blockmap, pvec2_t blockSize)
+void MobjBlockmap_BlockSize(MobjBlockmap* blockmap, pvec2_t blockSize)
 {
     assert(blockmap);
     assert(blockSize);
@@ -365,14 +344,14 @@ void MobjBlockmap_BlockSize(mobjblockmap_t* blockmap, pvec2_t blockSize)
     V2_Copy(blockSize, blockmap->blockSize);
 }
 
-void MobjBlockmap_Dimensions(mobjblockmap_t* blockmap, uint v[2])
+void MobjBlockmap_Dimensions(MobjBlockmap* blockmap, uint v[2])
 {
     assert(blockmap);
 
     Gridmap_Dimensions(blockmap->gridmap, v);
 }
 
-uint MobjBlockmap_NumInBlock(mobjblockmap_t* blockmap, uint x, uint y)
+uint MobjBlockmap_NumInBlock(MobjBlockmap* blockmap, uint x, uint y)
 {
     linklist_t* list;
 
@@ -385,7 +364,7 @@ uint MobjBlockmap_NumInBlock(mobjblockmap_t* blockmap, uint x, uint y)
     return 0;
 }
 
-boolean MobjBlockmap_Iterate(mobjblockmap_t* blockmap, const uint block[2],
+boolean MobjBlockmap_Iterate(MobjBlockmap* blockmap, const uint block[2],
                              boolean (*func) (mobj_t*, void*),
                              void* context)
 {
@@ -402,7 +381,7 @@ boolean MobjBlockmap_Iterate(mobjblockmap_t* blockmap, const uint block[2],
     return iterateMobjs(Gridmap_Block(blockmap->gridmap, block[0], block[1]), (void*) &args);
 }
 
-boolean MobjBlockmap_BoxIterate(mobjblockmap_t* blockmap, const uint blockBox[4],
+boolean MobjBlockmap_BoxIterate(MobjBlockmap* blockmap, const uint blockBox[4],
                                 boolean (*func) (mobj_t*, void*),
                                 void* context)
 {
@@ -466,14 +445,14 @@ static boolean addMobjIntercepts(mobj_t* mo, void* data)
     return true; // Keep going.
 }
 
-boolean MobjBlockmap_PathTraverse(mobjblockmap_t* blockmap, const uint originBlock[2],
+boolean MobjBlockmap_PathTraverse(MobjBlockmap* blockmap, const uint originBlock[2],
                                   const uint destBlock[2], const float origin[2],
                                   const float dest[2],
                                   boolean (*func) (intercept_t*))
 {
     uint count, block[2];
     float delta[2], partial;
-    fixed_t intercept[2], step[2];
+    dfixed intercept[2], step[2];
     int stepDir[2];
 
     if(destBlock[0] > originBlock[0])

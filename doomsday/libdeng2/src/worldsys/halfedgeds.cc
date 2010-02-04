@@ -25,34 +25,34 @@
 #include <cstdlib>
 
 #include "de/HalfEdgeDS"
+#include "de/Vertex" // temp
 
 using namespace de;
 
-#define PI_D            3.14159265358979323846
-// Smallest degrees between two angles before being considered equal.
-#define ANG_EPSILON     (1.0 / 1024.0)
-
-typedef struct hedge_node_s {
-    hedge_t*        hEdge;
-    struct hedge_node_s* next, *prev;
-} hedge_node_t;
-
-static __inline vertex_t* allocVertex(void)
+namespace de
 {
-    return reinterpret_cast<vertex_t*>(std::calloc(sizeof(vertex_t), 1));
+    typedef struct hedge_node_s {
+        HalfEdge* hEdge;
+        struct hedge_node_s* next, *prev;
+    } hedge_node_t;
 }
 
-static __inline void freeVertex(vertex_t* vertex)
+static __inline Vertex* allocVertex(void)
+{
+    return reinterpret_cast<Vertex*>(std::calloc(sizeof(Vertex), 1));
+}
+
+static __inline void freeVertex(Vertex* vertex)
 {
     free(vertex);
 }
 
-static __inline hedge_t* allocHEdge(void)
+static __inline HalfEdge* allocHEdge(void)
 {
-    return reinterpret_cast<hedge_t*>(std::calloc(sizeof(hedge_t), 1));
+    return reinterpret_cast<HalfEdge*>(std::calloc(sizeof(HalfEdge), 1));
 }
 
-static __inline void freeHEdge(hedge_t* hEdge)
+static __inline void freeHEdge(HalfEdge* hEdge)
 {
     std::free(hEdge);
 }
@@ -67,108 +67,80 @@ static __inline void freeHEdgeNode(hedge_node_t* node)
     std::free(node);
 }
 
-static __inline face_t* allocFace(void)
+static __inline Face* allocFace(void)
 {
-    return reinterpret_cast<face_t*>(std::calloc(sizeof(face_t), 1));
+    return reinterpret_cast<Face*>(std::calloc(sizeof(Face), 1));
 }
 
-static __inline void freeFace(face_t* face)
+static __inline void freeFace(Face* face)
 {
     std::free(face);
 }
 
-/**
- * Translate (dx, dy) into an angle value (degrees).
- */
-static double SlopeToAngle(double dx, double dy)
+HalfEdgeDS::HalfEdgeDS()
+  :  _numHEdges(0),
+     _hEdges(0),
+     _numFaces(0),
+     _faces(0)
+{}
+
+HalfEdgeDS::~HalfEdgeDS()
 {
-    double angle;
-
-    if(dx == 0)
-        return (dy > 0? 90.0 : 270.0);
-
-    angle = atan2((double) dy, (double) dx) * 180.0 / PI_D;
-
-    if(angle < 0)
-        angle += 360.0;
-
-    return angle;
-}
-
-halfedgeds_t* P_CreateHalfEdgeDS(void)
-{
-    halfedgeds_t* halfEdgeDS = reinterpret_cast<halfedgeds_t*>(std::calloc(sizeof(*halfEdgeDS), 1));
-    return halfEdgeDS;
-}
-
-/**
- * @note Only releases memory for the data structure itself, any objects linked
- * to the component parts of the data structure will remain (therefore this is
- * the caller's responsibility).
- */
-void P_DestroyHalfEdgeDS(halfedgeds_t* halfEdgeDS)
-{
-    if(halfEdgeDS->_faces)
+    if(_faces)
     {
-        for(duint i = 0; i < halfEdgeDS->_numFaces; ++i)
+        for(duint i = 0; i < _numFaces; ++i)
         {
-            face_t* face = halfEdgeDS->_faces[i];
+            Face* face = _faces[i];
             freeFace(face);
         }
-        std::free(halfEdgeDS->_faces);
+        std::free(_faces);
     }
-    halfEdgeDS->_faces = NULL;
-    halfEdgeDS->_numFaces = 0;
+    _faces = NULL;
+    _numFaces = 0;
 
-    if(halfEdgeDS->_hEdges)
+    if(_hEdges)
     {
-        for(duint i = 0; i < halfEdgeDS->_numHEdges; ++i)
+        for(duint i = 0; i < _numHEdges; ++i)
         {
-            hedge_t* hEdge = halfEdgeDS->_hEdges[i];
+            HalfEdge* hEdge = _hEdges[i];
             freeHEdge(hEdge);
         }
-        std::free(halfEdgeDS->_hEdges);
+        std::free(_hEdges);
     }
-    halfEdgeDS->_hEdges = NULL;
-    halfEdgeDS->_numHEdges = 0;
+    _hEdges = NULL;
+    _numHEdges = 0;
 
-    if(halfEdgeDS->vertices)
+    if(vertices)
     {
-        for(duint i = 0; i < halfEdgeDS->_numVertices; ++i)
+        for(duint i = 0; i < _numVertices; ++i)
         {
-            vertex_t* vertex = halfEdgeDS->vertices[i];
+            Vertex* vertex = vertices[i];
             freeVertex(vertex);
         }
-        std::free(halfEdgeDS->vertices);
+        std::free(vertices);
     }
-    halfEdgeDS->vertices = NULL;
-    halfEdgeDS->_numVertices = 0;
+    vertices = NULL;
+    _numVertices = 0;
 }
 
-vertex_t* de::HalfEdgeDS_CreateVertex(halfedgeds_t* halfEdgeDS)
+Vertex* HalfEdgeDS::createVertex()
 {
-    assert(halfEdgeDS);
-
-    vertex_t* vtx = allocVertex();
-    halfEdgeDS->vertices = reinterpret_cast<vertex_t**>(std::realloc(halfEdgeDS->vertices,
-        sizeof(vtx) * ++halfEdgeDS->_numVertices));
-    halfEdgeDS->vertices[halfEdgeDS->_numVertices-1] = vtx;
+    Vertex* vtx = allocVertex();
+    vertices = reinterpret_cast<Vertex**>(std::realloc(vertices, sizeof(vtx) * ++_numVertices));
+    vertices[_numVertices-1] = vtx;
 
     vtx->data = reinterpret_cast<mvertex_t*>(Z_Calloc(sizeof(mvertex_t), PU_STATIC, 0));
-    ((mvertex_t*) vtx->data)->index = halfEdgeDS->_numVertices; // 1-based index, 0 = NIL.
-
+    ((mvertex_t*) vtx->data)->index = _numVertices; // 1-based index, 0 = NIL.
     return vtx;
 }
 
-hedge_t* de::HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS, vertex_t* vertex)
+HalfEdge* HalfEdgeDS::createHEdge(Vertex* vertex)
 {
-    assert(halfEdgeDS);
     assert(vertex);
 
-    hedge_t* hEdge = allocHEdge();
-    halfEdgeDS->_hEdges = reinterpret_cast<hedge_t**>(std::realloc(halfEdgeDS->_hEdges,
-        sizeof(hedge_t*) * ++halfEdgeDS->_numHEdges));
-    halfEdgeDS->_hEdges[halfEdgeDS->_numHEdges - 1] = hEdge;
+    HalfEdge* hEdge = allocHEdge();
+    _hEdges = reinterpret_cast<HalfEdge**>(std::realloc(_hEdges, sizeof(HalfEdge*) * ++_numHEdges));
+    _hEdges[_numHEdges - 1] = hEdge;
 
     hEdge->vertex = vertex;
     if(!vertex->hEdge)
@@ -180,91 +152,75 @@ hedge_t* de::HalfEdgeDS_CreateHEdge(halfedgeds_t* halfEdgeDS, vertex_t* vertex)
     return hEdge;
 }
 
-face_t* HalfEdgeDS_CreateFace(halfedgeds_t* halfEdgeDS)
+Face* HalfEdgeDS::createFace()
 {
-    assert(halfEdgeDS);
-
-    face_t* face = allocFace();
-    halfEdgeDS->_faces = reinterpret_cast<face_t**>(std::realloc(halfEdgeDS->_faces,
-        sizeof(face_t*) * ++halfEdgeDS->_numFaces));
-    halfEdgeDS->_faces[halfEdgeDS->_numFaces - 1] = face;
-
+    Face* face = allocFace();
+    _faces = reinterpret_cast<Face**>(std::realloc(_faces, sizeof(Face*) * ++_numFaces));
+    _faces[_numFaces - 1] = face;
     return face;
 }
 
-duint HalfEdgeDS_NumVertices(halfedgeds_t* halfEdgeDS)
+duint HalfEdgeDS::numVertices() const
 {
-    assert(halfEdgeDS);
-    return halfEdgeDS->_numVertices;
+    return _numVertices;
 }
 
-duint HalfEdgeDS_NumHEdges(halfedgeds_t* halfEdgeDS)
+duint HalfEdgeDS::numHEdges() const
 {
-    assert(halfEdgeDS);
-    return halfEdgeDS->_numHEdges;
+    return _numHEdges;
 }
 
-duint HalfEdgeDS_NumFaces(halfedgeds_t* halfEdgeDS)
+duint HalfEdgeDS::numFaces() const
 {
-    assert(halfEdgeDS);
-    return halfEdgeDS->_numFaces;
+    return _numFaces;
 }
 
-int HalfEdgeDS_IterateVertices(halfedgeds_t* halfEdgeDS,
-                               int (*callback) (vertex_t*, void*),
-                               void* context)
+dint HalfEdgeDS::iterateVertices(dint (*callback) (Vertex*, void*), void* context)
 {
-    assert(halfEdgeDS);
+    assert(callback);
 
-    int result = 1;
+    dint result = 1;
     duint i = 0;
-    while(i < halfEdgeDS->_numVertices &&
-          (result = callback(halfEdgeDS->vertices[i++], context)) != 0);
+    while(i < _numVertices && (result = callback(vertices[i++], context)) != 0);
     return result;
 }
 
-int HalfEdgeDS_IterateHEdges(halfedgeds_t* halfEdgeDS,
-                             int (*callback) (hedge_t*, void*),
-                             void* context)
+dint HalfEdgeDS::iterateHEdges(dint (*callback) (HalfEdge*, void*), void* context)
 {
-    assert(halfEdgeDS);
+    assert(callback);
 
-    int result = 1;
+    dint result = 1;
     duint i = 0;
-    while(i < halfEdgeDS->_numHEdges &&
-          (result = callback(halfEdgeDS->_hEdges[i++], context)) != 0);
+    while(i < _numHEdges && (result = callback(_hEdges[i++], context)) != 0);
     return result;
 }
 
-int HalfEdgeDS_IterateFaces(halfedgeds_t* halfEdgeDS,
-                            int (*callback) (face_t*, void*),
-                            void* context)
+dint HalfEdgeDS::iterateFaces(dint (*callback) (Face*, void*), void* context)
 {
-    assert(halfEdgeDS);
+    assert(callback);
 
-    int result = 1;
+    dint result = 1;
     duint i = 0;
-    while(i < halfEdgeDS->_numFaces &&
-          (result = callback(halfEdgeDS->_faces[i++], context)) != 0);
+    while(i < _numFaces && (result = callback(_faces[i++], context)) != 0);
     return result;
 }
 
 #if _DEBUG
-void de::testVertexHEdgeRings(vertex_t* v)
+void de::testVertexHEdgeRings(Vertex* v)
 {
     dbyte i = 0;
 
     // Two passes. Pass one = counter clockwise, Pass two = clockwise.
     for(i = 0; i < 2; ++i)
     {
-        hedge_t* hEdge, *base;
+        HalfEdge* hEdge, *base;
 
         hEdge = base = v->hEdge;
         do
         {
             assert(hEdge->vertex == v);
 
-            hedge_t* other, *base2;
+            HalfEdge* other, *base2;
             bool found = false;
 
             other = base2 = hEdge->vertex->hEdge;
@@ -287,20 +243,20 @@ void de::testVertexHEdgeRings(vertex_t* v)
  * unchanged), the new half-edge becomes the cut-off tail (keeping the
  * original end vertex).
  */
-hedge_t* HEdge_Split(halfedgeds_t* halfEdgeDS, hedge_t* oldHEdge)
+HalfEdge* de::HEdge_Split(HalfEdgeDS& halfEdgeDS, HalfEdge* oldHEdge)
 {
-    hedge_t* newHEdge;
-    vertex_t* newVert;
+    HalfEdge* newHEdge;
+    Vertex* newVert;
 
 #if _DEBUG
 testVertexHEdgeRings(oldHEdge->vertex);
 testVertexHEdgeRings(oldHEdge->twin->vertex);
 #endif
 
-    newVert = HalfEdgeDS_CreateVertex(halfEdgeDS);
+    newVert = halfEdgeDS.createVertex();
 
-    newHEdge = HalfEdgeDS_CreateHEdge(halfEdgeDS, newVert);
-    newHEdge->twin = HalfEdgeDS_CreateHEdge(halfEdgeDS, oldHEdge->twin->vertex);
+    newHEdge = halfEdgeDS.createHEdge(newVert);
+    newHEdge->twin = halfEdgeDS.createHEdge(oldHEdge->twin->vertex);
     newHEdge->twin->twin = newHEdge;
 
     // Update right neighbour back links of oldHEdge and its twin.
@@ -331,7 +287,7 @@ testVertexHEdgeRings(oldHEdge->twin->vertex);
     //if(oldHEdge->face)
     //    Face_LinkHEdge(oldHEdge->face, newHEdge);
     if(oldHEdge->twin->face)
-        Face_LinkHEdge(oldHEdge->twin->face, newHEdge->twin);
+        oldHEdge->twin->face->linkHEdge(newHEdge->twin);
 
 #if _DEBUG
 testVertexHEdgeRings(oldHEdge->vertex);
@@ -342,10 +298,10 @@ testVertexHEdgeRings(newHEdge->twin->vertex);
     return newHEdge;
 }
 
-static bool getAveragedCoords(face_t* face, double* x, double* y)
+bool Face::getAveragedCoords(ddouble* x, ddouble* y)
 {
     dsize total = 0;
-    double avg[2];
+    ddouble avg[2];
     const hedge_node_t* node;
 
     if(!x || !y)
@@ -353,10 +309,10 @@ static bool getAveragedCoords(face_t* face, double* x, double* y)
 
     avg[VX] = avg[VY] = 0;
 
-    node = (hedge_node_t*) face->hEdge;
+    node = (hedge_node_t*) hEdge;
     do
     {
-        hedge_t* hEdge = node->hEdge;
+        HalfEdge* hEdge = node->hEdge;
         avg[VX] += hEdge->vertex->pos[VX];
         avg[VY] += hEdge->vertex->pos[VY];
 
@@ -364,7 +320,7 @@ static bool getAveragedCoords(face_t* face, double* x, double* y)
         avg[VY] += hEdge->twin->vertex->pos[VY];
 
         total += 2;
-    } while((node = node->next) != (hedge_node_t*) face->hEdge);
+    } while((node = node->next) != (hedge_node_t*) hEdge);
 
     if(total > 0)
     {
@@ -376,42 +332,38 @@ static bool getAveragedCoords(face_t* face, double* x, double* y)
     return false;
 }
 
-/**
- * Sort the list of half-edges in the leaf into clockwise order, based on
- * their position/orientation around the mid point in the leaf.
- */
-static void sortHEdgesByAngleAroundMidPoint(face_t* face)
+void Face::sortHEdgesByAngleAroundMidPoint()
 {
     hedge_node_t* node;
-    double midPoint[2];
+    ddouble midPoint[2];
 
-    if(!face->hEdge ||
-       ((hedge_node_t*) face->hEdge)->next == (hedge_node_t*) face->hEdge)
+    if(!hEdge ||
+       ((hedge_node_t*) hEdge)->next == (hedge_node_t*) hEdge)
         return;
 
-    getAveragedCoords(face, &midPoint[0], &midPoint[1]);
+    getAveragedCoords(&midPoint[0], &midPoint[1]);
 
-    node = (hedge_node_t*) face->hEdge;
+    node = (hedge_node_t*) hEdge;
     for(;;)
     {
-        const hedge_t* hEdgeA = node->hEdge;
-        const hedge_t* hEdgeB = node->next->hEdge;
-        double angle1, angle2;
+        const HalfEdge* hEdgeA = node->hEdge;
+        const HalfEdge* hEdgeB = node->next->hEdge;
+        ddouble angle1, angle2;
 
-        if(node->next == (hedge_node_t*) face->hEdge)
+        if(node->next == (hedge_node_t*) hEdge)
             break; // Sorted.
 
-        angle1 = SlopeToAngle(hEdgeA->vertex->pos[0] - midPoint[0],
+        angle1 = slopeToAngle(hEdgeA->vertex->pos[0] - midPoint[0],
                               hEdgeA->vertex->pos[1] - midPoint[1]);
-        angle2 = SlopeToAngle(hEdgeB->vertex->pos[0] - midPoint[0],
+        angle2 = slopeToAngle(hEdgeB->vertex->pos[0] - midPoint[0],
                               hEdgeB->vertex->pos[1] - midPoint[1]);
 
         if(angle1 + ANG_EPSILON < angle2)
         {   // Swap them.
             hedge_node_t* other = node->next;
 
-            if(hEdgeA == ((hedge_node_t*) face->hEdge)->hEdge)
-                face->hEdge = reinterpret_cast<hedge_t*>(other);
+            if(hEdgeA == ((hedge_node_t*) hEdge)->hEdge)
+                hEdge = reinterpret_cast<HalfEdge*>(other);
 
             node->prev->next = node->next;
             node->next->prev = node->prev;
@@ -422,7 +374,7 @@ static void sortHEdgesByAngleAroundMidPoint(face_t* face)
             node->prev = other;
             other->next = node;
 
-            node = (hedge_node_t*) face->hEdge;
+            node = (hedge_node_t*) hEdge;
         }
         else
         {
@@ -434,135 +386,130 @@ static void sortHEdgesByAngleAroundMidPoint(face_t* face)
 {
 const hedge_node_t* node;
 
-Con_Message("Sorted half-edges around (%1.1f,%1.1f)\n", x, y);
+LOG_MESSAGE("Sorted half-edges around (%1.1f,%1.1f).") << x << y;
 
-node = (hedge_node_t*) face->hEdge;
+node = (hedge_node_t*) hEdge;
 do
 {
-    const hedge_t* hEdge = node->hEdge;
-    double angle = SlopeToAngle(hEdge->vertex->pos[0] - midPoint[0],
-                                hEdge->vertex->pos[1] - midPoint[1]);
+    const HalfEdge* other = node->hEdge;
+    ddouble angle = slopeToAngle(other->vertex->pos[0] - midPoint[0],
+                                other->vertex->pos[1] - midPoint[1]);
 
-    Con_Message("  half-edge %p: Angle %1.6f  (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-                hEdge, angle, (float) hEdge->vertex->pos[0], (float) hEdge->vertex->pos[1],
-                (float) hEdge->twin->vertex->pos[0], (float) hEdge->twin->vertex->pos[1]);
-} while((node = node->next) != face->hEdge);
+    LOG_MESSAGE("  half-edge %p: Angle %1.6f  (%1.1f,%1.1f) -> (%1.1f,%1.1f).")
+        << other << angle << dfloat(other->vertex->pos[0])
+        << dfloat(other->vertex->pos[1]) << dfloat(other->twin->vertex->pos[0])
+        << dfloat(other->twin->vertex->pos[1]);
+} while((node = node->next) != hEdge);
 }
 #endif*/
 }
 
-void Face_SwitchToHEdgeLinks(face_t* face)
+void Face::switchToHEdgeLinks()
 {
-    assert(face);
-
-    hedge_t* firstHEdge;
+    HalfEdge* firstHEdge;
     hedge_node_t* node, *next;
 
-    sortHEdgesByAngleAroundMidPoint(face);
+    sortHEdgesByAngleAroundMidPoint();
 
     // Copy order from face.
-    node = (hedge_node_t*) face->hEdge;
+    node = (hedge_node_t*) hEdge;
     do
     {
-        hedge_t* hEdge = node->hEdge;
+        HalfEdge* other = node->hEdge;
 
-        hEdge->next = node->next->hEdge;
-        hEdge->next->prev = hEdge;
-    } while((node = node->next) != (hedge_node_t*) face->hEdge);
+        other->next = node->next->hEdge;
+        other->next->prev = other;
+    } while((node = node->next) != (hedge_node_t*) hEdge);
 
     // Delete the nodes and switch to the hedge links.
-    firstHEdge = ((hedge_node_t*) face->hEdge)->hEdge;
-    node = (hedge_node_t*) face->hEdge;
+    firstHEdge = ((hedge_node_t*) hEdge)->hEdge;
+    node = (hedge_node_t*) hEdge;
     do
     {
         next = node->next;
         free(node);
-    } while((node = next) != (hedge_node_t*) face->hEdge);
+    } while((node = next) != (hedge_node_t*) hEdge);
 
-    face->hEdge = firstHEdge;
+    hEdge = firstHEdge;
 }
 
-void Face_LinkHEdge(face_t* face, hedge_t* hEdge)
+void Face::linkHEdge(HalfEdge* _hEdge)
 {
     hedge_node_t* node;
 
-    assert(face);
-    assert(hEdge);
+    assert(_hEdge);
 
 #if _DEBUG
 // Ensure hedge is not already linked.
-if(face->hEdge)
+if(hEdge)
 {
-    node = (hedge_node_t*) face->hEdge;
+    node = (hedge_node_t*) hEdge;
     do
     {
-        assert(node->hEdge != hEdge);
-    } while((node = node->next) != (hedge_node_t*) face->hEdge);
+        assert(node->hEdge != _hEdge);
+    } while((node = node->next) != (hedge_node_t*) hEdge);
 }
 #endif
 
     node = allocHEdgeNode();
-    node->hEdge = hEdge;
+    node->hEdge = _hEdge;
 
-    if(face->hEdge)
+    if(hEdge)
     {
-        node->prev = ((hedge_node_t*) face->hEdge)->prev;
-        node->next = ((hedge_node_t*) face->hEdge);
+        node->prev = ((hedge_node_t*) hEdge)->prev;
+        node->next = ((hedge_node_t*) hEdge);
 
         node->prev->next = node;
         node->next->prev = node;
 
-        face->hEdge = (hedge_t*) node;
+        hEdge = (HalfEdge*) node;
     }
     else
     {
         node->next = node->prev = node;
-        face->hEdge = (hedge_t*) node;
+        hEdge = (HalfEdge*) node;
     }
 
-    hEdge->face = face;
+    _hEdge->face = this;
 }
 
-void Face_UnlinkHEdge(face_t* face, hedge_t* hEdge)
+void Face::unlinkHEdge(HalfEdge* _hEdge)
 {
     hedge_node_t* node;
 
-    assert(hEdge);
-    assert(face);
+    assert(_hEdge);
 
-    if(!face->hEdge)
+    if(!hEdge)
         return;
 
-    if(((hedge_node_t*) face->hEdge) == ((hedge_node_t*)face->hEdge)->next)
+    if(((hedge_node_t*) hEdge) == ((hedge_node_t*)hEdge)->next)
     {
-        if(((hedge_node_t*) face->hEdge)->hEdge == hEdge)
+        if(((hedge_node_t*) hEdge)->hEdge == _hEdge)
         {
-            freeHEdgeNode((hedge_node_t*) face->hEdge);
-            face->hEdge = NULL;
-
-            hEdge->face = NULL;
+            freeHEdgeNode((hedge_node_t*) hEdge);
+            hEdge = NULL;
+            _hEdge->face = NULL;
         }
-
         return;
     }
 
-    node = (hedge_node_t*) face->hEdge;
+    node = (hedge_node_t*) hEdge;
     do
     {
-        if(node->next && node->next->hEdge == hEdge)
+        if(node->next && node->next->hEdge == _hEdge)
         {
             hedge_node_t* p = node->next;
 
             node->next = node->next->next;
             node->next->prev = node;
 
-            if((hedge_node_t*) face->hEdge == p)
-                face->hEdge = (hedge_t*) p->next;
+            if((hedge_node_t*) hEdge == p)
+                hEdge = (HalfEdge*) p->next;
 
             freeHEdgeNode(p);
 
-            hEdge->face = NULL;
+            _hEdge->face = NULL;
             break;
         }
-    } while((node = node->next) != (hedge_node_t*) face->hEdge);
+    } while((node = node->next) != (hedge_node_t*) hEdge);
 }

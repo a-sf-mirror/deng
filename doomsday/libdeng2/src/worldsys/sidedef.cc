@@ -22,81 +22,57 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * r_sidedef.c: World sidedefs.
- */
+#include "de/SideDef"
+#include "de/Log"
 
-// HEADER FILES ------------------------------------------------------------
+using namespace de;
 
-#include "de_base.h"
-#include "de_refresh.h"
-#include "de_play.h"
-
-// MACROS ------------------------------------------------------------------
-
-// TYPES -------------------------------------------------------------------
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
-
-void SideDef_ColorTints(sidedef_t* side, segsection_t section,
-                        const float** topColor, const float** bottomColor)
+void SideDef::colorTints(sidedefsection_t section, const dfloat** topColor, const dfloat** bottomColor)
 {
     // Select the colors for this surface.
     switch(section)
     {
-    case SEG_MIDDLE:
-        if(side->flags & SDF_BLEND_MIDTOTOP)
+    case MIDDLE:
+        if(flags & SDF_BLEND_MIDTOTOP)
         {
-            *topColor = side->SW_toprgba;
-            *bottomColor = side->SW_middlergba;
+            *topColor = SW_toprgba;
+            *bottomColor = SW_middlergba;
         }
-        else if(side->flags & SDF_BLEND_MIDTOBOTTOM)
+        else if(flags & SDF_BLEND_MIDTOBOTTOM)
         {
-            *topColor = side->SW_middlergba;
-            *bottomColor = side->SW_bottomrgba;
+            *topColor = SW_middlergba;
+            *bottomColor = SW_bottomrgba;
         }
         else
         {
-            *topColor = side->SW_middlergba;
+            *topColor = SW_middlergba;
             *bottomColor = NULL;
         }
         break;
 
-    case SEG_TOP:
-        if(side->flags & SDF_BLEND_TOPTOMID)
+    case TOP:
+        if(flags & SDF_BLEND_TOPTOMID)
         {
-            *topColor = side->SW_toprgba;
-            *bottomColor = side->SW_middlergba;
+            *topColor = SW_toprgba;
+            *bottomColor = SW_middlergba;
         }
         else
         {
-            *topColor = side->SW_toprgba;
+            *topColor = SW_toprgba;
             *bottomColor = NULL;
         }
         break;
 
-    case SEG_BOTTOM:
+    case BOTTOM:
         // Select the correct colors for this surface.
-        if(side->flags & SDF_BLEND_BOTTOMTOMID)
+        if(flags & SDF_BLEND_BOTTOMTOMID)
         {
-            *topColor = side->SW_middlergba;
-            *bottomColor = side->SW_bottomrgba;
+            *topColor = SW_middlergba;
+            *bottomColor = SW_bottomrgba;
         }
         else
         {
-            *topColor = side->SW_bottomrgba;
+            *topColor = SW_bottomrgba;
             *bottomColor = NULL;
         }
         break;
@@ -106,50 +82,43 @@ void SideDef_ColorTints(sidedef_t* side, segsection_t section,
     }
 }
 
-/**
- * Update the sidedef, property is selected by DMU_* name.
- */
-boolean SideDef_SetProperty(sidedef_t *sid, const setargs_t *args)
+bool SideDef::setProperty(const setargs_t* args)
 {
     switch(args->prop)
     {
     case DMU_FLAGS:
-        DMU_SetValue(DMT_SIDEDEF_FLAGS, &sid->flags, args, 0);
+        DMU_SetValue(DMT_SIDEDEF_FLAGS, &flags, args, 0);
         break;
     default:
-        Con_Error("SideDef_SetProperty: Property %s is not writable.\n",
-                  DMU_Str(args->prop));
+        LOG_ERROR("SideDef::setProperty: Property %s is not writable.")
+            << DMU_Str(args->prop);
     }
 
     return true; // Continue iteration.
 }
 
-/**
- * Get the value of a sidedef property, selected by DMU_* name.
- */
-boolean SideDef_GetProperty(const sidedef_t *sid, setargs_t *args)
+bool SideDef::getProperty(setargs_t* args) const
 {
     switch(args->prop)
     {
     case DMU_SECTOR:
         {
-        objectrecord_t* r = P_ObjectRecord(DMU_SECTOR, sid->sector);
+        objectrecord_t* r = P_ObjectRecord(DMU_SECTOR, sector);
         DMU_GetValue(DMT_SIDEDEF_SECTOR, &r, args, 0);
         break;
         }
     case DMU_LINEDEF:
         {
-        objectrecord_t* r = P_ObjectRecord(DMU_LINEDEF, sid->lineDef);
+        objectrecord_t* r = P_ObjectRecord(DMU_LINEDEF, lineDef);
         DMU_GetValue(DMT_SIDEDEF_LINEDEF, &r, args, 0);
         break;
         }
     case DMU_FLAGS:
-        DMU_GetValue(DMT_SIDEDEF_FLAGS, &sid->flags, args, 0);
+        DMU_GetValue(DMT_SIDEDEF_FLAGS, &flags, args, 0);
         break;
     default:
-        Con_Error("SideDef_GetProperty: Has no property %s.\n",
-                  DMU_Str(args->prop));
+        LOG_ERROR("SideDef_GetProperty: Has no property %s.")
+            << DMU_Str(args->prop);
     }
-
     return true; // Continue iteration.
 }

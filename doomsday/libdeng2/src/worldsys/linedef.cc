@@ -22,93 +22,45 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * r_linedef.c: World linedefs.
- */
+#include "de/LineDef"
 
-// HEADER FILES ------------------------------------------------------------
+using namespace de;
 
-#include "de_base.h"
-#include "de_refresh.h"
-#include "de_play.h"
-#include "de_misc.h"
-
-// MACROS ------------------------------------------------------------------
-
-// TYPES -------------------------------------------------------------------
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
-
-float LineDef_LightLevelDelta(const linedef_t* l)
+dfloat LineDef::lightLevelDelta() const
 {
-    return (1.0f / 255) *
-        ((l->L_v2->pos[VY] - l->L_v1->pos[VY]) / l->length * 18);
+    return dfloat((1.0f / 255) * ((vtx2()->pos[VY] - vtx1()->pos[VY]) / length * 18));
 }
 
-/**
- * Returns a two-component float unit vector parallel to the line.
- */
-void LineDef_UnitVector(const linedef_t* lineDef, float* unitvec)
+void LineDef::unitVector(Vector2<dfloat>& unitvec) const
 {
-    assert(lineDef);
-    assert(unitvec);
-    {
-    float len = M_ApproxDistancef(lineDef->dX, lineDef->dY);
-
+    dfloat len = M_ApproxDistancef(dX, dY);
     if(len)
     {
-        unitvec[VX] = lineDef->dX / len;
-        unitvec[VY] = lineDef->dY / len;
+        unitvec.x = dX / len;
+        unitvec.y = dY / len;
     }
     else
     {
-        unitvec[VX] = unitvec[VY] = 0;
-    }
+        unitvec.x = unitvec.y = 0;
     }
 }
 
-/**
- * @return              Non-zero if the point is on the right side of the
- *                      specified line.
- */
-int LineDef_PointOnSide(const linedef_t* line, float x, float y)
+dint LineDef::pointOnSide(dfloat x, dfloat y) const
 {
-    return !P_PointOnLineSide(x, y, line->L_v1->pos[VX], line->L_v1->pos[VY],
-                              line->dX, line->dY);
+    return !P_PointOnLineSide(x, y, vtx1()->pos[VX], vtx1()->pos[VY], dX, dY);
 }
 
-/**
- * Considers the line to be infinite.
- *
- * @return              @c  0 = completely in front of the line.
- *                      @c  1 = completely behind the line.
- *                      @c -1 = box crosses the line.
- */
-int LineDef_BoxOnSide2(const linedef_t* lineDef, float xl, float xh, float yl, float yh)
+dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
 {
-    assert(lineDef);
-    {
-    int a = 0, b = 0;
+    dint a = 0, b = 0;
 
-    switch(lineDef->slopeType)
+    switch(slopeType)
     {
     default: // Shut up compiler.
       case ST_HORIZONTAL:
-        a = yh > lineDef->L_v1->pos[VY];
-        b = yl > lineDef->L_v1->pos[VY];
-        if(lineDef->dX < 0)
+        a = yh > vtx1()->pos[VY];
+        b = yl > vtx1()->pos[VY];
+        if(dX < 0)
         {
             a ^= 1;
             b ^= 1;
@@ -116,9 +68,9 @@ int LineDef_BoxOnSide2(const linedef_t* lineDef, float xl, float xh, float yl, f
         break;
 
       case ST_VERTICAL:
-        a = xh < lineDef->L_v1->pos[VX];
-        b = xl < lineDef->L_v1->pos[VX];
-        if(lineDef->dY < 0)
+        a = xh < vtx1()->pos[VX];
+        b = xl < vtx1()->pos[VX];
+        if(dY < 0)
         {
             a ^= 1;
             b ^= 1;
@@ -126,13 +78,13 @@ int LineDef_BoxOnSide2(const linedef_t* lineDef, float xl, float xh, float yl, f
         break;
 
       case ST_POSITIVE:
-        a = LineDef_PointOnSide(lineDef, xl, yh);
-        b = LineDef_PointOnSide(lineDef, xh, yl);
+        a = pointOnSide(xl, yh);
+        b = pointOnSide(xh, yl);
         break;
 
     case ST_NEGATIVE:
-        a = LineDef_PointOnSide(lineDef, xh, yh);
-        b = LineDef_PointOnSide(lineDef, xl, yl);
+        a = pointOnSide(xh, yh);
+        b = pointOnSide(xl, yl);
         break;
     }
 
@@ -140,34 +92,28 @@ int LineDef_BoxOnSide2(const linedef_t* lineDef, float xl, float xh, float yl, f
         return a;
 
     return -1;
-    }
 }
 
-int LineDef_BoxOnSide(const linedef_t* lineDef, const float* box)
+dint LineDef::boxOnSide(const Vector2<dfloat>& bottomLeft, const Vector2<dfloat>& topRight) const
 {
-    assert(box);
-    return LineDef_BoxOnSide2(lineDef, box[BOXLEFT], box[BOXRIGHT],
-                              box[BOXBOTTOM], box[BOXTOP]);
+    return boxOnSide(bottomLeft.x, topRight.x, bottomLeft.y, topRight.y);
 }
 
-void LineDef_ConstructDivline(const linedef_t* lineDef, divline_t* divline)
+#if 0
+void LineDef::constructDivline(const LineDef& lineDef, divline_t* divline)
 {
     assert(lineDef);
     assert(divline);
-    {
-    const vertex_t* vtx = lineDef->L_v1;
+
+    const Vertex* vtx = lineDef.vtx1();
 
     divline->pos[VX] = FLT2FIX(vtx->pos[VX]);
     divline->pos[VY] = FLT2FIX(vtx->pos[VY]);
     divline->dX = FLT2FIX(lineDef->dX);
     divline->dY = FLT2FIX(lineDef->dY);
-    }
 }
 
-/**
- * Update the linedef, property is selected by DMU_* name.
- */
-boolean LineDef_SetProperty(linedef_t* lin, const setargs_t* args)
+bool LineDef::setProperty(const setargs_t* args)
 {
     switch(args->prop)
     {
@@ -190,141 +136,138 @@ boolean LineDef_SetProperty(linedef_t* lin, const setargs_t* args)
         DMU_SetValue(DMT_LINEDEF_SIDE, &LINE_BACKSIDE(lin), args, 0);
         break;*/
     case DMU_VALID_COUNT:
-        DMU_SetValue(DMT_LINEDEF_VALIDCOUNT, &lin->validCount, args, 0);
+        DMU_SetValue(DMT_LINEDEF_VALIDCOUNT, &validCount, args, 0);
         break;
     case DMU_FLAGS:
         {
-        sidedef_t*          s;
+        SideDef& s;
 
-        DMU_SetValue(DMT_LINEDEF_FLAGS, &lin->flags, args, 0);
+        DMU_SetValue(DMT_LINEDEF_FLAGS, &flags, args, 0);
 
         s = LINE_FRONTSIDE(lin);
-        Surface_Update(&s->SW_topsurface);
-        Surface_Update(&s->SW_bottomsurface);
-        Surface_Update(&s->SW_middlesurface);
+        s.SW_topsurface.update();
+        s.SW_bottomsurface.update();
+        s.SW_middlesurface.update();
         if((s = LINE_BACKSIDE(lin)))
         {
-            Surface_Update(&s->SW_topsurface);
-            Surface_Update(&s->SW_bottomsurface);
-            Surface_Update(&s->SW_middlesurface);
+            s.SW_topsurface.update();
+            s.SW_bottomsurface.update();
+            s.SW_middlesurface.update();
         }
         break;
         }
     default:
-        Con_Error("LineDef_SetProperty: Property %s is not writable.\n",
-                  DMU_Str(args->prop));
+        LOG_ERROR("LineDef::setProperty: Property %s is not writable.") << DMU_Str(args->prop);
     }
 
     return true; // Continue iteration.
 }
 
-/**
- * Get the value of a linedef property, selected by DMU_* name.
- */
-boolean LineDef_GetProperty(const linedef_t *lin, setargs_t *args)
+bool LineDef::getProperty(setargs_t *args) const
 {
     switch(args->prop)
     {
     case DMU_VERTEX0:
         {
-        vertex_t* v = lin->L_v1;
+        Vertex* v = vtx1();
         objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, v);
         DMU_GetValue(DMT_LINEDEF_VERTEX1, &r, args, 0);
         break;
         }
     case DMU_VERTEX1:
         {
-        vertex_t* v = lin->L_v2;
+        Vertex* v = vtx2();
         objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, v);
         DMU_GetValue(DMT_LINEDEF_VERTEX2, &r, args, 0);
         break;
         }
     case DMU_DX:
-        DMU_GetValue(DMT_LINEDEF_DX, &lin->dX, args, 0);
+        DMU_GetValue(DMT_LINEDEF_DX, &dX, args, 0);
         break;
     case DMU_DY:
-        DMU_GetValue(DMT_LINEDEF_DY, &lin->dY, args, 0);
+        DMU_GetValue(DMT_LINEDEF_DY, &dY, args, 0);
         break;
     case DMU_DXY:
-        DMU_GetValue(DMT_LINEDEF_DX, &lin->dX, args, 0);
-        DMU_GetValue(DMT_LINEDEF_DY, &lin->dY, args, 1);
+        DMU_GetValue(DMT_LINEDEF_DX, &dX, args, 0);
+        DMU_GetValue(DMT_LINEDEF_DY, &dY, args, 1);
         break;
     case DMU_LENGTH:
-        DMU_GetValue(DDVT_FLOAT, &lin->length, args, 0);
+        DMU_GetValue(DDVT_FLOAT, &length, args, 0);
         break;
     case DMU_ANGLE:
-        DMU_GetValue(DDVT_ANGLE, &lin->angle, args, 0);
+        DMU_GetValue(DDVT_ANGLE, &angle, args, 0);
         break;
     case DMU_SLOPE_TYPE:
-        DMU_GetValue(DMT_LINEDEF_SLOPETYPE, &lin->slopeType, args, 0);
+        DMU_GetValue(DMT_LINEDEF_SLOPETYPE, &slopeType, args, 0);
         break;
     case DMU_FRONT_SECTOR:
         {
-        sector_t* sec = (LINE_FRONTSIDE(lin)? LINE_FRONTSECTOR(lin) : NULL);
+        Sector* sec = (LINE_FRONTSIDE(lin)? LINE_FRONTSECTOR(lin) : NULL);
         objectrecord_t* r = P_ObjectRecord(DMU_SECTOR, sec);
         DMU_GetValue(DMT_LINEDEF_SEC, &r, args, 0);
         break;
         }
     case DMU_BACK_SECTOR:
         {
-        sector_t* sec = (LINE_BACKSIDE(lin)? LINE_BACKSECTOR(lin) : NULL);
+        Sector* sec = (LINE_BACKSIDE(lin)? LINE_BACKSECTOR(lin) : NULL);
         objectrecord_t* r = P_ObjectRecord(DMU_SECTOR, sec);
         DMU_GetValue(DMT_LINEDEF_SEC, &r, args, 0);
         break;
         }
     case DMU_FLAGS:
-        DMU_GetValue(DMT_LINEDEF_FLAGS, &lin->flags, args, 0);
+        DMU_GetValue(DMT_LINEDEF_FLAGS, &flags, args, 0);
         break;
     case DMU_SIDEDEF0:
         {
-        sidedef_t* side = LINE_FRONTSIDE(lin);
+        SideDef* side = LINE_FRONTSIDE(lin);
         objectrecord_t* r = P_ObjectRecord(DMU_SIDEDEF, side);
         DMU_GetValue(DMT_LINEDEF_FRONTSIDEDEF, &r, args, 0);
         break;
         }
     case DMU_SIDEDEF1:
         {
-        sidedef_t* side = LINE_BACKSIDE(lin);
+        SideDef* side = LINE_BACKSIDE(lin);
         objectrecord_t* r = P_ObjectRecord(DMU_SIDEDEF, side);
         DMU_GetValue(DMT_LINEDEF_BACKSIDEDEF, &r, args, 0);
         break;
         }
     case DMU_POLYOBJ:
         {
-        boolean polyLinked = (lin->inFlags & LF_POLYOBJ) != 0;
+        bool polyLinked = (polyobjOwned != 0);
         DMU_GetValue(DDVT_BOOL, &polyLinked, args, 0);
         break;
         }
     case DMU_BOUNDING_BOX:
         if(args->valueType == DDVT_PTR)
         {
-            const float* bbox = lin->bBox;
+            const dfloat* bbox = bBox;
             DMU_GetValue(DDVT_PTR, &bbox, args, 0);
         }
         else
         {
-            DMU_GetValue(DMT_LINEDEF_BBOX, &lin->bBox[0], args, 0);
-            DMU_GetValue(DMT_LINEDEF_BBOX, &lin->bBox[1], args, 1);
-            DMU_GetValue(DMT_LINEDEF_BBOX, &lin->bBox[2], args, 2);
-            DMU_GetValue(DMT_LINEDEF_BBOX, &lin->bBox[3], args, 3);
+            DMU_GetValue(DMT_LINEDEF_BBOX, &bBox[0], args, 0);
+            DMU_GetValue(DMT_LINEDEF_BBOX, &bBox[1], args, 1);
+            DMU_GetValue(DMT_LINEDEF_BBOX, &bBox[2], args, 2);
+            DMU_GetValue(DMT_LINEDEF_BBOX, &bBox[3], args, 3);
         }
         break;
     case DMU_VALID_COUNT:
-        DMU_GetValue(DMT_LINEDEF_VALIDCOUNT, &lin->validCount, args, 0);
+        DMU_GetValue(DMT_LINEDEF_VALIDCOUNT, &validCount, args, 0);
         break;
     default:
-        Con_Error("LineDef_GetProperty: No property %s.\n",
-                  DMU_Str(args->prop));
+        LOG_ERROR("LineDef::getProperty: No property %s.") << DMU_Str(args->prop);
     }
 
     return true; // Continue iteration.
 }
+#endif
 
-boolean LineDef_IterateMobjs(linedef_t* lineDef, boolean (*func) (mobj_t*, void*), void* data)
+bool LineDef::iterateMobjs(bool (*func) (struct mobj_s*, void*), void* data)
 {
-    assert(lineDef);
     assert(func);
-    {
+#pragma message( "Warning: LineDef::iterateMobjs not yet implemented." )
+    return true;
+#if 0
 /**
  * Linkstore is list of pointers gathered when iterating stuff.
  * This is pretty much the only way to avoid *all* potential problems
@@ -341,9 +284,9 @@ boolean LineDef_IterateMobjs(linedef_t* lineDef, boolean (*func) (mobj_t*, void*
     void** end = linkstore, **it;
     nodeindex_t root, nix;
     linknode_t* ln;
-    map_t* map = P_CurrentMap(); // @fixme LineDef should tell us which map it belongs to.
+    Map* map = P_CurrentMap(); // @fixme LineDef should tell us which map it belongs to.
 
-    root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, lineDef)->id - 1];
+    root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, this)->id - 1];
     ln = map->lineNodes->nodes;
 
     for(nix = ln[root].next; nix != root; nix = ln[nix].next)
@@ -354,5 +297,5 @@ boolean LineDef_IterateMobjs(linedef_t* lineDef, boolean (*func) (mobj_t*, void*
 
 #undef MAXLINKED
 #undef DO_LINKS
-    }
+#endif
 }

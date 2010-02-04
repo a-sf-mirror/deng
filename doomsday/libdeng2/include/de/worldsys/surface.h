@@ -27,20 +27,83 @@
 
 namespace de
 {
-    bool            Surface_GetProperty(const surface_t* suf, setargs_t* args);
-    bool            Surface_SetProperty(surface_t* suf, const setargs_t* args);
-    void            Surface_Update(surface_t* suf);
+    // Decoration types.
+    /*typedef enum {
+        DT_LIGHT,
+        DT_MODEL,
+        NUM_DECORTYPES
+    } decortype_t;
 
-    bool            Surface_SetMaterial(surface_t* suf, material_t* mat, boolean fade);
-    bool            Surface_SetMaterialOffsetX(surface_t* suf, dfloat x);
-    bool            Surface_SetMaterialOffsetY(surface_t* suf, dfloat y);
-    bool            Surface_SetMaterialOffsetXY(surface_t* suf, dfloat x, dfloat y);
-    bool            Surface_SetColorR(surface_t* suf, dfloat r);
-    bool            Surface_SetColorG(surface_t* suf, dfloat g);
-    bool            Surface_SetColorB(surface_t* suf, dfloat b);
-    bool            Surface_SetColorA(surface_t* suf, dfloat a);
-    bool            Surface_SetColorRGBA(surface_t* suf, dfloat r, dfloat g, dfloat b, dfloat a);
-    bool            Surface_SetBlendMode(surface_t* suf, blendmode_t blendMode);
+    // Helper macros for accessing decor data.
+    #define DEC_LIGHT(x)         (&((x)->data.light))
+    #define DEC_MODEL(x)         (&((x)->data.model))
+
+    typedef struct surfacedecor_s {
+        dfloat              pos[3]; // World coordinates of the decoration.
+        decortype_t         type;
+        Subsector*        subsector;
+        union surfacedecor_data_u {
+            struct surfacedecor_light_s {
+                const struct ded_decorlight_s* def;
+            } light;
+            struct surfacedecor_model_s {
+                const struct ded_decormodel_s* def;
+                struct modeldef_s* mf;
+                dfloat              pitch, yaw;
+            } model;
+        } data;
+    } surfacedecor_t;*/
+
+    class MSurface
+    {
+    public:
+        // Internal surface flags:
+        /*#define SUIF_PVIS             0x0001
+        #define SUIF_MATERIAL_FIX     0x0002 // Current texture is a fix replacement
+                                             // (not sent to clients, returned via DMU etc).
+        #define SUIF_BLEND            0x0004 // Surface possibly has a blended texture.
+        #define SUIF_NO_RADIO         0x0008 // No fakeradio for this surface.
+
+        #define SUIF_UPDATE_FLAG_MASK 0xff00
+        #define SUIF_UPDATE_DECORATIONS 0x8000*/
+
+    public:
+        void* owner; // Either @c DMU_SIDEDEF, or @c DMU_PLANE
+        dint flags; // SUF_ flags
+        dint oldFlags;
+        //struct material_t* material;
+        //struct material_t* materialB;
+        //dfloat matBlendFactor;
+        //blendmode_t blendMode;
+        dfloat normal[3]; // Surface normal
+        dfloat oldNormal[3];
+        dfloat offset[2]; // [X, Y] Planar offset to surface material origin.
+        dfloat oldOffset[2][2];
+        dfloat visOffset[2];
+        dfloat visOffsetDelta[2];
+        dfloat rgba[4]; // Surface color tint
+        dshort inFlags; // SUIF_* flags
+        //duint numDecorations;
+        //surfacedecor_t* decorations;
+
+        void update();
+
+        //bool isSky() const { return (material && (material->flags & MATF_SKYMASK))? true : false; }
+
+        //bool setMaterial(material_t* mat, boolean fade);
+        bool setMaterialOffsetX(dfloat x);
+        bool setMaterialOffsetY(dfloat y);
+        bool setMaterialOffsetXY(dfloat x, dfloat y);
+        bool setColorR(dfloat r);
+        bool setColorG(dfloat g);
+        bool setColorB(dfloat b);
+        bool setColorA(dfloat a);
+        bool setColorRGBA(dfloat r, dfloat g, dfloat b, dfloat a);
+        //bool setBlendMode(blendmode_t blendMode);
+
+        //bool getProperty(setargs_t* args) const;
+        //bool setProperty(const setargs_t* args);
+    };
 }
 
 #endif /* LIBDENG2_MSURFACE_H */

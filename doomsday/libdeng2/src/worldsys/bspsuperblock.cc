@@ -43,7 +43,7 @@ namespace de
     #define DIST_EPSILON        (1.0 / 128.0)
 
     typedef struct superblock_listnode_s {
-        hedge_t*        hEdge;
+        HalfEdge*        hEdge;
         struct superblock_listnode_s* next;
     } superblock_listnode_t;
 
@@ -97,7 +97,7 @@ void BSP_DestroySuperBlock(superblock_t* block)
 /**
  * Link the given half-edge into the given SuperBlock.
  */
-void SuperBlock_PushHEdge(superblock_t* block, hedge_t* hEdge)
+void SuperBlock_PushHEdge(superblock_t* block, HalfEdge* hEdge)
 {
     superblock_listnode_t* node;
 
@@ -121,13 +121,13 @@ if((node = block->_hEdges))
     block->_hEdges = node;
 }
 
-hedge_t* SuperBlock_PopHEdge(superblock_t* block)
+HalfEdge* SuperBlock_PopHEdge(superblock_t* block)
 {
     assert(block);
     if(block->_hEdges)
     {
         superblock_listnode_t* node = block->_hEdges;
-        hedge_t* hEdge = node->hEdge;
+        HalfEdge* hEdge = node->hEdge;
         block->_hEdges = node->next;
         freeListNode(node);
         return hEdge;
@@ -160,7 +160,7 @@ void SuperBlock_IncHEdgeCounts(superblock_t* block, bool lineLinked)
  * @return              @c true, if a "bad half-edge" was found early.
  */
 static dint evalPartitionWorker(const superblock_t* hEdgeList,
-                               hedge_t* partHEdge, dint factor, dint bestCost,
+                               HalfEdge* partHEdge, dint factor, dint bestCost,
                                evalinfo_t* info)
 {
 #define ADD_LEFT()  \
@@ -208,7 +208,7 @@ static dint evalPartitionWorker(const superblock_t* hEdgeList,
     // Check partition against all half-edges.
     for(n = hEdgeList->_hEdges; n; n = n->next)
     {
-        hedge_t* otherHEdge = n->hEdge;
+        HalfEdge* otherHEdge = n->hEdge;
         hedge_info_t* other = (hedge_info_t*) otherHEdge->data;
 
         // This is the heart of my pruning idea - it catches
@@ -352,7 +352,7 @@ static dint evalPartitionWorker(const superblock_t* hEdgeList,
  * @return              The computed cost, or a negative value if the edge
  *                      should be skipped altogether.
  */
-static dint evalPartition(const superblock_t* hEdgeList, hedge_t* part,
+static dint evalPartition(const superblock_t* hEdgeList, HalfEdge* part,
                           dint factor, dint bestCost)
 {
     hedge_info_t* data = (hedge_info_t*) part->data;
@@ -411,7 +411,7 @@ Con_Message("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d "
  */
 static bool pickHEdgeWorker(const superblock_t* partList,
                                const superblock_t* hEdgeList,
-                               dint factor, hedge_t** best, dint* bestCost)
+                               dint factor, HalfEdge** best, dint* bestCost)
 {
     dint num, cost;
     superblock_listnode_t* n;
@@ -419,7 +419,7 @@ static bool pickHEdgeWorker(const superblock_t* partList,
     // Test each half-edge as a potential partition.
     for(n = partList->_hEdges; n; n = n->next)
     {
-        hedge_t* hEdge = n->hEdge;
+        HalfEdge* hEdge = n->hEdge;
         hedge_info_t* data = (hedge_info_t*) hEdge->data;
 
 /*#if _DEBUG
@@ -471,12 +471,12 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
  *
  * @param hEdgeList     List of half-edges to choose from.
  *
- * @return              hedge_t to use as a partition iff one suitable was found.
+ * @return              HalfEdge to use as a partition iff one suitable was found.
  */
-hedge_t* SuperBlock_PickPartition(const superblock_t* hEdgeList, dint factor)
+HalfEdge* SuperBlock_PickPartition(const superblock_t* hEdgeList, dint factor)
 {
     dint bestCost = INT_MAX;
-    hedge_t* best = NULL;
+    HalfEdge* best = NULL;
 
     validCount++;
     if(false == pickHEdgeWorker(hEdgeList, hEdgeList, factor, &best, &bestCost))
@@ -506,7 +506,7 @@ static void findLimitWorker(const superblock_t* block, dfloat* bbox)
 
     for(n = block->_hEdges; n; n = n->next)
     {
-        hedge_t* cur = n->hEdge;
+        HalfEdge* cur = n->hEdge;
         ddouble x1 = cur->vertex->pos[VX];
         ddouble y1 = cur->vertex->pos[VY];
         ddouble x2 = cur->twin->vertex->pos[VX];
@@ -564,7 +564,7 @@ void de::SuperBlock_PrintHEdges(superblock_t* block)
 
     for(n = block->_hEdges; n; n = n->next)
     {
-        const hedge_t* hEdge = n->hEdge;
+        const HalfEdge* hEdge = n->hEdge;
         const hedge_info_t* data = reinterpret_cast<hedge_info_t*>(hEdge->data);
 
         LOG_DEBUG("Build: %s %p sector=%d (%1.1f,%1.1f) -> (%1.1f,%1.1f)")
@@ -587,7 +587,7 @@ static void testSuperWorker(superblock_t* block, duint* real, duint* mini)
 
     for(n = block->_hEdges; n; n = n->next)
     {
-        const hedge_t* cur = n->hEdge;
+        const HalfEdge* cur = n->hEdge;
 
         if(((hedge_info_t*) cur->data)->lineDef)
             (*real) += 1;

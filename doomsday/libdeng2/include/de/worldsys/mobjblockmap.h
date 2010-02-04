@@ -26,42 +26,37 @@
 #define LIBDENG2_MOBJBLOCKMAP_H
 
 #include "../Gridmap"
+#include "../Vector"
 
 namespace de
 {
-    typedef struct mobjblockmap_s {
-        vec2_t          aabb[2];
-        vec2_t          blockSize;
-        gridmap_t*      gridmap;
-    } mobjblockmap_t;
+    class MobjBlockmap
+    {
+    public:
+        MobjBlockmap(const Vector2<dfloat>& min, const Vector2<dfloat>& max, duint width, duint height);
+        ~MobjBlockmap();
 
-    mobjblockmap_t* P_CreateMobjBlockmap(const pvec2_t min, const pvec2_t max,
-                                         duint width, duint height);
-    void            P_DestroyMobjBlockmap(mobjblockmap_t* blockmap);
+        duint numInBlock(duint x, duint y);
+        void link(struct mobj_s* mo);
+        bool unlink(struct mobj_s* mo);
 
-    duint           MobjBlockmap_NumInBlock(mobjblockmap_t* blockmap, duint x, duint y);
-    void            MobjBlockmap_Link(mobjblockmap_t* blockmap, struct mobj_s* mo);
-    bool            MobjBlockmap_Unlink(mobjblockmap_t* blockmap, struct mobj_s* mo);
+        void bounds(Vector2<dfloat>& min, Vector2<dfloat>& max) const;
+        void blockSize(Vector2<dfloat>& blockSize) const;
+        void dimensions(Vector2<duint>& dimensions) const;
 
-    void            MobjBlockmap_Bounds(mobjblockmap_t* blockmap, pvec2_t min, pvec2_t max);
-    void            MobjBlockmap_BlockSize(mobjblockmap_t* blockmap, pvec2_t blockSize);
-    void            MobjBlockmap_Dimensions(mobjblockmap_t* blockmap, duint v[2]);
+        bool block(Vector2<duint>& block, dfloat x, dfloat y) const;
+        bool block(Vector2<duint>& block, const Vector2<dfloat>& pos) const;
 
-    bool            MobjBlockmap_Block2f(mobjblockmap_t* blockmap, duint block[2], dfloat x, dfloat y);
-    bool            MobjBlockmap_Block2fv(mobjblockmap_t* blockmap, duint block[2], const dfloat pos[2]);
+        //void boxToBlocks(duint blockBox[4], const arvec2_t box);
+        bool iterate(const Vector2<duint>& block, bool (*func) (struct mobj_s*, void*), void* data);
+        //bool boxIterate(const duint blockBox[4], bool (*func) (struct mobj_s*, void*), void* data);
+        //bool pathTraverse(const Vector2<duint>& originBlock, const Vector2<duint>& block, const Vector2<dfloat>& origin, const Vector2<dfloat>& dest, bool (*func) (intercept_t*));
 
-    void            MobjBlockmap_BoxToBlocks(mobjblockmap_t* blockmap, duint blockBox[4],
-                                             const arvec2_t box);
-    bool            MobjBlockmap_Iterate(mobjblockmap_t* blockmap, const duint block[2],
-                                         bool (*func) (struct mobj_s*, void*),
-                                         void* data);
-    bool            MobjBlockmap_BoxIterate(mobjblockmap_t* blockmap, const duint blockBox[4],
-                                            bool (*func) (struct mobj_s*, void*),
-                                            void* data);
-    bool            MobjBlockmap_PathTraverse(mobjblockmap_t* blockmap, const duint originBlock[2],
-                                              const duint block[2], const dfloat origin[2],
-                                              const dfloat dest[2],
-                                              bool (*func) (intercept_t*));
+    private:
+        Vector2<dfloat> _aabb[2];
+        Vector2<dfloat> _blockSize;
+        Gridmap<struct mobj_s*> _gridmap;
+    };
 }
 
 #endif /* LIBDENG2_MOBJBLOCKMAP_H */
