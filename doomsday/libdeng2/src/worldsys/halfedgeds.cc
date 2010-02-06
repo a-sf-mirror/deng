@@ -129,8 +129,8 @@ Vertex* HalfEdgeDS::createVertex()
     vertices = reinterpret_cast<Vertex**>(std::realloc(vertices, sizeof(vtx) * ++_numVertices));
     vertices[_numVertices-1] = vtx;
 
-    vtx->data = reinterpret_cast<mvertex_t*>(Z_Calloc(sizeof(mvertex_t), PU_STATIC, 0));
-    ((mvertex_t*) vtx->data)->index = _numVertices; // 1-based index, 0 = NIL.
+    vtx->data = reinterpret_cast<MVertex*>(Z_Calloc(sizeof(MVertex), PU_STATIC, 0));
+    ((MVertex*) vtx->data)->index = _numVertices; // 1-based index, 0 = NIL.
     return vtx;
 }
 
@@ -152,12 +152,12 @@ HalfEdge* HalfEdgeDS::createHEdge(Vertex* vertex)
     return hEdge;
 }
 
-Face* HalfEdgeDS::createFace()
+Face& HalfEdgeDS::createFace()
 {
     Face* face = allocFace();
     _faces = reinterpret_cast<Face**>(std::realloc(_faces, sizeof(Face*) * ++_numFaces));
     _faces[_numFaces - 1] = face;
-    return face;
+    return *face;
 }
 
 duint HalfEdgeDS::numVertices() const
@@ -298,65 +298,51 @@ testVertexHEdgeRings(newHEdge->twin->vertex);
     return newHEdge;
 }
 
-bool Face::getAveragedCoords(ddouble* x, ddouble* y)
+Vector2d Face::getAveragedCoords()
 {
+    Vector2d avg = Vector2d(0, 0);
+    const hedge_node_t* node = (hedge_node_t*) hEdge;
     dsize total = 0;
-    ddouble avg[2];
-    const hedge_node_t* node;
-
-    if(!x || !y)
-        return false;
-
-    avg[VX] = avg[VY] = 0;
-
-    node = (hedge_node_t*) hEdge;
     do
     {
-        HalfEdge* hEdge = node->hEdge;
-        avg[VX] += hEdge->vertex->pos[VX];
-        avg[VY] += hEdge->vertex->pos[VY];
-
-        avg[VX] += hEdge->twin->vertex->pos[VX];
-        avg[VY] += hEdge->twin->vertex->pos[VY];
-
-        total += 2;
+        const HalfEdge* hEdge = node->hEdge;
+        avg += hEdge->vertex->pos;
+        ++total;
     } while((node = node->next) != (hedge_node_t*) hEdge);
 
-    if(total > 0)
+    if(total != 0)
     {
-        *x = avg[VX] / total;
-        *y = avg[VY] / total;
-        return true;
+        avg.x /= total;
+        avg.y /= total;
     }
 
-    return false;
+    return Vector2d(avg);
 }
 
 void Face::sortHEdgesByAngleAroundMidPoint()
 {
     hedge_node_t* node;
-    ddouble midPoint[2];
 
     if(!hEdge ||
        ((hedge_node_t*) hEdge)->next == (hedge_node_t*) hEdge)
         return;
 
-    getAveragedCoords(&midPoint[0], &midPoint[1]);
+    Vector2d midPoint = getAveragedCoords();
 
     node = (hedge_node_t*) hEdge;
     for(;;)
     {
-        const HalfEdge* hEdgeA = node->hEdge;
-        const HalfEdge* hEdgeB = node->next->hEdge;
-        ddouble angle1, angle2;
-
         if(node->next == (hedge_node_t*) hEdge)
             break; // Sorted.
 
-        angle1 = slopeToAngle(hEdgeA->vertex->pos[0] - midPoint[0],
-                              hEdgeA->vertex->pos[1] - midPoint[1]);
-        angle2 = slopeToAngle(hEdgeB->vertex->pos[0] - midPoint[0],
-                              hEdgeB->vertex->pos[1] - midPoint[1]);
+        const HalfEdge* hEdgeA = node->hEdge;
+        const HalfEdge* hEdgeB = node->next->hEdge;
+
+        const Vector2d deltaA = hEdgeA->vertex->pos - midPoint;
+        const ddouble angle1 = slopeToAngle(deltaA.x, deltaA.y);
+
+        const Vector2d deltaB = hEdgeB->vertex->pos - midPoint;
+        const ddouble angle2 = slopeToAngle(deltaB.x, deltaB.y);
 
         if(angle1 + ANG_EPSILON < angle2)
         {   // Swap them.
@@ -384,21 +370,17 @@ void Face::sortHEdgesByAngleAroundMidPoint()
 
 /*#if _DEBUG
 {
-const hedge_node_t* node;
+LOG_MESSAGE("Sorted half-edges around %s.") << midPoint;
 
-LOG_MESSAGE("Sorted half-edges around (%1.1f,%1.1f).") << x << y;
-
-node = (hedge_node_t*) hEdge;
+const hedge_node_t* node = (hedge_node_t*) hEdge;
 do
 {
     const HalfEdge* other = node->hEdge;
-    ddouble angle = slopeToAngle(other->vertex->pos[0] - midPoint[0],
-                                other->vertex->pos[1] - midPoint[1]);
+    const Vector2d delta = other->vertex->pos - midPoint;
+    ddouble angle = slopeToAngle(delta.x, delta.y);
 
-    LOG_MESSAGE("  half-edge %p: Angle %1.6f  (%1.1f,%1.1f) -> (%1.1f,%1.1f).")
-        << other << angle << dfloat(other->vertex->pos[0])
-        << dfloat(other->vertex->pos[1]) << dfloat(other->twin->vertex->pos[0])
-        << dfloat(other->twin->vertex->pos[1]);
+    LOG_MESSAGE("  half-edge %p: Angle %1.6f %s -> s.")
+        << other << angle << other->vertex->pos << other->twin->vertex->pos;
 } while((node = node->next) != hEdge);
 }
 #endif*/

@@ -23,20 +23,22 @@
  */
 
 #include "de/Subsector"
+#include "de/Map"
 
 using namespace de;
 
+#if 0
 namespace de
 {
     typedef struct contactfinder_data_s {
-        void*           obj;
-        objcontacttype_t objType;
-        vec3_t          objPos;
-        float           objRadius;
-        float           box[4];
+        void* obj;
+        Map::objcontacttype_t objType;
+        Vector3f objPos;
+        dfloat objRadius;
+        dfloat box[4];
     } contactfinderparams_t;
 
-    static void processSeg(HalfEdge* seg, void* data);
+    static void processSeg(Seg& seg, void* data);
 }
 
 /**
@@ -49,62 +51,55 @@ namespace de
  * @return              @c true, because this function is also used as an
  *                      iterator.
  */
-static void spreadInSubsector(Subsector* subsector, void* data)
+static void spreadInSubsector(Subsector& subsector, void* data)
 {
-    HalfEdge* hEdge;
+    if(!subsector.face->hEdge)
+        return;
 
-    if((hEdge = subsector->face->hEdge))
+    HalfEdge& hEdge = *subsector.face->hEdge;
+    do
     {
-        do
-        {
-            processSeg(hEdge, data);
-        } while((hEdge = hEdge->next) != subsector->face->hEdge);
-    }
+        processSeg(*reinterpret_cast<Seg*>(hEdge.data), data);
+        if(!(hEdge.next))
+            break;
+        hEdge = *hEdge.next;
+    } while((&hEdge != subsector.face->hEdge));
 }
 
-static void processSeg(HalfEdge* hEdge, void* data)
+static void processSeg(const Seg& seg, void* data)
 {
-    contactfinderparams_t* params = (contactfinderparams_t*) data;
-    Subsector* src, *dst;
-    float distance;
-    Vertex* vtx;
-    Seg* seg = (Seg*) hEdge->data;
+    contactfinderparams_t* params = reinterpret_cast<contactfinderparams_t*>(data);
 
-    // Can not spread over one-sided lines.
-    if(!HE_BACKSECTOR(hEdge))
+    // Can not spread over one-sided segs.
+    if(!seg.hasBack() || !seg.back().hasSubsector())
         return;
 
     // Which way does the spread go?
-    if(HE_FRONTSUBSECTOR(hEdge)->validCount == validCount &&
-       HE_BACKSUBSECTOR(hEdge)->validCount != validCount)
-    {
-        src = (Subsector*) hEdge->face->data;
-        dst = (Subsector*) hEdge->twin->face->data;
-    }
-    else
-    {
-        // Not eligible for spreading.
-        return;
-    }
+    if(!(seg.subsector().validCount == validCount &&
+         seg.back().subsector().validCount != validCount))
+        return; // Not eligible for spreading.
+
+    Subsector& src = seg.subsector();
+    Subsector& dst = seg.back().subsector();
 
     // Is the dst subSector inside the objlink's AABB?
-    if(dst->bBox[1][VX] <= params->box[BOXLEFT] ||
-       dst->bBox[0][VX] >= params->box[BOXRIGHT] ||
-       dst->bBox[1][VY] <= params->box[BOXBOTTOM] ||
-       dst->bBox[0][VY] >= params->box[BOXTOP])
+    if(dst.bBox[1][VX] <= params->box[BOXLEFT] ||
+       dst.bBox[0][VX] >= params->box[BOXRIGHT] ||
+       dst.bBox[1][VY] <= params->box[BOXBOTTOM] ||
+       dst.bBox[0][VY] >= params->box[BOXTOP])
     {
         // The subSector is not inside the params's bounds.
         return;
     }
 
     // Can the spread happen?
-    if(seg->sideDef)
+    if(seg.hasSideDef())
     {
-        if(dst->sector)
+        if(dst.sector)
         {
-            if(dst->sector->planes[PLN_CEILING]->height <= dst->sector->planes[PLN_FLOOR]->height ||
-               dst->sector->planes[PLN_CEILING]->height <= src->sector->planes[PLN_FLOOR]->height ||
-               dst->sector->planes[PLN_FLOOR]->height   >= src->sector->planes[PLN_CEILING]->height)
+            if(dst.sector->ceiling().height <= dst.sector->floor().height ||
+               dst.sector->ceiling().height <= src.sector->floor().height ||
+               dst.sector->floor().height   >= src.sector->ceiling().height)
             {
                 // No; destination sector is closed with no height.
                 return;
@@ -113,26 +108,24 @@ static void processSeg(HalfEdge* hEdge, void* data)
 
         // Don't spread if the middle material completely fills the gap between
         // floor and ceiling (direction is from dst to src).
-        if(R_DoesMiddleMaterialFillGap(seg->sideDef->lineDef,
-            dst == ((Subsector*) hEdge->twin->face->data)? false : true))
+        if(R_DoesMiddleMaterialFillGap(seg.sideDef().lineDef(),
+            &dst == &seg.back().subsector()? false : true))
             return;
     }
 
     // Calculate 2D distance to hEdge.
+    dfloat distance;
+    
     {
-    float dx, dy;
-
-    dx = hEdge->HE_v2->pos[VX] - hEdge->HE_v1->pos[VX];
-    dy = hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY];
-    vtx = hEdge->HE_v1;
-    distance = ((vtx->pos[VY] - params->objPos[VY]) * dx -
-                (vtx->pos[VX] - params->objPos[VX]) * dy) / seg->length;
+    Vector2d delta = seg.back().vertex().pos - seg.vertex().pos;
+    distance = dfloat((seg.vertex().pos.y - ddouble(params->objPos.y)) * delta.x -
+                (seg.vertex().pos.x - ddouble(params->objPos.x)) * delta.y) / seg.length;
     }
 
-    if(seg->sideDef)
+    if(seg.hasSideDef())
     {
-        if((src == ((Subsector*) hEdge->face->data) && distance < 0) ||
-           (src == ((Subsector*) hEdge->twin->face->data) && distance > 0))
+        if((&src == &seg.subsector() && distance < 0) ||
+           (&src == &seg.back().subsector() && distance > 0))
         {
             // Can't spread in this direction.
             return;
@@ -148,7 +141,7 @@ static void processSeg(HalfEdge* hEdge, void* data)
     }
 
     // During next step, obj will continue spreading from there.
-    dst->validCount = validCount;
+    dst.validCount = validCount;
 
     // Add this obj to the destination subsector.
     // @todo Subsector should return the map its linked to.
@@ -163,7 +156,7 @@ static void processSeg(HalfEdge* hEdge, void* data)
  *
  * @param oLink         Ptr to objlink to find subsector contacts for.
  */
-static void findContacts(objcontacttype_t type, void* obj)
+static void findContacts(Map::objcontacttype_t type, void* obj)
 {
 #define SUBSECTORSPREAD_MINRADIUS 16 // In world units.
 
@@ -172,9 +165,9 @@ static void findContacts(objcontacttype_t type, void* obj)
 
     switch(type)
     {
-    case OCT_LUMOBJ:
+    case Map::OCT_LUMOBJ:
         {
-        lumobj_t* lum = (lumobj_t*) obj;
+        lumobj_t* lum = reinterpret_cast<lumobj_t*>(obj);
 
         if(lum->type != LT_OMNI)
             return; // Only omni lights spread.
@@ -185,18 +178,18 @@ static void findContacts(objcontacttype_t type, void* obj)
         subsector = lum->subsector;
         break;
         }
-    case OCT_MOBJ:
+    case Map::OCT_MOBJ:
         {
-        mobj_t* mo = (mobj_t*) obj;
+        mobj_t* mo = reinterpret_cast<mobj_t*>(obj);
 
         V3_Copy(params.objPos, mo->pos);
         params.objRadius = R_VisualRadius(mo);
         subsector = (Subsector*) ((objectrecord_t*) mo->subsector)->obj;
         break;
         }
-    case OCT_PARTICLE:
+    case Map::OCT_PARTICLE:
         {
-        particle_t* pt = (particle_t*) obj;
+        particle_t* pt = reinterpret_cast<particle_t*>(obj);
 
         V3_SetFixed(params.objPos, pt->pos[VX], pt->pos[VY], pt->pos[VZ]);
         // Use a slightly smaller radius than what the obj really is.
@@ -222,19 +215,19 @@ static void findContacts(objcontacttype_t type, void* obj)
         return;
 
     // Do the subsector spread. Begin from the obj's own subsector.
-    params.box[BOXLEFT]   = params.objPos[VX] - params.objRadius;
-    params.box[BOXRIGHT]  = params.objPos[VX] + params.objRadius;
-    params.box[BOXBOTTOM] = params.objPos[VY] - params.objRadius;
-    params.box[BOXTOP]    = params.objPos[VY] + params.objRadius;
+    params.box[BOXLEFT]   = params.objPos.x - params.objRadius;
+    params.box[BOXRIGHT]  = params.objPos.x + params.objRadius;
+    params.box[BOXBOTTOM] = params.objPos.y - params.objRadius;
+    params.box[BOXTOP]    = params.objPos.y + params.objRadius;
 
-    spreadInSubsector(subsector, &params);
+    spreadInSubsector(*subsector, &params);
 
 #undef SUBSECTORSPREAD_MINRADIUS
 }
 
-static boolean PTR_SpreadContacts(void* obj, void* context)
+static bool PTR_SpreadContacts(void* obj, void* context)
 {
-    objcontacttype_t type = *((objcontacttype_t*)context);
+    Map::objcontacttype_t type = *((Map::objcontacttype_t*)context);
 
     switch(type)
     {
@@ -322,22 +315,16 @@ static void spreadParticles(const Subsector* subsector)
     ParticleBlockmap_BoxToBlocks(bmap, blockBox, bbox);
     ParticleBlockmap_BoxIterate(bmap, blockBox, PTR_SpreadContacts, &type);
 }
+#endif
 
-Subsector* P_CreateSubsector(void)
+Subsector::~Subsector()
 {
-    return (Subsector*) Z_Calloc(sizeof(Subsector), PU_STATIC, 0);
-}
-
-void P_DestroySubsector(Subsector* subsector)
-{
-    assert(subsector);
     /*shadowlink_t* slink;
-    while((slink = subsector->shadows))
+    while((slink = shadows))
     {
-        subsector->shadows = slink->next;
+        shadows = slink->next;
         Z_Free(slink);
     }*/
-    Z_Free(subsector);
 }
 
 /**
@@ -346,99 +333,88 @@ void P_DestroySubsector(Subsector* subsector)
  *
  * @param subSector          Ptr to the subsector to process.
  */
-void Subsector_SpreadObjs(Subsector* subsector)
+void Subsector::spreadObjs()
 {
-    assert(subsector);
-
-    spreadMobjs(subsector);
-    spreadLumobjs(subsector);
-    spreadParticles(subsector);
+#pragma message("Warning: Subsector::spreadObjs not yet implemented.")
+#if 0
+    spreadMobjs(this);
+    spreadLumobjs(this);
+    spreadParticles(this);
+#endif
 }
 
-void Subsector_UpdateMidPoint(Subsector* subsector)
+void Subsector::updateMidPoint()
 {
     HalfEdge* hEdge;
 
-    assert(subsector);
-
     // Find the center point. First calculate the bounding box.
-    if((hEdge = subsector->face->hEdge))
+    if((hEdge = face->hEdge))
     {
-        Vertex* vtx;
+        const Vertex& vtx = *hEdge->vertex;
 
-        vtx = hEdge->HE_v1;
-        subsector->bBox[0][VX] = subsector->bBox[1][VX] = subsector->midPoint[VX] = vtx->pos[VX];
-        subsector->bBox[0][VY] = subsector->bBox[1][VY] = subsector->midPoint[VY] = vtx->pos[VY];
+        bBox[0][VX] = bBox[1][VX] = midPoint.x = dfloat(vtx.pos.x);
+        bBox[0][VY] = bBox[1][VY] = midPoint.y = dfloat(vtx.pos.y);
 
-        while((hEdge = hEdge->next) != subsector->face->hEdge)
+        while((hEdge = hEdge->next) != face->hEdge)
         {
-            vtx = hEdge->HE_v1;
+            const Vertex& vtx = *hEdge->vertex;
 
-            if(vtx->pos[VX] < subsector->bBox[0][VX])
-                subsector->bBox[0][VX] = vtx->pos[VX];
-            if(vtx->pos[VY] < subsector->bBox[0][VY])
-                subsector->bBox[0][VY] = vtx->pos[VY];
-            if(vtx->pos[VX] > subsector->bBox[1][VX])
-                subsector->bBox[1][VX] = vtx->pos[VX];
-            if(vtx->pos[VY] > subsector->bBox[1][VY])
-                subsector->bBox[1][VY] = vtx->pos[VY];
+            if(vtx.pos.x < bBox[0][VX])
+                bBox[0][VX] = dfloat(vtx.pos.x);
+            if(vtx.pos.y < bBox[0][VY])
+                bBox[0][VY] = dfloat(vtx.pos.y);
+            if(vtx.pos.x > bBox[1][VX])
+                bBox[1][VX] = dfloat(vtx.pos.x);
+            if(vtx.pos.y > bBox[1][VY])
+                bBox[1][VY] = dfloat(vtx.pos.y);
 
-            subsector->midPoint[VX] += vtx->pos[VX];
-            subsector->midPoint[VY] += vtx->pos[VY];
+            midPoint.x += dfloat(vtx.pos.x);
+            midPoint.y += dfloat(vtx.pos.y);
         }
 
-        subsector->midPoint[VX] /= subsector->hEdgeCount; // num vertices.
-        subsector->midPoint[VY] /= subsector->hEdgeCount;
+        midPoint.x /= hEdgeCount; // num vertices.
+        midPoint.y /= hEdgeCount;
     }
 
     // Calculate the worldwide grid offset.
-    subsector->worldGridOffset[VX] = fmod(subsector->bBox[0][VX], 64);
-    subsector->worldGridOffset[VY] = fmod(subsector->bBox[1][VY], 64);
+    worldGridOffset.x = fmod(bBox[0][VX], 64);
+    worldGridOffset.y = fmod(bBox[1][VY], 64);
 }
 
-boolean Subsector_PointInside(const Subsector* subsector, float x, float y)
+bool Subsector::pointInside(dfloat x, dfloat y) const
 {
-    assert(subsector);
-    {
-    const HalfEdge* hEdge = subsector->face->hEdge;
+    const HalfEdge* hEdge = face->hEdge;
 
     do
     {
-        const Vertex* v1 = hEdge->HE_v1;
-        const Vertex* v2 = hEdge->next->HE_v1;
+        const Vertex& v1 = *hEdge->vertex;
+        const Vertex& v2 = *hEdge->next->vertex;
 
-        if(((v1->pos[VY] - y) * (v2->pos[VX] - v1->pos[VX]) -
-            (v1->pos[VX] - x) * (v2->pos[VY] - v1->pos[VY])) < 0)
+        if(((v1.pos.y - y) * (v2.pos.x - v1.pos.x) -
+            (v1.pos.x - x) * (v2.pos.y - v1.pos.y)) < 0)
         {
             return false; // Outside the subsector's edges.
         }
-    } while((hEdge = hEdge->next) != subsector->face->hEdge);
+    } while((hEdge = hEdge->next) != face->hEdge);
 
     return true;
-    }
 }
 
-/**
- * Update the subsector, property is selected by DMU_* name.
- */
-boolean Subsector_SetProperty(Subsector* subsector, const setargs_t* args)
+#if 0
+bool Subsector::setProperty(const setargs_t* args)
 {
-    Con_Error("Subsector_SetProperty: Property %s is not writable.\n",
-              DMU_Str(args->prop));
-
+    LOG_ERROR("Subsector::setProperty: Property %s is not writable.")
+        << DMU_Str(args->prop);
     return true; // Continue iteration.
 }
 
-/**
- * Get the value of a subsector property, selected by DMU_* name.
- */
-boolean Subsector_GetProperty(const Subsector* subsector, setargs_t* args)
+bool Subsector::getProperty(setargs_t* args) const
 {
     switch(args->prop)
     {
     case DMU_SECTOR:
         {
-        Sector* sec = subsector->sector;
+        Sector& sec = sector();
         objectrecord_t* r = P_ObjectRecord(DMU_SECTOR, sec);
         DMU_GetValue(DMT_SUBSECTOR_SECTOR, &r, args, 0);
         break;
@@ -450,3 +426,4 @@ boolean Subsector_GetProperty(const Subsector* subsector, setargs_t* args)
 
     return true; // Continue iteration.
 }
+#endif

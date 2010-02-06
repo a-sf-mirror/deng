@@ -22,8 +22,10 @@
  * Boston, MA  02110-1301  USA
  */
 
-#include "de/Sector"
+#include "de/App"
 #include "de/Log"
+#include "de/Map"
+#include "de/Sector"
 
 using namespace de;
 
@@ -33,6 +35,7 @@ namespace de
     static bool noFit;
 }
 
+#if 0
 /**
  * Takes a valid mobj and adjusts the mobj->floorZ, mobj->ceilingZ, and
  * possibly mobj->z. This is called for all nearby mobjs whenever a sector
@@ -95,6 +98,7 @@ static dint PIT_SectorPlanesChanged(void* obj, void* data)
     noFit = true;
     return true;
 }
+#endif
 
 /**
  * Called whenever a sector's planes are moved. This will update the mobjs
@@ -102,10 +106,13 @@ static dint PIT_SectorPlanesChanged(void* obj, void* data)
  */
 bool Sector::planesChanged()
 {
+#pragma message("Warning: Sector::planesChanged not yet implemented.")
     noFit = false;
     // We'll use validCount to make sure mobjs are only checked once.
     validCount++;
-    Sector_IterateMobjsTouching(sector, PIT_SectorPlanesChanged, 0);
+#if 0
+    iterateMobjsTouching(PIT_SectorPlanesChanged, 0);
+#endif
     return noFit;
 }
 
@@ -130,24 +137,23 @@ dfloat Sector::lightLevel()
 bool Sector::pointInside(dfloat x, dfloat y) const
 {
     bool isOdd = false;
-    for(duint i = 0; i < sector->lineDefCount; ++i)
+    for(duint i = 0; i < lineDefCount; ++i)
     {
-        LineDef* line = sector->lineDefs[i];
-        Vertex* vtx[2];
+        LineDef* lineDef = lineDefs[i];
 
         // Skip lines that aren't sector boundaries.
-        if(LINE_SELFREF(line))
+        if(lineDef->isSelfreferencing())
             continue;
 
-        vtx[0] = line->L_v1;
-        vtx[1] = line->L_v2;
+        const Vertex& vtx1 = lineDef->vtx1();
+        const Vertex& vtx2 = lineDef->vtx2();
         // It shouldn't matter whether the line faces inward or outward.
-        if((vtx[0]->pos[VY] < y && vtx[1]->pos[VY] >= y) ||
-           (vtx[1]->pos[VY] < y && vtx[0]->pos[VY] >= y))
+        if((vtx1.pos.y < y && vtx2.pos.y >= y) ||
+           (vtx2.pos.y < y && vtx1.pos.y >= y))
         {
-            if(vtx[0]->pos[VX] +
-               (((y - vtx[0]->pos[VY]) / (vtx[1]->pos[VY] - vtx[0]->pos[VY])) *
-                (vtx[1]->pos[VX] - vtx[0]->pos[VX])) < x)
+            if(vtx1.pos.x +
+               (((y - vtx1.pos.y) / (vtx2.pos.y - vtx1.pos.y)) *
+                (vtx2.pos.x - vtx1.pos.x)) < x)
             {
                 // Toggle oddness.
                 isOdd = !isOdd;
@@ -175,7 +181,7 @@ bool Sector::pointInside(dfloat x, dfloat y) const
 bool Sector::pointInside2(dfloat x, dfloat y) const
 {
     // @todo Subsector should return the map its linked in.
-    const Subsector* subsector = Map_PointInSubsector2(P_CurrentMap(), x, y);
+    const Subsector* subsector = App::currentMap().pointInSubsector2(x, y);
     if(subsector->sector != this)
         return false; // Wrong sector.
     return subsector->pointInside(x, y);
@@ -205,42 +211,42 @@ void Sector::updateBounds()
 {
     dfloat* bbox = bBox;
 
-    if(!(sec->lineDefCount > 0))
+    if(!(lineDefCount > 0))
     {
         memset(bBox, 0, sizeof(bBox));
         return;
     }
 
-    bbox[BOXLEFT]   = DDMAXFLOAT;
-    bbox[BOXRIGHT]  = DDMINFLOAT;
-    bbox[BOXBOTTOM] = DDMAXFLOAT;
-    bbox[BOXTOP]    = DDMINFLOAT;
+    bbox[BOXLEFT]   = MAXFLOAT;
+    bbox[BOXRIGHT]  = MINFLOAT;
+    bbox[BOXBOTTOM] = MAXFLOAT;
+    bbox[BOXTOP]    = MINFLOAT;
 
     for(duint i = 1; i < lineDefCount; ++i)
     {
         LineDef* li = lineDefs[i];
-        Vertex* vtx;
 
         if(li->polyobjOwned)
             continue;
 
-        vtx = li->L_v1;
+        const Vertex& vtx = li->vtx1();
 
-        if(vtx->pos[VX] < bbox[BOXLEFT])
-            bbox[BOXLEFT]   = vtx->pos[VX];
-        if(vtx->pos[VX] > bbox[BOXRIGHT])
-            bbox[BOXRIGHT]  = vtx->pos[VX];
-        if(vtx->pos[VY] < bbox[BOXBOTTOM])
-            bbox[BOXBOTTOM] = vtx->pos[VY];
-        if(vtx->pos[VY] > bbox[BOXTOP])
-            bbox[BOXTOP]    = vtx->pos[VY];
+        if(vtx.pos.x < bbox[BOXLEFT])
+            bbox[BOXLEFT]   = vtx.pos.x;
+        if(vtx.pos.x > bbox[BOXRIGHT])
+            bbox[BOXRIGHT]  = vtx.pos.x;
+        if(vtx.pos.y < bbox[BOXBOTTOM])
+            bbox[BOXBOTTOM] = vtx.pos.y;
+        if(vtx.pos.y > bbox[BOXTOP])
+            bbox[BOXTOP]    = vtx.pos.y;
     }
 
     // This is very rough estimate of sector area.
     approxArea = ((bbox[BOXRIGHT] - bbox[BOXLEFT]) / 128) *
-        ((bbox[BOXTOP] - bbox[BOXBOTTOM]) / 128);
+                 ((bbox[BOXTOP]   - bbox[BOXBOTTOM]) / 128);
 }
 
+#if 0
 bool Sector::setProperty(const setargs_t* args)
 {
     switch(args->prop)
@@ -260,14 +266,13 @@ bool Sector::setProperty(const setargs_t* args)
         DMU_SetValue(DMT_SECTOR_RGB, &rgb[2], args, 0);
         break;
     case DMU_LIGHT_LEVEL:
-        DMU_SetValue(DMT_SECTOR_LIGHTLEVEL, &lightLevel, args, 0);
+        DMU_SetValue(DMT_SECTOR_LIGHTLEVEL, &_lightLevel, args, 0);
         break;
     case DMU_VALID_COUNT:
         DMU_SetValue(DMT_SECTOR_VALIDCOUNT, &validCount, args, 0);
         break;
     default:
-        LOG_ERROR("Sector::setProperty: Property %s is not writable.")
-            << DMU_Str(args->prop);
+        throw UnknownPropertyError("Sector::setProperty", "Property " + DMU_Str(args->prop) + " not found");
     }
 
     return true; // Continue iteration.
@@ -313,15 +318,18 @@ bool Sector::getProperty(setargs_t* args) const
         DMU_GetValue(DMT_SECTOR_VALIDCOUNT, &validCount, args, 0);
         break;
     default:
-        LOG_ERROR("Sector::getProperty: No property %s.")
-            << DMU_Str(args->prop);
+        throw UnknownPropertyError("Sector::getProperty", "Property " + DMU_Str(args->prop) + " not found");
     }
 
     return true; // Continue iteration.
 }
+#endif
 
 bool Sector::iterateMobjsTouching(dint (*func) (void*, void*), void* data)
 {
+#pragma message("Warning: Sector::iterateMobjsTouching not yet implemented.")
+
+#if 0
     assert(func);
 
 /**
@@ -335,43 +343,30 @@ bool Sector::iterateMobjsTouching(dint (*func) (void*, void*), void* data)
 #define MAXLINKED           2048
 #define DO_LINKS(it, end)   for(it = linkstore; it < end; it++) \
                                 if(!func(*it, data)) return false;
-    uint i;
     void* linkstore[MAXLINKED];
-    void** end = linkstore, **it;
-    mobj_t* mo;
-    LineDef* li;
-    nodeindex_t root, nix;
-    Map* map;
-
-    if(!func)
-        return true;
+    void** end = linkstore, **it;   
 
     // First process the mobjs that obviously are in the sector.
-    for(mo = mobjList; mo; mo = mo->sNext)
+    for(mobj_t* mo = mobjList; mo; mo = mo->sNext)
     {
         if(mo->validCount == validCount)
             continue;
-
         mo->validCount = validCount;
         *end++ = mo;
     }
 
     // Then check the sector's lines.
-    map = P_CurrentMap();
-    for(i = 0; i < lineDefCount; ++i)
+    for(duint i = 0; i < lineDefCount; ++i)
     {
-        linknode_t* ln;
-
-        li = lineDefs[i];
-
-        // @fixme LineDef should tell us which map it belongs to.
-        ln = map->lineNodes->nodes;
-
+        LineDef* li = lineDefs[i];
+        /// @fixme LineDef should tell us which map it belongs to.
+        Map& map = App::currentMap();
+        linknode_t* ln = map.lineNodes->nodes;
         // Iterate all mobjs on the line.
-        root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
-        for(nix = ln[root].next; nix != root; nix = ln[nix].next)
+        nodeindex_t root = map.lineLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
+        for(nodeindex_t nix = ln[root].next; nix != root; nix = ln[nix].next)
         {
-            mo = (mobj_t *) ln[nix].ptr;
+            mobj_t* mo = (mobj_t*) ln[nix].ptr;
             if(mo->validCount == validCount)
                 continue;
 
@@ -385,5 +380,6 @@ bool Sector::iterateMobjsTouching(dint (*func) (void*, void*), void* data)
 
 #undef MAXLINKED
 #undef DO_LINKS
-    }
+
+#endif
 }

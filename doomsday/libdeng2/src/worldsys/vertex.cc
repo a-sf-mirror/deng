@@ -27,11 +27,11 @@
 
 using namespace de;
 
+#if 0
 bool Vertex::setProperty(const setargs_t* args)
 {
     // Vertices are not writable through DMU.
-    LOG_ERROR("Vertex::SetProperty: Not writable.");
-    return true; // Continue iteration.
+    throw WriteError("Vertex::setProperty", "Not writable.");
 }
 
 bool Vertex::getProperty(setargs_t* args) const
@@ -60,9 +60,9 @@ bool Vertex::getProperty(setargs_t* args) const
         break;
         }
     default:
-        LOG_Error("Vertex::getProperty: No property %s.")
-            << DMU_Str(args->prop);
+        throw UnknownPropertyError("Vertex::getProperty", "Property " + DMU_Str(args->prop) + " not known.");
     }
 
     return true; // Continue iteration.
 }
+#endif

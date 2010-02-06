@@ -298,7 +298,7 @@ LOG_DEBUG("Skipping very short half-edge (len=%1.3f) near (%1.1f,%1.1f)")
 }
 
 /**
- * Look for the first half-edge whose angle is past that required.
+ * Look for the first HalfEdge whose angle is past that required.
  */
 static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockwise)
 {
@@ -407,34 +407,28 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
             {
                 if(!isIntersectionOnSelfRefLineDef(cur))
                 {
-                    ddouble pos[2];
-
-                    pos[0] = cur->hEdge->vertex->pos[0] + next->hEdge->vertex->pos[0];
-                    pos[1] = cur->hEdge->vertex->pos[1] + next->hEdge->vertex->pos[1];
-                    pos[0] /= 2;
-                    pos[1] /= 2;
-
                     nearSector->flags |= Sector::UNCLOSED;
 
-                    LOG_VERBOSE("Warning: Unclosed sector #%d near [%1.1f, %1.1f]")
-                        << nearSector->buildData.index - 1 << dfloat(pos[0]) << dfloat(pos[1]);
+                    Vector2d pos = cur->hEdge->vertex->pos + next->hEdge->vertex->pos;
+                    pos.x /= 2;
+                    pos.y /= 2;
+
+                    LOG_VERBOSE("Warning: Unclosed sector #%d near %s")
+                        << nearSector->buildData.index - 1 << pos;
                 }
             }
             else if(!nearSector && farSector)
             {
                 if(!isIntersectionOnSelfRefLineDef(next))
                 {
-                    ddouble pos[2];
-
-                    pos[0] = cur->hEdge->vertex->pos[0] + next->hEdge->vertex->pos[0];
-                    pos[1] = cur->hEdge->vertex->pos[1] + next->hEdge->vertex->pos[1];
-                    pos[0] /= 2;
-                    pos[1] /= 2;
-
                     farSector->flags |= Sector::UNCLOSED;
 
-                    LOG_VERBOSE("Warning: Unclosed sector #%d near [%1.1f, %1.1f]")
-                        << (farSector->buildData.index - 1) << dfloat(pos[0]) << dfloat(pos[1]);
+                    Vector2d pos = cur->hEdge->vertex->pos + next->hEdge->vertex->pos;
+                    pos.x /= 2;
+                    pos.y /= 2;
+
+                    LOG_VERBOSE("Warning: Unclosed s    ector #%d near %s")
+                        << (farSector->buildData.index - 1) << pos;
                 }
             }
             else
@@ -449,10 +443,9 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
                     if(!isIntersectionOnSelfRefLineDef(cur) &&
                        !isIntersectionOnSelfRefLineDef(next))
                     {
-                        LOG_DEBUG("Sector mismatch: #%d (%1.1f,%1.1f) != #%d (%1.1f,%1.1f)")
-                            << (nearSector->buildData.index - 1) << (dfloat) cur->hEdge->vertex->pos[0]
-                            << (dfloat) cur->hEdge->vertex->pos[1] << (farSector->buildData.index - 1)
-                            << (dfloat) next->hEdge->vertex->pos[0] << (dfloat) next->hEdge->vertex->pos[1];
+                        LOG_DEBUG("Sector mismatch: #%d %s != #%d %s")
+                            << (nearSector->buildData.index - 1) << cur->hEdge->vertex->pos
+                            << (farSector->buildData.index - 1) << next->hEdge->vertex->pos;
                     }
 
                     // Choose the non-self-referencing sector when we can.
@@ -466,8 +459,8 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
                 {
                 HalfEdge* right, *left;
 
-                right = createHEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->side? true : false);
-                left = createHEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->hEdge->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->side? true : false);
+                right = createHEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->back);
+                left = createHEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->hEdge->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->back);
 
                 // Twin the half-edges together.
                 right->twin = left;
@@ -490,8 +483,8 @@ testVertexHEdgeRings(cur->hEdge->vertex);
 testVertexHEdgeRings(next->hEdge->vertex);
 #endif
 
-                BSP_UpdateHEdgeInfo(right);
-                BSP_UpdateHEdgeInfo(left);
+                updateHEdgeInfo(*right);
+                updateHEdgeInfo(*left);
 
                 // Add the new half-edges to the appropriate lists.
 

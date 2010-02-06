@@ -26,6 +26,9 @@
 
 #include "deng.h"
 
+#include "../Error"
+#include "../Vector"
+
 namespace de
 {
     enum {
@@ -34,14 +37,30 @@ namespace de
         VZ
     };
 
-    typedef struct vertex_s {
-        class HalfEdge* hEdge;
-        ddouble pos[2]; // @todo Move out of the base class.
+    /// Smallest degrees between two angles before being considered equal.
+    static const ddouble ANG_EPSILON = (1.0 / 1024.0);
+
+    class HalfEdge;
+    class Face;
+
+    /**
+     * Public vertex representation. Users of this class should use this
+     * as their base for vertices.
+     */
+    class Vertex
+    {
+    public:
+        HalfEdge* hEdge;
+        Vector2d pos; // @todo Move out of the base class.
         void* data;
-    } Vertex;
+    };
 
     void testVertexHEdgeRings(Vertex* v);
 
+    /**
+     * Public halfedge representation. Users of this class should use this
+     * as their base for halfedges.
+     */
     class HalfEdge
     {
     public:
@@ -49,10 +68,14 @@ namespace de
         HalfEdge* twin;
         HalfEdge* next;
         HalfEdge* prev;
-        class Face* face;
+        Face* face;
         void* data;
     };
 
+    /**
+     * Public face representation. Users of this class should use this
+     * as their base for faces.
+     */
     class Face
     {
     public:
@@ -62,7 +85,7 @@ namespace de
         void linkHEdge(HalfEdge* hEdge);
         void unlinkHEdge(HalfEdge* hEdge);
         void switchToHEdgeLinks();
-        bool getAveragedCoords(ddouble* x, ddouble* y);
+        Vector2d getAveragedCoords();
 
         /**
          * Sort the list of half-edges in the leaf into clockwise order, based on
@@ -71,13 +94,12 @@ namespace de
         void sortHEdgesByAngleAroundMidPoint();
     };
 
-    /// Smallest degrees between two angles before being considered equal.
-    static const ddouble ANG_EPSILON = (1.0 / 1024.0);
-
+    /**
+     *
+     */
     class HalfEdgeDS
     {
     public:
-        duint _numVertices;
         Vertex** vertices;
 
         HalfEdgeDS();
@@ -91,7 +113,7 @@ namespace de
 
         Vertex* createVertex();
         HalfEdge* createHEdge(Vertex* vertex);
-        Face* createFace();
+        Face& createFace();
 
         duint numVertices() const;
         duint numHEdges() const;
@@ -101,6 +123,8 @@ namespace de
         dint iterateFaces(dint (*callback) (Face*, void*), void* context);
 
     private:
+        duint _numVertices;
+
         duint _numHEdges;
         HalfEdge** _hEdges;
 

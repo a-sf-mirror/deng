@@ -67,7 +67,9 @@ namespace de
          *                      @c false= retrieve the right child.
          * @return              Ptr to the requested child if present ELSE @c NULL.
          */
-        BinaryTree*     child(bool left) const { return left? _leftChild : _rightChild; }
+        BinaryTree* child(bool left) const { return left? _leftChild : _rightChild; }
+        BinaryTree* right() const { return _rightChild; }
+        BinaryTree* left() const { return _leftChild; }
 
         /**
          * Set a child of the tree.
@@ -76,35 +78,37 @@ namespace de
          *                      @c false= set the right child.
          * @param subTree       Ptr to the (child) tree to be linked or @c NULL.
          */
-        void            setChild(bool left, BinaryTree* subTree);
+        void setChild(bool left, BinaryTree* subTree);
+        void setRight(BinaryTree* subTree) { setChild(false, subTree); }
+        void setLeft(BinaryTree* subTree) { setChild(true, subTree); }
 
         /**
          * Retrieve the user data associated with the specified (sub)tree.
          *
          * @return              Ptr to the user data if present ELSE @c NULL.
          */
-        T               data() const { return _data; }
+        T data() const { return _data; }
 
         /**
          * Set the user data assoicated with the specified (sub)tree.
          *
          * @param data          Ptr to the user data.
          */
-        void            setData(T data) { _data = data; }
+        void setData(T data) { _data = data; }
 
         /**
          * Is this tree a "leaf" (has no children)?
          *
          * @return              @c true iff this tree is a leaf.
          */
-        bool            isLeaf() const { return !(_rightChild || _leftChild); }
+        bool isLeaf() const { return !(_rightChild || _leftChild); }
 
         /**
          * Calculate the height of the tree.
          *
          * @return              Height of the tree.
          */
-        dsize           height() const { return findHeight(); }
+        dsize height() const { return findHeight(); }
 
         /**
          * Traverse the tree in "Preorder".
@@ -118,7 +122,7 @@ namespace de
          *
          * @return              @c true, iff all callbacks return @c true;
          */
-        bool            preOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* data);
+        bool preOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* data);
 
         /**
          * Traverse the tree in "Inorder".
@@ -132,7 +136,7 @@ namespace de
          *
          * @return              @c true, iff all callbacks return @c true;
          */
-        bool            inOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* data);
+        bool inOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* data);
 
         /**
          * Traverse the tree in "Postorder".
@@ -146,16 +150,16 @@ namespace de
          *
          * @return              @c true, iff all callbacks return @c true;
          */
-        bool            postOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* data);
+        bool postOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* data);
 
     private:
         /// User data associated with this tree.
-        T               _data;
+        T _data;
 
         /// Right and Left subtrees.
-        BinaryTree*     _rightChild, *_leftChild;
+        BinaryTree* _rightChild, *_leftChild;
 
-        dsize           findHeight() const;
+        dsize findHeight() const;
     };
 
     template <class T>

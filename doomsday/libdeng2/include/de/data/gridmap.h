@@ -25,7 +25,7 @@
 #ifndef LIBDENG2_GRIDMAP_H
 #define LIBDENG2_GRIDMAP_H
 
-#include "de/Vector"
+#include "de/Rectangle"
 #include "de/Error"
 
 #include <vector>
@@ -62,20 +62,17 @@ namespace de
         /**
          * Retrieve the width of the map.
          */
-        duint width() const { return _width; }
+        duint width() const { return _dimensions.x; }
 
         /**
          * Retrieve the height of the map.
          */
-        duint height() const { return _height; }
+        duint height() const { return _dimensions.y; }
 
         /**
          * Retrieve the width and height of the map as a 2D vector.
          */
-        void dimensions(Vector2<duint>& dimensions) const {
-                dimensions.x = _width;
-                dimensions.y = _height;
-        }
+        const Vector2ui& dimensions() const { return _dimensions; }
 
         T block(duint x, duint y) const;
 
@@ -89,7 +86,7 @@ namespace de
          *
          * @return              @c true, iff all callbacks return @c true;
          */
-        bool iterate(bool (*callback) (T& data, void* context), void* param);
+        bool iterate(bool (*callback) (T data, void* context), void* param);
 
         /**
          * Iterate a subset of the blocks in the map, making a callback for each.
@@ -99,20 +96,22 @@ namespace de
          *
          * @return              @c true, iff all callbacks return @c true;
          */
-        bool iterate(duint xl, duint xh, duint yl, duint yh, bool (*callback) (T& data, void* context), void* param);
+        bool iterate(duint xl, duint xh, duint yl, duint yh, bool (*callback) (T data, void* context), void* param);
 
-        bool iterate(const Vector2<duint>& bottomLeft, const Vector2<duint>& topRight, bool (*callback) (T& data, void* context), void* param);
+        bool iterate(const Vector2ui& bottomLeft, const Vector2ui& topRight, bool (*callback) (T data, void* context), void* param);
+
+        bool iterate(const Rectangle<Vector2ui>& boxBlocks, bool (*callback) (T data, void* context), void* param);
 
     private:
-        duint _width, _height;
+        Vector2ui _dimensions;
         std::vector<T> _blockData;
     };
 
     template <class T>
     Gridmap<T>::Gridmap(duint width, duint height)
-      :  _width(width), _height(height)
+      :  _dimensions(width, height)
     {
-        _blockData.reserve(_width * _height);
+        _blockData.reserve(_dimensions.x * _dimensions.y);
     }
 
     template <class T>
@@ -130,32 +129,32 @@ namespace de
     template <class T>
     T Gridmap<T>::block(duint x, duint y) const
     {
-        if(!(x < _width && y < _height))
+        if(!(x < _dimensions.x && y < _dimensions.y))
             /// @throw OutOfRangeError  Could not set block outside valid range.
             throw OutOfRangeError("Gridmap::block", "Block would be outside map.");
 
-        return _blockData[y * _width + x];
+        return _blockData[y * _dimensions.x + x];
     }
 
     template <class T>
     T Gridmap<T>::setBlock(duint x, duint y, T data)
     {
-        if(!(x < _width && y < _height))
+        if(!(x < _dimensions.x && y < _dimensions.y))
             /// @throw OutOfRangeError  Could not set block outside valid range.
             throw OutOfRangeError("Gridmap::setBlock", "Block would be outside map.");
 
-        _blockData[y * _width + x] = data;
+        _blockData[y * _dimensions.x + x] = data;
         return data;
     }
 
     template <class T>
-    bool Gridmap<T>::iterate(bool (*callback) (T& data, void* ctx), void* context)
+    bool Gridmap<T>::iterate(bool (*callback) (T data, void* ctx), void* context)
     {
         assert(callback);
 
-        for(duint x = 0; x <= _width; ++x)
+        for(duint x = 0; x <= _dimensions.x; ++x)
         {
-            for(duint y = 0; y <= _height; ++y)
+            for(duint y = 0; y <= _dimensions.y; ++y)
             {
                 void* data = block(x, y);
 
@@ -171,14 +170,14 @@ namespace de
 
     template <class T>
     bool Gridmap<T>::iterate(duint xl, duint xh, duint yl, duint yh,
-                             bool (*callback) (T& data, void* ctx), void* context)
+                             bool (*callback) (T data, void* ctx), void* context)
     {
         assert(callback);
 
-        if(xh >= _width)
-            xh = _width - 1;
-        if(yh >= _height)
-            yh = _height - 1;
+        if(xh >= _dimensions.x)
+            xh = _dimensions.x - 1;
+        if(yh >= _dimensions.y)
+            yh = _dimensions.y - 1;
 
         for(duint x = xl; x <= xh; ++x)
         {
@@ -198,7 +197,7 @@ namespace de
 
     template <class T>
     bool Gridmap<T>::iterate(const Vector2<duint>& bottomLeft, const Vector2<duint>& topRight,
-                             bool (*callback) (T& data, void* ctx), void* param)
+                             bool (*callback) (T data, void* ctx), void* param)
     {
         return iterate(bottomLeft.x, topRight.x, bottomLeft.y, topRight.y, callback, param);
     }

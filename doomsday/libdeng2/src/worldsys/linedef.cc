@@ -28,26 +28,20 @@ using namespace de;
 
 dfloat LineDef::lightLevelDelta() const
 {
-    return dfloat((1.0f / 255) * ((vtx2()->pos[VY] - vtx1()->pos[VY]) / length * 18));
+    return dfloat((1.0f / 255) * ((vtx2().pos.y - vtx1().pos.y) / length * 18));
 }
 
-void LineDef::unitVector(Vector2<dfloat>& unitvec) const
+Vector2f LineDef::unitVector() const
 {
-    dfloat len = M_ApproxDistancef(dX, dY);
-    if(len)
-    {
-        unitvec.x = dX / len;
-        unitvec.y = dY / len;
-    }
-    else
-    {
-        unitvec.x = unitvec.y = 0;
-    }
+    dfloat length = M_ApproxDistancef(delta.x, delta.y);
+    if(length != 0)
+        return Vector2f(delta.x / length, delta.y / length);
+    return Vector2f(0, 0);
 }
 
 dint LineDef::pointOnSide(dfloat x, dfloat y) const
 {
-    return !P_PointOnLineSide(x, y, vtx1()->pos[VX], vtx1()->pos[VY], dX, dY);
+    return !P_PointOnLineSide(x, y, vtx1().pos.x, vtx1().pos.y, delta.x, delta.y);
 }
 
 dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
@@ -58,9 +52,9 @@ dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
     {
     default: // Shut up compiler.
       case ST_HORIZONTAL:
-        a = yh > vtx1()->pos[VY];
-        b = yl > vtx1()->pos[VY];
-        if(dX < 0)
+        a = yh > vtx1().pos.y;
+        b = yl > vtx1().pos.y;
+        if(delta.x < 0)
         {
             a ^= 1;
             b ^= 1;
@@ -68,9 +62,9 @@ dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
         break;
 
       case ST_VERTICAL:
-        a = xh < vtx1()->pos[VX];
-        b = xl < vtx1()->pos[VX];
-        if(dY < 0)
+        a = xh < vtx1().pos.x;
+        b = xl < vtx1().pos.x;
+        if(delta.y < 0)
         {
             a ^= 1;
             b ^= 1;
@@ -94,7 +88,7 @@ dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
     return -1;
 }
 
-dint LineDef::boxOnSide(const Vector2<dfloat>& bottomLeft, const Vector2<dfloat>& topRight) const
+dint LineDef::boxOnSide(const Vector2f& bottomLeft, const Vector2f& topRight) const
 {
     return boxOnSide(bottomLeft.x, topRight.x, bottomLeft.y, topRight.y);
 }

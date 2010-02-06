@@ -29,7 +29,8 @@
 
 #include "deng.h"
 
-#include "de/LineDef"
+#include "../Vector"
+#include "../LineDef"
 
 namespace de
 {
@@ -42,11 +43,11 @@ namespace de
         struct superblock_s* block;
 
         // Precomputed data for faster calculations.
-        ddouble             pDX, pDY;
-        ddouble             pLength;
-        ddouble             pAngle;
-        ddouble             pPara;
-        ddouble             pPerp;
+        Vector2d pDelta;
+        ddouble pLength;
+        ddouble pAngle;
+        ddouble pPara;
+        ddouble pPerp;
 
         // LineDef that this half-edge goes along, or NULL if miniseg.
         LineDef*            lineDef;
@@ -57,7 +58,9 @@ namespace de
         LineDef*            sourceLine;
 
         Sector*    sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
-        dbyte               side; // 0 for right, 1 for left.
+
+        /// @c true = this is on the backside of the edge.
+        bool back;
     } hedge_info_t;
 }
 

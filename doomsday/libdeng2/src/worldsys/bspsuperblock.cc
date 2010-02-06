@@ -186,9 +186,9 @@ static dint evalPartitionWorker(const superblock_t* hEdgeList,
      * within it at once. Only when the partition line intercepts the box do
      * we need to go deeper into it - AJA.
      */
-    num = P_BoxOnLineSide3(hEdgeList->bbox, partHEdge->vertex->pos[VX],
-                           partHEdge->vertex->pos[VY],
-                           part->pDX, part->pDY, part->pPerp,
+    num = P_BoxOnLineSide3(hEdgeList->bbox, partHEdge->vertex->pos.x,
+                           partHEdge->vertex->pos.y,
+                           part->pDelta.x, part->pDelta.y, part->pPerp,
                            part->pLength, DIST_EPSILON);
     if(num < 0)
     {   // Left.
@@ -224,10 +224,10 @@ static dint evalPartitionWorker(const superblock_t* hEdgeList,
         }
         else
         {
-            a = M_PerpDist(part->pDX, part->pDY, part->pPerp, part->pLength,
-                           otherHEdge->vertex->pos[VX], otherHEdge->vertex->pos[VY]);
-            b = M_PerpDist(part->pDX, part->pDY, part->pPerp, part->pLength,
-                           otherHEdge->twin->vertex->pos[VX], otherHEdge->twin->vertex->pos[VY]);
+            a = M_PerpDist(part->pDelta.x, part->pDelta.y, part->pPerp, part->pLength,
+                           otherHEdge->vertex->pos.x, otherHEdge->vertex->pos.y);
+            b = M_PerpDist(part->pDelta.x, part->pDelta.y, part->pPerp, part->pLength,
+                           otherHEdge->twin->vertex->pos.x, otherHEdge->twin->vertex->pos.y);
 
             fa = fabs(a);
             fb = fabs(b);
@@ -237,7 +237,7 @@ static dint evalPartitionWorker(const superblock_t* hEdgeList,
         if(fa <= DIST_EPSILON && fb <= DIST_EPSILON)
         {   // This half-edge runs along the same line as the partition.
             // Check whether it goes in the same direction or the opposite.
-            if(other->pDX * part->pDX + other->pDY * part->pDY < 0)
+            if(other->pDelta.x * part->pDelta.x + other->pDelta.y * part->pDelta.y < 0)
             {
                 ADD_LEFT();
             }
@@ -393,7 +393,7 @@ Con_Message("Eval : No real half-edges on %s%sside\n",
 
     // Another little twist, here we show a slight preference for partition
     // lines that lie either purely horizontally or purely vertically - AJA.
-    if(data->pDX != 0 && data->pDY != 0)
+    if(data->pDelta.x != 0 && data->pDelta.y != 0)
         info.cost += 25;
 
 /*#if _DEBUG
@@ -501,42 +501,33 @@ else
 
 static void findLimitWorker(const superblock_t* block, dfloat* bbox)
 {
-    duint num;
-    superblock_listnode_t* n;
-
-    for(n = block->_hEdges; n; n = n->next)
+    for(superblock_listnode_t* n = block->_hEdges; n; n = n->next)
     {
-        HalfEdge* cur = n->hEdge;
-        ddouble x1 = cur->vertex->pos[VX];
-        ddouble y1 = cur->vertex->pos[VY];
-        ddouble x2 = cur->twin->vertex->pos[VX];
-        ddouble y2 = cur->twin->vertex->pos[VY];
-        dfloat lx = (dfloat) de::min(x1, x2);
-        dfloat ly = (dfloat) de::min(y1, y2);
-        dfloat hx = (dfloat) de::max(x1, x2);
-        dfloat hy = (dfloat) de::max(y1, y2);
+        const HalfEdge* cur = n->hEdge;
+        const Vector2f l = cur->vertex->pos.min(cur->twin->vertex->pos);
+        const Vector2f h = cur->vertex->pos.max(cur->twin->vertex->pos);
 
-        if(lx < bbox[superblock_t::BOXLEFT])
-            bbox[superblock_t::BOXLEFT] = lx;
-        else if(lx > bbox[superblock_t::BOXRIGHT])
-            bbox[superblock_t::BOXRIGHT] = lx;
-        if(ly < bbox[superblock_t::BOXBOTTOM])
-            bbox[superblock_t::BOXBOTTOM] = ly;
-        else if(ly > bbox[superblock_t::BOXTOP])
-            bbox[superblock_t::BOXTOP] = ly;
+        if(l.x < bbox[superblock_t::BOXLEFT])
+            bbox[superblock_t::BOXLEFT] = l.x;
+        else if(l.x > bbox[superblock_t::BOXRIGHT])
+            bbox[superblock_t::BOXRIGHT] = l.x;
+        if(l.y < bbox[superblock_t::BOXBOTTOM])
+            bbox[superblock_t::BOXBOTTOM] = l.y;
+        else if(l.y > bbox[superblock_t::BOXTOP])
+            bbox[superblock_t::BOXTOP] = l.y;
 
-        if(hx < bbox[superblock_t::BOXLEFT])
-            bbox[superblock_t::BOXLEFT] = hx;
-        else if(hx > bbox[superblock_t::BOXRIGHT])
-            bbox[superblock_t::BOXRIGHT] = hx;
-        if(hy < bbox[superblock_t::BOXBOTTOM])
-            bbox[superblock_t::BOXBOTTOM] = hy;
-        else if(hy > bbox[superblock_t::BOXTOP])
-            bbox[superblock_t::BOXTOP] = hy;
+        if(h.x < bbox[superblock_t::BOXLEFT])
+            bbox[superblock_t::BOXLEFT] = h.x;
+        else if(h.x > bbox[superblock_t::BOXRIGHT])
+            bbox[superblock_t::BOXRIGHT] = h.x;
+        if(h.y < bbox[superblock_t::BOXBOTTOM])
+            bbox[superblock_t::BOXBOTTOM] = h.y;
+        else if(h.y > bbox[superblock_t::BOXTOP])
+            bbox[superblock_t::BOXTOP] = h.y;
     }
 
     // Recursively handle sub-blocks.
-    for(num = 0; num < 2; ++num)
+    for(duint num = 0; num < 2; ++num)
     {
         if(block->subs[num])
             findLimitWorker(block->subs[num], bbox);
@@ -546,7 +537,7 @@ static void findLimitWorker(const superblock_t* block, dfloat* bbox)
 /**
  * Find the extremes of an axis aligned box containing all half-edges.
  */
-void BSP_FindAABBForHEdges(const superblock_t* hEdgeList, dfloat* bbox)
+void BSP_FindBBoxForHEdges(const superblock_t* hEdgeList, dfloat* bbox)
 {
     bbox[superblock_t::BOXTOP] = bbox[superblock_t::BOXRIGHT] = MINFLOAT;
     bbox[superblock_t::BOXBOTTOM] = bbox[superblock_t::BOXLEFT] = MAXFLOAT;
@@ -557,23 +548,19 @@ void BSP_FindAABBForHEdges(const superblock_t* hEdgeList, dfloat* bbox)
  * For debugging.
  */
 #if _DEBUG
-void de::SuperBlock_PrintHEdges(superblock_t* block)
+void de::SuperBlock_PrintHEdges(const superblock_t* block)
 {
-    const superblock_listnode_t* n;
-    dint num;
-
-    for(n = block->_hEdges; n; n = n->next)
+    for(const superblock_listnode_t* n = block->_hEdges; n; n = n->next)
     {
         const HalfEdge* hEdge = n->hEdge;
         const hedge_info_t* data = reinterpret_cast<hedge_info_t*>(hEdge->data);
 
-        LOG_DEBUG("Build: %s %p sector=%d (%1.1f,%1.1f) -> (%1.1f,%1.1f)")
+        LOG_DEBUG("Build: %s %p sector=%d %s -> %s")
             << (data->lineDef? "NORM" : "MINI") << hEdge << data->sector->buildData.index
-            << (dfloat) hEdge->vertex->pos[VX] << (dfloat) hEdge->vertex->pos[VY]
-            << (dfloat) hEdge->twin->vertex->pos[VX] << (dfloat) hEdge->twin->vertex->pos[VY];
+            << hEdge->vertex->pos << hEdge->twin->vertex->pos;
     }
 
-    for(num = 0; num < 2; ++num)
+    for(dint num = 0; num < 2; ++num)
     {
         if(block->subs[num])
             SuperBlock_PrintHEdges(block->subs[num]);

@@ -27,11 +27,10 @@
 
 using namespace de;
 
+#if 0
 bool Seg::setProperty(const setargs_t* args)
 {
-    LOG_ERROR("Seg::setProperty: Property %s is not writable.")
-        << DMU_Str(args->prop);
-    return true; // Continue iteration.
+    throw UnknownPropertyError("Seg::setProperty", "Property " + DMU_Str(args->prop) + " not known.");
 }
 
 bool Seg::getProperty(setargs_t* args) const
@@ -102,8 +101,9 @@ bool Seg::getProperty(setargs_t* args) const
         DMU_GetValue(DMT_SEG_ANGLE, &angle, args, 0);
         break;
     default:
-        LOG_ERROR("Seg::getProperty: No property %s.") << DMU_Str(args->prop);
+        throw UnknownPropertyError("Seg::getProperty", "Property " + DMU_Str(args->prop) + " not known.");
     }
 
     return true; // Continue iteration.
 }
+#endif

@@ -32,47 +32,18 @@
 
 using namespace de;
 
-namespace de
-{
-    //// \todo This stuff is obsolete and needs to be removed!
-    #define MAPBLOCKUNITS   128
-    #define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
-    #define MAPBLOCKSHIFT   (FRACBITS+7)
-    #define MAPBMASK        (MAPBLOCKSIZE-1)
-    #define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
-
-    typedef struct listnode_s {
-        struct listnode_s* next;
-        void* data;
-    } listnode_t;
-
-    typedef struct {
-        duint size;
-        listnode_t* head;
-    } linklist_t;
-
-    typedef struct {
-        bool (*func) (LineDef*, void*);
-        bool retObjRecord;
-        dint localValidCount;
-        void* context;
-    } iteratelinedefs_args_t;
-}
-
-LineDefBlockmap::LineDefBlockmap(const Vector2<dfloat>& min,
-    const Vector2<dfloat>& max, duint width, duint height)
+LineDefBlockmap::LineDefBlockmap(const Rectangle<Vector2f>& aaBB, duint width, duint height)
   : _gridmap(width, height),
-    _bottomLeft(min),
-    _topRight(max)
+    _aaBB(aaBB)
 {
-    _blockSize = _topRight - _bottomLeft;
+    _blockSize = _aaBB.topRight() - _aaBB.bottomLeft();
     _blockSize.x /= width;
     _blockSize.y /= height;
 }
 
 LineDefBlockmap::~LineDefBlockmap()
 {
-    _gridmap.iterate(freeLineDefBlockData, NULL);
+    clear();
 }
 
 static listnode_t* allocListNode(void)
@@ -102,6 +73,18 @@ static void freeList(linklist_t* list)
     }
 
     Z_Free(list);
+}
+
+static bool freeLineDefBlockData(linklist_t* list, void* context)
+{
+    if(list)
+        freeList(list);
+    return true; // Continue iteration.
+}
+
+void LineDefBlockmap::clear()
+{
+    _gridmap.iterate(freeLineDefBlockData, NULL);
 }
 
 static void listPushFront(linklist_t* list, LineDef* lineDef)
@@ -146,7 +129,7 @@ static duint listSize(linklist_t* list)
     return list->size;
 }
 
-static bool listSearch(linklist_t* list, LineDef* lineDef)
+static bool listSearch(linklist_t* list, const LineDef* lineDef)
 {
     if(list->head)
     {
@@ -166,49 +149,41 @@ static bool listSearch(linklist_t* list, LineDef* lineDef)
     return false;
 }
 
-static void linkLineDefToBlock(LineDefBlockmap* blockmap, duint x, duint y,
-                               LineDef* lineDef)
+void LineDefBlockmap::linkLineDefToBlock(LineDef& lineDef, duint x, duint y)
 {
-    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
-
+    linklist_t* list = _gridmap.block(x, y);
     if(!list)
-        list = Gridmap_SetBlock(blockmap->gridmap, x, y, allocList());
-
-    listPushFront(list, lineDef);
+        list = _gridmap.setBlock(x, y, allocList());
+    listPushFront(list, &lineDef);
 }
 
-static bool unlinkLineDefFromBlock(LineDefBlockmap* blockmap, duint x, duint y,
-                                      LineDef* lineDef)
+bool LineDefBlockmap::unlinkLineDefFromBlock(LineDef& lineDef, duint x, duint y)
 {
-    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
+    linklist_t* list = _gridmap.block(x, y);
 
     if(list)
     {
-        bool result = listRemove(list, lineDef);
+        bool result = listRemove(list, &lineDef);
         if(result && !list->head)
         {
             freeList(list);
-            Gridmap_SetBlock(blockmap->gridmap, x, y, NULL);
+            _gridmap.setBlock(x, y, NULL);
         }
-
         return result;
     }
-
     return false;
 }
 
-static bool isLineDefLinkedToBlock(LineDefBlockmap* blockmap, duint x, duint y,
-                                      LineDef* lineDef)
+bool LineDefBlockmap::isLineDefLinkedToBlock(const LineDef& lineDef, duint x, duint y) const
 {
-    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
+    linklist_t* list = _gridmap.block(x, y);
     if(list)
-        return listSearch(list, lineDef);
+        return listSearch(list, &lineDef);
     return false;
 }
 
-static bool iterateLineDefs(void* ptr, void* context)
+static bool iterateLineDefs(linklist_t* list, void* context)
 {
-    linklist_t* list = (linklist_t*) ptr;
     iteratelinedefs_args_t* args = (iteratelinedefs_args_t*) context;
 
     if(list)
@@ -221,18 +196,18 @@ static bool iterateLineDefs(void* ptr, void* context)
 
             if(node->data)
             {
-                LineDef* lineDef = (LineDef*) node->data;
+                LineDef* lineDef = reinterpret_cast<LineDef*>(node->data);
 
                 if(lineDef->validCount != args->localValidCount)
                 {
-                    void* ptr;
+                    LineDef* ptr;
 
                     lineDef->validCount = args->localValidCount;
 
                     if(args->retObjRecord)
-                        ptr = (void*) P_ObjectRecord(DMU_LINEDEF, lineDef);
+                        ptr = reinterpret_cast<LineDef*>(P_ObjectRecord(DMU_LINEDEF, lineDef));
                     else
-                        ptr = (void*) lineDef;
+                        ptr = lineDef;
 
                     if(!args->func(ptr, args->context))
                         return false;
@@ -246,28 +221,28 @@ static bool iterateLineDefs(void* ptr, void* context)
     return true;
 }
 
-static bool freeLineDefBlockData(void* data, void* context)
+/**
+ * Given a set of world space coordinates of the form minX, minY, maxX, maxY
+ * return the blockmap block indices that contain those points, arranged so
+ * that bottomLeft is the left lowermost block and topRight is the right
+ * uppermost block in the same coordinate space.
+ */
+Rectangleui LineDefBlockmap::boxToBlocks(const Rectanglef& box) const
 {
-    linklist_t* list = (linklist_t*) data;
-    if(list)
-        freeList(list);
-    return true; // Continue iteration.
-}
+    Vector2f bottomLeft = _aaBB.bottomLeft().max(box.bottomLeft());
+    bottomLeft -= _aaBB.bottomLeft();
+    bottomLeft.x /= _blockSize.x;
+    bottomLeft.y /= _blockSize.y;
 
-void LineDefBlockmap::boxToBlocks(Vector2<duint>& bottomLeft,
-    Vector2<duint>& topRight, const arvec2_t box) const
-{
-    Vector2<duint> dimensions;
-    _gridmap.dimensions(dimensions);
+    Vector2f topRight = _aaBB.topRight().min(box.topRight());
+    topRight -= _aaBB.bottomLeft();
+    topRight.x /= _blockSize.x;
+    topRight.y /= _blockSize.y;
 
-    Vector2<dfloat> min = Vector2(max(_bottomLeft.x, box[0][0]), max(_bottomLeft.y, box[0][1]));
-    Vector2<dfloat> max = Vector2(min(_topRight.x, box[1][0]), min(_topRight.y, box[1][1]));
+    Vector2ui temp  = Vector2ui(0, 0).max(bottomLeft.min(_gridmap.dimensions()));
+    Vector2ui temp2 = Vector2ui(0, 0).max(topRight.min(_gridmap.dimensions()));
 
-    bottomLeft.x = clamp(0, (min.x - _bottomLeft.x) / _blockSize.x, dimensions.x);
-    bottomLeft.y = clamp(0, (min.y - _bottomLeft.y) / _blockSize.y, dimensions.y);
-
-    topRight.x = clamp(0, (max.x - _bottomLeft.x) / _blockSize.x, dimensions.x);
-    topRight.y = clamp(0, (max.y - _bottomLeft.y) / _blockSize.y, dimensions.y);
+    return Rectangleui(Vector2ui(temp.x, temp2.y), Vector2ui(temp2.x, temp.y));
 }
 
 bool LineDefBlockmap::block(Vector2<duint>& dest, dfloat x, dfloat y) const

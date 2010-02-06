@@ -32,11 +32,37 @@
 
 namespace de
 {
+    //// \todo This stuff is obsolete and needs to be removed!
+    #define MAPBLOCKUNITS   128
+    #define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
+    #define MAPBLOCKSHIFT   (FRACBITS+7)
+    #define MAPBMASK        (MAPBLOCKSIZE-1)
+    #define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
+
+    typedef struct listnode_s {
+        struct listnode_s* next;
+        void* data;
+    } listnode_t;
+
+    typedef struct {
+        duint size;
+        listnode_t* head;
+    } linklist_t;
+
+    typedef struct {
+        bool (*func) (LineDef*, void*);
+        bool retObjRecord;
+        dint localValidCount;
+        void* context;
+    } iteratelinedefs_args_t;
+
     class LineDefBlockmap
     {
     public:
-        LineDefBlockmap(const Vector2f& min, const Vector2f& max, duint width, duint height);
+        LineDefBlockmap(const Rectangle<Vector2f>& aaBB, duint width, duint height);
         ~LineDefBlockmap();
+
+        void clear();
 
         duint numInBlock(duint x, duint y) const;
 
@@ -66,11 +92,16 @@ namespace de
     private:
         Rectangle<Vector2f> _aaBB;
         Vector2f _blockSize;
-        Gridmap<LineDef*> _gridmap;
+        Gridmap<linklist_t*> _gridmap;
 
     private:
-        void tryLinkLineDefToBlock(duint x, duint y, LineDef* lineDef);
-        void linkLineDef(LineDef* lineDef, const Vector2i& vtx1, const Vector2i& vtx2);
+        void linkLineDefToBlock(LineDef& lineDef, duint x, duint y);
+        void tryLinkLineDefToBlock(LineDef* lineDef, duint x, duint y);
+        void linkLineDef(LineDef& lineDef, const Vector2i& vtx1, const Vector2i& vtx2);
+
+        bool unlinkLineDefFromBlock(LineDef& lineDef, duint x, duint y);
+
+        bool isLineDefLinkedToBlock(const LineDef& lineDef, duint x, duint y) const;
     };
 }
 

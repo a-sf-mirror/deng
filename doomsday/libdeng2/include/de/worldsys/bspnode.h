@@ -67,7 +67,7 @@ namespace de
         void connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge, struct superblock_s* rightList, struct superblock_s* leftList);
         HalfEdge* createHEdge(LineDef* line, LineDef* sourceLine, Vertex* start, Sector* sec, bool back);
         HalfEdge* splitHEdge(HalfEdge* oldHEdge, ddouble x, ddouble y);
-        void updateHEdgeInfo(const HalfEdge* hEdge);
+        void updateHEdgeInfo(const HalfEdge& hEdge);
 
     private:
         /**
@@ -130,7 +130,7 @@ namespace de
             ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge,
             superblock_t** right, superblock_t** left);
 
-        void takeHEdgesFromSuperBlock(Face* face, superblock_t* block);
+        void takeHEdgesFromSuperBlock(Face& face, superblock_t* block);
 
         void attachHEdgeInfo(HalfEdge* hEdge, LineDef* line,
             LineDef* sourceLine, Sector* sec, bool back);
@@ -138,7 +138,7 @@ namespace de
         /**
          * Create a new leaf from a list of half-edges.
          */
-        Face* createBSPLeaf(Face* face, superblock_t* hEdgeList);
+        Face& createBSPLeaf(Face& face, superblock_t* hEdgeList);
 
         /**
          * Free all the SuperBlocks on the quick-alloc list.

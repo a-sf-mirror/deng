@@ -22,102 +22,58 @@
  * Boston, MA  02110-1301  USA
  */
 
-/**
- * r_plane.c: World planes.
- */
+#include "de/Plane"
 
-// HEADER FILES ------------------------------------------------------------
+using namespace de;
 
-#include "de_base.h"
-#include "de_refresh.h"
-#include "de_play.h"
-
-// MACROS ------------------------------------------------------------------
-
-// $smoothplane: Maximum speed for a smoothed plane.
-#define MAX_SMOOTH_PLANE_MOVE   (64)
-
-// TYPES -------------------------------------------------------------------
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
-
-void Plane_ResetHeightTracking(plane_t* plane)
+void Plane::resetHeightTracking()
 {
-    if(!plane)
-        return;
-
-    plane->visHeightDelta = 0;
-    plane->oldHeight[0] = plane->oldHeight[1] = plane->height;
+    visHeightDelta = 0;
+    oldHeight[0] = oldHeight[1] = height;
 }
 
-void Plane_UpdateHeightTracking(plane_t* plane)
+void Plane::updateHeightTracking()
 {
-    if(!plane)
-        return;
+    oldHeight[0] = oldHeight[1];
+    oldHeight[1] = height;
 
-    plane->oldHeight[0] = plane->oldHeight[1];
-    plane->oldHeight[1] = plane->height;
-
-    if(plane->oldHeight[0] != plane->oldHeight[1])
-        if(fabs(plane->oldHeight[0] - plane->oldHeight[1]) >=
-           MAX_SMOOTH_PLANE_MOVE)
+    if(oldHeight[0] != oldHeight[1])
+        if(fabs(oldHeight[0] - oldHeight[1]) >= MAX_SMOOTH_MOVE)
         {
             // Too fast: make an instantaneous jump.
-            plane->oldHeight[0] = plane->oldHeight[1];
+            oldHeight[0] = oldHeight[1];
         }
 }
 
-void Plane_InterpolateHeight(plane_t* plane)
+void Plane::interpolateHeight(dfloat frameTimePos)
 {
-    if(!plane)
-        return;
-
-    plane->visHeightDelta = plane->oldHeight[0] * (1 - frameTimePos) +
-                plane->height * frameTimePos -
-                plane->height;
-
+    visHeightDelta = oldHeight[0] * (1 - frameTimePos) + height * frameTimePos - height;
     // Visible plane height.
-    plane->visHeight = plane->height + plane->visHeightDelta;
+    visHeight = height + visHeightDelta;
 }
 
+#if 0
 /**
  * Update the plane, property is selected by DMU_* name.
  */
-boolean Plane_SetProperty(plane_t* plane, const setargs_t* args)
+bool Plane::setProperty(const setargs_t* args)
 {
     switch(args->prop)
     {
     case DMU_HEIGHT:
-        DMU_SetValue(DMT_PLANE_HEIGHT, &plane->height, args, 0);
+        DMU_SetValue(DMT_PLANE_HEIGHT, &height, args, 0);
         if(!ddMapSetup)
         {
-            uint i;
             Map* map = P_CurrentMap();
-
             if(!map->_watchedPlaneList)
                 map->_watchedPlaneList = P_CreatePlaneList();
 
             PlaneList_Add(map->_watchedPlaneList, plane);
 
-            for(i = 0; i < map->numSectors; ++i)
+            for(uint i = 0; i < map->numSectors; ++i)
             {
                 Sector* sec = map->sectors[i];
-
-                uint j;
-
-                for(j = 0; j < sec->planeCount; ++j)
+                for(uint j = 0; j < sec->planeCount; ++j)
                 {
                     if(sec->planes[j] == plane)
                         R_MarkDependantSurfacesForDecorationUpdate(sec);
@@ -126,14 +82,13 @@ boolean Plane_SetProperty(plane_t* plane, const setargs_t* args)
         }
         break;
     case DMU_TARGET_HEIGHT:
-        DMU_SetValue(DMT_PLANE_TARGET, &plane->target, args, 0);
+        DMU_SetValue(DMT_PLANE_TARGET, &target, args, 0);
         break;
     case DMU_SPEED:
-        DMU_SetValue(DMT_PLANE_SPEED, &plane->speed, args, 0);
+        DMU_SetValue(DMT_PLANE_SPEED, &speed, args, 0);
         break;
     default:
-        Con_Error("Plane_SetProperty: Property %s is not writable.\n",
-                  DMU_Str(args->prop));
+        Con_Error("Plane_SetProperty: Property %s is not writable.\n", DMU_Str(args->prop));
     }
 
     return true; // Continue iteration.
@@ -142,23 +97,23 @@ boolean Plane_SetProperty(plane_t* plane, const setargs_t* args)
 /**
  * Get the value of a plane property, selected by DMU_* name.
  */
-boolean Plane_GetProperty(const plane_t* plane, setargs_t* args)
+bool Plane::getProperty(setargs_t* args) const
 {
     switch(args->prop)
     {
     case DMU_HEIGHT:
-        DMU_GetValue(DMT_PLANE_HEIGHT, &plane->height, args, 0);
+        DMU_GetValue(DMT_PLANE_HEIGHT, &height, args, 0);
         break;
     case DMU_TARGET_HEIGHT:
-        DMU_GetValue(DMT_PLANE_TARGET, &plane->target, args, 0);
+        DMU_GetValue(DMT_PLANE_TARGET, &target, args, 0);
         break;
     case DMU_SPEED:
-        DMU_GetValue(DMT_PLANE_SPEED, &plane->speed, args, 0);
+        DMU_GetValue(DMT_PLANE_SPEED, &speed, args, 0);
         break;
     default:
-        Con_Error("Plane_GetProperty: No property %s.\n",
-                  DMU_Str(args->prop));
+        Con_Error("Plane_GetProperty: No property %s.\n", DMU_Str(args->prop));
     }
 
     return true; // Continue iteration.
 }
+#endif

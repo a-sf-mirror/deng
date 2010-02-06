@@ -77,7 +77,7 @@ namespace de
     void            SuperBlock_PushHEdge(superblock_t* SuperBlock, HalfEdge* hEdge);
     HalfEdge*        SuperBlock_PopHEdge(superblock_t* block);
     #if _DEBUG
-    void            SuperBlock_PrintHEdges(superblock_t* SuperBlock);
+    void            SuperBlock_PrintHEdges(const superblock_t* SuperBlock);
     #endif
 
     void            SuperBlock_IncHEdgeCounts(superblock_t* SuperBlock, bool lineLinked);
@@ -86,7 +86,7 @@ namespace de
 
     // @todo Should be private to NodeBuilder
     void            BSP_AddHEdgeToSuperBlock(superblock_t* block, HalfEdge* hEdge);
-    void            BSP_FindAABBForHEdges(const superblock_t* hEdgeList, dfloat* bbox);
+    void            BSP_FindBBoxForHEdges(const superblock_t* hEdgeList, dfloat* bbox);
 }
 
 #endif /* LIBDENG_BSPSUPERBLOCK_H */

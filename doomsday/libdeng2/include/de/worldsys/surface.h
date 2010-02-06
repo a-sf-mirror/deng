@@ -25,6 +25,8 @@
 #ifndef LIBDENG2_MSURFACE_H
 #define LIBDENG2_MSURFACE_H
 
+#include "deng.h"
+
 namespace de
 {
     // Decoration types.
