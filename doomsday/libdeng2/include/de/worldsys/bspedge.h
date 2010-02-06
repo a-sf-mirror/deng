@@ -50,14 +50,14 @@ namespace de
         ddouble pPerp;
 
         // LineDef that this half-edge goes along, or NULL if miniseg.
-        LineDef*            lineDef;
+        LineDef* lineDef;
 
         // LineDef that this half-edge initially comes from.
         // For "real" half-edges, this is just the same as the 'linedef' field
         // above. For "miniedges", this is the linedef of the partition line.
-        LineDef*            sourceLine;
+        LineDef* sourceLine;
 
-        Sector*    sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
+        Sector* sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
 
         /// @c true = this is on the backside of the edge.
         bool back;

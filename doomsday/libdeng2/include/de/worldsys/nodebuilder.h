@@ -43,6 +43,9 @@ namespace de
     // Smallest degrees between two angles before being considered equal.
     #define ANG_EPSILON         (1.0 / 1024.0)
 
+    // Smallest distance between two points before being considered equal.
+    #define DIST_EPSILON        (1.0 / 128.0)
+
     typedef ddouble angle_g;  // Degrees, 0 is E, 90 is N
 
     /**
@@ -65,8 +68,22 @@ namespace de
 
         // @todo Should be private to NodeBuilder
         void connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge, struct superblock_s* rightList, struct superblock_s* leftList);
-        HalfEdge* createHEdge(LineDef* line, LineDef* sourceLine, Vertex* start, Sector* sec, bool back);
-        HalfEdge* splitHEdge(HalfEdge* oldHEdge, ddouble x, ddouble y);
+        HalfEdge& createHalfEdge(LineDef* line, LineDef* sourceLine, Vertex* start, Sector* sec, bool back);
+
+        /**
+         * @note
+         * If the half-edge has a twin, it is also split and is inserted into the
+         * same list as the original (and after it), thus all half-edges (except the
+         * one we are currently splitting) must exist on a singly-linked list
+         * somewhere.
+         *
+         * @note
+         * We must update the count values of any SuperBlock that contains the
+         * half-edge (and/or backseg), so that future processing is not messed up by
+         * incorrect counts.
+         */
+        HalfEdge& splitHEdge(HalfEdge& oldHEdge, ddouble x, ddouble y);
+
         void updateHEdgeInfo(const HalfEdge& hEdge);
 
     private:
@@ -113,7 +130,7 @@ namespace de
          * follow the exact same logic when determining which half-edges should go
          * left, right or be split. - AJA
          */
-        void divideOneHEdge(HalfEdge* curHEdge, ddouble x,
+        void divideOneHEdge(HalfEdge& curHEdge, ddouble x,
            ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge,
            superblock_t* bRight, superblock_t* bLeft);
 
@@ -132,7 +149,7 @@ namespace de
 
         void takeHEdgesFromSuperBlock(Face& face, superblock_t* block);
 
-        void attachHEdgeInfo(HalfEdge* hEdge, LineDef* line,
+        void attachHEdgeInfo(HalfEdge& hEdge, LineDef* line,
             LineDef* sourceLine, Sector* sec, bool back);
 
         /**
@@ -165,7 +182,7 @@ namespace de
         dint _splitFactor;
 
         Map& _map;
-        struct cutlist_s* _cutList;
+        CutList _cutList;
         struct superblock_s* _superBlockmap;
         struct superblock_s* _quickAllocSupers;
     };

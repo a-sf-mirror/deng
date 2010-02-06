@@ -194,13 +194,13 @@ void Sector::bounds(dfloat* min, dfloat* max) const
 {
     if(min)
     {
-        min[VX] = bBox[BOXLEFT];
-        min[VY] = bBox[BOXBOTTOM];
+        min[0] = bBox[BOXLEFT];
+        min[1] = bBox[BOXBOTTOM];
     }
     if(max)
     {
-        max[VX] = bBox[BOXRIGHT];
-        max[VY] = bBox[BOXTOP];
+        max[0] = bBox[BOXRIGHT];
+        max[1] = bBox[BOXTOP];
     }
 }
 

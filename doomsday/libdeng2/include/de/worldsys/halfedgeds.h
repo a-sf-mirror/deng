@@ -29,17 +29,10 @@
 #include "../Error"
 #include "../Vector"
 
+#include <vector>
+
 namespace de
 {
-    enum {
-        VX = 0,
-        VY,
-        VZ
-    };
-
-    /// Smallest degrees between two angles before being considered equal.
-    static const ddouble ANG_EPSILON = (1.0 / 1024.0);
-
     class HalfEdge;
     class Face;
 
@@ -94,13 +87,21 @@ namespace de
         void sortHEdgesByAngleAroundMidPoint();
     };
 
+    /// Smallest degrees between two angles before being considered equal.
+    static const ddouble ANG_EPSILON = (1.0 / 1024.0);
+
     /**
      *
      */
     class HalfEdgeDS
     {
+    private:
+        typedef std::vector<Vertex*> Vertices;
+        typedef std::vector<HalfEdge*> HalfEdges;
+        typedef std::vector<Face*> Faces;
+
     public:
-        Vertex** vertices;
+        Vertices vertices;
 
         HalfEdgeDS();
 
@@ -111,28 +112,30 @@ namespace de
          */
         ~HalfEdgeDS();
 
-        Vertex* createVertex();
-        HalfEdge* createHEdge(Vertex* vertex);
+        Vertex& createVertex();
+        HalfEdge& createHalfEdge(Vertex& vertex);
         Face& createFace();
 
-        duint numVertices() const;
-        duint numHEdges() const;
-        duint numFaces() const;
-        dint iterateVertices(dint (*callback) (Vertex*, void*), void* context);
-        dint iterateHEdges(dint (*callback) (HalfEdge*, void*), void* context);
-        dint iterateFaces(dint (*callback) (Face*, void*), void* context);
+        Vertices::size_type numVertices() const { return vertices.size(); }
+        HalfEdges::size_type numHalfEdges() const { return _halfEdges.size(); }
+        Faces::size_type numFaces() const { return _faces.size(); }
+
+        bool iterateVertices(bool (*callback) (Vertex*, void*), void* paramaters);
+        bool iterateHalfEdges(bool (*callback) (HalfEdge*, void*), void* paramaters);
+        bool iterateFaces(bool (*callback) (Face*, void*), void* paramaters);
 
     private:
-        duint _numVertices;
-
-        duint _numHEdges;
-        HalfEdge** _hEdges;
-
-        duint _numFaces;
-        Face** _faces;
+        std::vector<HalfEdge*> _halfEdges;
+        std::vector<Face*> _faces;
     };
 
-    HalfEdge* HEdge_Split(HalfEdgeDS& halfEdgeDS, HalfEdge* oldHEdge);
+    /**
+     * Splits the given half-edge at the point (x,y). The new half-edge is
+     * returned. The old half-edge is shortened (the original start vertex is
+     * unchanged), the new half-edge becomes the cut-off tail (keeping the
+     * original end vertex).
+     */
+    HalfEdge& HEdge_Split(HalfEdgeDS& halfEdgeDS, HalfEdge& oldHEdge);
 }
 
 #endif /* DOOMSDAY_HALFEDGEDS_H */

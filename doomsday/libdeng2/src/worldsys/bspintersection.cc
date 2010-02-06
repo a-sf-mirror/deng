@@ -41,13 +41,13 @@ namespace de
      * An "intersection" remembers the half-edge that intercepts the partition.
      */
     typedef struct intersection_s {
-        HalfEdge*        hEdge;
+        HalfEdge* hEdge;
 
         // How far along the partition line the intercept point is. Zero is at
         // the partition half-edge's start point, positive values move in the
         // same direction as the partition's direction, and negative values move
         // in the opposite direction.
-        ddouble          distance;
+        ddouble distance;
     } intersection_t;
 
     typedef struct cnode_s {
@@ -55,6 +55,14 @@ namespace de
         struct cnode_s* next;
         struct cnode_s* prev;
     } cnode_t;
+}
+
+CutList::CutList() : head(0), unused(0)
+{}
+
+CutList::~CutList()
+{
+    empty(true);
 }
 
 static cnode_t* allocCNode(void)
@@ -67,7 +75,7 @@ static void freeCNode(cnode_t* node)
     std::free(node);
 }
 
-static cnode_t* quickAllocCNode(cutlist_t* list)
+static cnode_t* quickAllocCNode(CutList* list)
 {
     cnode_t* node;
 
@@ -102,12 +110,12 @@ static void freeIntersection(intersection_t* cut)
  *
  * @param cut           Ptr to the intersection to be destroyed.
  */
-static void destroyIntersection(cutlist_t* list, intersection_t* cut)
+static void destroyIntersection(CutList* list, intersection_t* cut)
 {
     freeIntersection(cut);
 }
 
-static intersection_t* quickAllocIntersection(cutlist_t* list)
+static intersection_t* quickAllocIntersection(CutList* list)
 {
     intersection_t* cut = allocIntersection();
 
@@ -116,16 +124,16 @@ static intersection_t* quickAllocIntersection(cutlist_t* list)
     return cut;
 }
 
-static void empty(cutlist_t* list, bool destroyNodes)
+void CutList::empty(bool destroyNodes)
 {
     cnode_t* node;
 
-    node = list->head;
+    node = head;
     while(node)
     {
         cnode_t* p = node->next;
 
-        destroyIntersection(list, reinterpret_cast<intersection_t*>(node->data));
+        destroyIntersection(this, reinterpret_cast<intersection_t*>(node->data));
 
         // Move the list node to the unused node list?
         if(destroyNodes)
@@ -134,30 +142,25 @@ static void empty(cutlist_t* list, bool destroyNodes)
         }
         else
         {
-            node->next = list->unused;
-            list->unused = node;
+            node->next = unused;
+            unused = node;
         }
 
         node = p;
     }
 
-    list->head = NULL;
+    head = NULL;
 }
 
-/**
- * Insert the given intersection into the specified cutlist.
- *
- * @return              @c true, if successful.
- */
-static bool insertIntersection(cutlist_t* list, intersection_t* cut)
+bool CutList::insertIntersection(intersection_t* cut)
 {
-    cnode_t* newNode = quickAllocCNode(list);
+    cnode_t* newNode = quickAllocCNode(this);
     cnode_t* after;
 
     /**
      * Insert the new intersection into the list.
      */
-    after = list->head;
+    after = head;
     while(after && after->next)
         after = after->next;
 
@@ -168,7 +171,7 @@ static bool insertIntersection(cutlist_t* list, intersection_t* cut)
     newNode->data = cut;
 
     // Link it in.
-    newNode->next = (after? after->next : list->head);
+    newNode->next = (after? after->next : head);
     newNode->prev = after;
 
     if(after)
@@ -180,85 +183,42 @@ static bool insertIntersection(cutlist_t* list, intersection_t* cut)
     }
     else
     {
-        if(list->head)
-            list->head->prev = newNode;
+        if(head)
+            head->prev = newNode;
 
-        list->head = newNode;
+        head = newNode;
     }
 
     return true;
 }
 
-/**
- * Create a new cutlist.
- */
-cutlist_t* BSP_CutListCreate(void)
+void CutList::intersect(HalfEdge& hEdge, ddouble distance)
 {
-    return reinterpret_cast<cutlist_t*>(std::calloc(1, sizeof(cutlist_t)));
-}
-
-/**
- * Destroy a cutlist.
- */
-void BSP_CutListDestroy(cutlist_t* list)
-{
-    assert(list);
-    empty(list, true);
-    std::free(list);
-}
-
-/**
- * Create a new intersection.
- */
-void CutList_Intersect(cutlist_t* list, HalfEdge* hEdge, ddouble distance)
-{
-    assert(list);
-    assert(hEdge);
-
-    intersection_t* cut = quickAllocIntersection(list);
+    intersection_t* cut = quickAllocIntersection(this);
     cut->distance = distance;
-    cut->hEdge = hEdge;
-
-    insertIntersection(list, cut);
+    cut->hEdge = &hEdge;
+    insertIntersection(cut);
 }
 
-/**
- * Empty all intersections from the specified cutlist.
- */
-void CutList_Reset(cutlist_t* list)
+void CutList::clear()
 {
-    assert(list);
-    empty(list, false);
+    empty(false);
 }
 
-/**
- * Search the given list for an intersection, if found; return it.
- *
- * @param list          The list to be searched.
- * @param hEdge         Ptr to the intercept half-edge to look for.
- *
- * @return              @c true iff an intersection is found ELSE @c false;
- */
-bool CutList_Find(cutlist_t* list, HalfEdge* hEdge)
+bool CutList::find(HalfEdge& hEdge) const
 {
-    assert(list);
-    assert(hEdge);
-
-    cnode_t* node = list->head;
+    cnode_t* node = head;
     while(node)
     {
         intersection_t* cut = node->data;
-
-        if(cut->hEdge == hEdge)
+        if(cut->hEdge == &hEdge)
             return true;
-
         node = node->next;
     }
-
     return false;
 }
 
-void BSP_MergeOverlappingIntersections(cutlist_t* list)
+void BSP_MergeOverlappingIntersections(CutList* list)
 {
     assert(list);
 
@@ -364,7 +324,7 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
 {
     cnode_t* node, *firstNode;
 
-    node = firstNode = _cutList->head;
+    node = firstNode = _cutList.head;
     while(node && node->next)
     {
         const intersection_t* cur = node->data;
@@ -457,56 +417,51 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
                 }
 
                 {
-                HalfEdge* right, *left;
-
-                right = createHEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->back);
-                left = createHEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->hEdge->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->back);
+                HalfEdge& right = createHalfEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->back);
+                HalfEdge& left = createHalfEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->hEdge->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->back);
 
                 // Twin the half-edges together.
-                right->twin = left;
-                left->twin = right;
+                right.twin = &left;
+                left.twin = &right;
 
-                left->prev = farHEdge->prev;
-                right->prev = nearHEdge;
+                left.prev = farHEdge->prev;
+                right.prev = nearHEdge;
 
-                right->next = farHEdge;
-                left->next = nearHEdge->next;
+                right.next = farHEdge;
+                left.next = nearHEdge->next;
 
-                left->prev->next = left;
-                right->prev->next = right;
+                left.prev->next = &left;
+                right.prev->next = &right;
 
-                right->next->prev = right;
-                left->next->prev = left;
+                right.next->prev = &right;
+                left.next->prev = &left;
 
 #if _DEBUG
 testVertexHEdgeRings(cur->hEdge->vertex);
 testVertexHEdgeRings(next->hEdge->vertex);
 #endif
 
-                updateHEdgeInfo(*right);
-                updateHEdgeInfo(*left);
+                updateHEdgeInfo(right);
+                updateHEdgeInfo(left);
 
                 // Add the new half-edges to the appropriate lists.
 
                 /*if(nearHEdge->face)
-                    Face_LinkHEdge(nearHEdge->face, right);
+                    Face_LinkHEdge(nearHEdge->face, &right);
                 else*/
-                    BSP_AddHEdgeToSuperBlock(rightList, right);
+                    BSP_AddHEdgeToSuperBlock(rightList, &right);
                 /*if(farHEdge->prev->face)
-                    Face_LinkHEdge(farHEdge->prev->face, left);
+                    Face_LinkHEdge(farHEdge->prev->face, &left);
                 else*/
-                    BSP_AddHEdgeToSuperBlock(leftList, left);
-/*#if _DEBUG
-Con_Message(" Capped intersection:\n");
-Con_Message("  %p RIGHT  sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-            right, (right->sector? right->sector->index : -1),
-            right->vertex->V_pos[VX], right->vertex->V_pos[VY],
-            right->twin->vertex->V_pos[VX], right->twin->vertex->V_pos[VY]);
-Con_Message("  %p LEFT sector %d (%1.1f,%1.1f) -> (%1.1f,%1.1f)\n",
-            left, (left->sector? left->sector->index : -1),
-            left->vertex->V_pos[VX], left->vertex->V_pos[VY],
-            left->twin->vertex->V_pos[VX], left->twin->vertex->V_pos[VY]);
-#endif*/
+                    BSP_AddHEdgeToSuperBlock(leftList, &left);
+
+                LOG_DEBUG(" Capped intersection:");
+                LOG_DEBUG("  %p RIGHT  sector %d %s -> %s")
+                    << &right << (reinterpret_cast<hedge_info_t*>(nearHEdge->data)->sector? reinterpret_cast<hedge_info_t*>(nearHEdge->data)->sector->buildData.index : -1)
+                    << right.vertex->pos << right.twin->vertex->pos;
+                LOG_DEBUG("  %p LEFT sector %d %s -> %s")
+                    << &left << (reinterpret_cast<hedge_info_t*>(farHEdge->prev->data)->sector? reinterpret_cast<hedge_info_t*>(farHEdge->prev->data)->sector->buildData.index : -1)
+                    << left.vertex->pos << left.twin->vertex->pos;
                 }
             }
         }

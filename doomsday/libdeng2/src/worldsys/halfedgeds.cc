@@ -37,26 +37,6 @@ namespace de
     } hedge_node_t;
 }
 
-static __inline Vertex* allocVertex(void)
-{
-    return reinterpret_cast<Vertex*>(std::calloc(sizeof(Vertex), 1));
-}
-
-static __inline void freeVertex(Vertex* vertex)
-{
-    free(vertex);
-}
-
-static __inline HalfEdge* allocHEdge(void)
-{
-    return reinterpret_cast<HalfEdge*>(std::calloc(sizeof(HalfEdge), 1));
-}
-
-static __inline void freeHEdge(HalfEdge* hEdge)
-{
-    std::free(hEdge);
-}
-
 static __inline hedge_node_t* allocHEdgeNode(void)
 {
     return reinterpret_cast<hedge_node_t*>(std::malloc(sizeof(hedge_node_t)));
@@ -67,142 +47,93 @@ static __inline void freeHEdgeNode(hedge_node_t* node)
     std::free(node);
 }
 
-static __inline Face* allocFace(void)
-{
-    return reinterpret_cast<Face*>(std::calloc(sizeof(Face), 1));
-}
-
-static __inline void freeFace(Face* face)
-{
-    std::free(face);
-}
-
-HalfEdgeDS::HalfEdgeDS()
-  :  _numHEdges(0),
-     _hEdges(0),
-     _numFaces(0),
-     _faces(0)
-{}
-
 HalfEdgeDS::~HalfEdgeDS()
 {
-    if(_faces)
-    {
-        for(duint i = 0; i < _numFaces; ++i)
-        {
-            Face* face = _faces[i];
-            freeFace(face);
-        }
-        std::free(_faces);
-    }
-    _faces = NULL;
-    _numFaces = 0;
+    FOR_EACH(i, _faces, Faces::iterator)
+        delete *i;
+    _faces.clear();
 
-    if(_hEdges)
-    {
-        for(duint i = 0; i < _numHEdges; ++i)
-        {
-            HalfEdge* hEdge = _hEdges[i];
-            freeHEdge(hEdge);
-        }
-        std::free(_hEdges);
-    }
-    _hEdges = NULL;
-    _numHEdges = 0;
+    FOR_EACH(i, _halfEdges, HalfEdges::iterator)
+        delete *i;
+    _halfEdges.clear();
 
-    if(vertices)
+    FOR_EACH(i, vertices, Vertices::iterator)
     {
-        for(duint i = 0; i < _numVertices; ++i)
-        {
-            Vertex* vertex = vertices[i];
-            freeVertex(vertex);
-        }
-        std::free(vertices);
+        Vertex* vertex = *i;
+        if(vertex->data)
+            Z_Free(vertex->data);
+        delete vertex;
     }
-    vertices = NULL;
-    _numVertices = 0;
+    vertices.clear();
 }
 
-Vertex* HalfEdgeDS::createVertex()
+Vertex& HalfEdgeDS::createVertex()
 {
-    Vertex* vtx = allocVertex();
-    vertices = reinterpret_cast<Vertex**>(std::realloc(vertices, sizeof(vtx) * ++_numVertices));
-    vertices[_numVertices-1] = vtx;
-
+    Vertex* vtx = new Vertex();
     vtx->data = reinterpret_cast<MVertex*>(Z_Calloc(sizeof(MVertex), PU_STATIC, 0));
-    ((MVertex*) vtx->data)->index = _numVertices; // 1-based index, 0 = NIL.
-    return vtx;
+    ((MVertex*) vtx->data)->index = vertices.size() + 1; // 1-based index, 0 = NIL.
+    vertices.push_back(vtx);
+    return *vtx;
 }
 
-HalfEdge* HalfEdgeDS::createHEdge(Vertex* vertex)
+HalfEdge& HalfEdgeDS::createHalfEdge(Vertex& vertex)
 {
-    assert(vertex);
-
-    HalfEdge* hEdge = allocHEdge();
-    _hEdges = reinterpret_cast<HalfEdge**>(std::realloc(_hEdges, sizeof(HalfEdge*) * ++_numHEdges));
-    _hEdges[_numHEdges - 1] = hEdge;
-
-    hEdge->vertex = vertex;
-    if(!vertex->hEdge)
-        vertex->hEdge = hEdge;
+    HalfEdge* hEdge = new HalfEdge();
+    hEdge->vertex = &vertex;
+    if(!vertex.hEdge)
+        vertex.hEdge = hEdge;
     hEdge->twin = NULL;
     hEdge->next = hEdge->prev = hEdge;
     hEdge->face = NULL;
 
-    return hEdge;
+    _halfEdges.push_back(hEdge);
+    return *hEdge;
 }
 
 Face& HalfEdgeDS::createFace()
 {
-    Face* face = allocFace();
-    _faces = reinterpret_cast<Face**>(std::realloc(_faces, sizeof(Face*) * ++_numFaces));
-    _faces[_numFaces - 1] = face;
+    Face* face = new Face();
+    _faces.push_back(face);
     return *face;
 }
 
-duint HalfEdgeDS::numVertices() const
-{
-    return _numVertices;
-}
-
-duint HalfEdgeDS::numHEdges() const
-{
-    return _numHEdges;
-}
-
-duint HalfEdgeDS::numFaces() const
-{
-    return _numFaces;
-}
-
-dint HalfEdgeDS::iterateVertices(dint (*callback) (Vertex*, void*), void* context)
+bool HalfEdgeDS::iterateVertices(bool (*callback) (Vertex*, void*), void* paramaters)
 {
     assert(callback);
 
-    dint result = 1;
-    duint i = 0;
-    while(i < _numVertices && (result = callback(vertices[i++], context)) != 0);
-    return result;
+    FOR_EACH(i, vertices, Vertices::iterator)
+    {
+        Vertex* vertex = *i;
+        if(vertex && !callback(vertex, paramaters))
+            return false;
+    }
+    return true;
 }
 
-dint HalfEdgeDS::iterateHEdges(dint (*callback) (HalfEdge*, void*), void* context)
+bool HalfEdgeDS::iterateHalfEdges(bool (*callback) (HalfEdge*, void*), void* paramaters)
 {
     assert(callback);
 
-    dint result = 1;
-    duint i = 0;
-    while(i < _numHEdges && (result = callback(_hEdges[i++], context)) != 0);
-    return result;
+    FOR_EACH(i, _halfEdges, HalfEdges::iterator)
+    {
+        HalfEdge* halfEdge = *i;
+        if(halfEdge && !callback(halfEdge, paramaters))
+            return false;
+    }
+    return true;
 }
 
-dint HalfEdgeDS::iterateFaces(dint (*callback) (Face*, void*), void* context)
+bool HalfEdgeDS::iterateFaces(bool (*callback) (Face*, void*), void* paramaters)
 {
     assert(callback);
 
-    dint result = 1;
-    duint i = 0;
-    while(i < _numFaces && (result = callback(_faces[i++], context)) != 0);
-    return result;
+    FOR_EACH(i, _faces, Faces::iterator)
+    {
+        Face* face = *i;
+        if(face && !callback(face, paramaters))
+            return false;
+    }
+    return true;
 }
 
 #if _DEBUG
@@ -237,62 +168,53 @@ void de::testVertexHEdgeRings(Vertex* v)
 }
 #endif
 
-/**
- * Splits the given half-edge at the point (x,y). The new half-edge is
- * returned. The old half-edge is shortened (the original start vertex is
- * unchanged), the new half-edge becomes the cut-off tail (keeping the
- * original end vertex).
- */
-HalfEdge* de::HEdge_Split(HalfEdgeDS& halfEdgeDS, HalfEdge* oldHEdge)
+HalfEdge& de::HEdge_Split(HalfEdgeDS& halfEdgeDS, HalfEdge& oldHEdge)
 {
-    HalfEdge* newHEdge;
-    Vertex* newVert;
-
 #if _DEBUG
-testVertexHEdgeRings(oldHEdge->vertex);
-testVertexHEdgeRings(oldHEdge->twin->vertex);
+testVertexHEdgeRings(oldHEdge.vertex);
+testVertexHEdgeRings(oldHEdge.twin->vertex);
 #endif
 
-    newVert = halfEdgeDS.createVertex();
+    Vertex& newVert = halfEdgeDS.createVertex();
 
-    newHEdge = halfEdgeDS.createHEdge(newVert);
-    newHEdge->twin = halfEdgeDS.createHEdge(oldHEdge->twin->vertex);
-    newHEdge->twin->twin = newHEdge;
+    HalfEdge& newHEdge = halfEdgeDS.createHalfEdge(newVert);
+    newHEdge.twin = &halfEdgeDS.createHalfEdge(*oldHEdge.twin->vertex);
+    newHEdge.twin->twin = &newHEdge;
 
     // Update right neighbour back links of oldHEdge and its twin.
-    newHEdge->next = oldHEdge->next;
-    oldHEdge->next->prev = newHEdge;
+    newHEdge.next = oldHEdge.next;
+    oldHEdge.next->prev = &newHEdge;
 
-    newHEdge->twin->prev = oldHEdge->twin->prev;
-    newHEdge->twin->prev->next = newHEdge->twin;
+    newHEdge.twin->prev = oldHEdge.twin->prev;
+    newHEdge.twin->prev->next = newHEdge.twin;
 
     // Update the vertex links.
-    newHEdge->vertex = newVert;
-    newVert->hEdge = newHEdge;
+    newHEdge.vertex = &newVert;
+    newVert.hEdge = &newHEdge;
 
-    newHEdge->twin->vertex = oldHEdge->twin->vertex;
-    oldHEdge->twin->vertex = newVert;
+    newHEdge.twin->vertex = oldHEdge.twin->vertex;
+    oldHEdge.twin->vertex = &newVert;
 
-    if(newHEdge->twin->vertex->hEdge == oldHEdge->twin)
-        newHEdge->twin->vertex->hEdge = newHEdge->twin;
+    if(newHEdge.twin->vertex->hEdge == oldHEdge.twin)
+        newHEdge.twin->vertex->hEdge = newHEdge.twin;
 
     // Link oldHEdge with newHEdge and their twins.
-    oldHEdge->next = newHEdge;
-    newHEdge->prev = oldHEdge;
+    oldHEdge.next = &newHEdge;
+    newHEdge.prev = &oldHEdge;
 
-    oldHEdge->twin->prev = newHEdge->twin;
-    newHEdge->twin->next = oldHEdge->twin;
+    oldHEdge.twin->prev = newHEdge.twin;
+    newHEdge.twin->next = oldHEdge.twin;
 
     // Copy face data from oldHEdge to newHEdge and their twins.
-    //if(oldHEdge->face)
-    //    Face_LinkHEdge(oldHEdge->face, newHEdge);
-    if(oldHEdge->twin->face)
-        oldHEdge->twin->face->linkHEdge(newHEdge->twin);
+    //if(oldHEdge.face)
+    //    Face_LinkHEdge(oldHEdge.face, newHEdge);
+    if(oldHEdge.twin->face)
+        oldHEdge.twin->face->linkHEdge(newHEdge.twin);
 
 #if _DEBUG
-testVertexHEdgeRings(oldHEdge->vertex);
-testVertexHEdgeRings(newHEdge->vertex);
-testVertexHEdgeRings(newHEdge->twin->vertex);
+testVertexHEdgeRings(oldHEdge.vertex);
+testVertexHEdgeRings(newHEdge.vertex);
+testVertexHEdgeRings(newHEdge.twin->vertex);
 #endif
 
     return newHEdge;

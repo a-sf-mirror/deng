@@ -38,9 +38,6 @@ using namespace de;
 
 namespace de
 {
-    // Smallest distance between two points before being considered equal.
-    #define DIST_EPSILON        (1.0 / 128.0)
-
     typedef struct linedefowner_t {
         LineDef* lineDef;
         struct linedefowner_t* next;
@@ -64,7 +61,6 @@ NodeBuilder::NodeBuilder(Map& map, dint splitFactor)
     numHalfEdgeInfo(0),
     halfEdgeInfo(0)
 {
-    _cutList = BSP_CutListCreate();
     createSuperBlockmap();
 }
 
@@ -77,8 +73,6 @@ NodeBuilder::~NodeBuilder()
         std::free(halfEdgeInfo);
     }
     destroySuperBlockmap();
-    if(_cutList)
-        BSP_CutListDestroy(_cutList);
 }
 
 void NodeBuilder::destroyUnusedSuperBlocks()
@@ -191,11 +185,9 @@ void  NodeBuilder::updateHEdgeInfo(const HalfEdge& hEdge)
     info->pPara = -hEdge.vertex->pos.x * info->pDelta.x - hEdge.vertex->pos.y * info->pDelta.y;
 }
 
-void NodeBuilder::attachHEdgeInfo(HalfEdge* hEdge, LineDef* line,
+void NodeBuilder::attachHEdgeInfo(HalfEdge& hEdge, LineDef* line,
     LineDef* sourceLine, Sector* sec, bool back)
 {
-    assert(hEdge);
-
     halfEdgeInfo = reinterpret_cast<hedge_info_t**>(std::realloc(halfEdgeInfo, ++numHalfEdgeInfo * sizeof(hedge_info_t*)));
 
     hedge_info_t* info = halfEdgeInfo[numHalfEdgeInfo-1] = reinterpret_cast<hedge_info_t*>(std::calloc(1, sizeof(hedge_info_t)));
@@ -203,71 +195,58 @@ void NodeBuilder::attachHEdgeInfo(HalfEdge* hEdge, LineDef* line,
     info->back = back;
     info->sector = sec;
     info->sourceLine = sourceLine;
-    hEdge->data = info;
+
+    hEdge.data = info;
 }
 
-HalfEdge* NodeBuilder::createHEdge(LineDef* line, LineDef* sourceLine,
+HalfEdge& NodeBuilder::createHalfEdge(LineDef* line, LineDef* sourceLine,
     Vertex* start, Sector* sec, bool back)
 {
-    HalfEdge* hEdge = _map.halfEdgeDS().createHEdge(start);
+    HalfEdge& hEdge = _map.halfEdgeDS().createHalfEdge(*start);
     attachHEdgeInfo(hEdge, line, sourceLine, sec, back);
     return hEdge;
 }
 
-/**
- * @note
- * If the half-edge has a twin, it is also split and is inserted into the
- * same list as the original (and after it), thus all half-edges (except the
- * one we are currently splitting) must exist on a singly-linked list
- * somewhere.
- *
- * @note
- * We must update the count values of any SuperBlock that contains the
- * half-edge (and/or backseg), so that future processing is not messed up by
- * incorrect counts.
- */
-HalfEdge* NodeBuilder::splitHEdge(HalfEdge* oldHEdge, ddouble x, ddouble y)
+HalfEdge& NodeBuilder::splitHEdge(HalfEdge& oldHEdge, ddouble x, ddouble y)
 {
-    assert(oldHEdge);
+    HalfEdge& newHEdge = HEdge_Split(_map.halfEdgeDS(), oldHEdge);
+    newHEdge.vertex->pos.x = x;
+    newHEdge.vertex->pos.y = y;
 
-    HalfEdge* newHEdge = HEdge_Split(_map.halfEdgeDS(), oldHEdge);
-    newHEdge->vertex->pos.x = x;
-    newHEdge->vertex->pos.y = y;
+    attachHEdgeInfo(newHEdge, ((hedge_info_t*) oldHEdge.data)->lineDef, ((hedge_info_t*) oldHEdge.data)->sourceLine, ((hedge_info_t*) oldHEdge.data)->sector, ((hedge_info_t*) oldHEdge.data)->back);
+    attachHEdgeInfo(*newHEdge.twin, ((hedge_info_t*) oldHEdge.twin->data)->lineDef, ((hedge_info_t*) oldHEdge.twin->data)->sourceLine, ((hedge_info_t*) oldHEdge.twin->data)->sector, ((hedge_info_t*) oldHEdge.twin->data)->back);
 
-    attachHEdgeInfo(newHEdge, ((hedge_info_t*) oldHEdge->data)->lineDef, ((hedge_info_t*) oldHEdge->data)->sourceLine, ((hedge_info_t*) oldHEdge->data)->sector, ((hedge_info_t*) oldHEdge->data)->back);
-    attachHEdgeInfo(newHEdge->twin, ((hedge_info_t*) oldHEdge->twin->data)->lineDef, ((hedge_info_t*) oldHEdge->twin->data)->sourceLine, ((hedge_info_t*) oldHEdge->twin->data)->sector, ((hedge_info_t*) oldHEdge->twin->data)->back);
-
-    memcpy(newHEdge->data, oldHEdge->data, sizeof(hedge_info_t));
-    ((hedge_info_t*) newHEdge->data)->block = NULL;
-    memcpy(newHEdge->twin->data, oldHEdge->twin->data, sizeof(hedge_info_t));
-    ((hedge_info_t*) newHEdge->twin->data)->block = NULL;
+    memcpy(newHEdge.data, oldHEdge.data, sizeof(hedge_info_t));
+    ((hedge_info_t*) newHEdge.data)->block = NULL;
+    memcpy(newHEdge.twin->data, oldHEdge.twin->data, sizeof(hedge_info_t));
+    ((hedge_info_t*) newHEdge.twin->data)->block = NULL;
 
     // Update along-linedef relationships.
-    if(((hedge_info_t*) oldHEdge->data)->lineDef)
+    if(((hedge_info_t*) oldHEdge.data)->lineDef)
     {
-        LineDef* lineDef = ((hedge_info_t*) oldHEdge->data)->lineDef;
-        if(((hedge_info_t*) oldHEdge->data)->back)
+        LineDef* lineDef = ((hedge_info_t*) oldHEdge.data)->lineDef;
+        if(((hedge_info_t*) oldHEdge.data)->back)
         {
-            if(lineDef->hEdges[0] == oldHEdge->twin)
-                lineDef->hEdges[0] = newHEdge->twin;
+            if(lineDef->hEdges[0] == oldHEdge.twin)
+                lineDef->hEdges[0] = newHEdge.twin;
         }
         else
         {
-            if(lineDef->hEdges[1] == oldHEdge)
-                lineDef->hEdges[1] = newHEdge;
+            if(lineDef->hEdges[1] == &oldHEdge)
+                lineDef->hEdges[1] = &newHEdge;
         }
     }
 
-    updateHEdgeInfo(*oldHEdge);
-    updateHEdgeInfo(*oldHEdge->twin);
-    updateHEdgeInfo(*newHEdge);
-    updateHEdgeInfo(*newHEdge->twin);
+    updateHEdgeInfo(oldHEdge);
+    updateHEdgeInfo(*oldHEdge.twin);
+    updateHEdgeInfo(newHEdge);
+    updateHEdgeInfo(*newHEdge.twin);
 
-    /*if(!oldHEdge->twin->face && ((hedge_info_t*)oldHEdge->twin->data)->block)
+    /*if(!oldHEdge.twin->face && ((hedge_info_t*)oldHEdge.twin->data)->block)
     {
-        SuperBlock_IncHEdgeCounts(((hedge_info_t*)oldHEdge->twin->data)->block, ((hedge_info_t*) newHEdge->twin->data)->lineDef != NULL);
-        SuperBlock_PushHEdge(((hedge_info_t*)oldHEdge->twin->data)->block, newHEdge->twin);
-        ((hedge_info_t*) newHEdge->twin->data)->block = ((hedge_info_t*)oldHEdge->twin->data)->block;
+        SuperBlock_IncHEdgeCounts(((hedge_info_t*)oldHEdge.twin->data)->block, ((hedge_info_t*) newHEdge.twin->data)->lineDef != NULL);
+        SuperBlock_PushHEdge(((hedge_info_t*)oldHEdge.twin->data)->block, newHEdge.twin);
+        ((hedge_info_t*) newHEdge.twin->data)->block = ((hedge_info_t*)oldHEdge.twin->data)->block;
     }*/
 
     return newHEdge;
@@ -659,36 +638,28 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
     for(i = 0; i < _map.numLineDefs(); ++i)
     {
         LineDef* lineDef = _map.lineDefs[i];
-        Vertex* from, *to;
-        HalfEdge* back, *front;
 
         if(lineDef->polyobjOwned)
             continue;
 
-        from = lineDef->buildData.v[0];
-        to = lineDef->buildData.v[1];
+        Vertex* from = lineDef->buildData.v[0];
+        Vertex* to = lineDef->buildData.v[1];
 
-        front = createHEdge(lineDef, lineDef, from, &lineDef->buildData.sideDefs[LineDef::FRONT]->sector(), false);
+        // Detect the 'One-Sided Window' trick.
+        bool isOneSidedWindow = (!lineDef->buildData.sideDefs[LineDef::BACK] && lineDef->buildData.windowEffect);
 
-        // Handle the 'One-Sided Window' trick.
-        if(!lineDef->buildData.sideDefs[LineDef::BACK] && lineDef->buildData.windowEffect)
-        {
-            back = createHEdge(((hedge_info_t*) front->data)->lineDef, lineDef, to, lineDef->buildData.windowEffect, true);
-        }
-        else
-        {
-            back = createHEdge(lineDef, lineDef, to, lineDef->buildData.sideDefs[LineDef::BACK]? &lineDef->buildData.sideDefs[LineDef::BACK]->sector() : NULL, true);
-        }
+        HalfEdge& front = createHalfEdge(lineDef, lineDef, from, &lineDef->buildData.sideDefs[LineDef::FRONT]->sector(), false);
+        HalfEdge& back = createHalfEdge(isOneSidedWindow? ((hedge_info_t*) front.data)->lineDef : lineDef, lineDef, to, isOneSidedWindow? lineDef->buildData.windowEffect : lineDef->buildData.sideDefs[LineDef::BACK]? &lineDef->buildData.sideDefs[LineDef::BACK]->sector() : NULL, true);
 
-        back->twin = front;
-        front->twin = back;
+        back.twin = &front;
+        front.twin = &back;
 
-        updateHEdgeInfo(*front);
-        updateHEdgeInfo(*back);
+        updateHEdgeInfo(front);
+        updateHEdgeInfo(back);
 
-        lineDef->hEdges[0] = lineDef->hEdges[1] = front;
-        ((linedefowner_t*) lineDef->vo[0])->hEdge = front;
-        ((linedefowner_t*) lineDef->vo[1])->hEdge = back;
+        lineDef->hEdges[0] = lineDef->hEdges[1] = &front;
+        ((linedefowner_t*) lineDef->vo[0])->hEdge = &front;
+        ((linedefowner_t*) lineDef->vo[1])->hEdge = &back;
     }
 
     // Sort vertex owners, clockwise by angle (i.e., ascending).
@@ -740,7 +711,7 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
         << ((Sys_GetRealTime() - startTime) / 1000.0f);
 }
 
-static dint addHEdgeToSuperBlock(HalfEdge* hEdge, void* context)
+static bool addHEdgeToSuperBlock(HalfEdge* hEdge, void* context)
 {
     superblock_t* block = (superblock_t*) context;
 
@@ -762,7 +733,7 @@ static dint addHEdgeToSuperBlock(HalfEdge* hEdge, void* context)
 void NodeBuilder::createInitialHEdgesAndAddtoSuperBlockmap()
 {
     createInitialHEdges();
-    _map.halfEdgeDS().iterateHEdges(addHEdgeToSuperBlock, _superBlockmap);
+    _map.halfEdgeDS().iterateHalfEdges(addHEdgeToSuperBlock, _superBlockmap);
 }
 
 /**
@@ -1014,14 +985,14 @@ Face& NodeBuilder::createBSPLeaf(Face& face, superblock_t* hEdgeList)
     return face;
 }
 
-static void makeIntersection(cutlist_t* cutList, HalfEdge* hEdge,
+static void makeIntersection(CutList& cutList, HalfEdge& hEdge,
                              ddouble x, ddouble y, ddouble dX, ddouble dY,
                              const HalfEdge* partHEdge)
 {
-    if(!CutList_Find(cutList, hEdge))
-        CutList_Intersect(cutList, hEdge,
+    if(!cutList.find(hEdge))
+        cutList.intersect(hEdge,
             M_ParallelDist(dX, dY, ((hedge_info_t*) partHEdge->data)->pPara, ((hedge_info_t*) partHEdge->data)->pLength,
-                           hEdge->vertex->pos.x, hEdge->vertex->pos.y));
+                           hEdge.vertex->pos.x, hEdge.vertex->pos.y));
 }
 
 /**
@@ -1066,12 +1037,11 @@ static __inline void calcIntersection(const HalfEdge* cur, ddouble x,
         *iY = cur->vertex->pos.y + (data->pDelta.y * ds);
 }
 
-void NodeBuilder::divideOneHEdge(HalfEdge* curHEdge, ddouble x,
+void NodeBuilder::divideOneHEdge(HalfEdge& curHEdge, ddouble x,
    ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge,
    superblock_t* bRight, superblock_t* bLeft)
 {
-    hedge_info_t* data = ((hedge_info_t*) curHEdge->data);
-    HalfEdge* newHEdge;
+    hedge_info_t* data = ((hedge_info_t*) curHEdge.data);
     ddouble perpC, perpD;
 
     // Get state of lines' relation to each other.
@@ -1085,26 +1055,26 @@ void NodeBuilder::divideOneHEdge(HalfEdge* curHEdge, ddouble x,
         hedge_info_t* part = (hedge_info_t*) partHEdge->data;
 
         perpC = M_PerpDist(dX, dY, part->pPerp, part->pLength,
-                       curHEdge->vertex->pos.x, curHEdge->vertex->pos.y);
+                       curHEdge.vertex->pos.x, curHEdge.vertex->pos.y);
         perpD = M_PerpDist(dX, dY, part->pPerp, part->pLength,
-                       curHEdge->twin->vertex->pos.x, curHEdge->twin->vertex->pos.y);
+                       curHEdge.twin->vertex->pos.x, curHEdge.twin->vertex->pos.y);
     }
 
     // Check for being on the same line.
     if(fabs(perpC) <= DIST_EPSILON && fabs(perpD) <= DIST_EPSILON)
     {
         makeIntersection(_cutList, curHEdge, x, y, dX, dY, partHEdge);
-        makeIntersection(_cutList, curHEdge->twin, x, y, dX, dY, partHEdge);
+        makeIntersection(_cutList, *curHEdge.twin, x, y, dX, dY, partHEdge);
 
         // This seg runs along the same line as the partition. Check
         // whether it goes in the same direction or the opposite.
         if(data->pDelta.x * dX + data->pDelta.y * dY < 0)
         {
-            BSP_AddHEdgeToSuperBlock(bLeft, curHEdge);
+            BSP_AddHEdgeToSuperBlock(bLeft, &curHEdge);
         }
         else
         {
-            BSP_AddHEdgeToSuperBlock(bRight, curHEdge);
+            BSP_AddHEdgeToSuperBlock(bRight, &curHEdge);
         }
 
         return;
@@ -1116,9 +1086,9 @@ void NodeBuilder::divideOneHEdge(HalfEdge* curHEdge, ddouble x,
         if(perpC < DIST_EPSILON)
             makeIntersection(_cutList, curHEdge, x, y, dX, dY, partHEdge);
         else if(perpD < DIST_EPSILON)
-            makeIntersection(_cutList, curHEdge->twin, x, y, dX, dY, partHEdge);
+            makeIntersection(_cutList, *curHEdge.twin, x, y, dX, dY, partHEdge);
 
-        BSP_AddHEdgeToSuperBlock(bRight, curHEdge);
+        BSP_AddHEdgeToSuperBlock(bRight, &curHEdge);
         return;
     }
 
@@ -1128,34 +1098,33 @@ void NodeBuilder::divideOneHEdge(HalfEdge* curHEdge, ddouble x,
         if(perpC > -DIST_EPSILON)
             makeIntersection(_cutList, curHEdge, x, y, dX, dY, partHEdge);
         else if(perpD > -DIST_EPSILON)
-            makeIntersection(_cutList, curHEdge->twin, x, y, dX, dY, partHEdge);
+            makeIntersection(_cutList, *curHEdge.twin, x, y, dX, dY, partHEdge);
 
-        BSP_AddHEdgeToSuperBlock(bLeft, curHEdge);
+        BSP_AddHEdgeToSuperBlock(bLeft, &curHEdge);
         return;
     }
 
     // When we reach here, we have perpC and perpD non-zero and opposite sign,
     // hence this edge will be split by the partition line.
-    {
+
     ddouble iX, iY;
-    calcIntersection(curHEdge, x, y, dX, dY, perpC, perpD, &iX, &iY);
-    newHEdge = splitHEdge(curHEdge, iX, iY);
+    calcIntersection(&curHEdge, x, y, dX, dY, perpC, perpD, &iX, &iY);
+    HalfEdge& newHEdge = splitHEdge(curHEdge, iX, iY);
     makeIntersection(_cutList, newHEdge, x, y, dX, dY, partHEdge);
-    }
 
     if(perpC < 0)
     {
-        BSP_AddHEdgeToSuperBlock(bLeft,  curHEdge);
-        BSP_AddHEdgeToSuperBlock(bRight, newHEdge);
+        BSP_AddHEdgeToSuperBlock(bLeft,  &curHEdge);
+        BSP_AddHEdgeToSuperBlock(bRight, &newHEdge);
     }
     else
     {
-        BSP_AddHEdgeToSuperBlock(bRight, curHEdge);
-        BSP_AddHEdgeToSuperBlock(bLeft,  newHEdge);
+        BSP_AddHEdgeToSuperBlock(bRight, &curHEdge);
+        BSP_AddHEdgeToSuperBlock(bLeft,  &newHEdge);
     }
 
-    if(!curHEdge->twin->face && ((hedge_info_t*)curHEdge->twin->data)->block)
-        BSP_AddHEdgeToSuperBlock(((hedge_info_t*)curHEdge->twin->data)->block, newHEdge->twin);
+    if(!curHEdge.twin->face && ((hedge_info_t*)curHEdge.twin->data)->block)
+        BSP_AddHEdgeToSuperBlock(((hedge_info_t*)curHEdge.twin->data)->block, newHEdge.twin);
 }
 
 void NodeBuilder::divideHEdges(superblock_t* hEdgeList, ddouble x, ddouble y,
@@ -1168,7 +1137,7 @@ void NodeBuilder::divideHEdges(superblock_t* hEdgeList, ddouble x, ddouble y,
     while((hEdge = SuperBlock_PopHEdge(hEdgeList)))
     {
         ((hedge_info_t*) hEdge->data)->block = NULL;
-        divideOneHEdge(hEdge, x, y, dX, dY, partHEdge, rights, lefts);
+        divideOneHEdge(*hEdge, x, y, dX, dY, partHEdge, rights, lefts);
     }
 
     // Recursively handle sub-blocks.
@@ -1218,7 +1187,7 @@ void NodeBuilder::partitionHEdges(superblock_t* hEdgeList, ddouble x,
         LOG_ERROR("NodeBuilder::partitionHEdges: Separated halfedge-list has no left side.");
 
     addMiniHEdges(x, y, dX, dY, partHEdge, bRight, bLeft);
-    CutList_Reset(_cutList);
+    _cutList.clear();
 
     *right = bRight;
     *left = bLeft;

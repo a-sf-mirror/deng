@@ -83,10 +83,10 @@ static void processSeg(const Seg& seg, void* data)
     Subsector& dst = seg.back().subsector();
 
     // Is the dst subSector inside the objlink's AABB?
-    if(dst.bBox[1][VX] <= params->box[BOXLEFT] ||
-       dst.bBox[0][VX] >= params->box[BOXRIGHT] ||
-       dst.bBox[1][VY] <= params->box[BOXBOTTOM] ||
-       dst.bBox[0][VY] >= params->box[BOXTOP])
+    if(dst.bBox[1][0] <= params->box[BOXLEFT] ||
+       dst.bBox[0][0] >= params->box[BOXRIGHT] ||
+       dst.bBox[1][1] <= params->box[BOXBOTTOM] ||
+       dst.bBox[0][1] >= params->box[BOXTOP])
     {
         // The subSector is not inside the params's bounds.
         return;
@@ -191,7 +191,7 @@ static void findContacts(Map::objcontacttype_t type, void* obj)
         {
         particle_t* pt = reinterpret_cast<particle_t*>(obj);
 
-        V3_SetFixed(params.objPos, pt->pos[VX], pt->pos[VY], pt->pos[VZ]);
+        V3_SetFixed(params.objPos, pt->pos[0], pt->pos[1], pt->pos[VZ]);
         // Use a slightly smaller radius than what the obj really is.
         params.objRadius = FIX2FLT(pt->gen->stages[pt->stage].radius) * .9f;
         subsector = pt->subsector;
@@ -267,10 +267,10 @@ static void spreadMobjs(const Subsector* subsector)
     uint blockBox[4];
     vec2_t bbox[2];
 
-    bbox[0][VX] = subsector->bBox[0][VX] - DDMOBJ_RADIUS_MAX;
-    bbox[0][VY] = subsector->bBox[0][VY] - DDMOBJ_RADIUS_MAX;
-    bbox[1][VX] = subsector->bBox[1][VX] + DDMOBJ_RADIUS_MAX;
-    bbox[1][VY] = subsector->bBox[1][VY] + DDMOBJ_RADIUS_MAX;
+    bbox[0][0] = subsector->bBox[0][0] - DDMOBJ_RADIUS_MAX;
+    bbox[0][1] = subsector->bBox[0][1] - DDMOBJ_RADIUS_MAX;
+    bbox[1][0] = subsector->bBox[1][0] + DDMOBJ_RADIUS_MAX;
+    bbox[1][1] = subsector->bBox[1][1] + DDMOBJ_RADIUS_MAX;
 
     MobjBlockmap_BoxToBlocks(bmap, blockBox, bbox);
     MobjBlockmap_BoxIterate(bmap, blockBox, PTR_SpreadContacts, &type);
@@ -287,10 +287,10 @@ static void spreadLumobjs(const Subsector* subsector)
     uint blockBox[4];
     vec2_t bbox[2];
 
-    bbox[0][VX] = subsector->bBox[0][VX] - loMaxRadius;
-    bbox[0][VY] = subsector->bBox[0][VY] - loMaxRadius;
-    bbox[1][VX] = subsector->bBox[1][VX] + loMaxRadius;
-    bbox[1][VY] = subsector->bBox[1][VY] + loMaxRadius;
+    bbox[0][0] = subsector->bBox[0][0] - loMaxRadius;
+    bbox[0][1] = subsector->bBox[0][1] - loMaxRadius;
+    bbox[1][0] = subsector->bBox[1][0] + loMaxRadius;
+    bbox[1][1] = subsector->bBox[1][1] + loMaxRadius;
 
     LumobjBlockmap_BoxToBlocks(bmap, blockBox, bbox);
     LumobjBlockmap_BoxIterate(bmap, blockBox, PTR_SpreadContacts, &type);
@@ -307,10 +307,10 @@ static void spreadParticles(const Subsector* subsector)
     uint blockBox[4];
     vec2_t bbox[2];
 
-    bbox[0][VX] = subsector->bBox[0][VX] - 128;
-    bbox[0][VY] = subsector->bBox[0][VY] - 128;
-    bbox[1][VX] = subsector->bBox[1][VX] + 128;
-    bbox[1][VY] = subsector->bBox[1][VY] + 128;
+    bbox[0][0] = subsector->bBox[0][0] - 128;
+    bbox[0][1] = subsector->bBox[0][1] - 128;
+    bbox[1][0] = subsector->bBox[1][0] + 128;
+    bbox[1][1] = subsector->bBox[1][1] + 128;
 
     ParticleBlockmap_BoxToBlocks(bmap, blockBox, bbox);
     ParticleBlockmap_BoxIterate(bmap, blockBox, PTR_SpreadContacts, &type);
@@ -352,21 +352,21 @@ void Subsector::updateMidPoint()
     {
         const Vertex& vtx = *hEdge->vertex;
 
-        bBox[0][VX] = bBox[1][VX] = midPoint.x = dfloat(vtx.pos.x);
-        bBox[0][VY] = bBox[1][VY] = midPoint.y = dfloat(vtx.pos.y);
+        bBox[0][0] = bBox[1][0] = midPoint.x = dfloat(vtx.pos.x);
+        bBox[0][1] = bBox[1][1] = midPoint.y = dfloat(vtx.pos.y);
 
         while((hEdge = hEdge->next) != face->hEdge)
         {
             const Vertex& vtx = *hEdge->vertex;
 
-            if(vtx.pos.x < bBox[0][VX])
-                bBox[0][VX] = dfloat(vtx.pos.x);
-            if(vtx.pos.y < bBox[0][VY])
-                bBox[0][VY] = dfloat(vtx.pos.y);
-            if(vtx.pos.x > bBox[1][VX])
-                bBox[1][VX] = dfloat(vtx.pos.x);
-            if(vtx.pos.y > bBox[1][VY])
-                bBox[1][VY] = dfloat(vtx.pos.y);
+            if(vtx.pos.x < bBox[0][0])
+                bBox[0][0] = dfloat(vtx.pos.x);
+            if(vtx.pos.y < bBox[0][1])
+                bBox[0][1] = dfloat(vtx.pos.y);
+            if(vtx.pos.x > bBox[1][0])
+                bBox[1][0] = dfloat(vtx.pos.x);
+            if(vtx.pos.y > bBox[1][1])
+                bBox[1][1] = dfloat(vtx.pos.y);
 
             midPoint.x += dfloat(vtx.pos.x);
             midPoint.y += dfloat(vtx.pos.y);
@@ -377,8 +377,8 @@ void Subsector::updateMidPoint()
     }
 
     // Calculate the worldwide grid offset.
-    worldGridOffset.x = fmod(bBox[0][VX], 64);
-    worldGridOffset.y = fmod(bBox[1][VY], 64);
+    worldGridOffset.x = fmod(bBox[0][0], 64);
+    worldGridOffset.y = fmod(bBox[1][1], 64);
 }
 
 bool Subsector::pointInside(dfloat x, dfloat y) const
