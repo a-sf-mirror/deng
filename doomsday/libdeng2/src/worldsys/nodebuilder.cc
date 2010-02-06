@@ -28,7 +28,7 @@
 
 #include "de/Vector"
 #include "de/Log"
-#include "de/BSPNode"
+#include "de/NodeBuilder"
 #include "de/BSPSuperBlock"
 #include "de/BSPEdge"
 #include "de/BSPIntersection"

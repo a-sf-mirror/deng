@@ -26,7 +26,7 @@
 
 #include <math.h>
 
-#include "de/BSPNode"
+#include "de/NodeBuilder"
 #include "de/BSPEdge"
 #include "de/BSPIntersection"
 #include "de/BSPSuperBlock"

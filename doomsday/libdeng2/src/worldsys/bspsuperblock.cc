@@ -30,7 +30,7 @@
 #include <math.h>
 #include <limits.h>
 
-#include "de/BSPNode"
+#include "de/NodeBuilder"
 #include "de/BSPEdge"
 #include "de/BSPSuperBlock"
 #include "de/Log"
