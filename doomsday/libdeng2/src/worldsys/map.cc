@@ -1044,20 +1044,13 @@ void Map::update()
     for(duint i = 0; i < _numSectors; ++i)
     {
         Sector& sector = *sectors[i];
-
         sector.floor().surface.update();
         sector.ceiling().surface.update();
-        for(duint j = 0; j < sector.extraPlaneCount(); ++j)
-        {
-            Plane& plane = sector.extraPlane(j);
-            plane.surface.update();
-        }
     }
 
     for(duint i = 0; i < _numSideDefs; ++i)
     {
         SideDef& sideDef = *sideDefs[i];
-
         sideDef.middle().update();
         sideDef.bottom().update();
         sideDef.top().update();
@@ -1075,17 +1068,18 @@ void Map::update()
     }
 }
 
-bool Map::updatePlaneHeightTracking(Plane* plane, void* paramaters)
+bool Map::updatePlaneHeightTracking(Plane* plane)
 {
     plane->updateHeightTracking();
     return true; // Continue iteration.
 }
 
-bool Map::resetPlaneHeightTracking(Plane* plane, void* paramaters)
+bool Map::resetPlaneHeightTracking(Plane* plane)
 {
     plane->resetHeightTracking();
     _watchedPlanes.erase(plane);
 
+    /// @fixme Use Observer.
     for(duint i = 0; i < _numSectors; ++i)
     {
         Sector& sector = *sectors[i];
@@ -1101,31 +1095,21 @@ bool Map::resetPlaneHeightTracking(Plane* plane, void* paramaters)
         {
             R_MarkDependantSurfacesForDecorationUpdate(sector);
             return true; // Continue iteration.
-        }
-
-        for(duint j = 0; j < sector.extraPlaneCount(); ++j)
-        {
-            if(&sector.extraPlane(i) == plane)
-            {
-                R_MarkDependantSurfacesForDecorationUpdate(sector);
-                return true; // Continue iteration.
-            }
         }
     }
 
     return true; // Continue iteration.
 }
 
-bool Map::interpolatePlaneHeight(Plane* plane, void* paramaters)
+bool Map::interpolatePlaneHeight(Plane* plane, dfloat frameTimePos)
 {
-    dfloat frameTimePos = *(reinterpret_cast<dfloat*>(paramaters));
-
     plane->interpolateHeight(frameTimePos);
 
     // Has this plane reached its destination?
     if(plane->visHeight == plane->height)
         _watchedPlanes.erase(plane);
 
+    /// @fixme Use Observer.
     for(duint i = 0; i < _numSectors; ++i)
     {
         Sector& sector = *sectors[i];
@@ -1141,15 +1125,6 @@ bool Map::interpolatePlaneHeight(Plane* plane, void* paramaters)
         {
             R_MarkDependantSurfacesForDecorationUpdate(sector);
             return true; // Continue iteration.
-        }
-
-        for(duint j = 0; j < sector.extraPlaneCount(); ++j)
-        {
-            if(&sector.extraPlane(i) == plane)
-            {
-                R_MarkDependantSurfacesForDecorationUpdate(sector);
-                return true; // Continue iteration.
-            }
         }
     }
 
@@ -1159,14 +1134,14 @@ bool Map::interpolatePlaneHeight(Plane* plane, void* paramaters)
 void Map::updateWatchedPlanes()
 {
     FOR_EACH(i, _watchedPlanes, PlaneSet::iterator)
-        updatePlaneHeightTracking(*i, NULL);
+        updatePlaneHeightTracking(*i);
 }
 
-void Map::interpolateWatchedPlanes(bool resetNextViewer)
+void Map::interpolateWatchedPlanes(dfloat frameTimePos)
 {
-    if(resetNextViewer)
+    if(frameTimePos < 0)
     {
-        // $smoothplane: Reset the plane height trackers.
+        // Reset the plane height trackers.
         FOR_EACH(i, _watchedPlanes, PlaneSet::iterator)
             resetPlaneHeightTracking(*i);
     }
@@ -1174,111 +1149,46 @@ void Map::interpolateWatchedPlanes(bool resetNextViewer)
     // visual plane offsets $smoothplane.
     else //if(!clientPaused)
     {
-        // $smoothplane: Set the visible offsets.
+        // Set the visible offsets.
         FOR_EACH(i, _watchedPlanes, PlaneSet::iterator)
-            interpolatePlaneHeight(*i, &frameTimePos);
+            interpolatePlaneHeight(*i, frameTimePos);
     }
 }
 
-static boolean resetMovingSurface(surface_t* suf, void* context)
+void Map::interpolateMovingSurfaces(dfloat frameTimePos)
 {
-    // X Offset.
-    suf->visOffsetDelta[0] = 0;
-    suf->oldOffset[0][0] = suf->oldOffset[0][1] = suf->offset[0];
-
-    // Y Offset.
-    suf->visOffsetDelta[1] = 0;
-    suf->oldOffset[1][0] = suf->oldOffset[1][1] = suf->offset[1];
-
-    Surface_Update(suf);
-    SurfaceList_Remove((surfacelist_t*) context, suf);
-
-    return true;
-}
-
-static boolean interpMovingSurface(surface_t* suf, void* context)
-{
-    // X Offset.
-    suf->visOffsetDelta[0] =
-        suf->oldOffset[0][0] * (1 - frameTimePos) +
-                suf->offset[0] * frameTimePos - suf->offset[0];
-
-    // Y Offset.
-    suf->visOffsetDelta[1] =
-        suf->oldOffset[1][0] * (1 - frameTimePos) +
-                suf->offset[1] * frameTimePos - suf->offset[1];
-
-    // Visible material offset.
-    suf->visOffset[0] = suf->offset[0] + suf->visOffsetDelta[0];
-    suf->visOffset[1] = suf->offset[1] + suf->visOffsetDelta[1];
-
-    Surface_Update(suf);
-
-    // Has this material reached its destination?
-    if(suf->visOffset[0] == suf->offset[0] &&
-       suf->visOffset[1] == suf->offset[1])
-        SurfaceList_Remove((surfacelist_t*) context, suf);
-
-    return true;
-}
-
-/**
- * $smoothmatoffset: interpolate the visual offset.
- */
-static void interpolateMovingSurfaces(map_t* map, boolean resetNextViewer)
-{
-    if(!map)
-        return;
-
-    if(resetNextViewer)
+    if(frameTimePos < 0)
     {
         // Reset the material offset trackers.
-        SurfaceList_Iterate(map->_movingSurfaceList, resetMovingSurface, map->_movingSurfaceList);
+        FOR_EACH(i, _movingSurfaces, SurfaceSet::iterator)
+        {
+            MSurface* suf = *i;
+            suf->resetScroll();
+            _movingSurfaces.erase(suf);
+        }
     }
     // While the game is paused there is no need to calculate any
     // visual material offsets.
     else //if(!clientPaused)
     {
         // Set the visible material offsets.
-        SurfaceList_Iterate(map->_movingSurfaceList, interpMovingSurface, map->_movingSurfaceList);
+        FOR_EACH(i, _movingSurfaces, SurfaceSet::iterator)
+        {
+            MSurface* suf = *i;
+            suf->interpolateScroll(frameTimePos);
+            /// Has this material reached its destination? If so remove it from the
+            /// set of moving Surfaces.
+            if(fequal(suf->visOffset[0], suf->offset[0]) &&
+               fequal(suf->visOffset[1], suf->offset[1]))
+                _movingSurfaces.erase(suf);
+        }
     }
 }
 
-static boolean updateMovingSurface(surface_t* suf, void* context)
+void Map::updateMovingSurfaces()
 {
-    // X Offset
-    suf->oldOffset[0][0] = suf->oldOffset[0][1];
-    suf->oldOffset[0][1] = suf->offset[0];
-    if(suf->oldOffset[0][0] != suf->oldOffset[0][1])
-        if(fabs(suf->oldOffset[0][0] - suf->oldOffset[0][1]) >=
-           MAX_SMOOTH_MATERIAL_MOVE)
-        {
-            // Too fast: make an instantaneous jump.
-            suf->oldOffset[0][0] = suf->oldOffset[0][1];
-        }
-
-    // Y Offset
-    suf->oldOffset[1][0] = suf->oldOffset[1][1];
-    suf->oldOffset[1][1] = suf->offset[1];
-    if(suf->oldOffset[1][0] != suf->oldOffset[1][1])
-        if(fabs(suf->oldOffset[1][0] - suf->oldOffset[1][1]) >=
-           MAX_SMOOTH_MATERIAL_MOVE)
-        {
-            // Too fast: make an instantaneous jump.
-            suf->oldOffset[1][0] = suf->oldOffset[1][1];
-        }
-
-    return true;
-}
-
-/**
- * $smoothmatoffset: Roll the surface material offset tracker buffers.
- */
-void Map_UpdateMovingSurfaces(map_t* map)
-{
-    assert(map);
-    if(map->_movingSurfaceList)
-        SurfaceList_Iterate(map->_movingSurfaceList, updateMovingSurface, NULL);
+    FOR_EACH(i, _movingSurfaces, SurfaceSet::iterator)
+        (*i)->updateScroll();
 }
 
 typedef struct {

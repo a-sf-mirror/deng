@@ -79,10 +79,13 @@ namespace de
         //blendmode_t blendMode;
         dfloat normal[3]; // Surface normal
         dfloat oldNormal[3];
+
         dfloat offset[2]; // [X, Y] Planar offset to surface material origin.
         dfloat oldOffset[2][2];
+
         dfloat visOffset[2];
         dfloat visOffsetDelta[2];
+
         dfloat rgba[4]; // Surface color tint
         dshort inFlags; // SUIF_* flags
         //duint numDecorations;
@@ -90,12 +93,33 @@ namespace de
 
         void update();
 
+        /**
+         * $smoothmatoffset: Roll the Surface material offset tracker buffers.
+         */
+        void updateScroll();
+
+        /**
+         * $smoothmatoffset: Interpolate the Surface, Material offset.
+         */
+        void interpolateScroll(dfloat frameTimePos);
+
+        void resetScroll();
+
         //bool isSky() const { return (material && (material->flags & MATF_SKYMASK))? true : false; }
 
-        //bool setMaterial(material_t* mat, boolean fade);
+        /**
+         * Change Material.
+         *
+         * @param mat           Material to change to.
+         * @param fade          @c true = allow blending
+         * @return              @c true, if changed successfully.
+         */
+        //bool setMaterial(Material* mat, bool fade);
+
         bool setMaterialOffsetX(dfloat x);
         bool setMaterialOffsetY(dfloat y);
         bool setMaterialOffsetXY(dfloat x, dfloat y);
+
         bool setColorR(dfloat r);
         bool setColorG(dfloat g);
         bool setColorB(dfloat b);

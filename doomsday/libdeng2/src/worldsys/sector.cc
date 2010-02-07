@@ -39,8 +39,6 @@ namespace de
 
 Sector::~Sector()
 {
-    if(planes) Z_Free(planes);
-
     if(subsectors) Z_Free(subsectors);
 
     if(reverbSubsectors) Z_Free(reverbSubsectors);
@@ -125,9 +123,7 @@ bool Sector::planesChanged()
     noFit = false;
     // We'll use validCount to make sure mobjs are only checked once.
     validCount++;
-#if 0
-    iterateMobjsTouching(PIT_SectorPlanesChanged, 0);
-#endif
+    iterateThingsTouching(PIT_SectorPlanesChanged, 0);
     return noFit;
 }
 
@@ -136,18 +132,6 @@ dfloat Sector::lightIntensity() const
     if(mapFullBright)
         return 1.0f;
     return _lightIntensity;
-}
-
-Plane* Sector::extraPlane(PlaneId id) const
-{
-    Planes::iterator iter = _extraPlanes.find(id);
-    if(iter != _extraPlanes.end())
-        return iter->second;
-
-    std::ostringstream os;
-    os << "Extra Plane Index " << n << " invalid.";
-    /// @throw InvalidExtraPlaneIndexError  A valid extra plane Index was expected.
-    throw InvalidExtraPlaneIndexError("Sector::extraPlane", os.str());
 }
 
 bool Sector::pointInside(dfloat x, dfloat y) const
@@ -328,61 +312,58 @@ bool Sector::getProperty(setargs_t* args) const
 }
 #endif
 
-bool Sector::iterateMobjsTouching(dint (*func) (void*, void*), void* data)
+bool Sector::iterateThingsTouching(bool (*callback) (void*, void*), void* paramaters)
 {
-#pragma message("Warning: Sector::iterateMobjsTouching not yet implemented.")
-
-#if 0
     assert(func);
 
 /**
  * Linkstore is list of pointers gathered when iterating stuff.
  * This is pretty much the only way to avoid *all* potential problems
  * caused by callback routines behaving badly (moving or destroying
- * mobjs). The idea is to get a snapshot of all the objects being
+ * Things). The idea is to get a snapshot of all the objects being
  * iterated before any callbacks are called. The hardcoded limit is
- * a drag, but I'd like to see you iterating 2048 mobjs/lines in one block.
+ * a drag, but I'd like to see you iterating 2048 Things in one block.
  */
 #define MAXLINKED           2048
-#define DO_LINKS(it, end)   for(it = linkstore; it < end; it++) \
-                                if(!func(*it, data)) return false;
-    void* linkstore[MAXLINKED];
-    void** end = linkstore, **it;   
 
-    // First process the mobjs that obviously are in the sector.
-    for(mobj_t* mo = mobjList; mo; mo = mo->sNext)
+    Thing* linkstore[MAXLINKED];
+    Thing** end = linkstore;   
+
+    // First process the Things that obviously are in this Sector.
+    for(Thing* thing = thingList; thing; thing = thing->sNext)
     {
-        if(mo->validCount == validCount)
+        if(thing->validCount == validCount)
             continue;
-        mo->validCount = validCount;
-        *end++ = mo;
+        thing->validCount = validCount;
+        *end++ = thing;
     }
 
+    /// @fixme Sector should tell us which map it belongs to.
+    Map& map = App::currentMap();
+
     // Then check the sector's lines.
-    for(duint i = 0; i < lineDefCount; ++i)
+    FOR_EACH(i, lineDefs, LineDefSet::iterator)
     {
-        LineDef* li = lineDefs[i];
-        /// @fixme LineDef should tell us which map it belongs to.
-        Map& map = App::currentMap();
+        LineDef* li = *i;
         LinkNode* ln = map.lineDefNodes->nodes;
-        // Iterate all mobjs on the line.
-        NodePileIndex root = map.lineLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
-        for(NodePileIndex nix = ln[root].next; nix != root; nix = ln[nix].next)
+
+        // Iterate all Things linked to the LineDef.
+        NodePile::Index root = map.lineDefLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
+        for(NodePile::Index nix = ln[root].next; nix != root; nix = ln[nix].next)
         {
-            mobj_t* mo = (mobj_t*) ln[nix].ptr;
-            if(mo->validCount == validCount)
+            Thing* thing = reinterpret_cast<Thing*>(ln[nix].ptr);
+            if(thing->validCount == validCount)
                 continue;
 
-            mo->validCount = validCount;
-            *end++ = mo;
+            thing->validCount = validCount;
+            *end++ = thing;
         }
     }
 
-    DO_LINKS(it, end);
+    for(Thing** it = linkstore; it < end; it++)
+        if(!callback(*it, paramaters))
+            return false;
     return true;
 
 #undef MAXLINKED
-#undef DO_LINKS
-
-#endif
 }

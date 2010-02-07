@@ -435,10 +435,22 @@ namespace de
 
         /**
          * $smoothplane: interpolate the visual offset.
+         *
+         * @param frameTimePos      @c < 0  Reset
+         *                          @c >= 0 Fractional time position.
          */
-        void interpolateWatchedPlanes(bool resetNextViewer);
+        void interpolateWatchedPlanes(dfloat frameTimePos);
 
         void updateMovingSurfaces();
+
+        /**
+         * $smoothmatoffset: interpolate the visual offset.
+         *
+         * @param frameTimePos      @c < 0  Reset
+         *                          @c >= 0 Fractional time position.
+         */
+        void interpolateMovingSurfaces(dfloat frameTimePos);
+
         void updateSkyFixForSector(duint secIDX);
 
 #if 0
@@ -596,9 +608,9 @@ namespace de
 
         void clearSectorFlags();
 
-        bool interpolatePlaneHeight(Plane* plane, void* paramaters = 0);
-        bool resetPlaneHeightTracking(Plane* plane, void* paramaters = 0);
-        bool updatePlaneHeightTracking(Plane* plane, void* paramaters = 0);
+        bool interpolatePlaneHeight(Plane* plane, dfloat frameTimePos);
+        bool resetPlaneHeightTracking(Plane* plane);
+        bool updatePlaneHeightTracking(Plane* plane);
     };
 }
 

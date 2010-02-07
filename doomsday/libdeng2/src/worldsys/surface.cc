@@ -1,10 +1,8 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- libdeng2
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,55 +15,75 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * r_surface.c: World surfaces.
- */
+#include "de/MSurface"
 
-// HEADER FILES ------------------------------------------------------------
+using namespace de;
 
-#include "de_base.h"
-#include "de_refresh.h"
-#include "de_play.h"
+void MSurface::resetScroll()
+{
+    // X Offset.
+    visOffsetDelta[0] = 0;
+    oldOffset[0][0] = oldOffset[0][1] = offset[0];
+    // Y Offset.
+    visOffsetDelta[1] = 0;
+    oldOffset[1][0] = oldOffset[1][1] = offset[1];
 
-#include "s_environ.h"
+    update();
+}
 
-// MACROS ------------------------------------------------------------------
+void MSurface::interpolateScroll(dfloat frameTimePos)
+{
+    // X Offset.
+    visOffsetDelta[0] =
+        oldOffset[0][0] * (1 - frameTimePos) +
+                offset[0] * frameTimePos - offset[0];
 
-// TYPES -------------------------------------------------------------------
+    // Y Offset.
+    visOffsetDelta[1] =
+        oldOffset[1][0] * (1 - frameTimePos) +
+                offset[1] * frameTimePos - offset[1];
 
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
+    // Visible material offset.
+    visOffset[0] = offset[0] + visOffsetDelta[0];
+    visOffset[1] = offset[1] + visOffsetDelta[1];
 
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
+    update();
+}
 
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
+void MSurface::updateScroll()
+{
+    // X Offset
+    oldOffset[0][0] = oldOffset[0][1];
+    oldOffset[0][1] = offset[0];
+    if(oldOffset[0][0] != oldOffset[0][1])
+        if(fabs(oldOffset[0][0] - oldOffset[0][1]) >=
+           MAX_SMOOTH_MATERIAL_MOVE)
+        {
+            // Too fast: make an instantaneous jump.
+            oldOffset[0][0] = oldOffset[0][1];
+        }
 
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
+    // Y Offset
+    oldOffset[1][0] = oldOffset[1][1];
+    oldOffset[1][1] = offset[1];
+    if(oldOffset[1][0] != oldOffset[1][1])
+        if(fabs(oldOffset[1][0] - oldOffset[1][1]) >=
+           MAX_SMOOTH_MATERIAL_MOVE)
+        {
+            // Too fast: make an instantaneous jump.
+            oldOffset[1][0] = oldOffset[1][1];
+        }
+}
 
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
-
-/**
- * Change the material to be used on the specified surface.
- *
- * @param suf           Ptr to the surface to chage the material of.
- * @param mat           Ptr to the material to change to.
- * @param fade          @c true = allow blending
- * @return              @c true, if changed successfully.
- */
-boolean Surface_SetMaterial(MSurface* suf, material_t* mat, boolean fade)
+bool MSurface::setMaterial(Material* mat, bool fade)
 {
     matfader_t* fader;
     const materialenvinfo_t* env;
 
-    if(!suf || !mat)
+    if(!mat)
         return false;
 
     if(suf->material == mat)
