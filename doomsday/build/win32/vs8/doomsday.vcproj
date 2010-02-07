@@ -1125,10 +1125,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\m_nodepile.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\m_stack.c"
 				>
 			</File>
@@ -2690,10 +2686,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\gameobjrecords.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\include\gl_defer.h"
 				>
 			</File>
@@ -2738,14 +2730,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\linedefblockmap.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\lumobjblockmap.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\include\m_args.h"
 				>
 			</File>
@@ -2787,10 +2771,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\m_mus2midi.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\m_nodepile.h"
 				>
 			</File>
 			<File

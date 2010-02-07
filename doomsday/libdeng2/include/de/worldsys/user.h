@@ -58,7 +58,7 @@ namespace de
         Record& info() { return _info; }
 
         /**
-         * Returns the name of the player.
+         * Returns the name of the user.
          */
         const String name() const;
 

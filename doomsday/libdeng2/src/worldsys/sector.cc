@@ -27,6 +27,8 @@
 #include "de/Map"
 #include "de/Sector"
 
+#include <sstream>
+
 using namespace de;
 
 namespace de
@@ -129,24 +131,25 @@ bool Sector::planesChanged()
     return noFit;
 }
 
-dfloat Sector::lightLevel()
+dfloat Sector::lightIntensity() const
 {
     if(mapFullBright)
         return 1.0f;
-    return _lightLevel;
+    return _lightIntensity;
 }
 
-/**
- * Is the point inside the sector, according to the edge lines of the
- * subsector. Uses the well-known algorithm described here:
- * http://www.alienryderflex.com/polygon/
- *
- * @param               X coordinate to test.
- * @param               Y coordinate to test.
- * @param               Sector to test.
- *
- * @return              @c true, if the point is inside the sector.
- */
+Plane* Sector::extraPlane(PlaneId id) const
+{
+    Planes::iterator iter = _extraPlanes.find(id);
+    if(iter != _extraPlanes.end())
+        return iter->second;
+
+    std::ostringstream os;
+    os << "Extra Plane Index " << n << " invalid.";
+    /// @throw InvalidExtraPlaneIndexError  A valid extra plane Index was expected.
+    throw InvalidExtraPlaneIndexError("Sector::extraPlane", os.str());
+}
+
 bool Sector::pointInside(dfloat x, dfloat y) const
 {
     bool isOdd = false;
@@ -178,23 +181,10 @@ bool Sector::pointInside(dfloat x, dfloat y) const
     return isOdd;
 }
 
-/**
- * Is the point inside the sector, according to the edge lines of the
- * subsector. Uses the well-known algorithm described here:
- * http://www.alienryderflex.com/polygon/
- *
- * More accurate than Sector_PointInside.
- *
- * @param               X coordinate to test.
- * @param               Y coordinate to test.
- * @param               Sector to test.
- *
- * @return              @c true, if the point is inside the sector.
- */
 bool Sector::pointInside2(dfloat x, dfloat y) const
 {
     // @todo Subsector should return the map its linked in.
-    const Subsector* subsector = App::currentMap().pointInSubsector2(x, y);
+    const Subsector* subsector = App::currentMap().pointInSubsector(x, y);
     if(subsector->sector != this)
         return false; // Wrong sector.
     return subsector->pointInside(x, y);
@@ -374,10 +364,10 @@ bool Sector::iterateMobjsTouching(dint (*func) (void*, void*), void* data)
         LineDef* li = lineDefs[i];
         /// @fixme LineDef should tell us which map it belongs to.
         Map& map = App::currentMap();
-        linknode_t* ln = map.lineNodes->nodes;
+        LinkNode* ln = map.lineDefNodes->nodes;
         // Iterate all mobjs on the line.
-        nodeindex_t root = map.lineLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
-        for(nodeindex_t nix = ln[root].next; nix != root; nix = ln[nix].next)
+        NodePileIndex root = map.lineLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];
+        for(NodePileIndex nix = ln[root].next; nix != root; nix = ln[nix].next)
         {
             mobj_t* mo = (mobj_t*) ln[nix].ptr;
             if(mo->validCount == validCount)

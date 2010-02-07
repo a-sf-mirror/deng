@@ -57,9 +57,9 @@
  *
  * @param initial       Number of nodes to allocate.
  */
-nodepile_t* P_CreateNodePile(int initial)
+NodePile* P_CreateNodePile(int initial)
 {
-    nodepile_t* pile = Z_Malloc(sizeof(*pile), PU_STATIC, 0);
+    NodePile* pile = Z_Malloc(sizeof(*pile), PU_STATIC, 0);
     size_t size;
 
     // Allocate room for at least two nodes.
@@ -81,7 +81,7 @@ nodepile_t* P_CreateNodePile(int initial)
  *
  * @param pile          Node pile to be destroyed.
  */
-void P_DestroyNodePile(nodepile_t* pile)
+void P_DestroyNodePile(NodePile* pile)
 {
     assert(pile);
 
@@ -99,12 +99,12 @@ void P_DestroyNodePile(nodepile_t* pile)
  * @param pile          Ptr to nodepile to add the node to.
  * @param ptr           Data to attach to the new node.
  */
-nodeindex_t NP_New(nodepile_t* pile, void* ptr)
+NodePileIndex NP_New(NodePile* pile, void* ptr)
 {
-    linknode_t* node;
-    linknode_t* end = pile->nodes + pile->count;
+    LinkNode* node;
+    LinkNode* end = pile->nodes + pile->count;
     int i, newcount;
-    linknode_t* newlist;
+    LinkNode* newlist;
     boolean found;
 
     pile->pos %= pile->count;
@@ -174,9 +174,9 @@ nodeindex_t NP_New(nodepile_t* pile, void* ptr)
  * @param node          Node to be linked.
  * @param root          The root node to link the node to.
  */
-void NP_Link(nodepile_t* pile, nodeindex_t node, nodeindex_t root)
+void NP_Link(NodePile* pile, NodePileIndex node, NodePileIndex root)
 {
-    linknode_t* nd = pile->nodes;
+    LinkNode* nd = pile->nodes;
 
     nd[node].prev = root;
     nd[node].next = nd[root].next;
@@ -189,9 +189,9 @@ void NP_Link(nodepile_t* pile, nodeindex_t node, nodeindex_t root)
  * @param pile          Nodepile ring to work with.
  * @param node          Node to be unlinked.
  */
-void NP_Unlink(nodepile_t* pile, nodeindex_t node)
+void NP_Unlink(NodePile* pile, NodePileIndex node)
 {
-    linknode_t* nd = pile->nodes;
+    LinkNode* nd = pile->nodes;
 
     // Try deciphering that! :-) (d->n->p = d->p, d->p->n = d->n)
     nd[nd[nd[node].next].prev = nd[node].prev].next = nd[node].next;
@@ -204,7 +204,7 @@ void NP_Unlink(nodepile_t* pile, nodeindex_t node)
 /**
  * Caller must unlink first.
  */
-void NP_Dismiss(nodepile_t *pile, nodeindex_t node)
+void NP_Dismiss(NodePile *pile, NodePileIndex node)
 {
     pile->nodes[node].ptr = 0;
 }

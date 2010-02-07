@@ -35,9 +35,6 @@ namespace de
     static Vertex* rootVtx; // Used when sorting vertex line owners.
 
     /// \todo Should these be in de::World?
-    // List of unused and used obj-face contacts.
-    static Map::objcontact_t* contFirst = NULL, *contCursor = NULL;
-
     static Map::ownernode_t* unusedNodeList = NULL;
 }
 
@@ -83,6 +80,18 @@ static void destroyHalfEdgeDS(HalfEdgeDS* halfEdgeDS)
     halfEdgeDS->iterateVertices(destroyLinkedVertexInfo);
 
     delete halfEdgeDS;
+}
+
+static bool C_DECL freeNode(BinaryTree<void*>* tree, void* paramaters)
+{
+    if(!tree->isLeaf())
+    {
+        Node* node;
+        if((node = reinterpret_cast<Node*>(tree->data())))
+            delete node;
+    }
+    tree->setData(NULL);
+    return true; // Continue iteration.
 }
 
 Map::~Map()
@@ -137,19 +146,16 @@ Map::~Map()
         delete _lumobjBlockmap; _lumobjBlockmap = NULL;
 
     if(_subsectorContacts)
-        Z_Free(_subsectorContacts);
-    _subsectorContacts = NULL;
+        delete _subsectorContacts; _subsectorContacts = NULL;
 
-#if 0
-    P_DestroyNodePile(mobjNodes);
-    mobjNodes = NULL;
-    P_DestroyNodePile(lineNodes);
-    lineNodes = NULL;
+    if(thingNodes)
+        delete thingNodes; thingNodes = NULL;
 
-    if(lineLinks)
-        Z_Free(lineLinks);
-    lineLinks = NULL;
-#endif
+    if(lineDefNodes)
+        delete lineDefNodes; lineDefNodes = NULL;
+
+    if(lineDefLinks)
+        delete lineDefLinks; lineDefLinks = NULL;
 
     if(sideDefs)
     {
@@ -230,7 +236,11 @@ Map::~Map()
     _halfEdgeDS = NULL;
 
     // Free the BSP tree.
-    if(_rootNode) delete _rootNode;
+    if(_rootNode)
+    {
+        _rootNode->postOrder(freeNode);
+        delete _rootNode;
+    }
 
     if(&App::currentMap() == this)
         App::setCurrentMap(NULL);
@@ -571,7 +581,7 @@ void Map::clearSubsectorContacts()
 /**
  * Link the given objcontact node to list.
  */
-static __inline void linkContact(objcontact_t** list, objcontact_t* con, duint index)
+static __inline void linkContact(Map::objcontact_t** list, Map::objcontact_t* con, duint index)
 {
     con->next = list[index];
     list[index] = con;
@@ -582,15 +592,7 @@ void Map::linkContactToSubsector(duint subsectorIdx, objcontacttype_t type, objc
     linkContact(&_subsectorContacts[subsectorIdx].head[type], node, 0);
 }
 
-/**
- * Create a new objcontact for the given obj. If there are free nodes in
- * the list of unused nodes, the new contact is taken from there.
- *
- * @param obj           Ptr to the obj the contact is required for.
- *
- * @return              Ptr to the new objcontact.
- */
-static objcontact_t* allocObjContact(void)
+Map::objcontact_t* Map::allocObjContact(void)
 {
     objcontact_t* con;
 
@@ -609,13 +611,12 @@ static objcontact_t* allocObjContact(void)
     }
 
     con->obj = NULL;
-
     return con;
 }
 
 void Map::clearSectorFlags()
 {
-    for(i = 0; i < _numSectors; ++i)
+    for(duint i = 0; i < _numSectors; ++i)
     {
         Sector* sec = sectors[i];
         // Clear all flags that can be cleared before each frame.
@@ -624,55 +625,51 @@ void Map::clearSectorFlags()
 }
 
 /**
- * The given line might cross the mobj. If necessary, link the mobj into
- * the line's mobj link ring.
+ * The given LineDef might cross the Thing. If necessary, link the Thing into
+ * the LineDef's Thing link ring.
  */
 static bool PIT_LinkToLineDef(LineDef* lineDef, void* paramaters)
 {
-    linelinker_data_t* data = parm;
-    nodeindex_t nix;
+    Map::linelinker_data_t* data = reinterpret_cast<Map::linelinker_data_t*>(paramaters);
 
-    if(data->box[1][VX] <= lineDef->bBox[BOXLEFT] ||
-       data->box[0][VX] >= lineDef->bBox[BOXRIGHT] ||
-       data->box[1][VY] <= lineDef->bBox[BOXBOTTOM] ||
-       data->box[0][VY] >= lineDef->bBox[BOXTOP])
+    if(data->box[1][0] <= lineDef->bBox[BOXLEFT] ||
+       data->box[0][0] >= lineDef->bBox[BOXRIGHT] ||
+       data->box[1][1] <= lineDef->bBox[BOXBOTTOM] ||
+       data->box[0][1] >= lineDef->bBox[BOXTOP])
         // Bounding boxes do not overlap.
         return true;
 
-    if(LineDef_BoxOnSide2(lineDef, data->box[0][VX], data->box[1][VX],
-                              data->box[0][VY], data->box[1][VY]) != -1)
+    if(lineDef->boxOnSide(data->box[0][0], data->box[1][0], data->box[0][1], data->box[1][1]) != -1)
         // Line does not cross the mobj's bounding box.
         return true;
 
     // One sided lines will not be linked to because a mobj
     // can't legally cross one.
-    if(!lineDef->front() || !lineDef->back())
+    if(!lineDef->hasFront() || !lineDef->hasBack())
         return true;
 
-    // No redundant nodes will be creates since this routine is
-    // called only once for each line.
+    // Add a node to the Thing's ring.
+    NodePile::Index nix;
+    data->map->thingNodes->link(nix = data->map->thingNodes->newIndex(lineDef), data->thing->lineRoot);
 
-    // Add a node to the mobj's ring.
-    NP_Link(data->map->mobjNodes, nix = NP_New(data->map->mobjNodes, lineDef), data->mo->lineRoot);
-
-    // Add a node to the line's ring. Also store the linenode's index
+    // Add a node to the LineDef's ring. Also store the linenode's index
     // into the mobjring's node, so unlinking is easy.
-    data->map->mobjNodes->nodes[nix].data = NP_New(data->map->lineNodes, data->mo);
-    NP_Link(data->map->lineNodes, data->map->mobjNodes->nodes[nix].data,
-            data->map->lineLinks[P_ObjectRecord(DMU_LINEDEF, lineDef)->id - 1]);
+    data->map->thingNodes->nodes[nix].data = data->map->lineDefNodes->newIndex(data->thing);
+    data->map->lineDefNodes->link(data->map->thingNodes->nodes[nix].data,
+            data->map->lineDefLinks[P_ObjectRecord(DMU_LINEDEF, lineDef)->id - 1]);
 
     return true;
 }
 
 void Map::linkToLineDefs(Thing* thing)
 {
-    assert(ob);
+    assert(thing);
 
     linelinker_data_t data;
     Vector2d point;
 
     // Get a new root node.
-    thing->lineRoot = NP_New(mobjNodes, NP_ROOT_NODE);
+    thing->lineRoot = thingNodes->newIndex(NP_ROOT_NODE);
 
     // Set up a line iterator for doing the linking.
     data.thing = thing;
@@ -685,17 +682,17 @@ void Map::linkToLineDefs(Thing* thing)
     V2_AddToBox(data.box, point);
 
     validCount++;
-    lineDefsBoxIteratorv(data.box, PIT_LinkToLineDef, &data, false);
+    iterateLineDefs(data.box, PIT_LinkToLineDef, &data);
 }
 
 bool Map::unlinkFromLineDefs(Thing* thing)
 {
     assert(thing);
 
-    linknode_t* tn;
-    nodeindex_t nix;
+    NodePile::LinkNode* tn;
+    NodePile::Index nix;
 
-    tn = mobjNodes->nodes;
+    tn = thingNodes->nodes;
 
     // Try unlinking from lines.
     if(!thing->lineRoot)
@@ -706,15 +703,14 @@ bool Map::unlinkFromLineDefs(Thing* thing)
         nix = tn[nix].next)
     {
         // Data is the linenode index that corresponds this mobj.
-        NP_Unlink(lineNodes, tn[nix].data);
+        lineDefNodes->unlink(tn[nix].data);
         // We don't need these nodes any more, mark them as unused.
-        // Dismissing is a macro.
-        NP_Dismiss(lineNodes, tn[nix].data);
-        NP_Dismiss(mobjNodes, nix);
+        lineDefNodes->dismiss(tn[nix].data);
+        thingNodes->dismiss(nix);
     }
 
     // The mobj no longer has a line ring.
-    NP_Dismiss(mobjNodes, thing->lineRoot);
+    thingNodes->dismiss(thing->lineRoot);
     thing->lineRoot = 0;
 
     return true;
@@ -737,16 +733,16 @@ bool Map::unlinkFromSector(Thing* thing)
     return true;
 }
 
-void Map::link(Thing* thing, dbyte flags)
+void Map::link(Thing* thing, Thing::LinkFlags flags)
 {
     assert(thing);
 
-    Subsector* subsector = pointInSubsector2(thing->origin.x, thing->origin.y);
+    Subsector& subsector = pointInSubsector(thing->origin);
 
     // Link into the sector.
-    thing->subsector = (subsector_t*) P_ObjectRecord(DMU_SUBSECTOR, subsector);
+    thing->subsector = reinterpret_cast<Subsector*>(P_ObjectRecord(DMU_SUBSECTOR, &subsector));
 
-    if(flags & DDLINK_SECTOR)
+    if(flags[Thing::LINK_SECTOR])
     {
         // Unlink from the current sector, if any.
         if(thing->sPrev)
@@ -756,14 +752,14 @@ void Map::link(Thing* thing, dbyte flags)
         // Prev pointers point to the pointer that points back to us.
         // (Which practically disallows traversing the list backwards.)
 
-        if((thing->sNext = subsector->sector->mobjList))
+        if((thing->sNext = subsector.sector().thingList))
             thing->sNext->sPrev = &thing->sNext;
 
-        *(thing->sPrev = &subsector->sector->mobjList) = thing;
+        *(thing->sPrev = &subsector.sector().thingList) = thing;
     }
 
     // Link into blockmap?
-    if(flags & DDLINK_BLOCKMAP)
+    if(flags[Thing::LINK_BLOCKMAP])
     {
         // Unlink from the old block, if any.
         _thingBlockmap->unlink(thing);
@@ -771,10 +767,10 @@ void Map::link(Thing* thing, dbyte flags)
     }
 
     // Link into lines.
-    if(!(flags & DDLINK_NOLINE))
+    if(!(flags[Thing::LINK_NOLINEDEF]))
     {
-        unlinkMobjFromLineDefs(map, thing);
-        linkMobjToLineDefs(map, thing);
+        unlinkFromLineDefs(thing);
+        linkToLineDefs(thing);
     }
 
     // If this is a player - perform addtional tests to see if they have
@@ -784,188 +780,71 @@ void Map::link(Thing* thing, dbyte flags)
         ddplayer_t* player = thing->dPlayer;
 
         player->inVoid = true;
-        if(Sector_PointInside2(subsector->sector, player->thing->pos[VX], player->thing->pos[VY]) &&
-           (player->thing->pos[VZ] < subsector->sector->SP_ceilvisheight  - 4 &&
-            player->thing->pos[VZ] >= subsector->sector->SP_floorvisheight))
+        if(subsector.sector().pointInside2(player->thing->origin.x, player->thing->origin.y) &&
+           (player->thing->origin.z < subsector.ceiling().visHeight - 4 &&
+            player->thing->origin.z >= subsector.floor().visHeight))
             player->inVoid = false;
     }
-    }
 }
 
-int Map_UnlinkMobj(map_t* map, mobj_t* mo)
+Thing::LinkFlags Map::unlink(Thing* thing)
 {
-    assert(map);
-    assert(mo);
-    {
-    int links = 0;
+    assert(thing);
 
-    if(unlinkMobjFromSector(map, mo))
-        links |= DDLINK_SECTOR;
-    if(MobjBlockmap_Unlink(map->_thingBlockmap, mo))
-        links |= DDLINK_BLOCKMAP;
-    if(!unlinkMobjFromLineDefs(map, mo))
-        links |= DDLINK_NOLINE;
-
+    Thing::LinkFlags links = 0;
+    if(unlinkFromSector(thing))
+        links[Thing::LINK_SECTOR] = true;
+    if(_thingBlockmap->unlink(thing))
+        links[Thing::LINK_BLOCKMAP] = true;
+    if(!unlinkFromLineDefs(thing))
+        links[Thing::LINK_NOLINEDEF] = true;
     return links;
-    }
 }
 
-/**
- * @param th            Thinker to be added.
- * @param makePublic    If @c true, this thinker will be visible publically
- *                      via the Doomsday public API thinker interface(s).
- */
-void Map_AddThinker(map_t* map, thinker_t* th, boolean makePublic)
+Subsector& Map::pointInSubsector(dfloat x, dfloat y) const
 {
-    assert(map);
-    assert(th);
+    if(!_numNodes) // Single subsector is a special case.
+        return *subsectors[0];
 
-    if(!th->function)
+    BinaryTree<void*>* tree = _rootNode;
+    while(!tree->isLeaf())
     {
-        Con_Error("Map_AddThinker: Invalid thinker function.");
+        const Node* node = reinterpret_cast<Node*>(tree->data());
+        tree = tree->child(R_PointOnSide(x, y, &node->partition));
     }
 
-    // Will it need an ID?
-    if(P_IsMobjThinker(th, NULL))
-    {
-        // It is a mobj, give it an ID.
-        th->id = newMobjID(map);
-    }
-    else
-    {
-        // Zero is not a valid ID.
-        th->id = 0;
-    }
-
-    // Link the thinker to the thinker list.
-    Thinkers_Add(map->_thinkers, th, makePublic);
-    Thinker_SetMap(th, map);
+    Face* face = reinterpret_cast<Face*>(tree->data());
+    return *(reinterpret_cast<Subsector*>(face->data));
 }
 
-/**
- * Deallocation is lazy -- it will not actually be freed until its
- * thinking turn comes up.
- */
-void Map_RemoveThinker(map_t* map, thinker_t* th)
+Sector* Map::sectorForOrigin(const void* ddMobjBase) const
 {
-    assert(map);
-    assert(th);
-
-    // Has got an ID?
-    if(th->id)
-    {   // Then it must be a mobj.
-        mobj_t* mo = (mobj_t *) th;
-
-        // Flag the ID as free.
-        Thinkers_SetMobjID(map->_thinkers, th->id, false);
-
-        // If the state of the mobj is the NULL state, this is a
-        // predictable mobj removal (result of animation reaching its
-        // end) and shouldn't be included in netGame deltas.
-        if(!isClient)
-        {
-            if(!mo->state || mo->state == states)
-            {
-                Sv_MobjRemoved(map, th->id);
-            }
-        }
-    }
-
-    th->function = (think_t) - 1;
-}
-
-/**
- * Iterate the list of thinkers making a callback for each.
- *
- * @param func          If not @c NULL, only make a callback for objects whose
- *                      thinker matches.
- * @param flags         Thinker filter flags.
- * @param callback      The callback to make. Iteration will continue
- *                      until a callback returns a zero value.
- * @param context       Is passed to the callback function.
- */
-boolean Map_IterateThinkers2(map_t* map, think_t func, byte flags,
-                            int (*callback) (void* p, void*), void* context)
-{
-    assert(map);
-    return Thinkers_Iterate(map->_thinkers, func, flags, callback, context);
-}
-
-void Map_ThinkerSetStasis(map_t* map, thinker_t* th, boolean on)
-{
-    assert(map);
-    assert(th);
-    th->inStasis = on;
-}
-
-subsector_t* Map_PointInSubsector2(map_t* map, float x, float y)
-{
-    assert(map);
-    {
-    binarytree_t* tree;
-    face_t* face;
-
-    if(!map->numNodes) // Single subsector is a special case.
-        return (subsector_t*) map->subsectors;
-
-    tree = map->_rootNode;
-    while(!BinaryTree_IsLeaf(tree))
-    {
-        node_t* node = (node_t*) BinaryTree_GetData(tree);
-        tree = BinaryTree_GetChild(tree, R_PointOnSide(x, y, &node->partition));
-    }
-
-    face = (face_t*) BinaryTree_GetData(tree);
-    return (subsector_t*) face->data;
-    }
-}
-
-/**
- * Returns a ptr to the sector which owns the given ddmobj_base_t.
- *
- * @param ddMobjBase    ddmobj_base_t to search for.
- *
- * @return              Ptr to the Sector where the ddmobj_base_t resides,
- *                      else @c NULL.
- */
-sector_t* Map_SectorForOrigin(map_t* map, const void* ddMobjBase)
-{
-    assert(map);
     assert(ddMobjBase);
-    {
-    uint i;
 
-    for(i = 0; i < map->numSectors; ++i)
+    for(duint i = 0; i < _numSectors; ++i)
     {
-        if(ddMobjBase == &map->sectors[i]->soundOrg)
-            return map->sectors[i];
+        if(ddMobjBase == &sectors[i]->soundOrg)
+            return sectors[i];
     }
-
     return NULL;
-    }
 }
 
-/**
- * @return              @c true, iff this is indeed a polyobj origin.
- */
-polyobj_t* Map_PolyobjForOrigin(map_t* map, const void* ddMobjBase)
+#if 0
+Polyobj* Map::polyobjForOrigin(void* ddMobjBase) const
 {
-    assert(map);
     assert(ddMobjBase);
-    {
-    uint i;
 
-    for(i = 0; i < map->numPolyObjs; ++i)
+    for(duint i = 0; i < _numPolyObjs; ++i)
     {
-        if(ddMobjBase == (ddmobj_base_t*) map->polyObjs[i])
-            return map->polyObjs[i];
+        if(ddMobjBase == (ddmobj_base_t*) polyObjs[i])
+            return polyObjs[i];
     }
-
     return NULL;
-    }
 }
+#endif
 
-static void spawnMapParticleGens(map_t* map)
+#if 0
+static void spawnMapParticleGens()
 {
     ded_generator_t* def;
     int i;
@@ -1149,139 +1028,155 @@ static int updateGenerator(void* ptr, void* context)
 
     return true; // Continue iteration.
 }
+#endif
 
-/**
- * Called after a reset once the definitions have been re-read.
- */
-void Map_Update(map_t* map)
+void Map::update()
 {
-    uint i;
-
-    assert(map);
-
+#if 0
     // Defs might've changed, so update the generators.
-    Map_IterateThinkers2(map, (think_t) P_GeneratorThinker, ITF_PRIVATE,
-                        updateGenerator, NULL);
+    iterate((think_t) P_GeneratorThinker, updateGenerator);
+
     // Re-spawn map generators.
     spawnMapParticleGens(map);
+#endif
 
     // Update all world surfaces.
-    for(i = 0; i < map->numSectors; ++i)
+    for(duint i = 0; i < _numSectors; ++i)
     {
-        sector_t* sec = map->sectors[i];
-        uint j;
+        Sector& sector = *sectors[i];
 
-        for(j = 0; j < sec->planeCount; ++j)
-            Surface_Update(&sec->SP_planesurface(j));
-    }
-
-    for(i = 0; i < map->numSideDefs; ++i)
-    {
-        sidedef_t* side = map->sideDefs[i];
-
-        Surface_Update(&side->SW_topsurface);
-        Surface_Update(&side->SW_middlesurface);
-        Surface_Update(&side->SW_bottomsurface);
-    }
-
-    for(i = 0; i < map->numPolyObjs; ++i)
-    {
-        polyobj_t* po = map->polyObjs[i];
-        uint j;
-
-        for(j = 0; j < po->numLineDefs; ++j)
+        sector.floor().surface.update();
+        sector.ceiling().surface.update();
+        for(duint j = 0; j < sector.extraPlaneCount(); ++j)
         {
-            linedef_t* line = ((objectrecord_t*) po->lineDefs[j])->obj;
+            Plane& plane = sector.extraPlane(j);
+            plane.surface.update();
+        }
+    }
 
-            Surface_Update(&LINE_FRONTSIDE(line)->SW_middlesurface);
+    for(duint i = 0; i < _numSideDefs; ++i)
+    {
+        SideDef& sideDef = *sideDefs[i];
+
+        sideDef.middle().update();
+        sideDef.bottom().update();
+        sideDef.top().update();
+    }
+
+    for(duint i = 0; i < _numPolyObjs; ++i)
+    {
+        Polyobj& polyobj = *polyObjs[i];
+
+        for(duint j = 0; j < polyobj.numLineDefs; ++j)
+        {
+            LineDef& lineDef = *((LineDef*)(((objectrecord_t*) polyobj.lineDefs[j])->obj));
+            lineDef.front().middle().update();
         }
     }
 }
 
-static boolean updatePlaneHeightTracking(plane_t* plane, void* context)
+bool Map::updatePlaneHeightTracking(Plane* plane, void* paramaters)
 {
-    Plane_UpdateHeightTracking(plane);
+    plane->updateHeightTracking();
     return true; // Continue iteration.
 }
 
-static boolean resetPlaneHeightTracking(plane_t* plane, void* context)
+bool Map::resetPlaneHeightTracking(Plane* plane, void* paramaters)
 {
-    map_t* map = (map_t*) context;
-    uint i;
+    plane->resetHeightTracking();
+    _watchedPlanes.erase(plane);
 
-    Plane_ResetHeightTracking(plane);
-    if(map->_watchedPlaneList)
-        PlaneList_Remove(map->_watchedPlaneList, plane);
-
-    for(i = 0; i < map->numSectors; ++i)
+    for(duint i = 0; i < _numSectors; ++i)
     {
-        sector_t* sec = map->sectors[i];
-        uint j;
+        Sector& sector = *sectors[i];
 
-        for(j = 0; j < sec->planeCount; ++j)
+        // We can early out after the first match.
+        if(&sector.floor() == plane)
         {
-            if(sec->planes[i] == plane)
-                R_MarkDependantSurfacesForDecorationUpdate(sec);
+            R_MarkDependantSurfacesForDecorationUpdate(sector);
+            return true; // Continue iteration.
+        }
+
+        if(&sector.ceiling() == plane)
+        {
+            R_MarkDependantSurfacesForDecorationUpdate(sector);
+            return true; // Continue iteration.
+        }
+
+        for(duint j = 0; j < sector.extraPlaneCount(); ++j)
+        {
+            if(&sector.extraPlane(i) == plane)
+            {
+                R_MarkDependantSurfacesForDecorationUpdate(sector);
+                return true; // Continue iteration.
+            }
         }
     }
 
     return true; // Continue iteration.
 }
 
-static boolean interpolatePlaneHeight(plane_t* plane, void* context)
+bool Map::interpolatePlaneHeight(Plane* plane, void* paramaters)
 {
-    map_t* map = (map_t*) context;
-    uint i;
+    dfloat frameTimePos = *(reinterpret_cast<dfloat*>(paramaters));
 
-    Plane_InterpolateHeight(plane);
+    plane->interpolateHeight(frameTimePos);
 
     // Has this plane reached its destination?
-    if(plane->visHeight == plane->height && map->_watchedPlaneList)
-        PlaneList_Remove(map->_watchedPlaneList, plane);
+    if(plane->visHeight == plane->height)
+        _watchedPlanes.erase(plane);
 
-    for(i = 0; i < map->numSectors; ++i)
+    for(duint i = 0; i < _numSectors; ++i)
     {
-        sector_t* sec = map->sectors[i];
-        uint j;
+        Sector& sector = *sectors[i];
 
-        for(j = 0; j < sec->planeCount; ++j)
+        // We can early out after the first match.
+        if(&sector.floor() == plane)
         {
-            if(sec->planes[i] == plane)
-                R_MarkDependantSurfacesForDecorationUpdate(sec);
+            R_MarkDependantSurfacesForDecorationUpdate(sector);
+            return true; // Continue iteration.
+        }
+
+        if(&sector.ceiling() == plane)
+        {
+            R_MarkDependantSurfacesForDecorationUpdate(sector);
+            return true; // Continue iteration.
+        }
+
+        for(duint j = 0; j < sector.extraPlaneCount(); ++j)
+        {
+            if(&sector.extraPlane(i) == plane)
+            {
+                R_MarkDependantSurfacesForDecorationUpdate(sector);
+                return true; // Continue iteration.
+            }
         }
     }
 
     return true; // Continue iteration.
 }
 
-/**
- * $smoothplane: Roll the height tracker buffers.
- */
-void Map_UpdateWatchedPlanes(map_t* map)
+void Map::updateWatchedPlanes()
 {
-    assert(map);
-    if(map->_watchedPlaneList)
-        PlaneList_Iterate(map->_watchedPlaneList, updatePlaneHeightTracking, NULL);
+    FOR_EACH(i, _watchedPlanes, PlaneSet::iterator)
+        updatePlaneHeightTracking(*i, NULL);
 }
 
-/**
- * $smoothplane: interpolate the visual offset.
- */
-static void interpolateWatchedPlanes(map_t* map, boolean resetNextViewer)
+void Map::interpolateWatchedPlanes(bool resetNextViewer)
 {
-    assert(map);
-
     if(resetNextViewer)
     {
         // $smoothplane: Reset the plane height trackers.
-        PlaneList_Iterate(map->_watchedPlaneList, resetPlaneHeightTracking, map);
+        FOR_EACH(i, _watchedPlanes, PlaneSet::iterator)
+            resetPlaneHeightTracking(*i);
     }
     // While the game is paused there is no need to calculate any
     // visual plane offsets $smoothplane.
     else //if(!clientPaused)
     {
         // $smoothplane: Set the visible offsets.
-        PlaneList_Iterate(map->_watchedPlaneList, interpolatePlaneHeight, map);
+        FOR_EACH(i, _watchedPlanes, PlaneSet::iterator)
+            interpolatePlaneHeight(*i, &frameTimePos);
     }
 }
 
@@ -1396,7 +1291,7 @@ static int addToAABB(vertex_t* vertex, void* context)
     findaabbforvertices_params_t* params = (findaabbforvertices_params_t*) context;
     vec2_t point;
 
-    V2_Set(point, vertex->pos[VX], vertex->pos[VY]);
+    V2_Set(point, vertex->pos[0], vertex->pos[1]);
     if(!params->inited)
     {
         V2_InitBox(params->bounds, point);
@@ -1434,28 +1329,28 @@ static void buildLineDefBlockmap(map_t* map)
     // Setup the blockmap area to enclose the whole map, plus a margin
     // (margin is needed for a map that fits entirely inside one blockmap
     // cell).
-    V2_Set(bounds[0], bounds[0][VX] - BLKMARGIN, bounds[0][VY] - BLKMARGIN);
-    V2_Set(bounds[1], bounds[1][VX] + BLKMARGIN, bounds[1][VY] + BLKMARGIN);
+    V2_Set(bounds[0], bounds[0][0] - BLKMARGIN, bounds[0][1] - BLKMARGIN);
+    V2_Set(bounds[1], bounds[1][0] + BLKMARGIN, bounds[1][1] + BLKMARGIN);
 
     // Select a good size for the blocks.
     V2_Set(blockSize, MAPBLOCKUNITS, MAPBLOCKUNITS);
     V2_Subtract(dims, bounds[1], bounds[0]);
 
     // Calculate the dimensions of the blockmap.
-    if(dims[VX] <= blockSize[VX])
+    if(dims[0] <= blockSize[0])
         bMapWidth = 1;
     else
-        bMapWidth = ceil(dims[VX] / blockSize[VX]);
+        bMapWidth = ceil(dims[0] / blockSize[0]);
 
-    if(dims[VY] <= blockSize[VY])
+    if(dims[1] <= blockSize[1])
         bMapHeight = 1;
     else
-        bMapHeight = ceil(dims[VY] / blockSize[VY]);
+        bMapHeight = ceil(dims[1] / blockSize[1]);
     numBlocks = bMapWidth * bMapHeight;
 
     // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][VX] + bMapWidth  * blockSize[VX],
-                      bounds[0][VY] + bMapHeight * blockSize[VY]);
+    V2_Set(bounds[1], bounds[0][0] + bMapWidth  * blockSize[0],
+                      bounds[0][1] + bMapHeight * blockSize[1]);
 
     blockmap = P_CreateLineDefBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
 
@@ -1517,19 +1412,19 @@ static void buildSubsectorBlockmap(map_t* map)
     V2_Subtract(dims, bounds[1], bounds[0]);
 
     // Calculate the dimensions of the blockmap.
-    if(dims[VX] <= blockSize[VX])
+    if(dims[0] <= blockSize[0])
         subMapWidth = 1;
     else
-        subMapWidth = ceil(dims[VX] / blockSize[VX]);
+        subMapWidth = ceil(dims[0] / blockSize[0]);
 
-    if(dims[VY] <= blockSize[VY])
+    if(dims[1] <= blockSize[1])
         subMapHeight = 1;
     else
-        subMapHeight = ceil(dims[VY] / blockSize[VY]);
+        subMapHeight = ceil(dims[1] / blockSize[1]);
 
     // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][VX] + subMapWidth  * blockSize[VX],
-                      bounds[0][VY] + subMapHeight * blockSize[VY]);
+    V2_Set(bounds[1], bounds[0][0] + subMapWidth  * blockSize[0],
+                      bounds[0][1] + subMapHeight * blockSize[1]);
 
     blockmap = P_CreateSubsectorBlockmap(bounds[0], bounds[1], subMapWidth, subMapHeight);
 
@@ -1562,27 +1457,27 @@ static void buildMobjBlockmap(map_t* map)
     // Setup the blockmap area to enclose the whole map, plus a margin
     // (margin is needed for a map that fits entirely inside one blockmap
     // cell).
-    V2_Set(bounds[0], bounds[0][VX] - BLKMARGIN, bounds[0][VY] - BLKMARGIN);
-    V2_Set(bounds[1], bounds[1][VX] + BLKMARGIN, bounds[1][VY] + BLKMARGIN);
+    V2_Set(bounds[0], bounds[0][0] - BLKMARGIN, bounds[0][1] - BLKMARGIN);
+    V2_Set(bounds[1], bounds[1][0] + BLKMARGIN, bounds[1][1] + BLKMARGIN);
 
     // Select a good size for the blocks.
     V2_Set(blockSize, MAPBLOCKUNITS, MAPBLOCKUNITS);
     V2_Subtract(dims, bounds[1], bounds[0]);
 
     // Calculate the dimensions of the blockmap.
-    if(dims[VX] <= blockSize[VX])
+    if(dims[0] <= blockSize[0])
         bMapWidth = 1;
     else
-        bMapWidth = ceil(dims[VX] / blockSize[VX]);
+        bMapWidth = ceil(dims[0] / blockSize[0]);
 
-    if(dims[VY] <= blockSize[VY])
+    if(dims[1] <= blockSize[1])
         bMapHeight = 1;
     else
-        bMapHeight = ceil(dims[VY] / blockSize[VY]);
+        bMapHeight = ceil(dims[1] / blockSize[1]);
 
     // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][VX] + bMapWidth  * blockSize[VX],
-                      bounds[0][VY] + bMapHeight * blockSize[VY]);
+    V2_Set(bounds[1], bounds[0][0] + bMapWidth  * blockSize[0],
+                      bounds[0][1] + bMapHeight * blockSize[1]);
 
     map->_thingBlockmap = P_CreateMobjBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
 
@@ -1612,19 +1507,19 @@ static void buildParticleBlockmap(map_t* map)
     V2_Subtract(dims, bounds[1], bounds[0]);
 
     // Calculate the dimensions of the blockmap.
-    if(dims[VX] <= blockSize[VX])
+    if(dims[0] <= blockSize[0])
         mapWidth = 1;
     else
-        mapWidth = ceil(dims[VX] / blockSize[VX]);
+        mapWidth = ceil(dims[0] / blockSize[0]);
 
-    if(dims[VY] <= blockSize[VY])
+    if(dims[1] <= blockSize[1])
         mapHeight = 1;
     else
-        mapHeight = ceil(dims[VY] / blockSize[VY]);
+        mapHeight = ceil(dims[1] / blockSize[1]);
 
     // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][VX] + mapWidth  * blockSize[VX],
-                      bounds[0][VY] + mapHeight * blockSize[VY]);
+    V2_Set(bounds[1], bounds[0][0] + mapWidth  * blockSize[0],
+                      bounds[0][1] + mapHeight * blockSize[1]);
 
     map->_particleBlockmap = P_CreateParticleBlockmap(bounds[0], bounds[1], mapWidth, mapHeight);
 
@@ -1655,19 +1550,19 @@ static void buildLumobjBlockmap(map_t* map)
     V2_Subtract(dims, bounds[1], bounds[0]);
 
     // Calculate the dimensions of the blockmap.
-    if(dims[VX] <= blockSize[VX])
+    if(dims[0] <= blockSize[0])
         mapWidth = 1;
     else
-        mapWidth = ceil(dims[VX] / blockSize[VX]);
+        mapWidth = ceil(dims[0] / blockSize[0]);
 
-    if(dims[VY] <= blockSize[VY])
+    if(dims[1] <= blockSize[1])
         mapHeight = 1;
     else
-        mapHeight = ceil(dims[VY] / blockSize[VY]);
+        mapHeight = ceil(dims[1] / blockSize[1]);
 
     // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][VX] + mapWidth  * blockSize[VX],
-                      bounds[0][VY] + mapHeight * blockSize[VY]);
+    V2_Set(bounds[1], bounds[0][0] + mapWidth  * blockSize[0],
+                      bounds[0][1] + mapHeight * blockSize[1]);
 
     map->_lumobjBlockmap = P_CreateLumobjBlockmap(bounds[0], bounds[1], mapWidth, mapHeight);
 
@@ -1684,10 +1579,10 @@ static int C_DECL vertexCompare(const void* p1, const void* p2)
     if(a == b)
         return 0;
 
-    if((int) a->pos[VX] != (int) b->pos[VX])
-        return (int) a->pos[VX] - (int) b->pos[VX];
+    if((int) a->pos[0] != (int) b->pos[0])
+        return (int) a->pos[0] - (int) b->pos[0];
 
-    return (int) a->pos[VY] - (int) b->pos[VY];
+    return (int) a->pos[1] - (int) b->pos[1];
 }
 
 static void detectDuplicateVertices(halfedgeds_t* halfEdgeDS)
@@ -2070,8 +1965,8 @@ static void finishSectors2(map_t* map)
         Sector_Bounds(sec, min, max);
 
         // Set the degenmobj_t to the middle of the bounding box.
-        sec->soundOrg.pos[VX] = (min[VX] + max[VX]) / 2;
-        sec->soundOrg.pos[VY] = (min[VY] + max[VY]) / 2;
+        sec->soundOrg.pos[0] = (min[0] + max[0]) / 2;
+        sec->soundOrg.pos[1] = (min[1] + max[1]) / 2;
         sec->soundOrg.pos[VZ] = 0;
 
         // Set the position of the sound origin for all plane sound origins.
@@ -2125,13 +2020,13 @@ static void finishLineDefs2(map_t* map)
         v[0] = ld->hEdges[0]->HE_v1;
         v[1] = ld->hEdges[1]->HE_v2;
 
-        ld->dX = v[1]->pos[VX] - v[0]->pos[VX];
-        ld->dY = v[1]->pos[VY] - v[0]->pos[VY];
+        ld->dX = v[1]->pos[0] - v[0]->pos[0];
+        ld->dY = v[1]->pos[1] - v[0]->pos[1];
 
         // Calculate the accurate length of each line.
         ld->length = P_AccurateDistance(ld->dX, ld->dY);
-        ld->angle = bamsAtan2((int) (v[1]->pos[VY] - v[0]->pos[VY]),
-                              (int) (v[1]->pos[VX] - v[0]->pos[VX])) << FRACBITS;
+        ld->angle = bamsAtan2((int) (v[1]->pos[1] - v[0]->pos[1]),
+                              (int) (v[1]->pos[0] - v[0]->pos[0])) << FRACBITS;
 
         if(!ld->dX)
             ld->slopeType = ST_VERTICAL;
@@ -2145,26 +2040,26 @@ static void finishLineDefs2(map_t* map)
                 ld->slopeType = ST_NEGATIVE;
         }
 
-        if(v[0]->pos[VX] < v[1]->pos[VX])
+        if(v[0]->pos[0] < v[1]->pos[0])
         {
-            ld->bBox[BOXLEFT]   = v[0]->pos[VX];
-            ld->bBox[BOXRIGHT]  = v[1]->pos[VX];
+            ld->bBox[BOXLEFT]   = v[0]->pos[0];
+            ld->bBox[BOXRIGHT]  = v[1]->pos[0];
         }
         else
         {
-            ld->bBox[BOXLEFT]   = v[1]->pos[VX];
-            ld->bBox[BOXRIGHT]  = v[0]->pos[VX];
+            ld->bBox[BOXLEFT]   = v[1]->pos[0];
+            ld->bBox[BOXRIGHT]  = v[0]->pos[0];
         }
 
-        if(v[0]->pos[VY] < v[1]->pos[VY])
+        if(v[0]->pos[1] < v[1]->pos[1])
         {
-            ld->bBox[BOXBOTTOM] = v[0]->pos[VY];
-            ld->bBox[BOXTOP]    = v[1]->pos[VY];
+            ld->bBox[BOXBOTTOM] = v[0]->pos[1];
+            ld->bBox[BOXTOP]    = v[1]->pos[1];
         }
         else
         {
-            ld->bBox[BOXBOTTOM] = v[1]->pos[VY];
-            ld->bBox[BOXTOP]    = v[0]->pos[VY];
+            ld->bBox[BOXBOTTOM] = v[1]->pos[1];
+            ld->bBox[BOXTOP]    = v[0]->pos[1];
         }
     }
 }
@@ -2210,8 +2105,8 @@ static int C_DECL lineAngleSorter(const void* a, const void* b)
             line = own[i]->lineDef;
             otherVtx = line->buildData.v[line->buildData.v[0] == rootVtx? 1:0];
 
-            dx = otherVtx->pos[VX] - rootVtx->pos[VX];
-            dy = otherVtx->pos[VY] - rootVtx->pos[VY];
+            dx = otherVtx->pos[0] - rootVtx->pos[0];
+            dy = otherVtx->pos[1] - rootVtx->pos[1];
 
             own[i]->angle = angles[i] = bamsAtan2(-100 *dx, 100 * dy);
 
@@ -2629,9 +2524,9 @@ static boolean buildBSP(map_t* map)
  */
 static __inline int lineVertexLowest(const linedef_t* l)
 {
-    return (((int) l->v[0]->buildData.pos[VX] < (int) l->v[1]->buildData.pos[VX] ||
-             ((int) l->v[0]->buildData.pos[VX] == (int) l->v[1]->buildData.pos[VX] &&
-              (int) l->v[0]->buildData.pos[VY] < (int) l->v[1]->buildData.pos[VY]))? 0 : 1);
+    return (((int) l->v[0]->buildData.pos[0] < (int) l->v[1]->buildData.pos[0] ||
+             ((int) l->v[0]->buildData.pos[0] == (int) l->v[1]->buildData.pos[0] &&
+              (int) l->v[0]->buildData.pos[1] < (int) l->v[1]->buildData.pos[1]))? 0 : 1);
 }
 
 static int C_DECL lineStartCompare(const void* p1, const void* p2)
@@ -2644,10 +2539,10 @@ static int C_DECL lineStartCompare(const void* p1, const void* p2)
     c = (lineVertexLowest(a)? a->v[1] : a->v[0]);
     d = (lineVertexLowest(b)? b->v[1] : b->v[0]);
 
-    if((int) c->buildData.pos[VX] != (int) d->buildData.pos[VX])
-        return (int) c->buildData.pos[VX] - (int) d->buildData.pos[VX];
+    if((int) c->buildData.pos[0] != (int) d->buildData.pos[0])
+        return (int) c->buildData.pos[0] - (int) d->buildData.pos[0];
 
-    return (int) c->buildData.pos[VY] - (int) d->buildData.pos[VY];
+    return (int) c->buildData.pos[1] - (int) d->buildData.pos[1];
 }
 
 static int C_DECL lineEndCompare(const void* p1, const void* p2)
@@ -2660,10 +2555,10 @@ static int C_DECL lineEndCompare(const void* p1, const void* p2)
     c = (lineVertexLowest(a)? a->v[0] : a->v[1]);
     d = (lineVertexLowest(b)? b->v[0] : b->v[1]);
 
-    if((int) c->buildData.pos[VX] != (int) d->buildData.pos[VX])
-        return (int) c->buildData.pos[VX] - (int) d->buildData.pos[VX];
+    if((int) c->buildData.pos[0] != (int) d->buildData.pos[0])
+        return (int) c->buildData.pos[0] - (int) d->buildData.pos[0];
 
-    return (int) c->buildData.pos[VY] - (int) d->buildData.pos[VY];
+    return (int) c->buildData.pos[1] - (int) d->buildData.pos[1];
 }
 
 size_t numOverlaps;
@@ -2712,11 +2607,11 @@ void MPE_DetectOverlappingLines(map_t* map)
 
     Blockmap_Dimensions(map->blockMap, bmapDimensions);
 
-    for(y = 0; y < bmapDimensions[VY]; ++y)
-        for(x = 0; x < bmapDimensions[VX]; ++x)
+    for(y = 0; y < bmapDimensions[1]; ++y)
+        for(x = 0; x < bmapDimensions[0]; ++x)
         {
-            params.block[VX] = x;
-            params.block[VY] = y;
+            params.block[0] = x;
+            params.block[1] = y;
 
             LineDefBlockmap_Iterate(map->blockMap, params.block,
                                     findOverlapsForLineDef, &params, false);
@@ -2792,10 +2687,10 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
 
         // Is this subsector close enough?
         if(subsector->sector == sec || // subsector is IN this sector
-           (subsector->midPoint[VX] > bbox[BOXLEFT] &&
-            subsector->midPoint[VX] < bbox[BOXRIGHT] &&
-            subsector->midPoint[VY] < bbox[BOXTOP] &&
-            subsector->midPoint[VY] > bbox[BOXBOTTOM]))
+           (subsector->midPoint[0] > bbox[BOXLEFT] &&
+            subsector->midPoint[0] < bbox[BOXRIGHT] &&
+            subsector->midPoint[1] < bbox[BOXTOP] &&
+            subsector->midPoint[1] > bbox[BOXBOTTOM]))
         {
             // It will contribute to the reverb settings of this sector.
             setSectorOwner(&subsectorOwnerList, subsector);
@@ -2946,8 +2841,8 @@ boolean Map_EditEnd(map_t* map)
 
             // The original Pts are based off the anchor Pt, and are unique
             // to each linedef.
-            po->originalPts[j].pos[VX] = lineDef->L_v1->pos[VX] - po->pos[VX];
-            po->originalPts[j].pos[VY] = lineDef->L_v1->pos[VY] - po->pos[VY];
+            po->originalPts[j].pos[0] = lineDef->L_v1->pos[0] - po->pos[0];
+            po->originalPts[j].pos[1] = lineDef->L_v1->pos[1] - po->pos[1];
 
             po->lineDefs[j] = (linedef_t*) P_ObjectRecord(DMU_LINEDEF, lineDef);
         }
@@ -3085,11 +2980,11 @@ const char* Map_UniqueName(map_t* map)
 void Map_Bounds(map_t* map, float* min, float* max)
 {
     assert(map);
-    min[VX] = map->bBox[BOXLEFT];
-    min[VY] = map->bBox[BOXBOTTOM];
+    min[0] = map->bBox[BOXLEFT];
+    min[1] = map->bBox[BOXBOTTOM];
 
-    max[VX] = map->bBox[BOXRIGHT];
-    max[VY] = map->bBox[BOXTOP];
+    max[0] = map->bBox[BOXRIGHT];
+    max[1] = map->bBox[BOXTOP];
 }
 
 /**
@@ -3241,18 +3136,18 @@ seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge)
         linedef_t* ldef = seg->sideDef->lineDef;
         vertex_t* vtx = ldef->buildData.v[seg->side];
 
-        seg->offset = P_AccurateDistance(hEdge->HE_v1->pos[VX] - vtx->pos[VX],
-                                         hEdge->HE_v1->pos[VY] - vtx->pos[VY]);
+        seg->offset = P_AccurateDistance(hEdge->HE_v1->pos[0] - vtx->pos[0],
+                                         hEdge->HE_v1->pos[1] - vtx->pos[1]);
     }
 
     seg->angle =
-        bamsAtan2((int) (hEdge->twin->vertex->pos[VY] - hEdge->vertex->pos[VY]),
-                  (int) (hEdge->twin->vertex->pos[VX] - hEdge->vertex->pos[VX])) << FRACBITS;
+        bamsAtan2((int) (hEdge->twin->vertex->pos[1] - hEdge->vertex->pos[1]),
+                  (int) (hEdge->twin->vertex->pos[0] - hEdge->vertex->pos[0])) << FRACBITS;
 
     // Calculate the length of the segment. We need this for
     // the texture coordinates. -jk
-    seg->length = P_AccurateDistance(hEdge->HE_v2->pos[VX] - hEdge->HE_v1->pos[VX],
-                                     hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]);
+    seg->length = P_AccurateDistance(hEdge->HE_v2->pos[0] - hEdge->HE_v1->pos[0],
+                                     hEdge->HE_v2->pos[1] - hEdge->HE_v1->pos[1]);
 
     if(seg->length == 0)
         seg->length = 0.01f; // Hmm...
@@ -3263,8 +3158,8 @@ seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge)
     {
         surface_t* surface = &seg->sideDef->SW_topsurface;
 
-        surface->normal[VY] = (hEdge->HE_v1->pos[VX] - hEdge->HE_v2->pos[VX]) / seg->length;
-        surface->normal[VX] = (hEdge->HE_v2->pos[VY] - hEdge->HE_v1->pos[VY]) / seg->length;
+        surface->normal[1] = (hEdge->HE_v1->pos[0] - hEdge->HE_v2->pos[0]) / seg->length;
+        surface->normal[0] = (hEdge->HE_v2->pos[1] - hEdge->HE_v1->pos[1]) / seg->length;
         surface->normal[VZ] = 0;
 
         // All surfaces of a sidedef have the same normal.
@@ -3334,13 +3229,13 @@ static void initLinks(map_t* map)
     uint i;
 
     // Initialize node piles and line rings.
-    map->mobjNodes = P_CreateNodePile(256); // Allocate a small pile.
-    map->lineNodes = P_CreateNodePile(map->numLineDefs + 1000);
+    map->thingNodes = P_CreateNodePile(256); // Allocate a small pile.
+    map->lineDefNodes = P_CreateNodePile(map->numLineDefs + 1000);
 
     // Allocate the rings.
     map->lineLinks = Z_Malloc(sizeof(*map->lineLinks) * map->numLineDefs, PU_STATIC, 0);
     for(i = 0; i < map->numLineDefs; ++i)
-        map->lineLinks[i] = NP_New(map->lineNodes, NP_ROOT_NODE);
+        map->lineLinks[i] = NP_New(map->lineDefNodes, NP_ROOT_NODE);
 }
 
 /**
@@ -3432,7 +3327,7 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
                     {
                         float               top =
                             sec->SP_ceilvisheight +
-                                si->SW_middlevisoffset[VY];
+                                si->SW_middlevisoffset[1];
 
                         if(top > map->skyFixCeiling)
                         {   // Must raise the skyfix ceiling.
@@ -3444,7 +3339,7 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
                     {
                         float               bottom =
                             sec->SP_floorvisheight +
-                                si->SW_middlevisoffset[VY] -
+                                si->SW_middlevisoffset[1] -
                                     si->SW_middlematerial->height;
 
                         if(bottom < map->skyFixFloor)
@@ -3467,8 +3362,8 @@ static vertex_t* createVertex(map_t* map, float x, float y)
     if(!map->editActive)
         return NULL;
     vtx = HalfEdgeDS_CreateVertex(map->_halfEdgeDS);
-    vtx->pos[VX] = x;
-    vtx->pos[VY] = y;
+    vtx->pos[0] = x;
+    vtx->pos[1] = y;
     return vtx;
     }
 }
@@ -3546,13 +3441,13 @@ static linedef_t* createLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
     ((mvertex_t*) l->buildData.v[0]->data)->refCount++;
     ((mvertex_t*) l->buildData.v[1]->data)->refCount++;
 
-    l->dX = vtx2->pos[VX] - vtx1->pos[VX];
-    l->dY = vtx2->pos[VY] - vtx1->pos[VY];
+    l->dX = vtx2->pos[0] - vtx1->pos[0];
+    l->dY = vtx2->pos[1] - vtx1->pos[1];
     l->length = P_AccurateDistance(l->dX, l->dY);
 
     l->angle =
-        bamsAtan2((int) (l->buildData.v[1]->pos[VY] - l->buildData.v[0]->pos[VY]),
-                  (int) (l->buildData.v[1]->pos[VX] - l->buildData.v[0]->pos[VX])) << FRACBITS;
+        bamsAtan2((int) (l->buildData.v[1]->pos[1] - l->buildData.v[0]->pos[1]),
+                  (int) (l->buildData.v[1]->pos[0] - l->buildData.v[0]->pos[0])) << FRACBITS;
 
     if(l->dX == 0)
         l->slopeType = ST_VERTICAL;
@@ -3566,26 +3461,26 @@ static linedef_t* createLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
             l->slopeType = ST_NEGATIVE;
     }
 
-    if(l->buildData.v[0]->pos[VX] < l->buildData.v[1]->pos[VX])
+    if(l->buildData.v[0]->pos[0] < l->buildData.v[1]->pos[0])
     {
-        l->bBox[BOXLEFT]   = l->buildData.v[0]->pos[VX];
-        l->bBox[BOXRIGHT]  = l->buildData.v[1]->pos[VX];
+        l->bBox[BOXLEFT]   = l->buildData.v[0]->pos[0];
+        l->bBox[BOXRIGHT]  = l->buildData.v[1]->pos[0];
     }
     else
     {
-        l->bBox[BOXLEFT]   = l->buildData.v[1]->pos[VX];
-        l->bBox[BOXRIGHT]  = l->buildData.v[0]->pos[VX];
+        l->bBox[BOXLEFT]   = l->buildData.v[1]->pos[0];
+        l->bBox[BOXRIGHT]  = l->buildData.v[0]->pos[0];
     }
 
-    if(l->buildData.v[0]->pos[VY] < l->buildData.v[1]->pos[VY])
+    if(l->buildData.v[0]->pos[1] < l->buildData.v[1]->pos[1])
     {
-        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[VY];
-        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[VY];
+        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[1];
+        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[1];
     }
     else
     {
-        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[VY];
-        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[VY];
+        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[1];
+        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[1];
     }
 
     // Remember the number of unique references.
@@ -3658,8 +3553,8 @@ objectrecordid_t Map_CreateLineDef(map_t* map, objectrecordid_t v1,
     // Next, check the length is not zero.
     vtx1 = Map_HalfEdgeDS(map)->vertices[v1 - 1];
     vtx2 = Map_HalfEdgeDS(map)->vertices[v2 - 1];
-    dx = vtx2->pos[VX] - vtx1->pos[VX];
-    dy = vtx2->pos[VY] - vtx1->pos[VY];
+    dx = vtx2->pos[0] - vtx1->pos[0];
+    dy = vtx2->pos[1] - vtx1->pos[1];
     length = P_AccurateDistance(dx, dy);
     if(!(length > 0))
         return 0;
@@ -3797,8 +3692,8 @@ static plane_t* createPlane(map_t* map, float height, material_t* material,
     Surface_SetBlendMode(&pln->surface, BM_NORMAL);
     Surface_SetMaterialOffsetXY(&pln->surface, matOffsetX, matOffsetY);
 
-    pln->PS_normal[VX] = normalX;
-    pln->PS_normal[VY] = normalY;
+    pln->PS_normal[0] = normalX;
+    pln->PS_normal[1] = normalY;
     pln->PS_normal[VZ] = normalZ;
     /*if(pln->PS_normal[VZ] < 0)
         pln->type = PLN_CEILING;
@@ -3851,8 +3746,8 @@ static polyobj_t* createPolyobj(map_t* map, objectrecordid_t* lines, uint lineCo
 
     po->tag = tag;
     po->seqType = sequenceType;
-    po->pos[VX] = anchorX;
-    po->pos[VY] = anchorY;
+    po->pos[0] = anchorX;
+    po->pos[1] = anchorY;
 
     return po;
 }
@@ -4160,10 +4055,10 @@ boolean Map_MobjsBoxIterator(map_t* map, const float box[4],
     {
     vec2_t bounds[2];
 
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
+    bounds[0][0] = box[BOXLEFT];
+    bounds[0][1] = box[BOXBOTTOM];
+    bounds[1][0] = box[BOXRIGHT];
+    bounds[1][1] = box[BOXTOP];
 
     return Map_MobjsBoxIteratorv(map, bounds, func, data);
     }
@@ -4208,10 +4103,10 @@ boolean Map_SubsectorsBoxIterator2(map_t* map, const float box[4], sector_t* sec
     {
     vec2_t bounds[2];
 
-    bounds[0][VX] = box[BOXLEFT];
-    bounds[0][VY] = box[BOXBOTTOM];
-    bounds[1][VX] = box[BOXRIGHT];
-    bounds[1][VY] = box[BOXTOP];
+    bounds[0][0] = box[BOXLEFT];
+    bounds[0][1] = box[BOXBOTTOM];
+    bounds[1][0] = box[BOXRIGHT];
+    bounds[1][1] = box[BOXTOP];
 
     return Map_SubsectorsBoxIteratorv(map, bounds, sector, func, parm, retObjRecord);
     }

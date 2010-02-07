@@ -27,6 +27,7 @@
 #include "../String"
 #include "../Id"
 #include "../HalfEdgeDS"
+#include "../NodePile"
 #include "../BinaryTree"
 #include "../ThingBlockmap"
 #include "../LineDefBlockmap"
@@ -283,8 +284,8 @@ namespace de
 
         typedef struct {
             Map* map; // @todo should not be necessary.
-            struct mobj_s* mo;
-            Vector2f min, max;
+            Thing* thing;
+            dfloat box[4];
         } linelinker_data_t;
 
         typedef struct {
@@ -316,7 +317,7 @@ namespace de
         //struct gameobjrecords_s* _gameObjectRecords;
 
         HalfEdgeDS* _halfEdgeDS;
-        BinaryTree<Node>* _rootNode;
+        BinaryTree<void*>* _rootNode;
 
         ThingBlockmap* _thingBlockmap;
         LineDefBlockmap* _lineDefBlockmap;
@@ -326,7 +327,10 @@ namespace de
         ParticleBlockmap* _particleBlockmap;
         LumObjBlockmap* _lumobjBlockmap;
 
-        struct objcontactlist_s* _subsectorContacts; // List of obj contacts for each subsector.
+        /// List of obj contacts for each subsector.
+        objcontactlist_t* _subsectorContacts;
+        objcontact_t* contFirst, *contCursor;
+
         //struct lightgrid_s* _lightGrid;
 
         dfloat bBox[4];
@@ -369,15 +373,19 @@ namespace de
         SurfaceSet _decoratedSurfaces;
 
     public:
-        //struct nodepile_s* mobjNodes, *lineNodes; // All kinds of wacky links.
-        //nodeindex_t* lineLinks; // Indices to roots.
+        NodePile* thingNodes, *lineDefNodes; // All kinds of wacky links.
+        NodePile::Index* lineDefLinks; // Indices to roots.
 
-        // Add to Record info.
-        dfloat gravity;
-        dint _ambientLightLevel;
+        /// @todo Add to Record info.
+        /// Global gravity multiplier.
+        dfloat _gravity;
 
-        dfloat skyFixCeiling;
+        /// Global minimum for ambient light intensity.
+        dfloat _lightIntensity;
+
+        /// Heights of the global skyfix floor and ceiling.
         dfloat skyFixFloor;
+        dfloat skyFixCeiling;
 
         /*struct {
             struct dynlist_s* linkList; // Surface-projected lumobjs (dynlights).
@@ -415,15 +423,25 @@ namespace de
 
         //void ticker(timespan_t time);
 
+        /**
+         * To be called after a reset once the definitions have been re-read.
+         */
         void update();
+
+        /**
+         * $smoothplane: Roll the height tracker buffers.
+         */
         void updateWatchedPlanes();
+
+        /**
+         * $smoothplane: interpolate the visual offset.
+         */
+        void interpolateWatchedPlanes(bool resetNextViewer);
+
         void updateMovingSurfaces();
         void updateSkyFixForSector(duint secIDX);
 
 #if 0
-        void linkMobj(struct mobj_s* mo, dbyte flags);
-        dint unlinkMobj(struct mobj_s* mo);
-
         void addThinker(thinker_t* th, bool makePublic);
         void removeThinker(thinker_t* th);
         void thinkerSetStasis(thinker_t* th, bool on);
@@ -472,33 +490,39 @@ namespace de
 
         //bool gameObjectRecordProperty(const char* objName, duint idx, const char* propName, valuetype_t type, void* data);
 
-        // Mobjs in bounding box iterators.
-        bool mobjsBoxIterator(const dfloat box[4], bool (*func) (struct mobj_s*, void*), void* data);
+        /// Thing iterators:
+        bool iterateThings(const dfloat box[4], bool (*func) (Thing*, void*), void* paramaters = 0);
 
-        //bool mobjsBoxIteratorv(const arvec2_t box, bool (*func) (struct mobj_s*, void*), void* data);
+        /// LineDef iterators:
+        bool iterateLineDefs(const dfloat box[4], bool (*func) (LineDef*, void*), /*bool retObjRecord,*/ void* paramaters = 0);
 
-        // LineDefs in bounding box iterators:
-        //bool lineDefsBoxIteratorv(const arvec2_t box, bool (*func) (LineDef*, void*), void* data, bool retObjRecord);
-
-        // Subsectors in bounding box iterators:
-        bool subsectorsBoxIterator2(const dfloat box[4], Sector* sector,
-             bool (*func) (Subsector*, void*),
-             void* parm, bool retObjRecord);
-        /*bool subsectorsBoxIteratorv(const arvec2_t box, Sector* sector,
-             bool (*func) (Subsector*, void*),
-             void* data, bool retObjRecord);*/
+        /// Subsector iterators:
+        bool iterateSubsectors(const dfloat box[4], bool (*func) (Subsector*, void*), /*bool retObjRecord,*/ void* paramaters = 0);
 
         //bool pathTraverse(dfloat x1, dfloat y1, dfloat x2, dfloat y2, dint flags, bool (*trav) (intercept_t*));
         bool checkLineSight(const dfloat from[3], const dfloat to[3], dfloat bottomSlope, dfloat topSlope, dint flags);
 
-        Subsector* pointInSubsector2(dfloat x, dfloat y);
-        Sector* sectorForOrigin(const void* ddMobjBase);
+        Subsector& pointInSubsector(dfloat x, dfloat y) const;
+        Subsector& pointInSubsector(const Vector2f& point) const { return pointInSubsector(point.x, point.y); }
 
+        /**
+         * Returns a ptr to the sector which owns the given ddmobj_base_t.
+         *
+         * @param ddMobjBase    ddmobj_base_t to search for.
+         *
+         * @return              Ptr to the Sector where the ddmobj_base_t resides,
+         *                      else @c NULL.
+         */
+        Sector* sectorForOrigin(const void* ddMobjBase) const;
+
+        /**
+         * @return              @c true, iff this is indeed a polyobj origin.
+         */
         //polyobj_t* polyobjForOrigin(const void* ddMobjBase);
+
         //polyobj_t* polyobj(duint num);
 
         // @todo the following should be Map private:
-        //thinkers_t* thinkers();
         HalfEdgeDS& halfEdgeDS();
         ThingBlockmap* thingBlockmap();
         LineDefBlockmap* lineDefBlockmap();
@@ -518,7 +542,9 @@ namespace de
         gameobjrecords_t* gameObjectRecords();
         void destroyGameObjectRecords();
 
-        void link(Thing* thing, dbyte flags);
+        void link(Thing* thing, Thing::LinkFlags flags);
+
+        Thing::LinkFlags Map::unlink(Thing* thing);
 
     private:
         LineDef* createLineDef2();
@@ -560,7 +586,19 @@ namespace de
 
         void linkContactToSubsector(duint subsectorIdx, objcontacttype_t type, objcontact_t* node);
 
+        /**
+         * Create a new objcontact. If there are free nodes in the list of unused
+         * nodes, the new contact is taken from there.
+         *
+         * @return              Ptr to the new objcontact.
+         */
+        objcontact_t* allocObjContact(void);
+
         void clearSectorFlags();
+
+        bool interpolatePlaneHeight(Plane* plane, void* paramaters = 0);
+        bool resetPlaneHeightTracking(Plane* plane, void* paramaters = 0);
+        bool updatePlaneHeightTracking(Plane* plane, void* paramaters = 0);
     };
 }
 

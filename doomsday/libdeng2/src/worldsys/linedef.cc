@@ -22,6 +22,8 @@
  * Boston, MA  02110-1301  USA
  */
 
+#include "de/App"
+#include "de/Map"
 #include "de/LineDef"
 
 using namespace de;
@@ -256,40 +258,35 @@ bool LineDef::getProperty(setargs_t *args) const
 }
 #endif
 
-bool LineDef::iterateMobjs(bool (*func) (struct mobj_s*, void*), void* data)
+bool LineDef::iterateThings(bool (*callback) (Thing*, void*), void* paramaters)
 {
-    assert(func);
-#pragma message( "Warning: LineDef::iterateMobjs not yet implemented." )
-    return true;
-#if 0
+    assert(callback);
+
 /**
  * Linkstore is list of pointers gathered when iterating stuff.
  * This is pretty much the only way to avoid *all* potential problems
  * caused by callback routines behaving badly (moving or destroying
- * mobjs). The idea is to get a snapshot of all the objects being
+ * Things). The idea is to get a snapshot of all the objects being
  * iterated before any callbacks are called. The hardcoded limit is
- * a drag, but I'd like to see you iterating 2048 mobjs/lines in one block.
+ * a drag, but I'd like to see you iterating 2048 Things/LineDefs in one block.
  */
 #define MAXLINKED           2048
-#define DO_LINKS(it, end)   for(it = linkstore; it < end; it++) \
-                                if(!func(*it, data)) return false;
 
     void* linkstore[MAXLINKED];
-    void** end = linkstore, **it;
-    nodeindex_t root, nix;
-    linknode_t* ln;
-    Map* map = P_CurrentMap(); // @fixme LineDef should tell us which map it belongs to.
+    void** end = linkstore;
 
-    root = map->lineLinks[P_ObjectRecord(DMU_LINEDEF, this)->id - 1];
-    ln = map->lineNodes->nodes;
+    Map& map = App::currentMap(); // @fixme LineDef should tell us which map it belongs to.
 
-    for(nix = ln[root].next; nix != root; nix = ln[nix].next)
+    NodePile::Index root = map.lineDefLinks[P_ObjectRecord(DMU_LINEDEF, this)->id - 1];
+    NodePile::LinkNode* ln = map.lineDefNodes->nodes;
+    for(NodePile::Index nix = ln[root].next; nix != root; nix = ln[nix].next)
         *end++ = ln[nix].ptr;
 
-    DO_LINKS(it, end);
+    for(void** it = linkstore; it < end; it++)
+        if(!callback(reinterpret_cast<Thing*>(*it), paramaters))
+            return false;
+
     return true;
 
 #undef MAXLINKED
-#undef DO_LINKS
-#endif
 }

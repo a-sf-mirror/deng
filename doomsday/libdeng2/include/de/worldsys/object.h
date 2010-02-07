@@ -64,7 +64,7 @@ namespace de
         /// E.g., a user that is only a spectator doesn't have a Thing.
         Thing* _thing;
 
-        /// Another object this one is resting on.
+        /// @todo Belongs in Thing no? Another object this one is resting on.
         Object* _onObject;
 
         /// This is set only if this object is the representation of a user.

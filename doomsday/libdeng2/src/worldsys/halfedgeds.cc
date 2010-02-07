@@ -60,8 +60,7 @@ HalfEdgeDS::~HalfEdgeDS()
     FOR_EACH(i, vertices, Vertices::iterator)
     {
         Vertex* vertex = *i;
-        if(vertex->data)
-            Z_Free(vertex->data);
+        if(vertex->data) std::free(vertex->data);
         delete vertex;
     }
     vertices.clear();
@@ -70,7 +69,7 @@ HalfEdgeDS::~HalfEdgeDS()
 Vertex& HalfEdgeDS::createVertex()
 {
     Vertex* vtx = new Vertex();
-    vtx->data = reinterpret_cast<MVertex*>(Z_Calloc(sizeof(MVertex), PU_STATIC, 0));
+    vtx->data = reinterpret_cast<MVertex*>(std::calloc(1, sizeof(MVertex)));
     ((MVertex*) vtx->data)->index = vertices.size() + 1; // 1-based index, 0 = NIL.
     vertices.push_back(vtx);
     return *vtx;
