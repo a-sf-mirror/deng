@@ -1,12 +1,10 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- libdeng2
  *
- *\author Copyright © 2007-2009 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
- *\author Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
- *\author Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
+ * Copyright © 2007-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
+ * Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
+ * Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +17,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBDENG_BSPSUPERBLOCK_H
@@ -34,13 +30,15 @@
 namespace de
 {
     /**
-     * bsp_superblock.h: Blockmap for half-edges
+     * Blockmap for half-edges
      *
      * Based on glBSP 2.24 (in turn, based on BSP 2.3), which is hosted on
      * SourceForge: http://sourceforge.net/projects/glbsp/
      */
-    typedef struct superblock_s {
-        // Bounding box coordinates.
+    class SuperBlockmap
+    {
+    public:
+        /// Bounding box coordinates.
         enum {
             BOXTOP      = 0,
             BOXBOTTOM   = 1,
@@ -50,43 +48,65 @@ namespace de
             BOXCEILING  = 5
         };
 
-        // Parent of this block, or NULL for a top-level block.
-        struct superblock_s* parent;
-        // Sub-blocks. NULL when empty. [0] has the lower coordinates, and
-        // [1] has the higher coordinates. Division of a square always
-        // occurs horizontally (e.g. 512x512 -> 256x512 -> 256x256).
-        struct superblock_s* subs[2];
+        // Smallest distance between two points before being considered equal.
+        #define DIST_EPSILON (1.0 / 128.0)
 
-        // Coordinates on map for this block, from lower-left corner to
-        // upper-right corner. Pseudo-inclusive, i.e (x,y) is inside block
-        // if and only if BOXLEFT <= x < BOXRIGHT and BOXBOTTOM <= y < BOXTOP.
-        dint            bbox[4];
+        struct ListNode {
+            HalfEdge* hEdge;
+            ListNode* next;
+        };
 
-        // Number of real half-edges and minihedges contained by this block
-        // (including all sub-blocks below it).
-        duint           realNum;
-        duint           miniNum;
+    public:
+        /// Parent of this block, or NULL for a top-level block.
+        SuperBlockmap* parent;
 
-        // LIFO stack of half-edges completely contained by this block.
-        struct superblock_listnode_s* _hEdges;
-    } superblock_t;
+        /// Sub-blocks. NULL when empty. [0] has the lower coordinates, and
+        /// [1] has the higher coordinates. Division of a square always
+        /// occurs horizontally (e.g. 512x512 -> 256x512 -> 256x256).
+        SuperBlockmap* subs[2];
 
-    superblock_t*   BSP_CreateSuperBlock(void);
-    void            BSP_DestroySuperBlock(superblock_t* block);
+        /// Coordinates on map for this block, from lower-left corner to
+        /// upper-right corner. Pseudo-inclusive, i.e (x,y) is inside block
+        /// if and only if BOXLEFT <= x < BOXRIGHT and BOXBOTTOM <= y < BOXTOP.
+        dint bbox[4];
 
-    void            SuperBlock_PushHEdge(superblock_t* SuperBlock, HalfEdge* hEdge);
-    HalfEdge*        SuperBlock_PopHEdge(superblock_t* block);
-    #if _DEBUG
-    void            SuperBlock_PrintHEdges(const superblock_t* SuperBlock);
-    #endif
+        /// Number of real half-edges and minihedges contained by this block
+        /// (including all sub-blocks below it).
+        duint realNum;
+        duint miniNum;
 
-    void            SuperBlock_IncHEdgeCounts(superblock_t* SuperBlock, bool lineLinked);
+        /// LIFO stack of half-edges completely contained by this block.
+        ListNode* _hEdges;
 
-    HalfEdge*        SuperBlock_PickPartition(const superblock_t* SuperBlock, dint factor);
+        SuperBlockmap();
+        ~SuperBlockmap();
+
+        /**
+         * Link the given half-edge into the given SuperBlock.
+         */
+        void push(HalfEdge* hEdge);
+
+        HalfEdge* pop();
+
+        /**
+         * Increase the counts within the SuperBlock, to account for the given
+         * half-edge being split.
+         */
+        void incHalfEdgeCounts(bool lineLinked);
+
+        /**
+         * Retrieve the Axis-aligned Bounding box for all HalfEdges in this and
+         * all child SuperBlockmaps.
+         */
+        void aaBounds(dfloat bbox[4]) const;
+
+#if _DEBUG
+        void print() const;
+#endif
+    };
 
     // @todo Should be private to NodeBuilder
-    void            BSP_AddHEdgeToSuperBlock(superblock_t* block, HalfEdge* hEdge);
-    void            BSP_FindBBoxForHEdges(const superblock_t* hEdgeList, dfloat* bbox);
+    HalfEdge* SuperBlock_PickPartition(const SuperBlockmap* hEdgeList, dint factor);
 }
 
 #endif /* LIBDENG_BSPSUPERBLOCK_H */

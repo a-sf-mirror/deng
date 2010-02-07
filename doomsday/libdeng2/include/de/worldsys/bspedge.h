@@ -1,12 +1,10 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- libdeng2
  *
- *\author Copyright © 2007-2009 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
- *\author Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
- *\author Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
+ * Copyright © 2007-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
+ * Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
+ * Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,28 +17,28 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG_HEDGEINFO_H
-#define LIBDENG_HEDGEINFO_H
+#ifndef LIBDENG_HALFEDGEINFO_H
+#define LIBDENG_HALFEDGEINFO_H
 
 #include "deng.h"
 
 #include "../Vector"
 #include "../LineDef"
+#include "../BSPSuperBlock"
 
 namespace de
 {
-    typedef struct hedge_info_s {
+    struct HalfEdgeInfo
+    {
         static const dbyte FRONT = 0;
         static const dbyte BACK = 1;
 
-        // The SuperBlock that contains this half-edge, or NULL if the half-edge
-        // is no longer in any SuperBlock (e.g., now in a leaf).
-        struct superblock_s* block;
+        /// The SuperBlock that contains this half-edge, or NULL if the half-edge
+        /// is no longer in any SuperBlock (e.g., now in a leaf).
+        SuperBlockmap* blockmap;
 
         // Precomputed data for faster calculations.
         Vector2d pDelta;
@@ -61,7 +59,7 @@ namespace de
 
         /// @c true = this is on the backside of the edge.
         bool back;
-    } hedge_info_t;
+    };
 }
 
-#endif /* LIBDENG_HEDGEINFO_H */
+#endif /* LIBDENG_HALFEDGEINFO_H */

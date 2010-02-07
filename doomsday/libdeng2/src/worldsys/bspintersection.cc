@@ -268,8 +268,8 @@ static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockw
     hEdge = first->twin->next;
     do
     {
-        if(((hedge_info_t*) hEdge->data)->pAngle <=
-           ((hedge_info_t*) first->data)->pAngle)
+        if(((HalfEdgeInfo*) hEdge->data)->pAngle <=
+           ((HalfEdgeInfo*) first->data)->pAngle)
             first = hEdge;
     } while((hEdge = hEdge->twin->next) != vertex->hEdge);
 
@@ -277,7 +277,7 @@ static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockw
     {
         first = first->twin->next;
         hEdge = first;
-        while(((hedge_info_t*) hEdge->data)->pAngle > angle + ANG_EPSILON &&
+        while(((HalfEdgeInfo*) hEdge->data)->pAngle > angle + ANG_EPSILON &&
               (hEdge = hEdge->twin->next) != first);
 
         return hEdge->twin;
@@ -285,7 +285,7 @@ static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockw
     else
     {
         hEdge = first;
-        while(((hedge_info_t*) hEdge->data)->pAngle < angle + ANG_EPSILON &&
+        while(((HalfEdgeInfo*) hEdge->data)->pAngle < angle + ANG_EPSILON &&
               (hEdge = hEdge->prev->twin) != first);
 
         return hEdge;
@@ -294,9 +294,9 @@ static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockw
 
 static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
 {
-    /*if(insect->after && ((hedge_info_t*) insect->after->data)->lineDef)
+    /*if(insect->after && ((HalfEdgeInfo*) insect->after->data)->lineDef)
     {
-        LineDef* lineDef = ((hedge_info_t*) insect->after->data)->lineDef;
+        LineDef* lineDef = ((HalfEdgeInfo*) insect->after->data)->lineDef;
 
         if(lineDef->buildData.sideDefs[FRONT] &&
            lineDef->buildData.sideDefs[BACK] &&
@@ -305,9 +305,9 @@ static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
             return true;
     }
 
-    if(insect->before && ((hedge_info_t*) insect->before->data)->lineDef)
+    if(insect->before && ((HalfEdgeInfo*) insect->before->data)->lineDef)
     {
-        LineDef* lineDef = ((hedge_info_t*) insect->before->data)->lineDef;
+        LineDef* lineDef = ((HalfEdgeInfo*) insect->before->data)->lineDef;
 
         if(lineDef->buildData.sideDefs[FRONT] &&
            lineDef->buildData.sideDefs[BACK] &&
@@ -320,7 +320,7 @@ static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
 }
 
 void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
-    const HalfEdge* partHEdge, superblock_t* rightList, superblock_t* leftList)
+    const HalfEdge* partHEdge, SuperBlockmap* rightList, SuperBlockmap* leftList)
 {
     cnode_t* node, *firstNode;
 
@@ -342,7 +342,7 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
         hEdge = next->hEdge;
         do
         {
-            angle_g diff = fabs(((hedge_info_t*) hEdge->data)->pAngle - angle);
+            angle_g diff = fabs(((HalfEdgeInfo*) hEdge->data)->pAngle - angle);
             if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
             {
                 alongPartition = true;
@@ -356,8 +356,8 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
             farHEdge = vertexCheckOpen(next->hEdge->vertex, slopeToAngle(-dX, -dY), false);
             nearHEdge = vertexCheckOpen(cur->hEdge->vertex, slopeToAngle(dX, dY), true);
 
-            nearSector = nearHEdge ? ((hedge_info_t*) nearHEdge->data)->sector : NULL;
-            farSector = farHEdge? ((hedge_info_t*) farHEdge->data)->sector : NULL;
+            nearSector = nearHEdge ? ((HalfEdgeInfo*) nearHEdge->data)->sector : NULL;
+            farSector = farHEdge? ((HalfEdgeInfo*) farHEdge->data)->sector : NULL;
         }
 
         if(!(!nearSector && !farSector))
@@ -417,8 +417,8 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
                 }
 
                 {
-                HalfEdge& right = createHalfEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((hedge_info_t*) nearHEdge->data)->sector, ((hedge_info_t*) nearHEdge->data)->back);
-                HalfEdge& left = createHalfEdge(NULL, ((hedge_info_t*) partHEdge->data)->lineDef, next->hEdge->vertex, ((hedge_info_t*) farHEdge->prev->data)->sector, ((hedge_info_t*) farHEdge->prev->data)->back);
+                HalfEdge& right = createHalfEdge(NULL, ((HalfEdgeInfo*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((HalfEdgeInfo*) nearHEdge->data)->sector, ((HalfEdgeInfo*) nearHEdge->data)->back);
+                HalfEdge& left = createHalfEdge(NULL, ((HalfEdgeInfo*) partHEdge->data)->lineDef, next->hEdge->vertex, ((HalfEdgeInfo*) farHEdge->prev->data)->sector, ((HalfEdgeInfo*) farHEdge->prev->data)->back);
 
                 // Twin the half-edges together.
                 right.twin = &left;
@@ -449,18 +449,18 @@ testVertexHEdgeRings(next->hEdge->vertex);
                 /*if(nearHEdge->face)
                     Face_LinkHEdge(nearHEdge->face, &right);
                 else*/
-                    BSP_AddHEdgeToSuperBlock(rightList, &right);
+                    addHalfEdgeToSuperBlockmap(rightList, &right);
                 /*if(farHEdge->prev->face)
                     Face_LinkHEdge(farHEdge->prev->face, &left);
                 else*/
-                    BSP_AddHEdgeToSuperBlock(leftList, &left);
+                    addHalfEdgeToSuperBlockmap(leftList, &left);
 
                 LOG_DEBUG(" Capped intersection:");
                 LOG_DEBUG("  %p RIGHT  sector %d %s -> %s")
-                    << &right << (reinterpret_cast<hedge_info_t*>(nearHEdge->data)->sector? reinterpret_cast<hedge_info_t*>(nearHEdge->data)->sector->buildData.index : -1)
+                    << &right << (reinterpret_cast<HalfEdgeInfo*>(nearHEdge->data)->sector? reinterpret_cast<HalfEdgeInfo*>(nearHEdge->data)->sector->buildData.index : -1)
                     << right.vertex->pos << right.twin->vertex->pos;
                 LOG_DEBUG("  %p LEFT sector %d %s -> %s")
-                    << &left << (reinterpret_cast<hedge_info_t*>(farHEdge->prev->data)->sector? reinterpret_cast<hedge_info_t*>(farHEdge->prev->data)->sector->buildData.index : -1)
+                    << &left << (reinterpret_cast<HalfEdgeInfo*>(farHEdge->prev->data)->sector? reinterpret_cast<HalfEdgeInfo*>(farHEdge->prev->data)->sector->buildData.index : -1)
                     << left.vertex->pos << left.twin->vertex->pos;
                 }
             }

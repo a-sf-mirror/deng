@@ -25,11 +25,6 @@
  * Boston, MA  02110-1301  USA
  */
 
-#include <stdlib.h>
-#include <ctype.h>
-#include <math.h>
-#include <limits.h>
-
 #include "de/NodeBuilder"
 #include "de/BSPEdge"
 #include "de/BSPSuperBlock"
@@ -39,32 +34,24 @@ using namespace de;
 
 namespace de
 {
-    // Smallest distance between two points before being considered equal.
-    #define DIST_EPSILON        (1.0 / 128.0)
-
-    typedef struct superblock_listnode_s {
-        HalfEdge*        hEdge;
-        struct superblock_listnode_s* next;
-    } superblock_listnode_t;
-
     typedef struct evalinfo_s {
-        dint         cost;
-        dint         splits;
-        dint         iffy;
-        dint         nearMiss;
-        dint         realLeft;
-        dint         realRight;
-        dint         miniLeft;
-        dint         miniRight;
+        dint cost;
+        dint splits;
+        dint iffy;
+        dint nearMiss;
+        dint realLeft;
+        dint realRight;
+        dint miniLeft;
+        dint miniRight;
     } evalinfo_t;
 }
 
-static superblock_listnode_t* allocListNode(void)
+static SuperBlockmap::ListNode* allocListNode(void)
 {
-    return reinterpret_cast<superblock_listnode_t*>(std::malloc(sizeof(superblock_listnode_t)));
+    return reinterpret_cast<SuperBlockmap::ListNode*>(std::malloc(sizeof(SuperBlockmap::ListNode)));
 }
 
-static void freeListNode(superblock_listnode_t* node)
+static void freeListNode(SuperBlockmap::ListNode* node)
 {
     std::free(node);
 }
@@ -72,41 +59,43 @@ static void freeListNode(superblock_listnode_t* node)
 /**
  * Free all memory allocated for the specified superblock.
  */
-static void freeSuperBlock(superblock_t* block)
+static void freeSuperBlockmap(SuperBlockmap* blockmap)
 {
+    while(blockmap->pop());
+
     // Recursively handle sub-blocks.
     for(duint num = 0; num < 2; ++num)
     {
-        if(block->subs[num])
-            freeSuperBlock(block->subs[num]);
+        if(blockmap->subs[num])
+            freeSuperBlockmap(blockmap->subs[num]);
     }
-    std::free(block);
+    delete blockmap;
 }
 
-superblock_t* BSP_CreateSuperBlock(void)
+SuperBlockmap::SuperBlockmap()
+{}
+
+SuperBlockmap::~SuperBlockmap()
 {
-    return reinterpret_cast<superblock_t*>(std::calloc(1, sizeof(superblock_t)));
+    while(pop());
+
+    // Recursively handle sub-blocks.
+    for(duint num = 0; num < 2; ++num)
+    {
+        if(subs[num])
+            freeSuperBlockmap(subs[num]);
+    }
 }
 
-void BSP_DestroySuperBlock(superblock_t* block)
+void SuperBlockmap::push(HalfEdge* hEdge)
 {
-    assert(block);
-    freeSuperBlock(block);
-}
-
-/**
- * Link the given half-edge into the given SuperBlock.
- */
-void SuperBlock_PushHEdge(superblock_t* block, HalfEdge* hEdge)
-{
-    superblock_listnode_t* node;
-
-    assert(block);
     assert(hEdge);
+
+    ListNode* node;
 
 #if _DEBUG
 // Ensure hedge is not already in this SuperBlock.
-if((node = block->_hEdges))
+if((node = _hEdges))
 {
     do
     {
@@ -117,39 +106,98 @@ if((node = block->_hEdges))
 
     node = allocListNode();
     node->hEdge = hEdge;
-    node->next = block->_hEdges;
-    block->_hEdges = node;
+    node->next = _hEdges;
+    _hEdges = node;
 }
 
-HalfEdge* SuperBlock_PopHEdge(superblock_t* block)
+HalfEdge* SuperBlockmap::pop()
 {
-    assert(block);
-    if(block->_hEdges)
+    if(_hEdges)
     {
-        superblock_listnode_t* node = block->_hEdges;
+        ListNode* node = _hEdges;
         HalfEdge* hEdge = node->hEdge;
-        block->_hEdges = node->next;
+        _hEdges = node->next;
+
         freeListNode(node);
         return hEdge;
     }
     return NULL;
 }
 
-/**
- * Increase the counts within the SuperBlock, to account for the given
- * half-edge being split.
- */
-void SuperBlock_IncHEdgeCounts(superblock_t* block, bool lineLinked)
+void SuperBlockmap::incHalfEdgeCounts(bool lineLinked)
 {
-    do
-    {
-        if(lineLinked)
-            block->realNum++;
-        else
-            block->miniNum++;
-        block = block->parent;
-    } while(block != NULL);
+    if(lineLinked)
+        realNum++;
+    else
+        miniNum++;
+    if(parent)
+        parent->incHalfEdgeCounts(lineLinked);
 }
+
+static void findBoundsWorker(const SuperBlockmap* block, dfloat* bbox)
+{
+    for(SuperBlockmap::ListNode* n = block->_hEdges; n; n = n->next)
+    {
+        const HalfEdge* cur = n->hEdge;
+        const Vector2f l = cur->vertex->pos.min(cur->twin->vertex->pos);
+        const Vector2f h = cur->vertex->pos.max(cur->twin->vertex->pos);
+
+        if(l.x < bbox[SuperBlockmap::BOXLEFT])
+            bbox[SuperBlockmap::BOXLEFT] = l.x;
+        else if(l.x > bbox[SuperBlockmap::BOXRIGHT])
+            bbox[SuperBlockmap::BOXRIGHT] = l.x;
+        if(l.y < bbox[SuperBlockmap::BOXBOTTOM])
+            bbox[SuperBlockmap::BOXBOTTOM] = l.y;
+        else if(l.y > bbox[SuperBlockmap::BOXTOP])
+            bbox[SuperBlockmap::BOXTOP] = l.y;
+
+        if(h.x < bbox[SuperBlockmap::BOXLEFT])
+            bbox[SuperBlockmap::BOXLEFT] = h.x;
+        else if(h.x > bbox[SuperBlockmap::BOXRIGHT])
+            bbox[SuperBlockmap::BOXRIGHT] = h.x;
+        if(h.y < bbox[SuperBlockmap::BOXBOTTOM])
+            bbox[SuperBlockmap::BOXBOTTOM] = h.y;
+        else if(h.y > bbox[SuperBlockmap::BOXTOP])
+            bbox[SuperBlockmap::BOXTOP] = h.y;
+    }
+
+    // Recursively handle sub-blocks.
+    for(duint num = 0; num < 2; ++num)
+    {
+        if(block->subs[num])
+            findBoundsWorker(block->subs[num], bbox);
+    }
+}
+
+void SuperBlockmap::aaBounds(dfloat bbox[4]) const
+{
+    bbox[BOXTOP] = bbox[BOXRIGHT] = MINFLOAT;
+    bbox[BOXBOTTOM] = bbox[BOXLEFT] = MAXFLOAT;
+    findBoundsWorker(this, bbox);
+}
+
+#if _DEBUG
+void SuperBlockmap::print() const
+{
+    for(const ListNode* n = _hEdges; n; n = n->next)
+    {
+        const HalfEdge* hEdge = n->hEdge;
+        const HalfEdgeInfo* data = reinterpret_cast<HalfEdgeInfo*>(hEdge->data);
+
+        LOG_DEBUG("Build: %s %p sector=%d %s -> %s")
+            << (data->lineDef? "NORM" : "MINI") << hEdge << data->sector->buildData.index
+            << hEdge->vertex->pos << hEdge->twin->vertex->pos;
+    }
+
+    for(dint num = 0; num < 2; ++num)
+    {
+        if(subs[num])
+            subs[num]->print();
+    }
+}
+#endif
+
+//////////////////// Following code does not belong in this file /////////////////////
 
 /**
  * To be able to divide the nodes down, evalPartition must decide which is
@@ -159,9 +207,9 @@ void SuperBlock_IncHEdgeCounts(superblock_t* block, bool lineLinked)
  *
  * @return              @c true, if a "bad half-edge" was found early.
  */
-static dint evalPartitionWorker(const superblock_t* hEdgeList,
-                               HalfEdge* partHEdge, dint factor, dint bestCost,
-                               evalinfo_t* info)
+static dint evalPartitionWorker(const SuperBlockmap* hEdgeList,
+                                HalfEdge* partHEdge, dint factor, dint bestCost,
+                                evalinfo_t* info)
 {
 #define ADD_LEFT()  \
       do {  \
@@ -175,9 +223,9 @@ static dint evalPartitionWorker(const superblock_t* hEdgeList,
         else                info->miniRight += 1;  \
       } while (0)
 
-    superblock_listnode_t* n;
+    SuperBlockmap::ListNode* n;
     ddouble qnty, a, b, fa, fb;
-    hedge_info_t* part = (hedge_info_t*) partHEdge->data;
+    HalfEdgeInfo* part = (HalfEdgeInfo*) partHEdge->data;
     dint num;
 
     /**
@@ -209,7 +257,7 @@ static dint evalPartitionWorker(const superblock_t* hEdgeList,
     for(n = hEdgeList->_hEdges; n; n = n->next)
     {
         HalfEdge* otherHEdge = n->hEdge;
-        hedge_info_t* other = (hedge_info_t*) otherHEdge->data;
+        HalfEdgeInfo* other = (HalfEdgeInfo*) otherHEdge->data;
 
         // This is the heart of my pruning idea - it catches
         // "bad half-edges" early on - LK.
@@ -352,10 +400,10 @@ static dint evalPartitionWorker(const superblock_t* hEdgeList,
  * @return              The computed cost, or a negative value if the edge
  *                      should be skipped altogether.
  */
-static dint evalPartition(const superblock_t* hEdgeList, HalfEdge* part,
+static dint evalPartition(const SuperBlockmap* hEdgeList, HalfEdge* part,
                           dint factor, dint bestCost)
 {
-    hedge_info_t* data = (hedge_info_t*) part->data;
+    HalfEdgeInfo* data = (HalfEdgeInfo*) part->data;
     evalinfo_t info;
 
     // Initialize info structure.
@@ -409,18 +457,18 @@ Con_Message("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d "
 /**
  * @return              @c false, if cancelled.
  */
-static bool pickHEdgeWorker(const superblock_t* partList,
-                               const superblock_t* hEdgeList,
+static bool pickHEdgeWorker(const SuperBlockmap* partList,
+                               const SuperBlockmap* hEdgeList,
                                dint factor, HalfEdge** best, dint* bestCost)
 {
     dint num, cost;
-    superblock_listnode_t* n;
+    SuperBlockmap::ListNode* n;
 
     // Test each half-edge as a potential partition.
     for(n = partList->_hEdges; n; n = n->next)
     {
         HalfEdge* hEdge = n->hEdge;
-        hedge_info_t* data = (hedge_info_t*) hEdge->data;
+        HalfEdgeInfo* data = (HalfEdgeInfo*) hEdge->data;
 
 /*#if _DEBUG
 Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
@@ -473,7 +521,7 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
  *
  * @return              HalfEdge to use as a partition iff one suitable was found.
  */
-HalfEdge* SuperBlock_PickPartition(const superblock_t* hEdgeList, dint factor)
+HalfEdge* de::SuperBlock_PickPartition(const SuperBlockmap* hEdgeList, dint factor)
 {
     dint bestCost = INT_MAX;
     HalfEdge* best = NULL;
@@ -498,105 +546,3 @@ else
     // Finished, return the best partition if found.
     return best;
 }
-
-static void findLimitWorker(const superblock_t* block, dfloat* bbox)
-{
-    for(superblock_listnode_t* n = block->_hEdges; n; n = n->next)
-    {
-        const HalfEdge* cur = n->hEdge;
-        const Vector2f l = cur->vertex->pos.min(cur->twin->vertex->pos);
-        const Vector2f h = cur->vertex->pos.max(cur->twin->vertex->pos);
-
-        if(l.x < bbox[superblock_t::BOXLEFT])
-            bbox[superblock_t::BOXLEFT] = l.x;
-        else if(l.x > bbox[superblock_t::BOXRIGHT])
-            bbox[superblock_t::BOXRIGHT] = l.x;
-        if(l.y < bbox[superblock_t::BOXBOTTOM])
-            bbox[superblock_t::BOXBOTTOM] = l.y;
-        else if(l.y > bbox[superblock_t::BOXTOP])
-            bbox[superblock_t::BOXTOP] = l.y;
-
-        if(h.x < bbox[superblock_t::BOXLEFT])
-            bbox[superblock_t::BOXLEFT] = h.x;
-        else if(h.x > bbox[superblock_t::BOXRIGHT])
-            bbox[superblock_t::BOXRIGHT] = h.x;
-        if(h.y < bbox[superblock_t::BOXBOTTOM])
-            bbox[superblock_t::BOXBOTTOM] = h.y;
-        else if(h.y > bbox[superblock_t::BOXTOP])
-            bbox[superblock_t::BOXTOP] = h.y;
-    }
-
-    // Recursively handle sub-blocks.
-    for(duint num = 0; num < 2; ++num)
-    {
-        if(block->subs[num])
-            findLimitWorker(block->subs[num], bbox);
-    }
-}
-
-/**
- * Find the extremes of an axis aligned box containing all half-edges.
- */
-void BSP_FindBBoxForHEdges(const superblock_t* hEdgeList, dfloat* bbox)
-{
-    bbox[superblock_t::BOXTOP] = bbox[superblock_t::BOXRIGHT] = MINFLOAT;
-    bbox[superblock_t::BOXBOTTOM] = bbox[superblock_t::BOXLEFT] = MAXFLOAT;
-    findLimitWorker(hEdgeList, bbox);
-}
-
-/**
- * For debugging.
- */
-#if _DEBUG
-void de::SuperBlock_PrintHEdges(const superblock_t* block)
-{
-    for(const superblock_listnode_t* n = block->_hEdges; n; n = n->next)
-    {
-        const HalfEdge* hEdge = n->hEdge;
-        const hedge_info_t* data = reinterpret_cast<hedge_info_t*>(hEdge->data);
-
-        LOG_DEBUG("Build: %s %p sector=%d %s -> %s")
-            << (data->lineDef? "NORM" : "MINI") << hEdge << data->sector->buildData.index
-            << hEdge->vertex->pos << hEdge->twin->vertex->pos;
-    }
-
-    for(dint num = 0; num < 2; ++num)
-    {
-        if(block->subs[num])
-            SuperBlock_PrintHEdges(block->subs[num]);
-    }
-}
-
-static void testSuperWorker(superblock_t* block, duint* real, duint* mini)
-{
-    const superblock_listnode_t* n;
-    duint num;
-
-    for(n = block->_hEdges; n; n = n->next)
-    {
-        const HalfEdge* cur = n->hEdge;
-
-        if(((hedge_info_t*) cur->data)->lineDef)
-            (*real) += 1;
-        else
-            (*mini) += 1;
-    }
-
-    for(num = 0; num < 2; ++num)
-    {
-        if(block->subs[num])
-            testSuperWorker(block->subs[num], real, mini);
-    }
-}
-
-/**
- * For debugging.
- */
-void testSuper(superblock_t* block)
-{
-    duint realNum = 0, miniNum = 0;
-    testSuperWorker(block, &realNum, &miniNum);
-    assert(realNum == block->realNum);
-    assert(miniNum == block->miniNum);
-}
-#endif

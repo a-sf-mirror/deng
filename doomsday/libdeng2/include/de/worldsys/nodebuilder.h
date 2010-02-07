@@ -59,7 +59,7 @@ namespace de
         BinaryTree<void*>* rootNode;
 
         dsize numHalfEdgeInfo;
-        struct hedge_info_s** halfEdgeInfo;
+        HalfEdgeInfo** halfEdgeInfo;
 
         NodeBuilder(Map& map, dint splitFactor=7);
         ~NodeBuilder();
@@ -67,7 +67,7 @@ namespace de
         void build();
 
         // @todo Should be private to NodeBuilder
-        void connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge, struct superblock_s* rightList, struct superblock_s* leftList);
+        void connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge, SuperBlockmap* rightList, SuperBlockmap* leftList);
         HalfEdge& createHalfEdge(LineDef* line, LineDef* sourceLine, Vertex* start, Sector* sec, bool back);
 
         /**
@@ -95,6 +95,11 @@ namespace de
         void createInitialHEdgesAndAddtoSuperBlockmap();
 
         /**
+         * Add the given half-edge to the specified blockmap.
+         */
+        void addHalfEdgeToSuperBlockmap(SuperBlockmap* blockmap, HalfEdge* hEdge);
+
+        /**
          * Takes the half-edge list and determines if it is convex, possibly
          * converting it into a subsector. Otherwise, the list is divided into two
          * halves and recursion will continue on the new sub list.
@@ -104,15 +109,15 @@ namespace de
          *                      intersections (cuts).
          * @return              Ptr to the newly created subtree ELSE @c NULL.
          */
-        BinaryTree<void*>* buildNodes(superblock_t* hEdgeList);
+        BinaryTree<void*>* buildNodes(SuperBlockmap* hEdgeList);
 
         /**
          * Analyze the intersection list, and add any needed minihedges to the given
          * half-edge lists (one minihedge on each side).
          */
         void addMiniHEdges(ddouble x, ddouble y, ddouble dX, ddouble dY,
-            const HalfEdge* partHEdge, superblock_t* bRight,
-            superblock_t* bLeft);
+            const HalfEdge* partHEdge, SuperBlockmap* bRight,
+            SuperBlockmap* bLeft);
 
         /**
          * Partition the given edge and perform any further necessary action (moving
@@ -132,22 +137,22 @@ namespace de
          */
         void divideOneHEdge(HalfEdge& curHEdge, ddouble x,
            ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge,
-           superblock_t* bRight, superblock_t* bLeft);
+           SuperBlockmap* bRight, SuperBlockmap* bLeft);
 
-        void divideHEdges(superblock_t* hEdgeList, ddouble x, ddouble y,
+        void divideHEdges(SuperBlockmap* hEdgeList, ddouble x, ddouble y,
             ddouble dX, ddouble dY, const HalfEdge* partHEdge,
-            superblock_t* rights, superblock_t* lefts);
+            SuperBlockmap* rights, SuperBlockmap* lefts);
 
         /**
          * Remove all the half-edges from the list, partitioning them into the left
          * or right lists based on the given partition line. Adds any intersections
          * onto the intersection list as it goes.
          */
-        void partitionHEdges(superblock_t* hEdgeList, ddouble x,
+        void partitionHEdges(SuperBlockmap* hEdgeList, ddouble x,
             ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge,
-            superblock_t** right, superblock_t** left);
+            SuperBlockmap** right, SuperBlockmap** left);
 
-        void takeHEdgesFromSuperBlock(Face& face, superblock_t* block);
+        void takeHEdgesFromSuperBlock(Face& face, SuperBlockmap* block);
 
         void attachHEdgeInfo(HalfEdge& hEdge, LineDef* line,
             LineDef* sourceLine, Sector* sec, bool back);
@@ -155,7 +160,7 @@ namespace de
         /**
          * Create a new leaf from a list of half-edges.
          */
-        Face& createBSPLeaf(Face& face, superblock_t* hEdgeList);
+        Face& createBSPLeaf(Face& face, SuperBlockmap* hEdgeList);
 
         /**
          * Free all the SuperBlocks on the quick-alloc list.
@@ -165,26 +170,26 @@ namespace de
         /**
          * Free all memory allocated for the specified SuperBlock.
          */
-        void moveSuperBlockToQuickAllocList(superblock_t* block);
+        void moveSuperBlockToQuickAllocList(SuperBlockmap* block);
 
         /**
          * Acquire memory for a new SuperBlock.
          */
-        superblock_t* createSuperBlock();
+        SuperBlockmap* createSuperBlockmap();
 
-        void destroySuperBlock(superblock_t* block);
+        void destroySuperBlockmap(SuperBlockmap* block);
 
-        void createSuperBlockmap();
+        void createRootSuperBlockmap();
 
-        void destroySuperBlockmap();
+        void destroyRootSuperBlockmap();
 
     private:
         dint _splitFactor;
 
         Map& _map;
         CutList _cutList;
-        struct superblock_s* _superBlockmap;
-        struct superblock_s* _quickAllocSupers;
+        SuperBlockmap* _superBlockmap;
+        SuperBlockmap* _quickAllocSuperBlockmaps;
     };
 }
 
