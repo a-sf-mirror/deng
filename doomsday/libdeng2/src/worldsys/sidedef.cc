@@ -27,6 +27,23 @@
 
 using namespace de;
 
+SideDef::SideDef()
+{
+    _sections[MIDDLE].owner = reinterpret_cast<void*>(this);
+    _sections[BOTTOM].owner = reinterpret_cast<void*>(this);
+    _sections[TOP].owner = reinterpret_cast<void*>(this);
+}
+
+SideDef::~SideDef()
+{
+    if(_sections[MIDDLE].decorations)
+        Z_Free(_sections[MIDDLE].decorations);
+    if(_sections[BOTTOM].decorations)
+        Z_Free(_sections[BOTTOM].decorations);
+    if(_sections[TOP].decorations)
+        Z_Free(_sections[TOP].decorations);
+}
+
 void SideDef::colorTints(sidesection_t section, const dfloat** topColor, const dfloat** bottomColor)
 {
     // Select the colors for this surface.

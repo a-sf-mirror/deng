@@ -118,11 +118,11 @@ namespace de
          * returns @c false; at which point traversal is aborted.
          *
          * @param callback      Function to call for each object of the tree.
-         * @param data          Used to pass additional data to func.
+         * @param paramaters    Used to pass additional data to the callback.
          *
          * @return              @c true, iff all callbacks return @c true;
          */
-        bool preOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* data);
+        bool preOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* paramaters = 0);
 
         /**
          * Traverse the tree in "Inorder".
@@ -132,11 +132,11 @@ namespace de
          * returns @c false; at which point traversal is aborted.
          *
          * @param callback      Function to call for each object of the tree.
-         * @param data          Used to pass additional data to func.
+         * @param paramaters    Used to pass additional data to the callback.
          *
          * @return              @c true, iff all callbacks return @c true;
          */
-        bool inOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* data);
+        bool inOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* paramaters = 0);
 
         /**
          * Traverse the tree in "Postorder".
@@ -146,11 +146,11 @@ namespace de
          * returns @c false; at which point traversal is aborted.
          *
          * @param callback      Function to call for each object of the tree.
-         * @param data          Used to pass additional data to func.
+         * @param paramaters    Used to pass additional data to the callback.
          *
          * @return              @c true, iff all callbacks return @c true;
          */
-        bool postOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* data);
+        bool postOrder(bool (C_DECL *callback) (BinaryTree* tree, void* data), void* paramaters = 0);
 
     private:
         /// User data associated with this tree.

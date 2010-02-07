@@ -262,7 +262,7 @@ static bool PTR_SpreadContacts(void* obj, void* context)
 static void spreadMobjs(const Subsector* subsector)
 {
     // @todo Subsector should return the map its linked to.
-    MobjBlockmap* bmap = Map_MobjBlockmap(P_CurrentMap());
+    ThingBlockmap* bmap = Map_MobjBlockmap(P_CurrentMap());
     objcontacttype_t type = OCT_MOBJ;
     uint blockBox[4];
     vec2_t bbox[2];

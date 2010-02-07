@@ -28,7 +28,7 @@
 #include "../Id"
 #include "../HalfEdgeDS"
 #include "../BinaryTree"
-#include "../MobjBlockmap"
+#include "../ThingBlockmap"
 #include "../LineDefBlockmap"
 #include "../SubsectorBlockmap"
 #include "../LumObjBlockmap"
@@ -44,11 +44,12 @@
 #include "../Node"
 
 #include <map>
+#include <set>
 
 namespace de
 {
     class Object;
-    
+
     /**
      * Contains everything that makes a map work: sectors, lines, scripts, 
      * objects, etc. The game plugin is responsible for creating concrete
@@ -255,17 +256,69 @@ namespace de
             NUM_OBJCONTACT_TYPES
         } objcontacttype_t;
 
+        typedef struct objcontact_s {
+            struct objcontact_s* next; // Next in the subsector.
+            struct objcontact_s* nextUsed; // Next used contact.
+            void* obj;
+        } objcontact_t;
+
+        typedef struct objcontactlist_s {
+            objcontact_t* head[NUM_OBJCONTACT_TYPES];
+        } objcontactlist_t;
+
+        /**
+         * @defGroup pruneUnusedObjectsFlags Prune Unused Objects Flags
+         */
+        /*{*/
+        #define PRUNE_LINEDEFS      0x0001
+        #define PRUNE_VERTEXES      0x0002
+        #define PRUNE_SIDEDEFS      0x0004
+        #define PRUNE_SECTORS       0x0008
+        #define PRUNE_PLANES        0x0010
+        #define PRUNE_ALL           (PRUNE_LINEDEFS|PRUNE_VERTEXES|PRUNE_SIDEDEFS|PRUNE_SECTORS|PRUNE_PLANES)
+        /*}*/
+
+        // $smoothmatoffset: Maximum speed for a smoothed material offset.
+        #define MAX_SMOOTH_MATERIAL_MOVE (8)
+
+        typedef struct {
+            Map* map; // @todo should not be necessary.
+            struct mobj_s* mo;
+            Vector2f min, max;
+        } linelinker_data_t;
+
+        typedef struct {
+            duint numLineOwners;
+            lineowner_t* lineOwners; // Head of the lineowner list.
+        } vertexinfo_t;
+
+        typedef struct {
+            Map* map;
+            void* obj;
+            objcontacttype_t type;
+        } linkobjtosubsectorparams_t;
+
+        // Used for vertex sector owners, side line owners and reverb subsectors.
+        typedef struct ownernode_s {
+            void* data;
+            struct ownernode_s* next;
+        } ownernode_t;
+
+        typedef struct {
+            ownernode_t* head;
+            duint count;
+        } ownerlist_t;
+
         //char mapID[9];
         //char uniqueID[256];
-        bool editActive;
 
         //struct thinkers_s* _thinkers;
-        struct gameobjrecords_s* _gameObjectRecords;
+        //struct gameobjrecords_s* _gameObjectRecords;
 
         HalfEdgeDS* _halfEdgeDS;
         BinaryTree<Node>* _rootNode;
 
-        MobjBlockmap* _mobjBlockmap;
+        ThingBlockmap* _thingBlockmap;
         LineDefBlockmap* _lineDefBlockmap;
         SubsectorBlockmap* _subsectorBlockmap;
 
@@ -273,7 +326,7 @@ namespace de
         ParticleBlockmap* _particleBlockmap;
         LumObjBlockmap* _lumobjBlockmap;
 
-        //struct objcontactlist_s* _subsectorContacts; // List of obj contacts for each subsector.
+        struct objcontactlist_s* _subsectorContacts; // List of obj contacts for each subsector.
         //struct lightgrid_s* _lightGrid;
 
         dfloat bBox[4];
@@ -285,7 +338,7 @@ namespace de
         LineDef** lineDefs;
 
         duint _numSideDefs;
-        struct sidedef_s** sideDefs;
+        SideDef** sideDefs;
 
         duint _numPlanes;
         Plane** planes;
@@ -304,13 +357,22 @@ namespace de
 
         struct lineowner_s* lineOwners;
 
-        //struct planelist_s* _watchedPlaneList;
-        //struct surfacelist_s* _movingSurfaceList;
-        //struct surfacelist_s* _decoratedSurfaceList;
+    private:
+        /// Map editing is in progress.
+        bool _editActive;
 
+        typedef std::set<Plane*> PlaneSet;
+        PlaneSet _watchedPlanes;
+
+        typedef std::set<MSurface*> SurfaceSet;
+        SurfaceSet _movingSurfaces;
+        SurfaceSet _decoratedSurfaces;
+
+    public:
         //struct nodepile_s* mobjNodes, *lineNodes; // All kinds of wacky links.
         //nodeindex_t* lineLinks; // Indices to roots.
 
+        // Add to Record info.
         dfloat gravity;
         dint _ambientLightLevel;
 
@@ -438,7 +500,7 @@ namespace de
         // @todo the following should be Map private:
         //thinkers_t* thinkers();
         HalfEdgeDS& halfEdgeDS();
-        MobjBlockmap* mobjBlockmap();
+        ThingBlockmap* thingBlockmap();
         LineDefBlockmap* lineDefBlockmap();
         SubsectorBlockmap* subsectorBlockmap();
         ParticleBlockmap* particleBlockmap();
@@ -456,10 +518,49 @@ namespace de
         gameobjrecords_t* gameObjectRecords();
         void destroyGameObjectRecords();
 
-        // Old public interface:
-        //void initThinkers();
-        //void runThinkers();
-        //void thinkerAdd(thinker_t* th);
+        void link(Thing* thing, dbyte flags);
+
+    private:
+        LineDef* createLineDef2();
+        SideDef* createSideDef2();
+        Sector* createSector2();
+        Plane* createPlane2();
+
+        /**
+         * @pre Thing must be currently unlinked.
+         */
+        void linkToLineDefs(Thing* thing);
+
+        /**
+         * Unlinks the Thing from all the LineDefs it's been linked to. Can be called
+         * without checking that the list does indeed contain LineDefs.
+         */
+        bool unlinkFromLineDefs(Thing* thing);
+
+        /**
+         * Two links to update:
+         * 1) The link to us from the previous node (sprev, always set) will
+         *    be modified to point to the node following us.
+         * 2) If there is a node following us, set its sprev pointer to point
+         *    to the pointer that points back to it (our sprev, just modified).
+         */
+        bool unlinkFromSector(Thing* thing);
+
+        /**
+         * Initialize subsector -> obj contact lists.
+         */
+        void initSubsectorContacts();
+
+        /**
+         * Initialize the obj > subsector contact lists ready for adding new
+         * luminous objects. Called by R_BeginWorldFrame() at the beginning of a new
+         * frame (if the render lists are not frozen).
+         */
+        void clearSubsectorContacts();
+
+        void linkContactToSubsector(duint subsectorIdx, objcontacttype_t type, objcontact_t* node);
+
+        void clearSectorFlags();
     };
 }
 

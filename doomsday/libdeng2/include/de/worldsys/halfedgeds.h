@@ -78,7 +78,6 @@ namespace de
         void linkHEdge(HalfEdge* hEdge);
         void unlinkHEdge(HalfEdge* hEdge);
         void switchToHEdgeLinks();
-        Vector2d getAveragedCoords();
 
         /**
          * Sort the list of half-edges in the leaf into clockwise order, based on
@@ -86,6 +85,8 @@ namespace de
          */
         void sortHEdgesByAngleAroundMidPoint();
     };
+
+    Vector2d getAveragedCoords(const Face& face);
 
     /// Smallest degrees between two angles before being considered equal.
     static const ddouble ANG_EPSILON = (1.0 / 1024.0);
@@ -120,9 +121,9 @@ namespace de
         HalfEdges::size_type numHalfEdges() const { return _halfEdges.size(); }
         Faces::size_type numFaces() const { return _faces.size(); }
 
-        bool iterateVertices(bool (*callback) (Vertex*, void*), void* paramaters);
-        bool iterateHalfEdges(bool (*callback) (HalfEdge*, void*), void* paramaters);
-        bool iterateFaces(bool (*callback) (Face*, void*), void* paramaters);
+        bool iterateVertices(bool (*callback) (Vertex*, void*), void* paramaters = 0);
+        bool iterateHalfEdges(bool (*callback) (HalfEdge*, void*), void* paramaters = 0);
+        bool iterateFaces(bool (*callback) (Face*, void*), void* paramaters = 0);
 
     private:
         std::vector<HalfEdge*> _halfEdges;

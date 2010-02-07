@@ -22,41 +22,42 @@
  * Boston, MA  02110-1301  USA
  */
 
-#ifndef LIBDENG2_MOBJBLOCKMAP_H
-#define LIBDENG2_MOBJBLOCKMAP_H
+#ifndef LIBDENG2_THINGBLOCKMAP_H
+#define LIBDENG2_THINGBLOCKMAP_H
 
 #include "../Gridmap"
 #include "../Vector"
+#include "../Thing"
 
 namespace de
 {
-    class MobjBlockmap
+    class ThingBlockmap
     {
     public:
-        MobjBlockmap(const Vector2<dfloat>& min, const Vector2<dfloat>& max, duint width, duint height);
-        ~MobjBlockmap();
+        ThingBlockmap(const Vector2f& min, const Vector2f& max, duint width, duint height);
+        ~ThingBlockmap();
 
         duint numInBlock(duint x, duint y);
-        void link(struct mobj_s* mo);
-        bool unlink(struct mobj_s* mo);
+        void link(Thing* thing);
+        bool unlink(Thing* thing);
 
-        void bounds(Vector2<dfloat>& min, Vector2<dfloat>& max) const;
-        void blockSize(Vector2<dfloat>& blockSize) const;
-        void dimensions(Vector2<duint>& dimensions) const;
+        void bounds(Vector2f& min, Vector2f& max) const;
+        void blockSize(Vector2f& blockSize) const;
+        void dimensions(Vector2ui& dimensions) const;
 
-        bool block(Vector2<duint>& block, dfloat x, dfloat y) const;
-        bool block(Vector2<duint>& block, const Vector2<dfloat>& pos) const;
+        bool block(Vector2ui& block, dfloat x, dfloat y) const;
+        bool block(Vector2ui& block, const Vector2f& pos) const;
 
         //void boxToBlocks(duint blockBox[4], const arvec2_t box);
-        bool iterate(const Vector2<duint>& block, bool (*func) (struct mobj_s*, void*), void* data);
-        //bool boxIterate(const duint blockBox[4], bool (*func) (struct mobj_s*, void*), void* data);
-        //bool pathTraverse(const Vector2<duint>& originBlock, const Vector2<duint>& block, const Vector2<dfloat>& origin, const Vector2<dfloat>& dest, bool (*func) (intercept_t*));
+        bool iterate(const Vector2ui& block, bool (*func) (Thing*, void*), void* paramaters = 0);
+        //bool boxIterate(const duint blockBox[4], bool (*func) (Thing*, void*), void* paramaters = 0);
+        //bool pathTraverse(const Vector2ui& originBlock, const Vector2ui& block, const Vector2f& origin, const Vector2f& dest, bool (*func) (intercept_t*));
 
     private:
-        Vector2<dfloat> _aabb[2];
-        Vector2<dfloat> _blockSize;
-        Gridmap<struct mobj_s*> _gridmap;
+        Vector2f _aabb[2];
+        Vector2f _blockSize;
+        Gridmap<Thing*> _gridmap;
     };
 }
 
-#endif /* LIBDENG2_MOBJBLOCKMAP_H */
+#endif /* LIBDENG2_THINGBLOCKMAP_H */

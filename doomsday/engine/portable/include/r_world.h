@@ -68,26 +68,6 @@ void            R_ClearSurfaceDecorations(surface_t* suf);
 
 void            R_CreateBiasSurfacesInSubsector(subsector_t* subsector);
 
-planelist_t*    P_CreatePlaneList(void);
-void            P_DestroyPlaneList(planelist_t* pl);
-
-void            PlaneList_Add(planelist_t* pl, plane_t* pln);
-boolean         PlaneList_Remove(planelist_t* pl, const plane_t* pln);
-void            PlaneList_Empty(planelist_t* pl);
-boolean         PlaneList_Iterate(planelist_t* pl,
-                                  boolean (*callback) (plane_t*, void*),
-                                  void* context);
-
-surfacelist_t*  P_CreateSurfaceList(void);
-void            P_DestroySurfaceList(surfacelist_t* sl);
-
-void            SurfaceList_Add(surfacelist_t* sl, surface_t* suf);
-boolean         SurfaceList_Remove(surfacelist_t* sl, const surface_t* suf);
-void            SurfaceList_Empty(surfacelist_t* sl);
-boolean         SurfaceList_Iterate(surfacelist_t* sl,
-                                    boolean (*callback) (surface_t*, void*),
-                                    void* context);
-
 void            R_MarkDependantSurfacesForDecorationUpdate(sector_t* sector);
 boolean         R_IsGlowingPlane(const plane_t* pln);
 

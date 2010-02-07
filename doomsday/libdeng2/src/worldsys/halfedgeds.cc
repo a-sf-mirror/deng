@@ -220,17 +220,17 @@ testVertexHEdgeRings(newHEdge.twin->vertex);
     return newHEdge;
 }
 
-Vector2d Face::getAveragedCoords()
+Vector2d getAveragedCoords(const Face& face)
 {
     Vector2d avg = Vector2d(0, 0);
-    const hedge_node_t* node = (hedge_node_t*) hEdge;
+    const hedge_node_t* node = (hedge_node_t*) face.hEdge;
     dsize total = 0;
     do
     {
         const HalfEdge* hEdge = node->hEdge;
         avg += hEdge->vertex->pos;
         ++total;
-    } while((node = node->next) != (hedge_node_t*) hEdge);
+    } while((node = node->next) != (hedge_node_t*) face.hEdge);
 
     if(total != 0)
     {
@@ -249,7 +249,7 @@ void Face::sortHEdgesByAngleAroundMidPoint()
        ((hedge_node_t*) hEdge)->next == (hedge_node_t*) hEdge)
         return;
 
-    Vector2d midPoint = getAveragedCoords();
+    Vector2d midPoint = getAveragedCoords(*this);
 
     node = (hedge_node_t*) hEdge;
     for(;;)

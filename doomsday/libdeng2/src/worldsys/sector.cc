@@ -35,6 +35,19 @@ namespace de
     static bool noFit;
 }
 
+Sector::~Sector()
+{
+    if(planes) Z_Free(planes);
+
+    if(subsectors) Z_Free(subsectors);
+
+    if(reverbSubsectors) Z_Free(reverbSubsectors);
+
+    if(blocks) Z_Free(blocks);
+
+    if(lineDefs) Z_Free(lineDefs);
+}
+
 #if 0
 /**
  * Takes a valid mobj and adjusts the mobj->floorZ, mobj->ceilingZ, and
