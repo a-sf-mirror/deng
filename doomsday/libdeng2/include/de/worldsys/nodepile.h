@@ -21,6 +21,8 @@
 #ifndef LIBDENG2_NODEPILE_H
 #define LIBDENG2_NODEPILE_H
 
+#include "deng.h"
+
 namespace de
 {
     #define NP_ROOT_NODE ((void*) -1)
@@ -38,7 +40,8 @@ namespace de
     class NodePile
     {
     public:
-        typedef dshort Index;
+        typedef dushort Index;
+        static const dushort MAX_NODES = MAXUSHORT;
 
         struct LinkNode {
             Index prev, next;
@@ -47,19 +50,51 @@ namespace de
         };
 
     public:
-        NodePile(dint initial);
+        /**
+         * @param initial       Number of nodes to allocate.
+         */
+        explicit NodePile(dushort initial);
+
+        /**
+         * @note Deletes all nodes in the.
+         */
         ~NodePile();
 
+        /**
+         * Adds a new node to the pile.
+         * Pos always has the index of the next node to check when allocating
+         * a new node. Pos shouldn't be accessed outside this routine because its
+         * value may prove to be outside the valid range.
+         *
+         * @param ptr           Data to attach to the new node.
+         */
         Index newIndex(void* ptr);
+
+        /**
+         * Links the node to the beginning of the ring.
+         *
+         * @param node          Node to be linked.
+         * @param root          The root node to link the node to.
+         */
         void link(Index node, Index root);
+
+        /**
+         * Unlink a node from the ring (make it a root node)
+         *
+         * @param pile          Nodepile ring to work with.
+         * @param node          Node to be unlinked.
+         */
         void unlink(Index node);
 
-    public: /// @todo Should be private!
-        dint count;
-        dint pos;
-        LinkNode* nodes;
+        /**
+         * @pre Caller must unlink first!
+         */
+        void dismiss(Index node);
 
-        void dismiss(Index node) { nodes[node].ptr = 0; };
+    public: /// @todo Should be private!
+        dushort count;
+        dushort pos;
+        LinkNode* nodes;
     };
 }
 

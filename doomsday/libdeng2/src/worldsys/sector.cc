@@ -39,91 +39,73 @@ namespace de
 
 Sector::~Sector()
 {
-    if(subsectors) Z_Free(subsectors);
-
-    if(reverbSubsectors) Z_Free(reverbSubsectors);
+    subsectors.clear();
+    reverbSubsectors.clear();
+    lineDefs.clear();
 
     if(blocks) Z_Free(blocks);
-
-    if(lineDefs) Z_Free(lineDefs);
 }
 
-#if 0
 /**
- * Takes a valid mobj and adjusts the mobj->floorZ, mobj->ceilingZ, and
- * possibly mobj->z. This is called for all nearby mobjs whenever a sector
- * changes height. If the mobj doesn't fit, the z will be set to the lowest
- * value and false will be returned.
+ * Adjusts Thing::floorZ, Thing::ceilingZ, and possibly Thing::origin.z.
+ * This is called for all nearby Things whenever a Sector plane changes height.
+ * If the Thing doesn't fit, it's z origin will be set to the lowest value and false
+ * will be returned.
  */
-static bool heightClip(mobj_t* mo)
+bool heightClip(Thing* thing)
 {
     bool onfloor;
 
     // During demo playback the player gets preferential treatment.
-    if(mo->dPlayer == &ddPlayers[consolePlayer].shared && playback)
+    if(thing->dPlayer == &ddPlayers[consolePlayer].shared && playback)
         return true;
 
-    onfloor = (mo->pos[VZ] <= mo->floorZ);
+    onfloor = (thing->origin.z <= thing->floorZ);
 
-    P_CheckPosXYZ(mo, mo->pos[VX], mo->pos[VY], mo->pos[VZ]);
-    mo->floorZ = tmpFloorZ;
-    mo->ceilingZ = tmpCeilingZ;
+    P_CheckPosXYZ(thing, thing->origin.x, thing->origin.y, thing->origin.z);
+    thing->floorZ = tmpFloorZ;
+    thing->ceilingZ = tmpCeilingZ;
 
     if(onfloor)
     {
-        mo->pos[VZ] = mo->floorZ;
+        thing->origin.z = thing->floorZ;
     }
     else
     {
         // Don't adjust a floating mobj unless forced to.
-        if(mo->pos[VZ] + mo->height > mo->ceilingZ)
-            mo->pos[VZ] = mo->ceilingZ - mo->height;
+        if(thing->origin.z + thing->height > thing->ceilingZ)
+            thing->origin.z = thing->ceilingZ - thing->height;
     }
 
     // On clientside, players are represented by two mobjs: the real mobj,
     // created by the Game, is the one that is visible and modified in this
     // function. We'll need to sync the hidden client mobj (that receives
     // all the changes from the server) to match the changes.
-    if(isClient && mo->dPlayer)
+    if(isClient && thing->dPlayer)
     {
-        Cl_UpdatePlayerPos(P_GetDDPlayerIdx(mo->dPlayer));
+        Cl_UpdatePlayerPos(P_GetDDPlayerIdx(thing->dPlayer));
     }
 
-    if(mo->ceilingZ - mo->floorZ < mo->height)
+    if(thing->ceilingZ - thing->floorZ < thing->height)
         return false;
     return true;
 }
 
-/**
- * After modifying a sectors floor or ceiling height, call this routine
- * to adjust the positions of all mobjs that touch the sector.
- *
- * If anything doesn't fit anymore, true will be returned.
- */
-static dint PIT_SectorPlanesChanged(void* obj, void* data)
+static bool PIT_SectorPlanesChanged(Thing* thing, void* data)
 {
-    mobj_t* mo = (mobj_t*) obj;
-
-    // Always keep checking.
-    if(heightClip(mo))
+     // Always keep checking.
+    if(heightClip(thing))
         return true;
-
     noFit = true;
     return true;
 }
-#endif
 
-/**
- * Called whenever a sector's planes are moved. This will update the mobjs
- * inside the sector and do crushing.
- */
 bool Sector::planesChanged()
 {
-#pragma message("Warning: Sector::planesChanged not yet implemented.")
     noFit = false;
     // We'll use validCount to make sure mobjs are only checked once.
     validCount++;
-    iterateThingsTouching(PIT_SectorPlanesChanged, 0);
+    iterateThingsTouching(PIT_SectorPlanesChanged);
     return noFit;
 }
 
@@ -137,16 +119,16 @@ dfloat Sector::lightIntensity() const
 bool Sector::pointInside(dfloat x, dfloat y) const
 {
     bool isOdd = false;
-    for(duint i = 0; i < lineDefCount; ++i)
+    FOR_EACH(i, lineDefs, LineDefSet::const_iterator)
     {
-        LineDef* lineDef = lineDefs[i];
+        const LineDef& lineDef = *(*i);
 
         // Skip lines that aren't sector boundaries.
-        if(lineDef->isSelfreferencing())
+        if(lineDef.isSelfreferencing())
             continue;
 
-        const Vertex& vtx1 = lineDef->vtx1();
-        const Vertex& vtx2 = lineDef->vtx2();
+        const Vertex& vtx1 = lineDef.vtx1();
+        const Vertex& vtx2 = lineDef.vtx2();
         // It shouldn't matter whether the line faces inward or outward.
         if((vtx1.pos.y < y && vtx2.pos.y >= y) ||
            (vtx2.pos.y < y && vtx1.pos.y >= y))
@@ -160,7 +142,6 @@ bool Sector::pointInside(dfloat x, dfloat y) const
             }
         }
     }
-
     // The point is inside if the number of crossed nodes is odd.
     return isOdd;
 }
@@ -168,10 +149,10 @@ bool Sector::pointInside(dfloat x, dfloat y) const
 bool Sector::pointInside2(dfloat x, dfloat y) const
 {
     // @todo Subsector should return the map its linked in.
-    const Subsector* subsector = App::currentMap().pointInSubsector(x, y);
-    if(subsector->sector != this)
+    const Subsector& subsector = App::currentMap().pointInSubsector(x, y);
+    if(&subsector.sector() != this)
         return false; // Wrong sector.
-    return subsector->pointInside(x, y);
+    return subsector.pointInside(x, y);
 }
 
 /**
@@ -198,7 +179,7 @@ void Sector::updateBounds()
 {
     dfloat* bbox = bBox;
 
-    if(!(lineDefCount > 0))
+    if(!(lineDefs.size() > 0))
     {
         memset(bBox, 0, sizeof(bBox));
         return;
@@ -209,15 +190,14 @@ void Sector::updateBounds()
     bbox[BOXBOTTOM] = MAXFLOAT;
     bbox[BOXTOP]    = MINFLOAT;
 
-    for(duint i = 1; i < lineDefCount; ++i)
+    FOR_EACH(i, lineDefs, LineDefSet::const_iterator)
     {
-        LineDef* li = lineDefs[i];
+        const LineDef& lineDef = *(*i);
 
-        if(li->polyobjOwned)
+        if(lineDef.polyobjOwned)
             continue;
 
-        const Vertex& vtx = li->vtx1();
-
+        const Vertex& vtx = lineDef.vtx1();
         if(vtx.pos.x < bbox[BOXLEFT])
             bbox[BOXLEFT]   = vtx.pos.x;
         if(vtx.pos.x > bbox[BOXRIGHT])
@@ -312,9 +292,9 @@ bool Sector::getProperty(setargs_t* args) const
 }
 #endif
 
-bool Sector::iterateThingsTouching(bool (*callback) (void*, void*), void* paramaters)
+bool Sector::iterateThingsTouching(bool (*callback) (Thing*, void*), void* paramaters)
 {
-    assert(func);
+    assert(callback);
 
 /**
  * Linkstore is list of pointers gathered when iterating stuff.
@@ -345,7 +325,7 @@ bool Sector::iterateThingsTouching(bool (*callback) (void*, void*), void* parama
     FOR_EACH(i, lineDefs, LineDefSet::iterator)
     {
         LineDef* li = *i;
-        LinkNode* ln = map.lineDefNodes->nodes;
+        NodePile::LinkNode* ln = map.lineDefNodes->nodes;
 
         // Iterate all Things linked to the LineDef.
         NodePile::Index root = map.lineDefLinks[P_ObjectRecord(DMU_LINEDEF, li)->id - 1];

@@ -139,6 +139,7 @@ namespace de
 
     const dchar MAXCHAR     = (dchar) 0x7f;
     const dshort MAXSHORT   = (dshort) 0x7fff;
+    const dushort MAXUSHORT = (dushort) 0xffff;
     const dint MAXINT       = (dint) 0x7fffffff; // max pos 32-bit int
     const dfloat MAXFLOAT   = (dfloat) 1E+37;
 

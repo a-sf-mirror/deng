@@ -451,7 +451,14 @@ namespace de
          */
         void interpolateMovingSurfaces(dfloat frameTimePos);
 
-        void updateSkyFixForSector(duint secIDX);
+        /**
+         * Fixing the sky means that for adjacent sky sectors the lower sky
+         * ceiling is lifted to match the upper sky. The raising only affects
+         * rendering, it has no bearing on gameplay.
+         */
+        void initSkyFix();
+
+        void updateSkyFixForSector(duint sectorIndex);
 
 #if 0
         void addThinker(thinker_t* th, bool makePublic);
@@ -548,7 +555,6 @@ namespace de
         //Subsector* createSubsector(Face* face, Sector* sector);
         Node* createNode(dfloat x, dfloat y, dfloat dX, dfloat dY, dfloat rightAABB[4], dfloat leftAABB[4]);
 
-        void initSkyFix();
         void markAllSectorsForLightGridUpdate();
 
         gameobjrecords_t* gameObjectRecords();
@@ -559,6 +565,7 @@ namespace de
         Thing::LinkFlags Map::unlink(Thing* thing);
 
     private:
+        Vertex* createVertex2(dfloat x, dfloat y);
         LineDef* createLineDef2();
         SideDef* createSideDef2();
         Sector* createSector2();
@@ -611,6 +618,34 @@ namespace de
         bool interpolatePlaneHeight(Plane* plane, dfloat frameTimePos);
         bool resetPlaneHeightTracking(Plane* plane);
         bool updatePlaneHeightTracking(Plane* plane);
+
+        void findEquivalentVertexes();
+        void pruneLineDefs();
+        void pruneVertexes();
+        void pruneSideDefs();
+        void pruneSectors();
+
+        /**
+         * Initialize node piles and line rings.
+         */
+        void initLinks();
+
+        /**
+         * @param flags             @see pruneUnusedObjectsFlags
+         */
+        void pruneUnusedObjects(dint flags);
+
+        void hardenSectorSubsectorSet(duint sectorIndex);
+
+        /**
+         * Build Subsector sets for all Sectors.
+         */
+        void buildSectorSubsectorSets();
+
+        /**
+         * Build LineDef sets for all Sectors.
+         */
+        void buildSectorLineDefSets();
     };
 }
 

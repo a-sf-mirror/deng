@@ -155,7 +155,7 @@ Map::~Map()
         delete lineDefNodes; lineDefNodes = NULL;
 
     if(lineDefLinks)
-        delete lineDefLinks; lineDefLinks = NULL;
+        std::free(lineDefLinks); lineDefLinks = NULL;
 
     if(sideDefs)
     {
@@ -1481,288 +1481,240 @@ static void buildLumobjBlockmap(map_t* map)
 #undef BLOCK_HEIGHT
 }
 
-static int C_DECL vertexCompare(const void* p1, const void* p2)
+static dint C_DECL vertexCompare(const void* p1, const void* p2)
 {
-    const vertex_t* a = *((const void**) p1);
-    const vertex_t* b = *((const void**) p2);
+    const Vertex* a = *((const void**) p1);
+    const Vertex* b = *((const void**) p2);
 
     if(a == b)
         return 0;
-
-    if((int) a->pos[0] != (int) b->pos[0])
-        return (int) a->pos[0] - (int) b->pos[0];
-
-    return (int) a->pos[1] - (int) b->pos[1];
+    if(dint(a->pos.x) != dint(b->pos.x))
+        return dint(a->pos.x) - dint(b->pos.x);
+    return dint(a->pos.y) - dint(b->pos.y);
 }
 
-static void detectDuplicateVertices(halfedgeds_t* halfEdgeDS)
+static void detectDuplicateVertices(HalfEdgeDS& halfEdgeDS)
 {
-    vertex_t** hits;
-    uint numVertices = HalfEdgeDS_NumVertices(halfEdgeDS);
-    size_t i;
-
-    hits = M_Malloc(numVertices * sizeof(vertex_t*));
-
+    dsize numVertices = halfEdgeDS.numVertices();
+    Vertex** hits = reinterpret_cast<Vertex**>(std::malloc(numVertices * sizeof(Vertex*)));
     // Sort array of ptrs.
-    for(i = 0; i < numVertices; ++i)
-        hits[i] = halfEdgeDS->vertices[i];
-    qsort(hits, numVertices, sizeof(vertex_t*), vertexCompare);
+    for(dsize i = 0; i < numVertices; ++i)
+        hits[i] = halfEdgeDS.vertices[i];
+    qsort(hits, numVertices, sizeof(Vertex*), vertexCompare);
 
     // Now mark them off.
-    for(i = 0; i < numVertices - 1; ++i)
+    for(dsize i = 0; i < numVertices - 1; ++i)
     {
         // A duplicate?
         if(vertexCompare(hits + i, hits + i + 1) == 0)
         {   // Yes.
-            vertex_t* a = hits[i];
-            vertex_t* b = hits[i + 1];
+            Vertex* a = hits[i];
+            Vertex* b = hits[i + 1];
 
-            ((mvertex_t*) b->data)->equiv =
-                (((mvertex_t*) a->data)->equiv ? ((mvertex_t*) a->data)->equiv : a);
+            /// @fixme Looks like a bug to me, if not equivalent, then should be NULL surely?
+            ((MVertex*) b->data)->equiv =
+                (((MVertex*) a->data)->equiv ? ((MVertex*) a->data)->equiv : a);
         }
     }
 
-    M_Free(hits);
+    std::free(hits);
 }
 
-static void findEquivalentVertexes(map_t* map)
+void Map::findEquivalentVertexes()
 {
-    uint i, newNum;
-
-    // Scan all linedefs.
-    for(i = 0, newNum = 0; i < map->numLineDefs; ++i)
+    for(duint i = 0; i < _numLineDefs; ++i)
     {
-        linedef_t* l = map->lineDefs[i];
+        LineDef* l = lineDefs[i];
 
         // Handle duplicated vertices.
-        while(((mvertex_t*) l->buildData.v[0]->data)->equiv)
+        while(reinterpret_cast<MVertex*>(l->buildData.v[0]->data)->equiv)
         {
-            ((mvertex_t*) l->buildData.v[0]->data)->refCount--;
-            l->buildData.v[0] = ((mvertex_t*) l->buildData.v[0]->data)->equiv;
-            ((mvertex_t*) l->buildData.v[0]->data)->refCount++;
+            reinterpret_cast<MVertex*>(l->buildData.v[0]->data)->refCount--;
+            l->buildData.v[0] = reinterpret_cast<MVertex*>(l->buildData.v[0]->data)->equiv;
+            reinterpret_cast<MVertex*>(l->buildData.v[0]->data)->refCount++;
         }
 
-        while(((mvertex_t*) l->buildData.v[1]->data)->equiv)
+        while(reinterpret_cast<MVertex*>(l->buildData.v[1]->data)->equiv)
         {
-            ((mvertex_t*) l->buildData.v[1]->data)->refCount--;
-            l->buildData.v[1] = ((mvertex_t*) l->buildData.v[1]->data)->equiv;
-            ((mvertex_t*) l->buildData.v[1]->data)->refCount++;
+            reinterpret_cast<MVertex*>(l->buildData.v[1]->data)->refCount--;
+            l->buildData.v[1] = reinterpret_cast<MVertex*>(l->buildData.v[1]->data)->equiv;
+            reinterpret_cast<MVertex*>(l->buildData.v[1]->data)->refCount++;
         }
-
-        l->buildData.index = newNum + 1;
-        map->lineDefs[newNum++] = map->lineDefs[i];
     }
 }
 
-static void pruneLineDefs(map_t* map)
+void Map::pruneLineDefs()
 {
-    uint i, newNum, unused = 0;
-
-    for(i = 0, newNum = 0; i < map->numLineDefs; ++i)
+    duint newNum = 0, unused = 0;
+    for(duint i = 0; i < _numLineDefs; ++i)
     {
-        linedef_t* l = map->lineDefs[i];
+        LineDef* l = lineDefs[i];
 
-        if(!l->buildData.sideDefs[FRONT] && !l->buildData.sideDefs[BACK])
+        if(!l->buildData.sideDefs[LineDef::FRONT] && !l->buildData.sideDefs[LineDef::BACK])
         {
             unused++;
-
-            Z_Free(l);
+            delete l;
             continue;
         }
 
         l->buildData.index = newNum + 1;
-        map->lineDefs[newNum++] = l;
+        lineDefs[newNum++] = l;
     }
 
-    if(newNum < map->numLineDefs)
+    if(newNum < _numLineDefs)
     {
         if(unused > 0)
-            Con_Message("  Pruned %d unused linedefs\n", unused);
-
-        map->numLineDefs = newNum;
+            LOG_MESSAGE("  Pruned %d unused linedefs.") << unused;
+        _numLineDefs = newNum;
     }
 }
 
-static void pruneVertices(halfedgeds_t* halfEdgeDS)
+void Map::pruneVertexes()
 {
-    uint i, newNum, unused = 0, numVertices = HalfEdgeDS_NumVertices(halfEdgeDS);
-
-    // Scan all vertices.
-    for(i = 0, newNum = 0; i < numVertices; ++i)
+    dsize numVertices = halfEdgeDS().numVertices();
+    dsize newNum = 0, unused = 0;
+    for(dsize i = 0; i < numVertices; ++i)
     {
-        vertex_t* v = halfEdgeDS->vertices[i];
+        Vertex* v = halfEdgeDS().vertices[i];
 
-        if(((mvertex_t*) v->data)->refCount == 0)
+        if(reinterpret_cast<MVertex*>(v->data)->refCount == 0)
         {
-            if(((mvertex_t*) v->data)->equiv == NULL)
+            if(reinterpret_cast<MVertex*>(v->data)->equiv == NULL)
                 unused++;
-
-            free(v);
+            std::free(v->data);
+            delete v;
             continue;
         }
 
-        ((mvertex_t*) v->data)->index = newNum + 1;
-        halfEdgeDS->vertices[newNum++] = v;
+        reinterpret_cast<MVertex*>(v->data)->index = newNum + 1;
+        halfEdgeDS().vertices[newNum++] = v;
     }
 
     if(newNum < numVertices)
     {
-        int dupNum = numVertices - newNum - unused;
+        dsize dupNum = numVertices - newNum - unused;
 
         if(unused > 0)
-            Con_Message("  Pruned %d unused vertices.\n", unused);
+            LOG_MESSAGE("  Pruned %d unused vertices.") << unused;
 
         if(dupNum > 0)
-            Con_Message("  Pruned %d duplicate vertices\n", dupNum);
+            LOG_MESSAGE("  Pruned %d duplicate vertices.") << dupNum;
 
-        halfEdgeDS->_numVertices = newNum;
+        halfEdgeDS().vertices.resize(newNum);
     }
 }
 
-static void pruneUnusedSideDefs(map_t* map)
+void Map::pruneSideDefs()
 {
-    uint i, newNum, unused = 0;
-
-    for(i = 0, newNum = 0; i < map->numSideDefs; ++i)
+    duint newNum = 0, unused = 0;
+    for(duint i = 0; i < _numSideDefs; ++i)
     {
-        sidedef_t* s = map->sideDefs[i];
+        SideDef* s = sideDefs[i];
 
         if(s->buildData.refCount == 0)
         {
             unused++;
-
-            Z_Free(s);
+            delete s;
             continue;
         }
 
         s->buildData.index = newNum + 1;
-        map->sideDefs[newNum++] = s;
+        sideDefs[newNum++] = s;
     }
 
-    if(newNum < map->numSideDefs)
+    if(newNum < _numSideDefs)
     {
-        int dupNum = map->numSideDefs - newNum - unused;
+        dint dupNum = _numSideDefs - newNum - unused;
 
         if(unused > 0)
-            Con_Message("  Pruned %d unused sidedefs\n", unused);
+            LOG_MESSAGE("  Pruned %d unused sidedefs.") << unused;
 
         if(dupNum > 0)
-            Con_Message("  Pruned %d duplicate sidedefs\n", dupNum);
+            LOG_MESSAGE("  Pruned %d duplicate sidedefs.") << dupNum;
 
-        map->numSideDefs = newNum;
+        _numSideDefs = newNum;
     }
 }
 
-static void pruneUnusedSectors(map_t* map)
+void Map::pruneSectors()
 {
-    uint i, newNum;
-
-    for(i = 0; i < map->numSideDefs; ++i)
+    for(duint i = 0; i < _numSideDefs; ++i)
     {
-        sidedef_t* s = map->sideDefs[i];
-
-        if(s->sector)
-            s->sector->buildData.refCount++;
+        const SideDef& s = *sideDefs[i];
+        if(!s.hasSector())
+            continue;
+        s.sector().buildData.refCount++;
     }
 
-    // Scan all sectors.
-    for(i = 0, newNum = 0; i < map->numSectors; ++i)
+    duint newNum = 0;
+    for(duint i = 0; i < _numSectors; ++i)
     {
-        sector_t* s = map->sectors[i];
+        Sector* s = sectors[i];
 
         if(s->buildData.refCount == 0)
         {
-            Z_Free(s);
+            delete s;
             continue;
         }
 
         s->buildData.index = newNum + 1;
-        map->sectors[newNum++] = s;
+        sectors[newNum++] = s;
     }
 
-    if(newNum < map->numSectors)
+    if(newNum < _numSectors)
     {
-        Con_Message("  Pruned %d unused sectors\n", map->numSectors - newNum);
-        map->numSectors = newNum;
+        LOG_MESSAGE("  Pruned %d unused sectors.") << _numSectors - newNum;
+        _numSectors = newNum;
     }
 }
 
-/**
- * @note Order here is critical!
- * @param flags             @see pruneUnusedObjectsFlags
- */
-static void pruneUnusedObjects(map_t* map, int flags)
+void Map::pruneUnusedObjects(dint flags)
 {
     /**
      * @fixme Pruning cannot be done as game map data object properties
      * are currently indexed by their original indices as determined by the
      * position in the map data. The same problem occurs within ACS scripts
      * and XG line/sector references.
+     *
+     * @note Order here is critical!
      */
-    findEquivalentVertexes(map);
+    findEquivalentVertexes();
 
 /*    if(flags & PRUNE_LINEDEFS)
-        pruneLineDefs(map);*/
+        pruneLineDefs();*/
 
     if(flags & PRUNE_VERTEXES)
-        pruneVertices(map->_halfEdgeDS);
+        pruneVertexes();
 
 /*    if(flags & PRUNE_SIDEDEFS)
-        pruneUnusedSideDefs(map);
+        pruneSideDefs();
 
     if(flags & PRUNE_SECTORS)
-        pruneUnusedSectors(map);
+        pruneSectors();
     
     if(flags & PRUNE_PLANES)
-        pruneUnusedPlanes(map);
+        prunePlanes();
 */
 }
 
-static void hardenSectorSubsectorList(map_t* map, uint secIDX)
+void Map::hardenSectorSubsectorSet(duint sectorIndex)
 {
-    uint i, n, count;
-    sector_t* sec = map->sectors[secIDX];
-
-    count = 0;
-    for(i = 0; i < map->numSubsectors; ++i)
+    Sector& sector = *sectors[sectorIndex];
+    for(duint i = 0; i < _numSubsectors; ++i)
     {
-        const subsector_t* subsector = map->subsectors[i];
-
-        if(subsector->sector == sec)
-            count++;
-    }
-
-    sec->subsectors = Z_Malloc((count + 1) * sizeof(subsector_t*), PU_STATIC, NULL);
-
-    n = 0;
-    for(i = 0; i < map->numSubsectors; ++i)
-    {
-        subsector_t* subsector = map->subsectors[i];
-
-        if(subsector->sector == sec)
-        {
-            sec->subsectors[n++] = subsector;
-        }
-    }
-
-    sec->subsectors[n] = NULL; // Terminate.
-    sec->subsectorCount = count;
-}
-
-/**
- * Build subsector tables for all sectors.
- */
-static void buildSectorSubsectorLists(map_t* map)
-{
-    uint i;
-
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        hardenSectorSubsectorList(map, i);
+        Subsector& subsector = *subsectors[i];
+        if(&subsector.sector() == &sector)
+            sector.subsectors.insert(&subsector);
     }
 }
 
-static void buildSectorLineLists(map_t* map)
+void Map::buildSectorSubsectorSets()
+{
+    for(duint i = 0; i < _numSectors; ++i)
+        hardenSectorSubsectorSet(i);
+}
+
+void Map::buildSectorLineDefSets()
 {
     typedef struct linelink_s {
         linedef_t*      line;
@@ -2288,7 +2240,7 @@ static void addPlanesToDMU(map_t* map)
 
 static int buildSeg(hedge_t* hEdge, void* context)
 {
-    hedge_info_t* info = (hedge_info_t*) hEdge->data;
+    HalfEdgeInfo* info = (HalfEdgeInfo*) hEdge->data;
 
     hEdge->data = NULL;
 
@@ -2310,20 +2262,20 @@ static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSe
     do
     {
         if(!allowSelfRef && hEdge->twin &&
-           ((hedge_info_t*) hEdge->data)->sector ==
-           ((hedge_info_t*) hEdge->twin->data)->sector)
+           ((HalfEdgeInfo*) hEdge->data)->sector ==
+           ((HalfEdgeInfo*) hEdge->twin->data)->sector)
             continue;
 
-        if(((hedge_info_t*) hEdge->data)->lineDef &&
-           ((hedge_info_t*) hEdge->data)->sector)
+        if(((HalfEdgeInfo*) hEdge->data)->lineDef &&
+           ((HalfEdgeInfo*) hEdge->data)->sector)
         {
-            linedef_t* lineDef = ((hedge_info_t*) hEdge->data)->lineDef;
+            linedef_t* lineDef = ((HalfEdgeInfo*) hEdge->data)->lineDef;
 
-            if(lineDef->buildData.windowEffect && ((hedge_info_t*) hEdge->data)->side == 1)
+            if(lineDef->buildData.windowEffect && ((HalfEdgeInfo*) hEdge->data)->side == 1)
                 sector = lineDef->buildData.windowEffect;
             else
                 sector = lineDef->buildData.sideDefs[
-                    ((hedge_info_t*) hEdge->data)->side]->sector;
+                    ((HalfEdgeInfo*) hEdge->data)->side]->sector;
         }
     } while(!sector && (hEdge = hEdge->next) != firstHEdge);
 
@@ -3120,88 +3072,65 @@ subsector_t* Map_CreateSubsector(map_t* map, face_t* face, sector_t* sector)
     }
 }
 
-node_t* Map_CreateNode(map_t* map, float x, float y, float dX, float dY,
-                       float rightAABB[4], float leftAABB[4])
+Node* Map::createNode(dfloat x, dfloat y, dfloat dX, dfloat dY, dfloat rightAABB[4], dfloat leftAABB[4])
 {
-    assert(map);
-    {
-    node_t* node = P_CreateNode(x, y, dX, dY, rightAABB, leftAABB);
+    Node* node = Node(x, y, dX, dY, rightAABB, leftAABB);
 
     P_CreateObjectRecord(DMU_NODE, node);
-    map->nodes = Z_Realloc(map->nodes, ++map->numNodes * sizeof(node_t*), PU_STATIC);
-    map->nodes[map->numNodes-1] = node;
+    nodes = reinterpret_cast<Node*>std::realloc(nodes, ++_numNodes * sizeof(Node*)));
+    nodes[_numNodes-1] = node;
     return node;
-    }
 }
 
-static void initLinks(map_t* map)
+void Map::initLinks()
 {
-    uint i;
+    thingNodes = NodePile(256); // Allocate a small pile.
+    lineDefNodes = NodePile(_numLineDefs + 1000);
 
-    // Initialize node piles and line rings.
-    map->thingNodes = P_CreateNodePile(256); // Allocate a small pile.
-    map->lineDefNodes = P_CreateNodePile(map->numLineDefs + 1000);
-
-    // Allocate the rings.
-    map->lineLinks = Z_Malloc(sizeof(*map->lineLinks) * map->numLineDefs, PU_STATIC, 0);
-    for(i = 0; i < map->numLineDefs; ++i)
-        map->lineLinks[i] = NP_New(map->lineDefNodes, NP_ROOT_NODE);
+    lineLinks = reinterpret_cast<NodePile::Index>(std::malloc(sizeof(*lineLinks) * _numLineDefs));
+    for(duint i = 0; i < _numLineDefs; ++i)
+        lineLinks[i] = lineDefNodes->newIndex(NP_ROOT_NODE);
 }
 
-/**
- * Fixing the sky means that for adjacent sky sectors the lower sky
- * ceiling is lifted to match the upper sky. The raising only affects
- * rendering, it has no bearing on gameplay.
- */
-void Map_InitSkyFix(map_t* map)
+void Map::initSkyFix()
 {
-    uint i;
-
-    assert(map);
-
-    map->skyFixFloor = DDMAXFLOAT;
-    map->skyFixCeiling = DDMINFLOAT;
+    skyFixFloor = MAXFLOAT;
+    skyFixCeiling = MINFLOAT;
 
     // Update for sector plane heights and mobjs which intersect the ceiling.
-    for(i = 0; i < map->numSectors; ++i)
-    {
-        Map_UpdateSkyFixForSector(map, i);
-    }
+    for(duint i = 0; i < _numSectors; ++i)
+        updateSkyFixForSector(i);
 }
 
-void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
+void Map::updateSkyFixForSector(duint sectorIndex)
 {
-    boolean skyFloor, skyCeil;
-    sector_t* sec;
+    assert(sectorIndex < _numSectors);
 
-    assert(map);
-    assert(secIDX < map->numSectors);
-
-    sec = map->sectors[secIDX];
-    skyFloor = IS_SKYSURFACE(&sec->SP_floorsurface);
-    skyCeil = IS_SKYSURFACE(&sec->SP_ceilsurface);
+    const Sector& sector = *sectors[sectorIndex];
+    bool skyFloor = sector.floor().surface.isSky();
+    bool skyCeil = sector.ceiling().surface.isSky();
 
     if(!skyFloor && !skyCeil)
         return;
 
     if(skyCeil)
     {
-        mobj_t* mo;
+        Thing* thing;
 
         // Adjust for the plane height.
-        if(sec->SP_ceilvisheight > map->skyFixCeiling)
+        if(sector.ceiling().visHeight > skyFixCeiling)
         {   // Must raise the skyfix ceiling.
-            map->skyFixCeiling = sec->SP_ceilvisheight;
+            skyFixCeiling = sector.ceiling().visHeight;
         }
 
         // Check that all the mobjs in the sector fit in.
-        for(mo = sec->mobjList; mo; mo = mo->sNext)
+        for(Thing* thing = sector.ThingList; thing; thing = thing->sNext)
         {
-            float extent = mo->pos[VZ] + mo->height;
+            dfloat extent = thing->origin.z + thing->height;
 
-            if(extent > map->skyFixCeiling)
+            if(extent > skyFixCeiling)
             {   // Must raise the skyfix ceiling.
-                map->skyFixCeiling = extent;
+                skyFixCeiling = extent;
             }
         }
     }
@@ -3209,53 +3138,41 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
     if(skyFloor)
     {
         // Adjust for the plane height.
-        if(sec->SP_floorvisheight < map->skyFixFloor)
+        if(sector.floor().visHeight < skyFixFloor)
         {   // Must lower the skyfix floor.
-            map->skyFixFloor = sec->SP_floorvisheight;
+            skyFixFloor = sector.floor().visHeight;
         }
     }
 
     // Update for middle textures on two sided linedefs which intersect the
     // floor and/or ceiling of their front and/or back sectors.
-    if(sec->lineDefs)
+    if(sector.lineDefs)
     {
-        linedef_t** linePtr = sec->lineDefs;
+        LineDef** linePtr = sector.lineDefs;
 
         while(*linePtr)
         {
-            linedef_t* li = *linePtr;
+            const LineDef& lineDef = **linePtr;
 
             // Must be twosided.
-            if(LINE_FRONTSIDE(li) && LINE_BACKSIDE(li))
+            if(lineDef.hasFront() && lineDef.hasBack())
             {
-                sidedef_t* si = LINE_FRONTSECTOR(li) == sec?
-                    LINE_FRONTSIDE(li) : LINE_BACKSIDE(li);
+                const SideDef& sideDef = &lineDef.frontSector() == sector? lineDef.front() : lineDef.back();
 
-                if(si->SW_middlematerial)
+                if(sideDef.middle().material)
                 {
                     if(skyCeil)
                     {
-                        float               top =
-                            sec->SP_ceilvisheight +
-                                si->SW_middlevisoffset[1];
-
-                        if(top > map->skyFixCeiling)
-                        {   // Must raise the skyfix ceiling.
-                            map->skyFixCeiling = top;
-                        }
+                        dfloat top = sector.ceiling().visHeight + sideDef.middle().visOffset[1];
+                        if(top > skyFixCeiling)// Must raise the skyfix ceiling.
+                            skyFixCeiling = top;
                     }
 
                     if(skyFloor)
                     {
-                        float               bottom =
-                            sec->SP_floorvisheight +
-                                si->SW_middlevisoffset[1] -
-                                    si->SW_middlematerial->height;
-
-                        if(bottom < map->skyFixFloor)
-                        {   // Must lower the skyfix floor.
-                            map->skyFixFloor = bottom;
-                        }
+                        dfloat bottom = sector.floor().visHeight + sideDef.middle().visOffset[1] - sideDef.middle().material->height;
+                        if(bottom < skyFixFloor) // Must lower the skyfix floor.
+                            skyFixFloor = bottom;
                     }
                 }
             }
@@ -3264,18 +3181,15 @@ void Map_UpdateSkyFixForSector(map_t* map, uint secIDX)
     }
 }
 
-static vertex_t* createVertex(map_t* map, float x, float y)
+Vertex* Map::createVertex2(dfloat x, dfloat y)
 {
-    assert(map);
-    {
-    vertex_t* vtx;
-    if(!map->editActive)
+    Vertex* vtx;
+    if(!editActive)
         return NULL;
-    vtx = HalfEdgeDS_CreateVertex(map->_halfEdgeDS);
-    vtx->pos[0] = x;
-    vtx->pos[1] = y;
+    vtx = halfEdgeDS().createVertex();
+    vtx->pos.x = x;
+    vtx->pos.y = y;
     return vtx;
-    }
 }
 
 /**
@@ -3294,7 +3208,7 @@ objectrecordid_t Map_CreateVertex(map_t* map, float x, float y)
     vertex_t* v;
     if(!map->editActive)
         return 0;
-    v = createVertex(map, x, y);
+    v = createVertex2(map, x, y);
     return v ? ((mvertex_t*) v->data)->index : 0;
     }
 }
