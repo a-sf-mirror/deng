@@ -1,12 +1,10 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- libdeng2
  *
- *\author Copyright © 2007-2009 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
- *\author Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
- *\author Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
+ * Copyright © 2007-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
+ * Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
+ * Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +17,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBDENG2_NODEBUILDER_H
@@ -29,7 +25,6 @@
 
 #include "deng.h"
 
-#include "../BSPEdge"
 #include "../BSPIntersection"
 #include "../BSPSuperBlock"
 #include "../BinaryTree"
@@ -47,6 +42,33 @@ namespace de
     #define DIST_EPSILON        (1.0 / 128.0)
 
     typedef ddouble angle_g;  // Degrees, 0 is E, 90 is N
+
+    struct HalfEdgeInfo
+    {
+        /// The SuperBlock that contains this half-edge, or NULL if the half-edge
+        /// is no longer in any SuperBlock (e.g., now in a leaf).
+        SuperBlock* superBlock;
+
+        // Precomputed data for faster calculations.
+        Vector2d direction;
+        ddouble length;
+        ddouble angle;
+        ddouble parallelDistance;
+        ddouble perpendicularDistance;
+
+        // LineDef that this half-edge goes along, or NULL if miniseg.
+        LineDef* lineDef;
+
+        // LineDef that this half-edge initially comes from.
+        // For "real" half-edges, this is just the same as the 'linedef' field
+        // above. For "miniedges", this is the linedef of the partition line.
+        LineDef* sourceLineDef;
+
+        Sector* sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
+
+        /// @c true = this is on the backside of the edge.
+        bool back;
+    };
 
     /**
      * BSP node builder.
@@ -78,7 +100,7 @@ namespace de
 
         void build();
 
-        void connectGaps(const BSPartition& partition, SuperBlockmap* rightList, SuperBlockmap* leftList);
+        void connectGaps(const BSPartition& partition, SuperBlock* rightList, SuperBlock* leftList);
         HalfEdge& createHalfEdge(LineDef* line, LineDef* sourceLine, Vertex* start, Sector* sec, bool back);
 
         /**
@@ -93,24 +115,24 @@ namespace de
          * half-edge (and/or backseg), so that future processing is not messed up by
          * incorrect counts.
          */
-        HalfEdge& splitHEdge(HalfEdge& oldHEdge, ddouble x, ddouble y);
+        HalfEdge& splitHalfEdge(HalfEdge& halfEdge, ddouble x, ddouble y);
 
-        void updateHEdgeInfo(const HalfEdge& hEdge);
+        void updateHalfEdgeInfo(const HalfEdge& halfEdge);
 
     private:
         /**
          * Initially create all half-edges, one for each side of a linedef.
          */
-        void createInitialHEdges();
+        void createInitialHalfEdges();
 
-        void createInitialHEdgesAndAddtoSuperBlockmap();
+        void createInitialHalfEdgesAndAddtoRootSuperBlock();
 
         /**
          * Add the given half-edge to the specified blockmap.
          */
-        void addHalfEdgeToSuperBlockmap(SuperBlockmap* blockmap, HalfEdge* hEdge);
+        void addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* halfEdge);
 
-        bool pickPartition(const SuperBlockmap* hEdgeList, BSPartition& partition);
+        bool pickPartition(const SuperBlock* hEdgeList, BSPartition& partition);
 
         /**
          * Takes the half-edge list and determines if it is convex, possibly
@@ -122,13 +144,13 @@ namespace de
          *                      intersections (cuts).
          * @return              Ptr to the newly created subtree ELSE @c NULL.
          */
-        BinaryTree<void*>* buildNodes(SuperBlockmap* hEdgeList);
+        BinaryTree<void*>* buildNodes(SuperBlock* hEdgeList);
 
         /**
          * Analyze the intersection list, and add any needed minihedges to the given
          * half-edge lists (one minihedge on each side).
          */
-        void addMiniHEdges(const BSPartition& partition, SuperBlockmap* bRight, SuperBlockmap* bLeft);
+        void createHalfEdgesAlongPartition(const BSPartition& partition, SuperBlock* bRight, SuperBlock* bLeft);
 
         /**
          * Partition the given edge and perform any further necessary action (moving
@@ -146,29 +168,29 @@ namespace de
          * follow the exact same logic when determining which half-edges should go
          * left, right or be split. - AJA
          */
-        void divideOneHEdge(const BSPartition& partition, HalfEdge& curHEdge,
-           SuperBlockmap* bRight, SuperBlockmap* bLeft);
+        void divideHalfEdge(const BSPartition& partition, HalfEdge& curHalfEdge,
+           SuperBlock* bRight, SuperBlock* bLeft);
 
-        void divideHEdges(const BSPartition& partition, SuperBlockmap* hEdgeList,
-            SuperBlockmap* rights, SuperBlockmap* lefts);
+        void divideHalfEdges(const BSPartition& partition, SuperBlock* hEdgeList,
+            SuperBlock* rights, SuperBlock* lefts);
 
         /**
          * Remove all the half-edges from the list, partitioning them into the left
          * or right lists based on the given partition line. Adds any intersections
          * onto the intersection list as it goes.
          */
-        void partitionHEdges(const BSPartition& partition, SuperBlockmap* hEdgeList,
-            SuperBlockmap** right, SuperBlockmap** left);
+        void partitionHalfEdges(const BSPartition& partition, SuperBlock* hEdgeList,
+            SuperBlock** right, SuperBlock** left);
 
-        void takeHEdgesFromSuperBlock(Face& face, SuperBlockmap* block);
+        void copyHalfEdgeListFromSuperBlock(Face& face, SuperBlock* block);
 
-        void attachHEdgeInfo(HalfEdge& hEdge, LineDef* line,
+        void attachHalfEdgeInfo(HalfEdge& halfEdge, LineDef* line,
             LineDef* sourceLine, Sector* sec, bool back);
 
         /**
          * Create a new leaf from a list of half-edges.
          */
-        Face& createBSPLeaf(Face& face, SuperBlockmap* hEdgeList);
+        Face& createBSPLeaf(Face& face, SuperBlock* hEdgeList);
 
         /**
          * Free all the SuperBlocks on the quick-alloc list.
@@ -178,26 +200,26 @@ namespace de
         /**
          * Free all memory allocated for the specified SuperBlock.
          */
-        void moveSuperBlockToQuickAllocList(SuperBlockmap* block);
+        void moveSuperBlockToQuickAllocList(SuperBlock* block);
 
         /**
          * Acquire memory for a new SuperBlock.
          */
-        SuperBlockmap* createSuperBlockmap();
+        SuperBlock* createSuperBlock();
 
-        void destroySuperBlockmap(SuperBlockmap* block);
+        void destroySuperBlock(SuperBlock* block);
 
-        void createRootSuperBlockmap();
+        void createRootSuperBlock();
 
-        void destroyRootSuperBlockmap();
+        void destroyRootSuperBlock();
 
     private:
         dint _splitFactor;
 
         Map& _map;
         CutList _cutList;
-        SuperBlockmap* _superBlockmap;
-        SuperBlockmap* _quickAllocSuperBlockmaps;
+        SuperBlock* _rootSuperBlock;
+        SuperBlock* _quickAllocSuperBlocks;
     };
 }
 

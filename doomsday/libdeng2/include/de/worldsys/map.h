@@ -553,7 +553,7 @@ namespace de
         // protected
         Seg* createSeg(LineDef* lineDef, dbyte side, HalfEdge* hEdge);
         //Subsector* createSubsector(Face* face, Sector* sector);
-        Node* createNode(const Partition& partition, dfloat rightAABB[4], dfloat leftAABB[4]);
+        Node* createNode(const Partition& partition, const MapRectangle& rightAABB, const MapRectangle& leftAABB);
 
         void markAllSectorsForLightGridUpdate();
 

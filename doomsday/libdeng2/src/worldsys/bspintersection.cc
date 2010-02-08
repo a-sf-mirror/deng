@@ -1,12 +1,10 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- libdeng2
  *
- *\author Copyright © 2007-2009 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
- *\author Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
- *\author Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
+ * Copyright © 2007-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
+ * Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
+ * Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,15 +17,12 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <math.h>
 
 #include "de/NodeBuilder"
-#include "de/BSPEdge"
 #include "de/BSPIntersection"
 #include "de/BSPSuperBlock"
 #include "de/Log"
@@ -50,11 +45,11 @@ namespace de
         ddouble distance;
     } intersection_t;
 
-    typedef struct cnode_s {
+    struct cnode_t {
         intersection_t* data;
-        struct cnode_s* next;
-        struct cnode_s* prev;
-    } cnode_t;
+        cnode_t* next;
+        cnode_t* prev;
+    };
 }
 
 CutList::CutList() : head(0), unused(0)
@@ -268,8 +263,8 @@ static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockw
     hEdge = first->twin->next;
     do
     {
-        if(((HalfEdgeInfo*) hEdge->data)->pAngle <=
-           ((HalfEdgeInfo*) first->data)->pAngle)
+        if(((HalfEdgeInfo*) hEdge->data)->angle <=
+           ((HalfEdgeInfo*) first->data)->angle)
             first = hEdge;
     } while((hEdge = hEdge->twin->next) != vertex->hEdge);
 
@@ -277,7 +272,7 @@ static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockw
     {
         first = first->twin->next;
         hEdge = first;
-        while(((HalfEdgeInfo*) hEdge->data)->pAngle > angle + ANG_EPSILON &&
+        while(((HalfEdgeInfo*) hEdge->data)->angle > angle + ANG_EPSILON &&
               (hEdge = hEdge->twin->next) != first);
 
         return hEdge->twin;
@@ -285,7 +280,7 @@ static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockw
     else
     {
         hEdge = first;
-        while(((HalfEdgeInfo*) hEdge->data)->pAngle < angle + ANG_EPSILON &&
+        while(((HalfEdgeInfo*) hEdge->data)->angle < angle + ANG_EPSILON &&
               (hEdge = hEdge->prev->twin) != first);
 
         return hEdge;
@@ -319,8 +314,8 @@ static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
     return false;
 }
 
-void NodeBuilder::connectGaps(const BSPartition& bsp, SuperBlockmap* rightList,
-    SuperBlockmap* leftList)
+void NodeBuilder::connectGaps(const BSPartition& bsp, SuperBlock* rightList,
+    SuperBlock* leftList)
 {
     cnode_t* node, *firstNode;
 
@@ -342,7 +337,7 @@ void NodeBuilder::connectGaps(const BSPartition& bsp, SuperBlockmap* rightList,
         hEdge = next->hEdge;
         do
         {
-            angle_g diff = fabs(((HalfEdgeInfo*) hEdge->data)->pAngle - angle);
+            angle_g diff = fabs(((HalfEdgeInfo*) hEdge->data)->angle - angle);
             if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
             {
                 alongPartition = true;
@@ -441,19 +436,19 @@ testVertexHEdgeRings(cur->hEdge->vertex);
 testVertexHEdgeRings(next->hEdge->vertex);
 #endif
 
-                updateHEdgeInfo(right);
-                updateHEdgeInfo(left);
+                updateHalfEdgeInfo(right);
+                updateHalfEdgeInfo(left);
 
                 // Add the new half-edges to the appropriate lists.
 
                 /*if(nearHEdge->face)
                     Face_LinkHEdge(nearHEdge->face, &right);
                 else*/
-                    addHalfEdgeToSuperBlockmap(rightList, &right);
+                    addHalfEdgeToSuperBlock(rightList, &right);
                 /*if(farHEdge->prev->face)
                     Face_LinkHEdge(farHEdge->prev->face, &left);
                 else*/
-                    addHalfEdgeToSuperBlockmap(leftList, &left);
+                    addHalfEdgeToSuperBlock(leftList, &left);
 
                 LOG_DEBUG(" Capped intersection:");
                 LOG_DEBUG("  %p RIGHT  sector %d %s -> %s")

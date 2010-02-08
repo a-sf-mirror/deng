@@ -20,24 +20,23 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG_BSPSUPERBLOCK_H
-#define LIBDENG_BSPSUPERBLOCK_H
+#ifndef LIBDENG_SUPERBLOCK_H
+#define LIBDENG_SUPERBLOCK_H
 
 #include "deng.h"
 
 #include "../HalfEdgeDS"
+#include "../MapRectangle"
 
 #include <deque>
 
 namespace de
 {
     /**
-     * Blockmap for half-edges
-     *
      * Based on glBSP 2.24 (in turn, based on BSP 2.3), which is hosted on
      * SourceForge: http://sourceforge.net/projects/glbsp/
      */
-    class SuperBlockmap
+    class SuperBlock
     {
     public:
         /// Bounding box coordinates.
@@ -45,9 +44,7 @@ namespace de
             BOXTOP      = 0,
             BOXBOTTOM   = 1,
             BOXLEFT     = 2,
-            BOXRIGHT    = 3,
-            BOXFLOOR    = 4,
-            BOXCEILING  = 5
+            BOXRIGHT    = 3
         };
 
         // Smallest distance between two points before being considered equal.
@@ -55,12 +52,12 @@ namespace de
 
     public:
         /// Parent of this block, or NULL for a top-level block.
-        SuperBlockmap* parent;
+        SuperBlock* parent;
 
         /// Sub-blocks. NULL when empty. [0] has the lower coordinates, and
         /// [1] has the higher coordinates. Division of a square always
         /// occurs horizontally (e.g. 512x512 -> 256x512 -> 256x256).
-        SuperBlockmap* subs[2];
+        SuperBlock* subs[2];
 
         /// Coordinates on map for this block, from lower-left corner to
         /// upper-right corner. Pseudo-inclusive, i.e (x,y) is inside block
@@ -72,13 +69,13 @@ namespace de
         duint realNum;
         duint miniNum;
 
-        SuperBlockmap();
-        ~SuperBlockmap();
+        SuperBlock();
+        ~SuperBlock();
 
         /**
          * Link the given half-edge into the SuperBlock.
          */
-        void push(HalfEdge* hEdge);
+        void push(HalfEdge* halfEdge);
 
         HalfEdge* pop();
 
@@ -90,14 +87,14 @@ namespace de
 
         /**
          * Retrieve the Axis-aligned Bounding box for all HalfEdges in this and
-         * all child SuperBlockmaps.
+         * all child SuperBlocks.
          */
-        void aaBounds(dfloat bbox[4]) const;
+        MapRectangle aaBounds() const;
 
         /// LIFO stack of half-edges completely contained by this block.
         /// Uses std::deque internally as friends need the ability to traverse (linearly).
         typedef std::deque<HalfEdge*> HalfEdges;
-        HalfEdges _hEdges;
+        HalfEdges halfEdges;
 
 #if _DEBUG
     public:
@@ -106,4 +103,4 @@ namespace de
     };
 }
 
-#endif /* LIBDENG_BSPSUPERBLOCK_H */
+#endif /* LIBDENG_SUPERBLOCK_H */

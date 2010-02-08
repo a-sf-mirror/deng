@@ -3072,7 +3072,7 @@ subsector_t* Map_CreateSubsector(map_t* map, face_t* face, sector_t* sector)
     }
 }
 
-Node* Map::createNode(dfloat x, dfloat y, dfloat dX, dfloat dY, dfloat rightAABB[4], dfloat leftAABB[4])
+Node* Map::createNode(const Partition& partition, const MapRectangle& rightAABB, const MapRectangle& leftAABB)
 {
     Node* node = Node(x, y, dX, dY, rightAABB, leftAABB);
 

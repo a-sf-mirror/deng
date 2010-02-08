@@ -1,13 +1,11 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- libdeng2
  *
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 2006-2007 Jamie Jones <jamie_jones_au@yahoo.com.au>
- *\author Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
- *\author Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
- *\author Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
+ * Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2006-2007 Jamie Jones <jamie_jones_au@yahoo.com.au>
+ * Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
+ * Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
+ * Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,24 +18,21 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "de/NodeBuilder"
-#include "de/BSPEdge"
 #include "de/BSPSuperBlock"
 #include "de/Log"
 
 using namespace de;
 
-SuperBlockmap::SuperBlockmap()
+SuperBlock::SuperBlock()
 {}
 
-SuperBlockmap::~SuperBlockmap()
+SuperBlock::~SuperBlock()
 {
-    _hEdges.clear();
+    halfEdges.clear();
     // Recursively handle sub-blocks.
     for(duint num = 0; num < 2; ++num)
     {
@@ -46,29 +41,29 @@ SuperBlockmap::~SuperBlockmap()
     }
 }
 
-void SuperBlockmap::push(HalfEdge* hEdge)
+void SuperBlock::push(HalfEdge* hEdge)
 {
     assert(hEdge);
 #if _DEBUG
 // Ensure hEdge is not already in this SuperBlock. *Should* be impossible.
-FOR_EACH(i, _hEdges, HalfEdges::iterator)
+FOR_EACH(i, halfEdges, HalfEdges::iterator)
     assert(*i != hEdge);
 #endif
-    _hEdges.push_back(hEdge);
+    halfEdges.push_back(hEdge);
 }
 
-HalfEdge* SuperBlockmap::pop()
+HalfEdge* SuperBlock::pop()
 {
-    if(!_hEdges.empty())
+    if(!halfEdges.empty())
     {
-        HalfEdge* hEdge = _hEdges.back();
-        _hEdges.pop_back();
+        HalfEdge* hEdge = halfEdges.back();
+        halfEdges.pop_back();
         return hEdge;
     }
     return NULL;
 }
 
-void SuperBlockmap::incHalfEdgeCounts(bool lineLinked)
+void SuperBlock::incHalfEdgeCounts(bool lineLinked)
 {
     if(lineLinked)
         realNum++;
@@ -78,31 +73,31 @@ void SuperBlockmap::incHalfEdgeCounts(bool lineLinked)
         parent->incHalfEdgeCounts(lineLinked);
 }
 
-static void findBoundsWorker(const SuperBlockmap* block, dfloat* bbox)
+static void findBoundsWorker(const SuperBlock* block, dfloat* bbox)
 {
-    FOR_EACH(i, block->_hEdges, SuperBlockmap::HalfEdges::const_iterator)
+    FOR_EACH(i, block->halfEdges, SuperBlock::HalfEdges::const_iterator)
     {
         const HalfEdge* cur = (*i);
         const Vector2f l = cur->vertex->pos.min(cur->twin->vertex->pos);
         const Vector2f h = cur->vertex->pos.max(cur->twin->vertex->pos);
 
-        if(l.x < bbox[SuperBlockmap::BOXLEFT])
-            bbox[SuperBlockmap::BOXLEFT] = l.x;
-        else if(l.x > bbox[SuperBlockmap::BOXRIGHT])
-            bbox[SuperBlockmap::BOXRIGHT] = l.x;
-        if(l.y < bbox[SuperBlockmap::BOXBOTTOM])
-            bbox[SuperBlockmap::BOXBOTTOM] = l.y;
-        else if(l.y > bbox[SuperBlockmap::BOXTOP])
-            bbox[SuperBlockmap::BOXTOP] = l.y;
+        if(l.x < bbox[SuperBlock::BOXLEFT])
+            bbox[SuperBlock::BOXLEFT] = l.x;
+        else if(l.x > bbox[SuperBlock::BOXRIGHT])
+            bbox[SuperBlock::BOXRIGHT] = l.x;
+        if(l.y < bbox[SuperBlock::BOXBOTTOM])
+            bbox[SuperBlock::BOXBOTTOM] = l.y;
+        else if(l.y > bbox[SuperBlock::BOXTOP])
+            bbox[SuperBlock::BOXTOP] = l.y;
 
-        if(h.x < bbox[SuperBlockmap::BOXLEFT])
-            bbox[SuperBlockmap::BOXLEFT] = h.x;
-        else if(h.x > bbox[SuperBlockmap::BOXRIGHT])
-            bbox[SuperBlockmap::BOXRIGHT] = h.x;
-        if(h.y < bbox[SuperBlockmap::BOXBOTTOM])
-            bbox[SuperBlockmap::BOXBOTTOM] = h.y;
-        else if(h.y > bbox[SuperBlockmap::BOXTOP])
-            bbox[SuperBlockmap::BOXTOP] = h.y;
+        if(h.x < bbox[SuperBlock::BOXLEFT])
+            bbox[SuperBlock::BOXLEFT] = h.x;
+        else if(h.x > bbox[SuperBlock::BOXRIGHT])
+            bbox[SuperBlock::BOXRIGHT] = h.x;
+        if(h.y < bbox[SuperBlock::BOXBOTTOM])
+            bbox[SuperBlock::BOXBOTTOM] = h.y;
+        else if(h.y > bbox[SuperBlock::BOXTOP])
+            bbox[SuperBlock::BOXTOP] = h.y;
     }
 
     // Recursively handle sub-blocks.
@@ -113,22 +108,24 @@ static void findBoundsWorker(const SuperBlockmap* block, dfloat* bbox)
     }
 }
 
-void SuperBlockmap::aaBounds(dfloat bbox[4]) const
+MapRectangle SuperBlock::aaBounds() const
 {
+    dfloat bbox[4];
     bbox[BOXTOP] = bbox[BOXRIGHT] = MINFLOAT;
     bbox[BOXBOTTOM] = bbox[BOXLEFT] = MAXFLOAT;
     findBoundsWorker(this, bbox);
+    return MapRectangle(bbox);
 }
 
 #if _DEBUG
-void SuperBlockmap::print() const
+void SuperBlock::print() const
 {
-    FOR_EACH(i, _hEdges, HalfEdges::const_iterator)
+    FOR_EACH(i, halfEdges, HalfEdges::const_iterator)
     {
         const HalfEdge* hEdge = (*i);
         const HalfEdgeInfo* data = reinterpret_cast<HalfEdgeInfo*>(hEdge->data);
 
-        LOG_DEBUG("Build: %s %p sector=%d %s -> %s")
+        LOG_MESSAGE("Build: %s %p sector=%d %s -> %s")
             << (data->lineDef? "NORM" : "MINI") << hEdge << data->sector->buildData.index
             << hEdge->vertex->pos << hEdge->twin->vertex->pos;
     }
@@ -143,19 +140,16 @@ void SuperBlockmap::print() const
 
 //////////////////// Following code does not belong in this file /////////////////////
 
-namespace de
-{
-    typedef struct evalinfo_s {
-        dint cost;
-        dint splits;
-        dint iffy;
-        dint nearMiss;
-        dint realLeft;
-        dint realRight;
-        dint miniLeft;
-        dint miniRight;
-    } evalinfo_t;
-}
+typedef struct evalinfo_s {
+    dint cost;
+    dint splits;
+    dint iffy;
+    dint nearMiss;
+    dint realLeft;
+    dint realRight;
+    dint miniLeft;
+    dint miniRight;
+} evalinfo_t;
 
 /**
  * To be able to divide the nodes down, evalPartition must decide which is
@@ -165,7 +159,7 @@ namespace de
  *
  * @return              @c true, if a "bad half-edge" was found early.
  */
-static dint evalPartitionWorker(const SuperBlockmap* hEdgeList,
+static dint evalPartitionWorker(const SuperBlock* hEdgeList,
                                 HalfEdge* partHEdge, dint factor, dint bestCost,
                                 evalinfo_t* info)
 {
@@ -193,25 +187,23 @@ static dint evalPartitionWorker(const SuperBlockmap* hEdgeList,
      */
     num = P_BoxOnLineSide3(hEdgeList->bbox, partHEdge->vertex->pos.x,
                            partHEdge->vertex->pos.y,
-                           part->pDelta.x, part->pDelta.y, part->pPerp,
-                           part->pLength, DIST_EPSILON);
+                           part->direction.x, part->direction.y, part->perpendicularDistance,
+                           part->length, DIST_EPSILON);
     if(num < 0)
     {   // Left.
         info->realLeft += hEdgeList->realNum;
         info->miniLeft += hEdgeList->miniNum;
-
         return false;
     }
     else if(num > 0)
     {   // Right.
         info->realRight += hEdgeList->realNum;
         info->miniRight += hEdgeList->miniNum;
-
         return false;
     }
 
     // Check partition against all half-edges.
-    FOR_EACH(i, hEdgeList->_hEdges, SuperBlockmap::HalfEdges::const_iterator)
+    FOR_EACH(i, hEdgeList->halfEdges, SuperBlock::HalfEdges::const_iterator)
     {
         const HalfEdge* otherHEdge = (*i);
         HalfEdgeInfo* other = (HalfEdgeInfo*) otherHEdge->data;
@@ -223,15 +215,15 @@ static dint evalPartitionWorker(const SuperBlockmap* hEdgeList,
             return true;
 
         // Get state of lines' relation to each other.
-        if(other->sourceLine == part->sourceLine)
+        if(other->sourceLineDef == part->sourceLineDef)
         {
             a = b = fa = fb = 0;
         }
         else
         {
-            a = M_PerpDist(part->pDelta.x, part->pDelta.y, part->pPerp, part->pLength,
+            a = M_PerpDist(part->direction.x, part->direction.y, part->perpendicularDistance, part->length,
                            otherHEdge->vertex->pos.x, otherHEdge->vertex->pos.y);
-            b = M_PerpDist(part->pDelta.x, part->pDelta.y, part->pPerp, part->pLength,
+            b = M_PerpDist(part->direction.x, part->direction.y, part->perpendicularDistance, part->length,
                            otherHEdge->twin->vertex->pos.x, otherHEdge->twin->vertex->pos.y);
 
             fa = fabs(a);
@@ -242,7 +234,7 @@ static dint evalPartitionWorker(const SuperBlockmap* hEdgeList,
         if(fa <= DIST_EPSILON && fb <= DIST_EPSILON)
         {   // This half-edge runs along the same line as the partition.
             // Check whether it goes in the same direction or the opposite.
-            if(other->pDelta.x * part->pDelta.x + other->pDelta.y * part->pDelta.y < 0)
+            if(other->direction.x * part->direction.x + other->direction.y * part->direction.y < 0)
             {
                 ADD_LEFT();
             }
@@ -357,7 +349,7 @@ static dint evalPartitionWorker(const SuperBlockmap* hEdgeList,
  * @return              The computed cost, or a negative value if the edge
  *                      should be skipped altogether.
  */
-static dint evalPartition(const SuperBlockmap* hEdgeList, HalfEdge* part,
+static dint evalPartition(const SuperBlock* hEdgeList, HalfEdge* part,
                           dint factor, dint bestCost)
 {
     HalfEdgeInfo* data = (HalfEdgeInfo*) part->data;
@@ -381,11 +373,9 @@ static dint evalPartition(const SuperBlockmap* hEdgeList, HalfEdge* part,
     if(!info.realLeft || !info.realRight)
     {
 /*#if _DEBUG
-Con_Message("Eval : No real half-edges on %s%sside\n",
-            (info.realLeft? "" : "left "),
-            (info.realRight? "" : "right "));
+LOG_MESSAGE("Eval : No real half-edges on %s%sside")
+    << (info.realLeft? "" : "left ") << (info.realRight? "" : "right ");
 #endif*/
-
         return -1;
     }
 
@@ -398,14 +388,14 @@ Con_Message("Eval : No real half-edges on %s%sside\n",
 
     // Another little twist, here we show a slight preference for partition
     // lines that lie either purely horizontally or purely vertically - AJA.
-    if(data->pDelta.x != 0 && data->pDelta.y != 0)
+    if(data->direction.x != 0 && data->direction.y != 0)
         info.cost += 25;
 
 /*#if _DEBUG
-Con_Message("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d "
-            "cost=%d.%02d\n", part, info.splits, info.iffy, info.nearMiss,
-            info.realLeft, info.miniLeft, info.realRight, info.miniRight,
-            info.cost / 100, info.cost % 100);
+LOG_MESSAGE("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d cost=%d.%02d")
+    << part << info.splits << info.iffy << info.nearMiss << info.realLeft
+    << info.miniLeft << info.realRight << info.miniRight << (info.cost / 100)
+    << (info.cost % 100);
 #endif*/
 
     return info.cost;
@@ -414,23 +404,22 @@ Con_Message("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d "
 /**
  * @return              @c false, if cancelled.
  */
-static bool pickHEdgeWorker(const SuperBlockmap* partList,
-    const SuperBlockmap* hEdgeList, dint factor, HalfEdge** best, dint* bestCost)
+static bool pickHEdgeWorker(const SuperBlock* partList,
+    const SuperBlock* hEdgeList, dint factor, HalfEdge** best, dint* bestCost)
 {
     dint cost;
 
     // Test each half-edge as a potential partition.
-    FOR_EACH(i, partList->_hEdges, SuperBlockmap::HalfEdges::const_iterator)
+    FOR_EACH(i, partList->halfEdges, SuperBlock::HalfEdges::const_iterator)
     {
         HalfEdge* hEdge = (*i);
         HalfEdgeInfo* data = (HalfEdgeInfo*) hEdge->data;
 
 /*#if _DEBUG
-Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
-            "(%1.1f,%1.1f)\n", (data->lineDef? "" : "MINI"), hEdge,
-            (data->sector? data->sector->index : -1),
-            hEdge->v[0]->V_pos[VX], hEdge->v[0]->V_pos[VY],
-            hEdge->v[1]->V_pos[VX], hEdge->v[1]->V_pos[VY]);
+LOG_MESSAGE("pickHEdgeWorker: %sSEG %p sector=%d %s -> %s")
+    << (data->lineDef? "" : "MINI") <<  hEdge
+    << (data->sector? data->sector->index : -1)
+    << hEdge->vertex.pos, hEdge->twin->vertex.pos;
 #endif*/
 
         // Ignore minihedges as partition candidates.
@@ -476,7 +465,7 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
  *
  * @return              @true iff a new partition is found (and necessary).
  */
-bool NodeBuilder::pickPartition(const SuperBlockmap* hEdgeList, BSPartition& bsp)
+bool NodeBuilder::pickPartition(const SuperBlock* hEdgeList, BSPartition& bsp)
 {
     dint bestCost = INT_MAX;
     HalfEdge* best = NULL;
@@ -489,10 +478,10 @@ bool NodeBuilder::pickPartition(const SuperBlockmap* hEdgeList, BSPartition& bsp
         bsp.point = best->vertex->pos;
         bsp.direction = best->twin->vertex->pos - best->vertex->pos;
         bsp.lineDef = info->lineDef;
-        bsp.sourceLineDef = info->sourceLine;
-        bsp.perp = info->pPerp;
-        bsp.para = info->pPara;
-        bsp.length = info->pLength;
+        bsp.sourceLineDef = info->sourceLineDef;
+        bsp.perp = info->perpendicularDistance;
+        bsp.para = info->parallelDistance;
+        bsp.length = info->length;
         return true;
     }
     return false; // BuildNodes will detect the cancellation.
