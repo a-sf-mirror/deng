@@ -104,9 +104,6 @@ namespace de
         void print() const;
 #endif
     };
-
-    // @todo Should be private to NodeBuilder
-    HalfEdge* SuperBlock_PickPartition(const SuperBlockmap* hEdgeList, dint factor);
 }
 
 #endif /* LIBDENG_BSPSUPERBLOCK_H */

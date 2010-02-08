@@ -474,16 +474,26 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
  *
  * @param hEdgeList     List of half-edges to choose from.
  *
- * @return              HalfEdge to use as a partition iff one suitable was found.
+ * @return              @true iff a new partition is found (and necessary).
  */
-HalfEdge* de::SuperBlock_PickPartition(const SuperBlockmap* hEdgeList, dint factor)
+bool NodeBuilder::pickPartition(const SuperBlockmap* hEdgeList, BSPartition& bsp)
 {
     dint bestCost = INT_MAX;
     HalfEdge* best = NULL;
 
     validCount++;
-    if(false == pickHEdgeWorker(hEdgeList, hEdgeList, factor, &best, &bestCost))
-        return NULL; // BuildNodes will detect the cancellation.
-    // Finished, return the best partition if found.
-    return best;
+    if(pickHEdgeWorker(hEdgeList, hEdgeList, _splitFactor, &best, &bestCost))
+    {   // Finished, return the best partition if found.
+        const HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(best->data);
+
+        bsp.point = best->vertex->pos;
+        bsp.direction = best->twin->vertex->pos - best->vertex->pos;
+        bsp.lineDef = info->lineDef;
+        bsp.sourceLineDef = info->sourceLine;
+        bsp.perp = info->pPerp;
+        bsp.para = info->pPara;
+        bsp.length = info->pLength;
+        return true;
+    }
+    return false; // BuildNodes will detect the cancellation.
 }

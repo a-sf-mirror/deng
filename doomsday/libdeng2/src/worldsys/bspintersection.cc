@@ -319,8 +319,8 @@ static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
     return false;
 }
 
-void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
-    const HalfEdgeInfo* partInfo, SuperBlockmap* rightList, SuperBlockmap* leftList)
+void NodeBuilder::connectGaps(const BSPartition& bsp, SuperBlockmap* rightList,
+    SuperBlockmap* leftList)
 {
     cnode_t* node, *firstNode;
 
@@ -338,7 +338,7 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
         HalfEdge* hEdge;
         angle_g angle;
 
-        angle = slopeToAngle(-dX, -dY);
+        angle = slopeToAngle(-bsp.direction.x, -bsp.direction.y);
         hEdge = next->hEdge;
         do
         {
@@ -353,8 +353,8 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
 
         if(!alongPartition)
         {
-            farHEdge = vertexCheckOpen(next->hEdge->vertex, slopeToAngle(-dX, -dY), false);
-            nearHEdge = vertexCheckOpen(cur->hEdge->vertex, slopeToAngle(dX, dY), true);
+            farHEdge = vertexCheckOpen(next->hEdge->vertex, slopeToAngle(-bsp.direction.x, -bsp.direction.y), false);
+            nearHEdge = vertexCheckOpen(cur->hEdge->vertex, slopeToAngle(bsp.direction.x, bsp.direction.y), true);
 
             nearSector = nearHEdge ? ((HalfEdgeInfo*) nearHEdge->data)->sector : NULL;
             farSector = farHEdge? ((HalfEdgeInfo*) farHEdge->data)->sector : NULL;
@@ -417,8 +417,8 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
                 }
 
                 {
-                HalfEdge& right = createHalfEdge(NULL, partInfo->lineDef, cur->hEdge->vertex, ((HalfEdgeInfo*) nearHEdge->data)->sector, ((HalfEdgeInfo*) nearHEdge->data)->back);
-                HalfEdge& left = createHalfEdge(NULL, partInfo->lineDef, next->hEdge->vertex, ((HalfEdgeInfo*) farHEdge->prev->data)->sector, ((HalfEdgeInfo*) farHEdge->prev->data)->back);
+                HalfEdge& right = createHalfEdge(NULL, bsp.lineDef, cur->hEdge->vertex, ((HalfEdgeInfo*) nearHEdge->data)->sector, ((HalfEdgeInfo*) nearHEdge->data)->back);
+                HalfEdge& left = createHalfEdge(NULL, bsp.lineDef, next->hEdge->vertex, ((HalfEdgeInfo*) farHEdge->prev->data)->sector, ((HalfEdgeInfo*) farHEdge->prev->data)->back);
 
                 // Twin the half-edges together.
                 right.twin = &left;

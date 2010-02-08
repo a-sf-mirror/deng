@@ -55,6 +55,18 @@ namespace de
      */
     class NodeBuilder
     {
+    private:
+        struct BSPartition : Partition
+        {
+            LineDef* lineDef;
+            LineDef* sourceLineDef;
+            ddouble length;
+            ddouble perp;
+            ddouble para;
+
+            BSPartition() : Partition() {};
+        };
+
     public:
         BinaryTree<void*>* rootNode;
 
@@ -66,8 +78,7 @@ namespace de
 
         void build();
 
-        // @todo Should be private to NodeBuilder
-        void connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo, SuperBlockmap* rightList, SuperBlockmap* leftList);
+        void connectGaps(const BSPartition& partition, SuperBlockmap* rightList, SuperBlockmap* leftList);
         HalfEdge& createHalfEdge(LineDef* line, LineDef* sourceLine, Vertex* start, Sector* sec, bool back);
 
         /**
@@ -99,6 +110,8 @@ namespace de
          */
         void addHalfEdgeToSuperBlockmap(SuperBlockmap* blockmap, HalfEdge* hEdge);
 
+        bool pickPartition(const SuperBlockmap* hEdgeList, BSPartition& partition);
+
         /**
          * Takes the half-edge list and determines if it is convex, possibly
          * converting it into a subsector. Otherwise, the list is divided into two
@@ -115,7 +128,7 @@ namespace de
          * Analyze the intersection list, and add any needed minihedges to the given
          * half-edge lists (one minihedge on each side).
          */
-        void addMiniHEdges(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo, SuperBlockmap* bRight, SuperBlockmap* bLeft);
+        void addMiniHEdges(const BSPartition& partition, SuperBlockmap* bRight, SuperBlockmap* bLeft);
 
         /**
          * Partition the given edge and perform any further necessary action (moving
@@ -133,12 +146,10 @@ namespace de
          * follow the exact same logic when determining which half-edges should go
          * left, right or be split. - AJA
          */
-        void divideOneHEdge(HalfEdge& curHEdge, ddouble x,
-           ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo,
+        void divideOneHEdge(const BSPartition& partition, HalfEdge& curHEdge,
            SuperBlockmap* bRight, SuperBlockmap* bLeft);
 
-        void divideHEdges(SuperBlockmap* hEdgeList, ddouble x, ddouble y,
-            ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo,
+        void divideHEdges(const BSPartition& partition, SuperBlockmap* hEdgeList,
             SuperBlockmap* rights, SuperBlockmap* lefts);
 
         /**
@@ -146,8 +157,7 @@ namespace de
          * or right lists based on the given partition line. Adds any intersections
          * onto the intersection list as it goes.
          */
-        void partitionHEdges(SuperBlockmap* hEdgeList, ddouble x,
-            ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo,
+        void partitionHEdges(const BSPartition& partition, SuperBlockmap* hEdgeList,
             SuperBlockmap** right, SuperBlockmap** left);
 
         void takeHEdgesFromSuperBlock(Face& face, SuperBlockmap* block);

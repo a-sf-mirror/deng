@@ -979,16 +979,6 @@ Face& NodeBuilder::createBSPLeaf(Face& face, SuperBlockmap* hEdgeList)
     return face;
 }
 
-static void makeIntersection(CutList& cutList, HalfEdge& hEdge,
-                             ddouble x, ddouble y, ddouble dX, ddouble dY,
-                             const HalfEdgeInfo* partInfo)
-{
-    if(!cutList.find(hEdge))
-        cutList.intersect(hEdge,
-            M_ParallelDist(dX, dY, partInfo->pPara, partInfo->pLength,
-                           hEdge.vertex->pos.x, hEdge.vertex->pos.y));
-}
-
 /**
  * Calculate the intersection location between the current half-edge and the
  * partition. Takes advantage of some common situations like horizontal and
@@ -1031,35 +1021,37 @@ static __inline void calcIntersection(const HalfEdge* cur, ddouble x,
         *iY = cur->vertex->pos.y + (data->pDelta.y * ds);
 }
 
-void NodeBuilder::divideOneHEdge(HalfEdge& curHEdge, ddouble x,
-   ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo,
+void NodeBuilder::divideOneHEdge(const BSPartition& bsp, HalfEdge& curHEdge,
    SuperBlockmap* bRight, SuperBlockmap* bLeft)
 {
+#define INTERSECT(cl, e, p) if(!cl.find(e)) \
+    cl.intersect(e, M_ParallelDist((p).direction.x, (p).direction.y, (p).para, (p).length, (e).vertex->pos.x, (e).vertex->pos.y))
+
     HalfEdgeInfo* data = ((HalfEdgeInfo*) curHEdge.data);
     ddouble perpC, perpD;
 
     // Get state of lines' relation to each other.
-    if(data->sourceLine == partInfo->sourceLine)
+    if(data->sourceLine == bsp.sourceLineDef)
     {
         perpC = perpD = 0;
     }
     else
     {
-        perpC = M_PerpDist(dX, dY, partInfo->pPerp, partInfo->pLength,
+        perpC = M_PerpDist(bsp.direction.x, bsp.direction.y, bsp.perp, bsp.length,
                        curHEdge.vertex->pos.x, curHEdge.vertex->pos.y);
-        perpD = M_PerpDist(dX, dY, partInfo->pPerp, partInfo->pLength,
+        perpD = M_PerpDist(bsp.direction.x, bsp.direction.y, bsp.perp, bsp.length,
                        curHEdge.twin->vertex->pos.x, curHEdge.twin->vertex->pos.y);
     }
 
     // Check for being on the same line.
     if(fabs(perpC) <= DIST_EPSILON && fabs(perpD) <= DIST_EPSILON)
     {
-        makeIntersection(_cutList, curHEdge, x, y, dX, dY, partInfo);
-        makeIntersection(_cutList, *curHEdge.twin, x, y, dX, dY, partInfo);
+        INTERSECT(_cutList, curHEdge, bsp);
+        INTERSECT(_cutList, *curHEdge.twin, bsp);
 
-        // This seg runs along the same line as the partition. Check
+        // This seg runs along the same line as the  Check
         // whether it goes in the same direction or the opposite.
-        if(data->pDelta.x * dX + data->pDelta.y * dY < 0)
+        if(data->pDelta.x * bsp.direction.x + data->pDelta.y * bsp.direction.y < 0)
         {
             addHalfEdgeToSuperBlockmap(bLeft, &curHEdge);
         }
@@ -1075,9 +1067,9 @@ void NodeBuilder::divideOneHEdge(HalfEdge& curHEdge, ddouble x,
     if(perpC > -DIST_EPSILON && perpD > -DIST_EPSILON)
     {
         if(perpC < DIST_EPSILON)
-            makeIntersection(_cutList, curHEdge, x, y, dX, dY, partInfo);
+            INTERSECT(_cutList, curHEdge, bsp);
         else if(perpD < DIST_EPSILON)
-            makeIntersection(_cutList, *curHEdge.twin, x, y, dX, dY, partInfo);
+            INTERSECT(_cutList, *curHEdge.twin, bsp);
 
         addHalfEdgeToSuperBlockmap(bRight, &curHEdge);
         return;
@@ -1087,9 +1079,9 @@ void NodeBuilder::divideOneHEdge(HalfEdge& curHEdge, ddouble x,
     if(perpC < DIST_EPSILON && perpD < DIST_EPSILON)
     {
         if(perpC > -DIST_EPSILON)
-            makeIntersection(_cutList, curHEdge, x, y, dX, dY, partInfo);
+            INTERSECT(_cutList, curHEdge, bsp);
         else if(perpD > -DIST_EPSILON)
-            makeIntersection(_cutList, *curHEdge.twin, x, y, dX, dY, partInfo);
+            INTERSECT(_cutList, *curHEdge.twin, bsp);
 
         addHalfEdgeToSuperBlockmap(bLeft, &curHEdge);
         return;
@@ -1099,9 +1091,9 @@ void NodeBuilder::divideOneHEdge(HalfEdge& curHEdge, ddouble x,
     // hence this edge will be split by the partition line.
 
     ddouble iX, iY;
-    calcIntersection(&curHEdge, x, y, dX, dY, perpC, perpD, &iX, &iY);
+    calcIntersection(&curHEdge, bsp.point.x, bsp.point.y, bsp.direction.x, bsp.direction.y, perpC, perpD, &iX, &iY);
     HalfEdge& newHEdge = splitHEdge(curHEdge, iX, iY);
-    makeIntersection(_cutList, newHEdge, x, y, dX, dY, partInfo);
+    INTERSECT(_cutList, newHEdge, bsp);
 
     if(perpC < 0)
     {
@@ -1116,29 +1108,28 @@ void NodeBuilder::divideOneHEdge(HalfEdge& curHEdge, ddouble x,
 
     if(!curHEdge.twin->face && ((HalfEdgeInfo*)curHEdge.twin->data)->blockmap)
         addHalfEdgeToSuperBlockmap(((HalfEdgeInfo*)curHEdge.twin->data)->blockmap, newHEdge.twin);
+
+#undef INTERSECT
 }
 
-void NodeBuilder::divideHEdges(SuperBlockmap* hEdgeList, ddouble x, ddouble y,
-    ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo, SuperBlockmap* rights,
-    SuperBlockmap* lefts)
+void NodeBuilder::divideHEdges(const BSPartition& partition, SuperBlockmap* hEdgeList,
+    SuperBlockmap* rights, SuperBlockmap* lefts)
 {
     HalfEdge* hEdge;
-    duint num;
-
     while((hEdge = hEdgeList->pop()))
     {
         ((HalfEdgeInfo*) hEdge->data)->blockmap = NULL;
-        divideOneHEdge(*hEdge, x, y, dX, dY, partInfo, rights, lefts);
+        divideOneHEdge(partition, *hEdge, rights, lefts);
     }
 
     // Recursively handle sub-blocks.
-    for(num = 0; num < 2; ++num)
+    for(duint num = 0; num < 2; ++num)
     {
         SuperBlockmap* a = hEdgeList->subs[num];
 
         if(a)
         {
-            divideHEdges(a, x, y, dX, dY, partInfo, rights, lefts);
+            divideHEdges(partition, a, rights, lefts);
 
             if(a->realNum + a->miniNum > 0)
                 LOG_ERROR("NodeBuilder::divideHEdges: child %d not empty!") << num;
@@ -1151,16 +1142,15 @@ void NodeBuilder::divideHEdges(SuperBlockmap* hEdgeList, ddouble x, ddouble y,
     hEdgeList->realNum = hEdgeList->miniNum = 0;
 }
 
-void NodeBuilder::addMiniHEdges(ddouble x, ddouble y, ddouble dX, ddouble dY,
-    const HalfEdgeInfo* partInfo, SuperBlockmap* bRight, SuperBlockmap* bLeft)
+void NodeBuilder::addMiniHEdges(const BSPartition& partition,
+    SuperBlockmap* bRight, SuperBlockmap* bLeft)
 {
     BSP_MergeOverlappingIntersections(_cutList);
-    connectGaps(x, y, dX, dY, partInfo, bRight, bLeft);
+    connectGaps(partition, bRight, bLeft);
 }
 
-void NodeBuilder::partitionHEdges(SuperBlockmap* hEdgeList, ddouble x,
-    ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo,
-    SuperBlockmap** right, SuperBlockmap** left)
+void NodeBuilder::partitionHEdges(const BSPartition& partition,
+    SuperBlockmap* hEdgeList, SuperBlockmap** right, SuperBlockmap** left)
 {
     SuperBlockmap* bRight = createSuperBlockmap();
     SuperBlockmap* bLeft = createSuperBlockmap();
@@ -1168,7 +1158,7 @@ void NodeBuilder::partitionHEdges(SuperBlockmap* hEdgeList, ddouble x,
     M_CopyBox(bRight->bbox, hEdgeList->bbox);
     M_CopyBox(bLeft->bbox, hEdgeList->bbox);
 
-    divideHEdges(hEdgeList, x, y, dX, dY, partInfo, bRight, bLeft);
+    divideHEdges(partition, hEdgeList, bRight, bLeft);
 
     // Sanity checks...
     if(bRight->realNum + bRight->miniNum == 0)
@@ -1177,7 +1167,7 @@ void NodeBuilder::partitionHEdges(SuperBlockmap* hEdgeList, ddouble x,
     if(bLeft->realNum + bLeft->miniNum == 0)
         LOG_ERROR("NodeBuilder::partitionHEdges: Separated halfedge-list has no left side.");
 
-    addMiniHEdges(x, y, dX, dY, partInfo, bRight, bLeft);
+    addMiniHEdges(partition, bRight, bLeft);
     _cutList.clear();
 
     *right = bRight;
@@ -1187,29 +1177,26 @@ void NodeBuilder::partitionHEdges(SuperBlockmap* hEdgeList, ddouble x,
 BinaryTree<void*>* NodeBuilder::buildNodes(SuperBlockmap* hEdgeList)
 {
     // Pick half-edge with which to derive the next partition.
-    HalfEdge* partHEdge;
-    if(!(partHEdge = SuperBlock_PickPartition(hEdgeList, _splitFactor)))
+    BSPartition partition;
+    if(!pickPartition(hEdgeList, partition))
     {   // No partition required, already convex.
         return new BinaryTree<void*>(reinterpret_cast<void*>(&createBSPLeaf(_map.halfEdgeDS().createFace(), hEdgeList)));
     }
 
-    const Vector2d& pos = partHEdge->vertex->pos;
-    const Vector2d delta = partHEdge->twin->vertex->pos - partHEdge->vertex->pos;
-
 /*#if _DEBUG
-LOG_DEBUG("NodeBuilder::buildNodes: Partition xy{%1.0f, %1.0f} delta{%1.0f, %1.0f}.")
-    << dfloat(pos.x) << dfloat(pos.y) << dfloat(delta.x) << dfloat(delta.y);
+LOG_MESSAGE("NodeBuilder::buildNodes: Partition P %s D %s.")
+    << partition.point << partition.direction;
 #endif*/
 
     SuperBlockmap* rightHEdges, *leftHEdges;
     dfloat rightBBox[4], leftBBox[4];
 
-    partitionHEdges(hEdgeList, pos.x, pos.y, delta.x, delta.y, reinterpret_cast<HalfEdgeInfo*>(partHEdge->data), &rightHEdges, &leftHEdges);
+    partitionHEdges(partition, hEdgeList, &rightHEdges, &leftHEdges);
     
     rightHEdges->aaBounds(rightBBox);
     leftHEdges->aaBounds(leftBBox);
 
-    BinaryTree<void*>* tree = new BinaryTree<void*>(reinterpret_cast<void*>(_map.createNode(dfloat(pos.x), dfloat(pos.y), dfloat(delta.x), dfloat(delta.y), rightBBox, leftBBox)));
+    BinaryTree<void*>* tree = new BinaryTree<void*>(reinterpret_cast<void*>(_map.createNode(partition, rightBBox, leftBBox)));
 
     // Recurse on right half-edge list.
     tree->setRight(buildNodes(rightHEdges));
