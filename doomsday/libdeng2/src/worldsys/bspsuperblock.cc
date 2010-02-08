@@ -32,93 +32,37 @@
 
 using namespace de;
 
-namespace de
-{
-    typedef struct evalinfo_s {
-        dint cost;
-        dint splits;
-        dint iffy;
-        dint nearMiss;
-        dint realLeft;
-        dint realRight;
-        dint miniLeft;
-        dint miniRight;
-    } evalinfo_t;
-}
-
-static SuperBlockmap::ListNode* allocListNode(void)
-{
-    return reinterpret_cast<SuperBlockmap::ListNode*>(std::malloc(sizeof(SuperBlockmap::ListNode)));
-}
-
-static void freeListNode(SuperBlockmap::ListNode* node)
-{
-    std::free(node);
-}
-
-/**
- * Free all memory allocated for the specified superblock.
- */
-static void freeSuperBlockmap(SuperBlockmap* blockmap)
-{
-    while(blockmap->pop());
-
-    // Recursively handle sub-blocks.
-    for(duint num = 0; num < 2; ++num)
-    {
-        if(blockmap->subs[num])
-            freeSuperBlockmap(blockmap->subs[num]);
-    }
-    delete blockmap;
-}
-
 SuperBlockmap::SuperBlockmap()
 {}
 
 SuperBlockmap::~SuperBlockmap()
 {
-    while(pop());
-
+    _hEdges.clear();
     // Recursively handle sub-blocks.
     for(duint num = 0; num < 2; ++num)
     {
         if(subs[num])
-            freeSuperBlockmap(subs[num]);
+            delete subs[num];
     }
 }
 
 void SuperBlockmap::push(HalfEdge* hEdge)
 {
     assert(hEdge);
-
-    ListNode* node;
-
 #if _DEBUG
-// Ensure hedge is not already in this SuperBlock.
-if((node = _hEdges))
-{
-    do
-    {
-        assert(node->hEdge != hEdge);
-    } while((node = node->next));
-}
+// Ensure hEdge is not already in this SuperBlock. *Should* be impossible.
+FOR_EACH(i, _hEdges, HalfEdges::iterator)
+    assert(*i != hEdge);
 #endif
-
-    node = allocListNode();
-    node->hEdge = hEdge;
-    node->next = _hEdges;
-    _hEdges = node;
+    _hEdges.push_back(hEdge);
 }
 
 HalfEdge* SuperBlockmap::pop()
 {
-    if(_hEdges)
+    if(!_hEdges.empty())
     {
-        ListNode* node = _hEdges;
-        HalfEdge* hEdge = node->hEdge;
-        _hEdges = node->next;
-
-        freeListNode(node);
+        HalfEdge* hEdge = _hEdges.back();
+        _hEdges.pop_back();
         return hEdge;
     }
     return NULL;
@@ -136,9 +80,9 @@ void SuperBlockmap::incHalfEdgeCounts(bool lineLinked)
 
 static void findBoundsWorker(const SuperBlockmap* block, dfloat* bbox)
 {
-    for(SuperBlockmap::ListNode* n = block->_hEdges; n; n = n->next)
+    FOR_EACH(i, block->_hEdges, SuperBlockmap::HalfEdges::const_iterator)
     {
-        const HalfEdge* cur = n->hEdge;
+        const HalfEdge* cur = (*i);
         const Vector2f l = cur->vertex->pos.min(cur->twin->vertex->pos);
         const Vector2f h = cur->vertex->pos.max(cur->twin->vertex->pos);
 
@@ -179,9 +123,9 @@ void SuperBlockmap::aaBounds(dfloat bbox[4]) const
 #if _DEBUG
 void SuperBlockmap::print() const
 {
-    for(const ListNode* n = _hEdges; n; n = n->next)
+    FOR_EACH(i, _hEdges, HalfEdges::const_iterator)
     {
-        const HalfEdge* hEdge = n->hEdge;
+        const HalfEdge* hEdge = (*i);
         const HalfEdgeInfo* data = reinterpret_cast<HalfEdgeInfo*>(hEdge->data);
 
         LOG_DEBUG("Build: %s %p sector=%d %s -> %s")
@@ -198,6 +142,20 @@ void SuperBlockmap::print() const
 #endif
 
 //////////////////// Following code does not belong in this file /////////////////////
+
+namespace de
+{
+    typedef struct evalinfo_s {
+        dint cost;
+        dint splits;
+        dint iffy;
+        dint nearMiss;
+        dint realLeft;
+        dint realRight;
+        dint miniLeft;
+        dint miniRight;
+    } evalinfo_t;
+}
 
 /**
  * To be able to divide the nodes down, evalPartition must decide which is
@@ -223,7 +181,6 @@ static dint evalPartitionWorker(const SuperBlockmap* hEdgeList,
         else                info->miniRight += 1;  \
       } while (0)
 
-    SuperBlockmap::ListNode* n;
     ddouble qnty, a, b, fa, fb;
     HalfEdgeInfo* part = (HalfEdgeInfo*) partHEdge->data;
     dint num;
@@ -254,9 +211,9 @@ static dint evalPartitionWorker(const SuperBlockmap* hEdgeList,
     }
 
     // Check partition against all half-edges.
-    for(n = hEdgeList->_hEdges; n; n = n->next)
+    FOR_EACH(i, hEdgeList->_hEdges, SuperBlockmap::HalfEdges::const_iterator)
     {
-        HalfEdge* otherHEdge = n->hEdge;
+        const HalfEdge* otherHEdge = (*i);
         HalfEdgeInfo* other = (HalfEdgeInfo*) otherHEdge->data;
 
         // This is the heart of my pruning idea - it catches
@@ -458,16 +415,14 @@ Con_Message("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d "
  * @return              @c false, if cancelled.
  */
 static bool pickHEdgeWorker(const SuperBlockmap* partList,
-                               const SuperBlockmap* hEdgeList,
-                               dint factor, HalfEdge** best, dint* bestCost)
+    const SuperBlockmap* hEdgeList, dint factor, HalfEdge** best, dint* bestCost)
 {
-    dint num, cost;
-    SuperBlockmap::ListNode* n;
+    dint cost;
 
     // Test each half-edge as a potential partition.
-    for(n = partList->_hEdges; n; n = n->next)
+    FOR_EACH(i, partList->_hEdges, SuperBlockmap::HalfEdges::const_iterator)
     {
-        HalfEdge* hEdge = n->hEdge;
+        HalfEdge* hEdge = (*i);
         HalfEdgeInfo* data = (HalfEdgeInfo*) hEdge->data;
 
 /*#if _DEBUG
@@ -505,7 +460,7 @@ Con_Message("BSP_PickHEdge: %sSEG %p sector=%d  (%1.1f,%1.1f) -> "
     }
 
     // Recursively handle sub-blocks.
-    for(num = 0; num < 2; ++num)
+    for(dint num = 0; num < 2; ++num)
     {
         if(partList->subs[num])
             pickHEdgeWorker(partList->subs[num], hEdgeList, factor, best, bestCost);
@@ -528,21 +483,7 @@ HalfEdge* de::SuperBlock_PickPartition(const SuperBlockmap* hEdgeList, dint fact
 
     validCount++;
     if(false == pickHEdgeWorker(hEdgeList, hEdgeList, factor, &best, &bestCost))
-    {
-        // \hack BuildNodes will detect the cancellation.
-        return NULL;
-    }
-
-/*if _DEBUG
-if(best)
-    Con_Message("BSP_PickPartition: Best has score %d.%02d  (%1.1f,%1.1f) -> "
-                "(%1.1f,%1.1f)\n", bestCost / 100, bestCost % 100,
-                best->v[0]->V_pos[VX], best->v[0]->V_pos[VY],
-                best->v[1]->V_pos[VX], best->v[1]->V_pos[VY]);
-else
-    Con_Message("BSP_PickPartition: No best found!\n");
-#endif*/
-
+        return NULL; // BuildNodes will detect the cancellation.
     // Finished, return the best partition if found.
     return best;
 }

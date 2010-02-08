@@ -320,7 +320,7 @@ static bool isIntersectionOnSelfRefLineDef(const intersection_t* insect)
 }
 
 void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
-    const HalfEdge* partHEdge, SuperBlockmap* rightList, SuperBlockmap* leftList)
+    const HalfEdgeInfo* partInfo, SuperBlockmap* rightList, SuperBlockmap* leftList)
 {
     cnode_t* node, *firstNode;
 
@@ -417,8 +417,8 @@ void NodeBuilder::connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY,
                 }
 
                 {
-                HalfEdge& right = createHalfEdge(NULL, ((HalfEdgeInfo*) partHEdge->data)->lineDef, cur->hEdge->vertex, ((HalfEdgeInfo*) nearHEdge->data)->sector, ((HalfEdgeInfo*) nearHEdge->data)->back);
-                HalfEdge& left = createHalfEdge(NULL, ((HalfEdgeInfo*) partHEdge->data)->lineDef, next->hEdge->vertex, ((HalfEdgeInfo*) farHEdge->prev->data)->sector, ((HalfEdgeInfo*) farHEdge->prev->data)->back);
+                HalfEdge& right = createHalfEdge(NULL, partInfo->lineDef, cur->hEdge->vertex, ((HalfEdgeInfo*) nearHEdge->data)->sector, ((HalfEdgeInfo*) nearHEdge->data)->back);
+                HalfEdge& left = createHalfEdge(NULL, partInfo->lineDef, next->hEdge->vertex, ((HalfEdgeInfo*) farHEdge->prev->data)->sector, ((HalfEdgeInfo*) farHEdge->prev->data)->back);
 
                 // Twin the half-edges together.
                 right.twin = &left;

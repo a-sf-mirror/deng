@@ -67,7 +67,7 @@ namespace de
         void build();
 
         // @todo Should be private to NodeBuilder
-        void connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge, SuperBlockmap* rightList, SuperBlockmap* leftList);
+        void connectGaps(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo, SuperBlockmap* rightList, SuperBlockmap* leftList);
         HalfEdge& createHalfEdge(LineDef* line, LineDef* sourceLine, Vertex* start, Sector* sec, bool back);
 
         /**
@@ -115,9 +115,7 @@ namespace de
          * Analyze the intersection list, and add any needed minihedges to the given
          * half-edge lists (one minihedge on each side).
          */
-        void addMiniHEdges(ddouble x, ddouble y, ddouble dX, ddouble dY,
-            const HalfEdge* partHEdge, SuperBlockmap* bRight,
-            SuperBlockmap* bLeft);
+        void addMiniHEdges(ddouble x, ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo, SuperBlockmap* bRight, SuperBlockmap* bLeft);
 
         /**
          * Partition the given edge and perform any further necessary action (moving
@@ -136,11 +134,11 @@ namespace de
          * left, right or be split. - AJA
          */
         void divideOneHEdge(HalfEdge& curHEdge, ddouble x,
-           ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge,
+           ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo,
            SuperBlockmap* bRight, SuperBlockmap* bLeft);
 
         void divideHEdges(SuperBlockmap* hEdgeList, ddouble x, ddouble y,
-            ddouble dX, ddouble dY, const HalfEdge* partHEdge,
+            ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo,
             SuperBlockmap* rights, SuperBlockmap* lefts);
 
         /**
@@ -149,7 +147,7 @@ namespace de
          * onto the intersection list as it goes.
          */
         void partitionHEdges(SuperBlockmap* hEdgeList, ddouble x,
-            ddouble y, ddouble dX, ddouble dY, const HalfEdge* partHEdge,
+            ddouble y, ddouble dX, ddouble dY, const HalfEdgeInfo* partInfo,
             SuperBlockmap** right, SuperBlockmap** left);
 
         void takeHEdgesFromSuperBlock(Face& face, SuperBlockmap* block);

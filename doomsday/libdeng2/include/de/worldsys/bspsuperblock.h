@@ -27,6 +27,8 @@
 
 #include "../HalfEdgeDS"
 
+#include <deque>
+
 namespace de
 {
     /**
@@ -51,11 +53,6 @@ namespace de
         // Smallest distance between two points before being considered equal.
         #define DIST_EPSILON (1.0 / 128.0)
 
-        struct ListNode {
-            HalfEdge* hEdge;
-            ListNode* next;
-        };
-
     public:
         /// Parent of this block, or NULL for a top-level block.
         SuperBlockmap* parent;
@@ -75,14 +72,11 @@ namespace de
         duint realNum;
         duint miniNum;
 
-        /// LIFO stack of half-edges completely contained by this block.
-        ListNode* _hEdges;
-
         SuperBlockmap();
         ~SuperBlockmap();
 
         /**
-         * Link the given half-edge into the given SuperBlock.
+         * Link the given half-edge into the SuperBlock.
          */
         void push(HalfEdge* hEdge);
 
@@ -100,7 +94,13 @@ namespace de
          */
         void aaBounds(dfloat bbox[4]) const;
 
+        /// LIFO stack of half-edges completely contained by this block.
+        /// Uses std::deque internally as friends need the ability to traverse (linearly).
+        typedef std::deque<HalfEdge*> HalfEdges;
+        HalfEdges _hEdges;
+
 #if _DEBUG
+    public:
         void print() const;
 #endif
     };
