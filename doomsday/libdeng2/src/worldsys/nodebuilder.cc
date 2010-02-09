@@ -1,14 +1,12 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- libdeng2
  *
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 2006-2007 Jamie Jones <jamie_jones_au@yahoo.com.au>
- *\author Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
- *\author Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
- *\author Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
- *\author Copyright © 1998 Raphael Quinet <raphael.quinet@eed.ericsson.se>
+ * Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2006-2007 Jamie Jones <jamie_jones_au@yahoo.com.au>
+ * Copyright © 2000-2007 Andrew Apted <ajapted@gmail.com>
+ * Copyright © 1998-2000 Colin Reed <cph@moria.org.uk>
+ * Copyright © 1998-2000 Lee Killough <killough@rsn.hp.com>
+ * Copyright © 1998 Raphael Quinet <raphael.quinet@eed.ericsson.se>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,25 +19,24 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "de/Vector"
 #include "de/Log"
 #include "de/NodeBuilder"
-#include "de/BSPSuperBlock"
+#include "de/SuperBlock"
 #include "de/Node"
 #include "de/Map"
 
 using namespace de;
 
-namespace de
+namespace
 {
-    typedef struct linedefowner_t {
+    struct LineDefOwner
+    {
         LineDef* lineDef;
-        struct linedefowner_t* next;
+        struct LineDefOwner* next;
 
         /**
          * HalfEdge on the front side of the LineDef relative to this vertex
@@ -47,7 +44,7 @@ namespace de
          * is that on the LineDef's front side, else, that on the back side).
          */
         HalfEdge* hEdge;
-    } linedefowner_t;
+    };
 
     /// Used when sorting vertex line owners.
     static Vertex* rootVtx;
@@ -376,11 +373,11 @@ LOG_DEBUG("front line: %d  front dist: %1.1f  front_open: %s")
     }
 }
 
-static void countVertexLineOwners(linedefowner_t* lineOwners, duint* oneSided, duint* twoSided)
+static void countVertexLineOwners(LineDefOwner* lineOwners, duint* oneSided, duint* twoSided)
 {
     if(lineOwners)
     {
-        linedefowner_t* owner;
+        LineDefOwner* owner;
 
         owner = lineOwners;
         do
@@ -398,14 +395,14 @@ static void countVertexLineOwners(linedefowner_t* lineOwners, duint* oneSided, d
  * Compares the angles of two lines that share a common vertex.
  *
  * pre: rootVtx must point to the vertex common between a and b
- *      which are (linedefowner_t*) ptrs.
+ *      which are (LineDefOwner*) ptrs.
  */
 static dint C_DECL lineAngleSorter2(const void* a, const void* b)
 {
     dbinangle angles[2];
-    linedefowner_t* own[2];
-    own[0] = (linedefowner_t*) a;
-    own[1] = (linedefowner_t*) b;
+    LineDefOwner* own[2];
+    own[0] = (LineDefOwner*) a;
+    own[1] = (LineDefOwner*) b;
     for(duint i = 0; i < 2; ++i)
     {
         LineDef* line = own[i]->lineDef;
@@ -423,10 +420,10 @@ static dint C_DECL lineAngleSorter2(const void* a, const void* b)
  *
  * @return              Ptr to the newly merged list.
  */
-static linedefowner_t* mergeLineOwners2(linedefowner_t* left, linedefowner_t* right,
+static LineDefOwner* mergeLineOwners2(LineDefOwner* left, LineDefOwner* right,
                                         dint (C_DECL *compare) (const void* a, const void* b))
 {
-    linedefowner_t tmp, *np;
+    LineDefOwner tmp, *np;
 
     np = &tmp;
     tmp.next = np;
@@ -461,9 +458,9 @@ static linedefowner_t* mergeLineOwners2(linedefowner_t* left, linedefowner_t* ri
     return tmp.next;
 }
 
-static linedefowner_t* splitLineOwners2(linedefowner_t* list)
+static LineDefOwner* splitLineOwners2(LineDefOwner* list)
 {
-    linedefowner_t* lista, *listb, *listc;
+    LineDefOwner* lista, *listb, *listc;
 
     if(!list)
         return NULL;
@@ -485,10 +482,10 @@ static linedefowner_t* splitLineOwners2(linedefowner_t* list)
 /**
  * This routine uses a recursive mergesort algorithm; O(NlogN)
  */
-static linedefowner_t* sortLineOwners2(linedefowner_t* list,
+static LineDefOwner* sortLineOwners2(LineDefOwner* list,
                                      dint (C_DECL *compare) (const void* a, const void* b))
 {
-    linedefowner_t* p;
+    LineDefOwner* p;
 
     if(list && list->next)
     {
@@ -501,16 +498,16 @@ static linedefowner_t* sortLineOwners2(linedefowner_t* list,
     return list;
 }
 
-static void setVertexLineOwner2(linedefowner_t** lineOwners, duint* numLineOwners,
+static void setVertexLineOwner2(LineDefOwner** lineOwners, duint* numLineOwners,
                                 LineDef* lineDef, dbyte vertex,
-                                linedefowner_t** storage)
+                                LineDefOwner** storage)
 {
-    linedefowner_t* newOwner;
+    LineDefOwner* newOwner;
 
     // Has this line already been registered with this vertex?
     if((*numLineOwners) != 0)
     {
-        linedefowner_t* owner = (*lineOwners);
+        LineDefOwner* owner = (*lineOwners);
 
         do
         {
@@ -543,12 +540,12 @@ void NodeBuilder::createInitialHalfEdges()
 {
 typedef struct {
     duint numLineOwners;
-    linedefowner_t* lineOwners; // Head of the lineowner list.
+    LineDefOwner* lineOwners; // Head of the lineowner list.
 } ownerinfo_t;
 
     duint startTime = Sys_GetRealTime();
 
-    linedefowner_t* lineOwners, *storage;
+    LineDefOwner* lineOwners, *storage;
     ownerinfo_t* vertexInfo;
     duint i, numVertices;
 
@@ -556,7 +553,7 @@ typedef struct {
     vertexInfo = reinterpret_cast<ownerinfo_t*>(std::calloc(1, sizeof(*vertexInfo) * numVertices));
 
     // We know how many lineowners are needed: number of lineDefs * 2.
-    lineOwners = storage = reinterpret_cast<linedefowner_t*>(std::calloc(1, sizeof(*lineOwners) * _map.numLineDefs() * 2));
+    lineOwners = storage = reinterpret_cast<LineDefOwner*>(std::calloc(1, sizeof(*lineOwners) * _map.numLineDefs() * 2));
 
     for(i = 0; i < _map.numLineDefs(); ++i)
     {
@@ -658,8 +655,8 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
         updateHalfEdgeInfo(back);
 
         lineDef->hEdges[0] = lineDef->hEdges[1] = &front;
-        ((linedefowner_t*) lineDef->vo[0])->hEdge = &front;
-        ((linedefowner_t*) lineDef->vo[1])->hEdge = &back;
+        ((LineDefOwner*) lineDef->vo[0])->hEdge = &front;
+        ((LineDefOwner*) lineDef->vo[1])->hEdge = &back;
     }
 
     // Sort vertex owners, clockwise by angle (i.e., ascending).
@@ -678,7 +675,7 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
     for(i = 0; i < numVertices; ++i)
     {
         ownerinfo_t* info = &vertexInfo[i];
-        linedefowner_t* owner, *prev;
+        LineDefOwner* owner, *prev;
 
         if(info->numLineOwners == 0)
             continue;

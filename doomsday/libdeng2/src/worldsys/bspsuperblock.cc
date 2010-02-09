@@ -22,7 +22,7 @@
  */
 
 #include "de/Log"
-#include "de/BSPSuperBlock"
+#include "de/SuperBlock"
 #include "de/NodeBuilder"
 #include "de/Sector"
 #include "de/LineDef"
