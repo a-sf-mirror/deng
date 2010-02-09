@@ -30,7 +30,7 @@
 #include "de/Log"
 #include "de/NodeBuilder"
 #include "de/BSPSuperBlock"
-#include "de/BSPIntersection"
+#include "de/Node"
 #include "de/Map"
 
 using namespace de;
@@ -72,6 +72,7 @@ NodeBuilder::~NodeBuilder()
         std::free(halfEdgeInfo);
     }
     destroyRootSuperBlock();
+    _intersections.clear();
 }
 
 void NodeBuilder::destroyUnusedSuperBlocks()
@@ -1023,8 +1024,8 @@ static __inline void calcIntersection(const HalfEdge* cur, ddouble x,
 void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
    SuperBlock* bRight, SuperBlock* bLeft)
 {
-#define INTERSECT(cl, e, p) if(!cl.find(e)) \
-    cl.intersect(e, M_ParallelDist((p).direction.x, (p).direction.y, (p).para, (p).length, (e).vertex->pos.x, (e).vertex->pos.y))
+#define INTERSECT(e, p) if(!findIntersection(e)) \
+    insertIntersection(e, M_ParallelDist((p).direction.x, (p).direction.y, (p).para, (p).length, (e)->vertex->pos.x, (e)->vertex->pos.y))
 
     HalfEdgeInfo* data = ((HalfEdgeInfo*) curHEdge.data);
     ddouble perpC, perpD;
@@ -1045,8 +1046,8 @@ void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
     // Check for being on the same line.
     if(fabs(perpC) <= DIST_EPSILON && fabs(perpD) <= DIST_EPSILON)
     {
-        INTERSECT(_cutList, curHEdge, bsp);
-        INTERSECT(_cutList, *curHEdge.twin, bsp);
+        INTERSECT(&curHEdge, bsp);
+        INTERSECT(curHEdge.twin, bsp);
 
         // This seg runs along the same line as the  Check
         // whether it goes in the same direction or the opposite.
@@ -1066,9 +1067,9 @@ void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
     if(perpC > -DIST_EPSILON && perpD > -DIST_EPSILON)
     {
         if(perpC < DIST_EPSILON)
-            INTERSECT(_cutList, curHEdge, bsp);
+            INTERSECT(&curHEdge, bsp);
         else if(perpD < DIST_EPSILON)
-            INTERSECT(_cutList, *curHEdge.twin, bsp);
+            INTERSECT(curHEdge.twin, bsp);
 
         addHalfEdgeToSuperBlock(bRight, &curHEdge);
         return;
@@ -1078,9 +1079,9 @@ void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
     if(perpC < DIST_EPSILON && perpD < DIST_EPSILON)
     {
         if(perpC > -DIST_EPSILON)
-            INTERSECT(_cutList, curHEdge, bsp);
+            INTERSECT(&curHEdge, bsp);
         else if(perpD > -DIST_EPSILON)
-            INTERSECT(_cutList, *curHEdge.twin, bsp);
+            INTERSECT(curHEdge.twin, bsp);
 
         addHalfEdgeToSuperBlock(bLeft, &curHEdge);
         return;
@@ -1092,7 +1093,7 @@ void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
     ddouble iX, iY;
     calcIntersection(&curHEdge, bsp.point.x, bsp.point.y, bsp.direction.x, bsp.direction.y, perpC, perpD, &iX, &iY);
     HalfEdge& newHEdge = splitHalfEdge(curHEdge, iX, iY);
-    INTERSECT(_cutList, newHEdge, bsp);
+    INTERSECT(&newHEdge, bsp);
 
     if(perpC < 0)
     {
@@ -1144,8 +1145,8 @@ void NodeBuilder::divideHalfEdges(const BSPartition& partition, SuperBlock* hEdg
 void NodeBuilder::createHalfEdgesAlongPartition(const BSPartition& partition,
     SuperBlock* bRight, SuperBlock* bLeft)
 {
-    BSP_MergeOverlappingIntersections(_cutList);
-    connectGaps(partition, bRight, bLeft);
+    mergeIntersectionOverlaps();
+    connectIntersectionGaps(partition, bRight, bLeft);
 }
 
 void NodeBuilder::partitionHalfEdges(const BSPartition& partition,
@@ -1167,7 +1168,6 @@ void NodeBuilder::partitionHalfEdges(const BSPartition& partition,
         LOG_ERROR("NodeBuilder::partitionHalfEdges: Separated halfedge-list has no left side.");
 
     createHalfEdgesAlongPartition(partition, bRight, bLeft);
-    _cutList.clear();
 
     *right = bRight;
     *left = bLeft;
@@ -1222,4 +1222,251 @@ void NodeBuilder::build()
      */
     if(rootNode)
         rootNode->postOrder(finishLeaf, NULL);
+}
+
+void NodeBuilder::insertIntersection(HalfEdge* halfEdge, ddouble distance)
+{
+    /// Find the insertion point in the list: sorted by distance near to far.
+    Intersections::iterator i = _intersections.end();
+    while(i != _intersections.begin() && !(distance < (*i).distance)) --i;
+    _intersections.insert(i, Intersection(halfEdge, distance));
+}
+
+bool NodeBuilder::findIntersection(const HalfEdge* halfEdge) const
+{
+    if(!halfEdge)
+        return false;
+    for(Intersections::const_iterator i = _intersections.begin();
+        i != _intersections.end(); ++i)
+        if((*i).halfEdge == halfEdge)
+            return true;
+    return false;
+}
+
+void NodeBuilder::mergeIntersectionOverlaps()
+{
+    if(!(_intersections.size() > 1))
+        return;
+
+    Intersections::iterator i = _intersections.begin();
+    for(;;)
+    {
+        Intersections::iterator prev = i;
+        Intersections::iterator cur = ++i;
+
+        if(cur == _intersections.end())
+            return;
+
+        ddouble len = cur->distance - prev->distance;
+        if(len < -0.1)
+            LOG_ERROR("CutList::mergeOverlap: Bad order %1.3f > %1.3f")
+                << dfloat(prev->distance) << dfloat(cur->distance);
+        if(len > 0.2)
+            continue;
+/*      if(len > DIST_EPSILON)
+        {
+            LOG_MESSAGE("Skipping very short half-edge (len=%1.3f) near %s") << len << prev->vertex.pos;
+            continue;
+        }*/
+
+        // Merge by simply removing previous from the list.
+        _intersections.erase(prev);
+    }
+}
+
+/**
+ * Look for the first HalfEdge whose angle is past that required.
+ */
+static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockwise)
+{
+    HalfEdge* hEdge, *first;
+
+    first = vertex->hEdge;
+    hEdge = first->twin->next;
+    do
+    {
+        if(((HalfEdgeInfo*) hEdge->data)->angle <=
+           ((HalfEdgeInfo*) first->data)->angle)
+            first = hEdge;
+    } while((hEdge = hEdge->twin->next) != vertex->hEdge);
+
+    if(antiClockwise)
+    {
+        first = first->twin->next;
+        hEdge = first;
+        while(((HalfEdgeInfo*) hEdge->data)->angle > angle + ANG_EPSILON &&
+              (hEdge = hEdge->twin->next) != first);
+
+        return hEdge->twin;
+    }
+    else
+    {
+        hEdge = first;
+        while(((HalfEdgeInfo*) hEdge->data)->angle < angle + ANG_EPSILON &&
+              (hEdge = hEdge->prev->twin) != first);
+
+        return hEdge;
+    }
+}
+
+static bool isIntersectionOnSelfRefLineDef(const HalfEdge* halfEdge)
+{
+    /*if(halfEdge && ((HalfEdgeInfo*) halfEdge->data)->lineDef)
+    {
+        LineDef* lineDef = ((HalfEdgeInfo*) halfEdge->data)->lineDef;
+
+        if(lineDef->buildData.sideDefs[FRONT] &&
+           lineDef->buildData.sideDefs[BACK] &&
+           lineDef->buildData.sideDefs[FRONT]->sector ==
+           lineDef->buildData.sideDefs[BACK]->sector)
+            return true;
+    }*/
+    return false;
+}
+
+void NodeBuilder::connectIntersectionGaps(const BSPartition& partition,
+    SuperBlock* rightList, SuperBlock* leftList)
+{
+    Intersections::iterator i = _intersections.begin();
+    for(;;)
+    {
+        Intersections::iterator prev = i;
+        Intersections::iterator cur = ++i;
+
+        if(prev == _intersections.end())
+            return;
+
+        // Is this half-edge exactly aligned to the partition?
+        bool alongPartition = false;
+        {
+        angle_g angle = slopeToAngle(-partition.direction.x, -partition.direction.y);
+        HalfEdge* halfEdge = prev->halfEdge;
+        do
+        {
+            angle_g diff = fabs(((HalfEdgeInfo*) halfEdge->data)->angle - angle);
+            if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
+            {
+                alongPartition = true;
+                break;
+            }
+        } while((halfEdge = halfEdge->prev->twin) != cur->halfEdge);
+        }
+
+        HalfEdge* farHalfEdge, *nearHalfEdge;
+        Sector* nearSector = NULL, *farSector = NULL;
+        if(!alongPartition)
+        {
+            farHalfEdge = vertexCheckOpen(cur->halfEdge->vertex, slopeToAngle(-partition.direction.x, -partition.direction.y), false);
+            nearHalfEdge = vertexCheckOpen(prev->halfEdge->vertex, slopeToAngle(partition.direction.x, partition.direction.y), true);
+
+            nearSector = nearHalfEdge ? ((HalfEdgeInfo*) nearHalfEdge->data)->sector : NULL;
+            farSector = farHalfEdge? ((HalfEdgeInfo*) farHalfEdge->data)->sector : NULL;
+        }
+
+        if(!(!nearSector && !farSector))
+        {
+            // Check for some nasty open/closed or close/open cases.
+            if(nearSector && !farSector)
+            {
+                if(!isIntersectionOnSelfRefLineDef(prev->halfEdge))
+                {
+                    nearSector->flags |= Sector::UNCLOSED;
+
+                    Vector2d pos = prev->halfEdge->vertex->pos + cur->halfEdge->vertex->pos;
+                    pos.x /= 2;
+                    pos.y /= 2;
+
+                    LOG_VERBOSE("Warning: Unclosed sector #%d near %s")
+                        << nearSector->buildData.index - 1 << pos;
+                }
+            }
+            else if(!nearSector && farSector)
+            {
+                if(!isIntersectionOnSelfRefLineDef(cur->halfEdge))
+                {
+                    farSector->flags |= Sector::UNCLOSED;
+
+                    Vector2d pos = prev->halfEdge->vertex->pos + cur->halfEdge->vertex->pos;
+                    pos.x /= 2;
+                    pos.y /= 2;
+
+                    LOG_VERBOSE("Warning: Unclosed s    ector #%d near %s")
+                        << (farSector->buildData.index - 1) << pos;
+                }
+            }
+            else
+            {
+                /**
+                 * This is definitetly open space. Build half-edges on each
+                 * side of the gap.
+                 */
+
+                if(nearSector != farSector)
+                {
+                    if(!isIntersectionOnSelfRefLineDef(prev->halfEdge) &&
+                       !isIntersectionOnSelfRefLineDef(cur->halfEdge))
+                    {
+                        LOG_DEBUG("Sector mismatch: #%d %s != #%d %s")
+                            << (nearSector->buildData.index - 1) << prev->halfEdge->vertex->pos
+                            << (farSector->buildData.index - 1) << cur->halfEdge->vertex->pos;
+                    }
+
+                    // Choose the non-self-referencing sector when we can.
+                    if(isIntersectionOnSelfRefLineDef(prev->halfEdge) &&
+                       !isIntersectionOnSelfRefLineDef(cur->halfEdge))
+                    {
+                        nearSector = farSector;
+                    }
+                }
+
+                {
+                HalfEdge& right = createHalfEdge(NULL, partition.lineDef, prev->halfEdge->vertex, ((HalfEdgeInfo*) nearHalfEdge->data)->sector, ((HalfEdgeInfo*) nearHalfEdge->data)->back);
+                HalfEdge& left = createHalfEdge(NULL, partition.lineDef, cur->halfEdge->vertex, ((HalfEdgeInfo*) farHalfEdge->prev->data)->sector, ((HalfEdgeInfo*) farHalfEdge->prev->data)->back);
+
+                // Twin the half-edges together.
+                right.twin = &left;
+                left.twin = &right;
+
+                left.prev = farHalfEdge->prev;
+                right.prev = nearHalfEdge;
+
+                right.next = farHalfEdge;
+                left.next = nearHalfEdge->next;
+
+                left.prev->next = &left;
+                right.prev->next = &right;
+
+                right.next->prev = &right;
+                left.next->prev = &left;
+
+#if _DEBUG
+testVertexHEdgeRings(prev->halfEdge->vertex);
+testVertexHEdgeRings(cur->halfEdge->vertex);
+#endif
+
+                updateHalfEdgeInfo(right);
+                updateHalfEdgeInfo(left);
+
+                // Add the new half-edges to the appropriate lists.
+
+                /*if(nearHalfEdge->face)
+                    Face_LinkHEdge(nearHalfEdge->face, &right);
+                else*/
+                    addHalfEdgeToSuperBlock(rightList, &right);
+                /*if(farHalfEdge->prev->face)
+                    Face_LinkHEdge(farHalfEdge->prev->face, &left);
+                else*/
+                    addHalfEdgeToSuperBlock(leftList, &left);
+
+                LOG_DEBUG(" Capped intersection:");
+                LOG_DEBUG("  %p RIGHT  sector %d %s -> %s")
+                    << &right << (reinterpret_cast<HalfEdgeInfo*>(nearHalfEdge->data)->sector? reinterpret_cast<HalfEdgeInfo*>(nearHalfEdge->data)->sector->buildData.index : -1)
+                    << right.vertex->pos << right.twin->vertex->pos;
+                LOG_DEBUG("  %p LEFT sector %d %s -> %s")
+                    << &left << (reinterpret_cast<HalfEdgeInfo*>(farHalfEdge->prev->data)->sector? reinterpret_cast<HalfEdgeInfo*>(farHalfEdge->prev->data)->sector->buildData.index : -1)
+                    << left.vertex->pos << left.twin->vertex->pos;
+                }
+            }
+        }
+    }
 }

@@ -21,9 +21,11 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/NodeBuilder"
-#include "de/BSPSuperBlock"
 #include "de/Log"
+#include "de/BSPSuperBlock"
+#include "de/NodeBuilder"
+#include "de/Sector"
+#include "de/LineDef"
 
 using namespace de;
 

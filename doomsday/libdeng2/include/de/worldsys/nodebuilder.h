@@ -25,11 +25,13 @@
 
 #include "deng.h"
 
-#include "../BSPIntersection"
+#include "../Vector"
+#include "../HalfEdgeDS"
 #include "../BSPSuperBlock"
 #include "../BinaryTree"
 #include "../Node"
-#include "../Map"
+
+#include <list>
 
 namespace de
 {
@@ -42,6 +44,10 @@ namespace de
     #define DIST_EPSILON        (1.0 / 128.0)
 
     typedef ddouble angle_g;  // Degrees, 0 is E, 90 is N
+
+    class Map;
+    class LineDef;
+    class Sector;
 
     struct HalfEdgeInfo
     {
@@ -89,6 +95,22 @@ namespace de
             BSPartition() : Partition() {};
         };
 
+        /**
+         * An "intersection" remembers the half-edge that intercepts the partition.
+         */
+        struct Intersection {
+            HalfEdge* halfEdge;
+            // How far along the partition line the intercept point is. Zero is at
+            // the partition half-edge's start point, positive values move in the
+            // same direction as the partition's direction, and negative values move
+            // in the opposite direction.
+            ddouble distance;
+
+            Intersection(HalfEdge* _halfEdge, ddouble _distance)
+                : halfEdge(_halfEdge), distance(_distance) {};
+        };
+        typedef std::list<Intersection> Intersections;
+
     public:
         BinaryTree<void*>* rootNode;
 
@@ -100,7 +122,6 @@ namespace de
 
         void build();
 
-        void connectGaps(const BSPartition& partition, SuperBlock* rightList, SuperBlock* leftList);
         HalfEdge& createHalfEdge(LineDef* line, LineDef* sourceLine, Vertex* start, Sector* sec, bool back);
 
         /**
@@ -213,11 +234,27 @@ namespace de
 
         void destroyRootSuperBlock();
 
+        void insertIntersection(HalfEdge* halfEdge, ddouble distance);
+
+        /**
+         * Search the list for an intersection, if found; return it.
+         *
+         * @param hEdge         Ptr to the intercept half-edge to look for.
+         *
+         * @return              @c true iff an intersection is found ELSE @c false;
+         */
+        bool findIntersection(const HalfEdge* halfEdge) const;
+
+        void mergeIntersectionOverlaps();
+
+        void connectIntersectionGaps(const BSPartition& partition, SuperBlock* rightList, SuperBlock* leftList);
+
     private:
         dint _splitFactor;
 
         Map& _map;
-        CutList _cutList;
+
+        Intersections _intersections;
         SuperBlock* _rootSuperBlock;
         SuperBlock* _quickAllocSuperBlocks;
     };
