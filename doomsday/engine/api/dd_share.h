@@ -512,12 +512,6 @@ typedef enum
 #define DMUAPI_VER          1 // Public DMU API version number.
                               // Requested by the engine during init.
 
-// Map Update object type identifiers.
-enum
-{
-
-};
-
 // Map Update constants.
 enum /* Do not change the numerical values of the constants! */
 {
@@ -827,32 +821,6 @@ enum { MX, MY, MZ }; // Momentum axis indices.
                                /* 0 = no change, 2= mobj is becoming more visible */ \
     int             reactionTime; /* if not zero, freeze controls */ \
     int             tmap, tclass;
-
-    // Base polyobj_t elements. Games MUST use this as the basis for polyobj_t.
-#define DD_BASE_POLYOBJ_ELEMENTS() \
-    DD_BASE_DDMOBJ_ELEMENTS() \
-\
-    struct subsector_s* subsector; /* subsector in which this resides */ \
-    unsigned int    idx; /* Idx of polyobject. */ \
-    int             tag; /* Reference tag. */ \
-    int             validCount; \
-    float           box[2][2]; \
-    float           dest[2]; /* Destination XY. */ \
-    angle_t         angle; \
-    angle_t         destAngle; /* Destination angle. */ \
-    angle_t         angleSpeed; /* Rotation speed. */ \
-    unsigned int    numLineDefs; \
-    struct linedef_s** lineDefs; \
-    unsigned int    numSegs; \
-    struct seg_s*   segs; \
-    struct fvertex_s* originalPts; /* Used as the base for the rotations. */ \
-    struct fvertex_s* prevPts; /* Use to restore the old point values. */ \
-    float           speed; /* Movement speed. */ \
-    boolean         crush; /* Should the polyobj attempt to crush mobjs? */ \
-    int             seqType; \
-    struct { \
-        int         index; \
-    } buildData;
 
 //------------------------------------------------------------------------
 //

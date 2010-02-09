@@ -77,8 +77,8 @@ namespace de
         //struct material_t* materialB;
         //dfloat matBlendFactor;
         //blendmode_t blendMode;
-        dfloat normal[3]; // Surface normal
-        dfloat oldNormal[3];
+        Vector3f normal; // Surface normal
+        Vector3f oldNormal;
 
         dfloat offset[2]; // [X, Y] Planar offset to surface material origin.
         dfloat oldOffset[2][2];

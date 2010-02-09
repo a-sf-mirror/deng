@@ -62,6 +62,17 @@ int ptflags;
 
 // CODE --------------------------------------------------------------------
 
+// Called when the polyobj hits a mobj.
+void (*po_callback) (mobj_t* mobj, void* lineDef, void* po);
+
+/**
+ * The po_callback is called when a polyobj hits a mobj.
+ */
+void P_SetPolyobjCallback(void (*func) (struct mobj_s*, void*, void*))
+{
+    po_callback = func;
+}
+
 float P_AccurateDistanceFixed(fixed_t dx, fixed_t dy)
 {
     float               fx = FIX2FLT(dx), fy = FIX2FLT(dy);

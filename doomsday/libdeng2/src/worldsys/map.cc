@@ -179,34 +179,14 @@ Map::~Map()
         Z_Free(lineOwners);
     lineOwners = NULL;
 
-#if 0
-    if(map->polyObjs)
+    if(polyObjs)
     {
-        uint i;
-        for(i = 0; i < map->numPolyObjs; ++i)
-        {
-            polyobj_t* po = map->polyObjs[i];
-            uint j;
-
-            for(j = 0; j < po->numLineDefs; ++j)
-            {
-                linedef_t* lineDef = ((objectrecord_t*) po->lineDefs[j])->obj;
-                Z_Free(lineDef->hEdges[0]->twin);
-                Z_Free(lineDef->hEdges[0]);
-            }
-            Z_Free(po->lineDefs);
-            Z_Free(po->segs);
-            Z_Free(po->originalPts);
-            Z_Free(po->prevPts);
-
-            Z_Free(po);
-        }
-
-        Z_Free(map->polyObjs);
+        for(duint i = 0; i < _numPolyObjs; ++i)
+            delete polyObjs[i];
+        std::free(>polyObjs);
     }
-    map->polyObjs = NULL;
-    map->numPolyObjs = 0;
-#endif
+    polyObjs = NULL;
+    _numPolyObjs = 0;
 
     if(sectors)
     {
@@ -551,19 +531,17 @@ Plane* Map::createPlane2()
     return plane;
 }
 
-#if 0
-static polyobj_t* createPolyobj2(map_t* map)
+Polyobj* Map::createPolyobj2()
 {
-    polyobj_t* po = Z_Calloc(POLYOBJ_SIZE, PU_STATIC, 0);
+    Polyobj* polyobj = new Polyobj()
 
-    map->polyObjs = Z_Realloc(map->polyObjs, sizeof(po) * (++map->numPolyObjs + 1), PU_STATIC);
-    map->polyObjs[map->numPolyObjs-1] = po;
-    map->polyObjs[map->numPolyObjs] = NULL;
+    polyobjs = reinterpret_cast<Polyobj**>(std::realloc(polyobjs, sizeof(Polyobj*) * (++_numPolyobjs + 1)));
+    polyobjs[_numPolyobjs-1] = po;
+    polyobjs[_numPolyobjs] = NULL;
 
-    po->buildData.index = map->numPolyObjs; // 1-based index, 0 = NIL.
-    return po;
+    polyobj->buildData.index = _numPolyobjs; // 1-based index, 0 = NIL.
+    return polyobj;
 }
-#endif
 
 void Map::initSubsectorContacts()
 {
@@ -2673,7 +2651,7 @@ boolean Map_EditEnd(map_t* map)
 
     for(i = 0; i < map->numPolyObjs; ++i)
     {
-        polyobj_t* po = map->polyObjs[i];
+        Polyobj* po = map->polyObjs[i];
         uint j;
 
         po->originalPts = Z_Malloc(po->numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
@@ -3543,10 +3521,10 @@ objectrecordid_t Map_CreatePlane(map_t* map, float height, material_t* material,
     }
 }
 
-static polyobj_t* createPolyobj(map_t* map, objectrecordid_t* lines, uint lineCount,
+static Polyobj* createPolyobj(map_t* map, objectrecordid_t* lines, uint lineCount,
     int tag, int sequenceType, float anchorX, float anchorY)
 {
-    polyobj_t* po;
+    Polyobj* po;
     uint i;
 
     if(!map->editActive)
@@ -3582,7 +3560,7 @@ objectrecordid_t Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lin
     assert(map);
     {
     uint i;
-    polyobj_t* po;
+    Polyobj* po;
 
     if(!map->editActive)
         return 0;
@@ -3607,6 +3585,29 @@ objectrecordid_t Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lin
 
     return po ? po->buildData.index : 0;
     }
+}
+
+Polyobj* Map::polyobj(duint num)
+{
+    if(num & 0x80000000)
+    {
+        duint idx = num & 0x7fffffff;
+
+        if(idx < _numPolyObjs)
+            return polyObjs[idx];
+        return NULL;
+    }
+
+    for(duint i = 0; i < _numPolyObjs; ++i)
+    {
+        Polyobj* po = polyObjs[i];
+
+        if(duint(po->tag) == num)
+        {
+            return po;
+        }
+    }
+    return NULL;
 }
 
 static void findDominantLightSources(map_t* map)

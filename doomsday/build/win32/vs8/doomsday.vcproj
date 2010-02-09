@@ -1205,10 +1205,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\p_polyob.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\p_sight.c"
 				>
 			</File>

@@ -36,12 +36,6 @@
 #include "../ParticleBlockmap"
 #include "../GameObjRecords"
 #include "../Thinker"
-#include "../Vertex"
-#include "../SideDef"
-#include "../LineDef"
-#include "../Sector"
-#include "../Seg"
-#include "../Subsector"
 #include "../Node"
 
 #include <map>
@@ -50,6 +44,13 @@
 namespace de
 {
     class Object;
+    class Vertex;
+    class LineDef;
+    class SideDef;
+    class Sector;
+    class Seg;
+    class Subsector;
+    class Polyobj;
 
     /**
      * Contains everything that makes a map work: sectors, lines, scripts, 
@@ -356,8 +357,8 @@ namespace de
         duint _numSegs;
         Seg** segs;
 
-        //duint _numPolyObjs;
-        //struct polyobj_s** polyObjs;
+        duint _numPolyObjs;
+        Polyobj** polyObjs;
 
         struct lineowner_s* lineOwners;
 
@@ -412,7 +413,7 @@ namespace de
         duint numLineDefs();
         duint numSideDefs();
         duint numVertexes();
-        //duint numPolyobjs();
+        duint numPolyobjs();
         duint numSegs();
         duint numSubsectors();
         duint numNodes();
@@ -537,14 +538,20 @@ namespace de
         /**
          * @return              @c true, iff this is indeed a polyobj origin.
          */
-        //polyobj_t* polyobjForOrigin(const void* ddMobjBase);
+        Polyobj* polyobjForOrigin(const void* ddMobjBase);
 
-        //polyobj_t* polyobj(duint num);
+        /**
+         * Retrieve a ptr to Polyobj by index or by tag.
+         *
+         * @param num               If MSB is set, treat num as an index, ELSE
+         *                          num is a tag that *should* match one polyobj.
+         */
+        Polyobj* polyobj(duint num);
 
         // @todo the following should be Map private:
         HalfEdgeDS& halfEdgeDS();
         ThingBlockmap* thingBlockmap();
-        LineDefBlockmap* lineDefBlockmap();
+        LineDefBlockmap& lineDefBlockmap();
         SubsectorBlockmap* subsectorBlockmap();
         ParticleBlockmap* particleBlockmap();
         LumObjBlockmap* lumobjBlockmap();
@@ -552,7 +559,7 @@ namespace de
 
         // protected
         Seg* createSeg(LineDef* lineDef, dbyte side, HalfEdge* hEdge);
-        //Subsector* createSubsector(Face* face, Sector* sector);
+        Subsector* createSubsector(Face* face, Sector* sector);
         Node* createNode(const Partition& partition, const MapRectangle& rightAABB, const MapRectangle& leftAABB);
 
         void markAllSectorsForLightGridUpdate();

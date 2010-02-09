@@ -46,6 +46,41 @@ dint LineDef::pointOnSide(dfloat x, dfloat y) const
     return !P_PointOnLineSide(x, y, vtx1().pos.x, vtx1().pos.y, delta.x, delta.y);
 }
 
+void LineDef::updateAABounds()
+{
+    bool edge;
+
+    edge = (vtx1().pos.x < vtx2().pos.x);
+    bBox[BOXLEFT]  = vtx(edge^1).pos.x;
+    bBox[BOXRIGHT] = vtx(edge).pos.x;
+
+    edge = (vtx1().pos.y < vtx2().pos.y);
+    bBox[BOXBOTTOM] = vtx(edge^1).pos.y;
+    bBox[BOXTOP]    = vtx(edge).pos.y;
+
+    // Update the lineDef's slopetype.
+    delta = vtx2().pos - vtx1().pos;
+    if(fequal(delta.x, 0))
+    {
+        slopeType = ST_VERTICAL;
+    }
+    else if(fequal(delta.y, 0))
+    {
+        slopeType = ST_HORIZONTAL;
+    }
+    else
+    {
+        if(delta.y / delta.x > 0)
+        {
+            slopeType = ST_POSITIVE;
+        }
+        else
+        {
+            slopeType = ST_NEGATIVE;
+        }
+    }
+}
+
 dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
 {
     dint a = 0, b = 0;
