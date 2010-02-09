@@ -27,7 +27,7 @@
 
 #include "../Vector"
 #include "../HalfEdgeDS"
-#include "../BSPSuperBlock"
+#include "../SuperBlock"
 #include "../BinaryTree"
 #include "../Node"
 
