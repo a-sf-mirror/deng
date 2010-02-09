@@ -84,6 +84,12 @@ namespace de
             y -= other.y;
             return *this;
         }
+        bool operator == (const Vector2& other) const {
+            return !(*this != other);
+        }
+        bool operator != (const Vector2& other) const {
+            return !de::fequal(x, other.x) || !de::fequal(y, other.y);
+        }
         bool operator > (const Vector2& other) const {
             return x > other.x && y > other.y;
         }
@@ -98,6 +104,12 @@ namespace de
         }
         ddouble length() const { 
             return std::sqrt(ddouble(x*x + y*y)); 
+        }
+        Type distance(const Vector2& other) const {
+            return Vector2(other.x - x, other.y - y).length();
+        }
+        Type dotProduct(const Vector2& other) const {
+            return x * other.x + y * other.y;
         }
         String asText() const { 
             std::ostringstream s;
@@ -116,6 +128,16 @@ namespace de
         Type max() const {
             return de::max(x, y);
         }
+        /// @return              @c true, if the two vectors are parallel.
+        bool isParallel(const Vector2& other) const {
+            // Both must be non-zero vectors.
+            if(length() == 0 || other.length() == 0)
+                return true;
+            // If it's close enough, we'll consider them parallel.
+            Type dot = dotProduct(other) / length() / other.length();
+            return dot > de::EPSILON || dot < -de::EPSILON;
+        }
+
         // Implements ISerializable.
         void operator >> (Writer& to) const {
             to << x << y;
@@ -123,7 +145,7 @@ namespace de
         void operator << (Reader& from) {
             from >> x >> y;
         }
-        
+
     public:
         Type x;
         Type y;  
@@ -188,6 +210,12 @@ namespace de
             Vector2<Type>::y -= other.y;
             z -= other.z;
             return *this;
+        }
+        bool operator == (const Vector3& other) const {
+            return !(*this != other);
+        }
+        bool operator != (const Vector3& other) const {
+            return Vector2<Type>::operator != (other) || !de::fequal(z, other.z);
         }
         bool operator > (const Vector3& other) const {
             return Vector2<Type>::operator > (other) && z > other.z;
@@ -300,6 +328,12 @@ namespace de
             Vector3<Type>::z -= other.z;
             w -= other.w;
             return *this;
+        }
+        bool operator == (const Vector4& other) const {
+            return !(*this != other);
+        }
+        bool operator != (const Vector4& other) const {
+            return Vector3<Type>::operator != (other) || !de::fequal(w, other.w);
         }
         bool operator > (const Vector4& other) const {
             return Vector3<Type>::operator > (other) && w > other.w;
