@@ -27,15 +27,75 @@
 #include "de/Reader"
 #include "de/App"
 #include "de/Library"
+#include "de/Polyobj"
 
 using namespace de;
 
-namespace de
+namespace
 {
-    static Vertex* rootVtx; // Used when sorting vertex line owners.
+Vertex* rootVtx; // Used when sorting vertex line owners.
 
-    /// \todo Should these be in de::World?
-    static Map::ownernode_t* unusedNodeList = NULL;
+/// \todo Should these be in de::World?
+Map::ownernode_t* unusedNodeList = NULL;
+
+struct losdata_t {
+    dint flags; // LS_* flags @see lineSightFlags
+    divline_t trace;
+    dfloat startZ; // Eye z of looker.
+    dfloat topSlope; // Slope to top of target.
+    dfloat bottomSlope; // Slope to bottom of target.
+    dfloat bBox[4];
+    dfloat to[3];
+};
+
+/*zblockset_t *shadowLinksBlockSet;
+struct shadowlinkerparms_t {
+    LineDef* lineDef;
+    dbyte side;
+};*/
+
+bool updateVertexShadowOffsets(Vertex* vertex, void* paramaters)
+{
+    reinterpret_cast<MVertex*>(vertex->data)->updateShadowOffsets();
+    return true; // Continue iteration.
+}
+
+#if 0
+/**
+ * Link a seg to an arbitary subsector for the purposes of shadowing.
+ */
+void linkShadowLineDefToSubsector(LineDef* line, dbyte side, Subsector_t* subsector)
+{
+    shadowlink_t* link;
+
+#ifdef _DEBUG
+// Check the links for dupes!
+for(shadowlink_t* i = subsector->shadows; i; i = i->next)
+    if(i->lineDef == line && i->side == side)
+        LOG_ERROR("linkShadowLineDefToSubsector: Already here!!");
+#endif
+
+    // We'll need to allocate a new link.
+    link = Z_BlockNewElement(shadowLinksBlockSet);
+
+    // The links are stored into a linked list.
+    link->next = subsector->shadows;
+    subsector->shadows = link;
+    link->lineDef = line;
+    link->side = side;
+}
+
+/**
+ * If the shadow polygon (parm) contacts the subsector, link the poly
+ * to the subsector's shadow list.
+ */
+bool RIT_ShadowSubsectorLinker(Subsector* subsector, void* paramaters)
+{
+    shadowlinkerparms_t* data = reinterpret_cast<shadowlinkerparms_t*>(paramaters);
+    linkShadowLineDefToSubsector(data->lineDef, data->side, subsector);
+    return true;
+}
+#endif
 }
 
 Map::Map()
@@ -57,11 +117,11 @@ static bool destroyLinkedSubsector(Face* face, void* paramaters)
     return true; // Continue iteration.
 }
 
-static bool destroyLinkedSeg(HalfEdge* hEdge, void* paramaters)
+static bool destroyLinkedSeg(HalfEdge* halfEdge, void* paramaters)
 {
-    Seg* seg = reinterpret_cast<Seg*>(hEdge->data);
+    Seg* seg = reinterpret_cast<Seg*>(halfEdge->data);
     if(seg) delete seg;
-    hEdge->data = NULL;
+    halfEdge->data = NULL;
     return true; // Continue iteration.
 }
 
@@ -157,54 +217,29 @@ Map::~Map()
     if(lineDefLinks)
         std::free(lineDefLinks); lineDefLinks = NULL;
 
-    if(sideDefs)
-    {
-        for(duint i = 0; i < _numSideDefs; ++i)
-            delete sideDefs[i];
-        std::free(sideDefs);
-    }
-    sideDefs = NULL;
-    _numSideDefs = 0;
+    FOR_EACH(i, _sideDefs, SideDefs::iterator)
+        delete *i;
+    _sideDefs.clear();
 
-    if(lineDefs)
-    {
-        for(duint i = 0; i < _numLineDefs; ++i)
-            delete lineDefs[i];
-        std::free(lineDefs);
-    }
-    lineDefs = NULL;
-    _numLineDefs = 0;
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
+        delete *i;
+    _lineDefs.clear();
 
     if(lineOwners)
         Z_Free(lineOwners);
     lineOwners = NULL;
 
-    if(polyObjs)
-    {
-        for(duint i = 0; i < _numPolyObjs; ++i)
-            delete polyObjs[i];
-        std::free(>polyObjs);
-    }
-    polyObjs = NULL;
-    _numPolyObjs = 0;
+    FOR_EACH(i, _polyobjs, Polyobjs::iterator)
+        delete *i;
+    _polyobjs.clear();
 
-    if(sectors)
-    {
-        for(duint i = 0; i < _numSectors; ++i)
-            delete sectors[i];
-        std::free(sectors);
-    }
-    sectors = NULL;
-    _numSectors = 0;
+    FOR_EACH(i, _sectors, Sectors::iterator)
+        delete *i;
+    _sectors.clear();
 
-    if(planes)
-    {
-        for(duint i = 0; i < _numPlanes; ++i)
-            delete planes[i];
-        std::free(planes);
-    }
-    planes = NULL;
-    _numPlanes = 0;
+    FOR_EACH(i, _planes, Planes::iterator)
+        delete *i;
+    _planes.clear();
 
     if(segs) std::free(segs);
 
@@ -485,61 +520,41 @@ void Map::operator << (Reader& from)
 
 LineDef* Map::createLineDef2()
 {
-    LineDef* lineDef = new LineDef();
-
-    lineDefs = reinterpret_cast<LineDef**>(std::realloc(lineDefs, sizeof(LineDef*) * (++_numLineDefs + 1)));
-    lineDefs[_numLineDefs-1] = lineDef;
-    lineDefs[_numLineDefs] = NULL;
-
-    lineDef->buildData.index = _numLineDefs; // 1-based index.
+    _lineDefs.push_back(new LineDef());
+    LineDef* lineDef = _lineDefs[_lineDefs.size()-1];
+    lineDef->buildData.index = _lineDefs.size(); // 1-based index.
     return lineDef;
 }
 
 SideDef* Map::createSideDef2()
 {
-    SideDef* sideDef = new SideDef();
-
-    sideDefs = reinterpret_cast<SideDef**>(std::realloc(sideDefs, sizeof(SideDef*) * (++_numSideDefs + 1)));
-    sideDefs[_numSideDefs-1] = sideDef;
-    sideDefs[_numSideDefs] = NULL;
-
-    sideDef->buildData.index = _numSideDefs; // 1-based index.
+    _sideDefs.push_back(new SideDef());
+    SideDef* sideDef = _sideDefs[_sideDefs.size()-1];
+    sideDef->buildData.index = _sideDefs.size(); // 1-based index.
     return sideDef;
 }
 
 Sector* Map::createSector2()
 {
-    Sector* sector = new Sector();
-
-    sectors = reinterpret_cast<Sector**>(std::realloc(sectors, sizeof(Sector*) * (++_numSectors + 1)));
-    sectors[_numSectors-1] = sector;
-    sectors[_numSectors] = NULL;
-
-    sector->buildData.index = _numSectors; // 1-based index.
+    _sectors.push_back(new Sector());
+    Sector* sector = _sectors[_sectors.size()-1];
+    sector->buildData.index = _sectors.size(); // 1-based index.
     return sector;
 }
 
 Plane* Map::createPlane2()
 {
-    Plane* plane = new Plane();
-
-    planes = reinterpret_cast<Plane**>(std::realloc(planes, sizeof(Plane*) * (++_numPlanes + 1)));
-    planes[_numPlanes-1] = plane;
-    planes[_numPlanes] = NULL;
-
-    plane->buildData.index = _numPlanes; // 1-based index.
+    _planes.push_back(new Plane());
+    Plane* plane = _planes[_planes.size()-1];
+    plane->buildData.index = _planes.size(); // 1-based index.
     return plane;
 }
 
 Polyobj* Map::createPolyobj2()
 {
-    Polyobj* polyobj = new Polyobj()
-
-    polyobjs = reinterpret_cast<Polyobj**>(std::realloc(polyobjs, sizeof(Polyobj*) * (++_numPolyobjs + 1)));
-    polyobjs[_numPolyobjs-1] = po;
-    polyobjs[_numPolyobjs] = NULL;
-
-    polyobj->buildData.index = _numPolyobjs; // 1-based index, 0 = NIL.
+    _polyobjs.push_back(new Polyobj());
+    Polyobj* polyobj = _polyobjs[_polyobjs.size()-1];
+    polyobj->buildData.index = _polyobjs.size(); // 1-based index, 0 = NIL.
     return polyobj;
 }
 
@@ -592,16 +607,6 @@ Map::objcontact_t* Map::allocObjContact(void)
     return con;
 }
 
-void Map::clearSectorFlags()
-{
-    for(duint i = 0; i < _numSectors; ++i)
-    {
-        Sector* sec = sectors[i];
-        // Clear all flags that can be cleared before each frame.
-        sec->frameFlags &= ~Sector::FRAME_CLEARMASK;
-    }
-}
-
 /**
  * The given LineDef might cross the Thing. If necessary, link the Thing into
  * the LineDef's Thing link ring.
@@ -610,10 +615,10 @@ static bool PIT_LinkToLineDef(LineDef* lineDef, void* paramaters)
 {
     Map::linelinker_data_t* data = reinterpret_cast<Map::linelinker_data_t*>(paramaters);
 
-    if(data->box[1][0] <= lineDef->bBox[BOXLEFT] ||
-       data->box[0][0] >= lineDef->bBox[BOXRIGHT] ||
-       data->box[1][1] <= lineDef->bBox[BOXBOTTOM] ||
-       data->box[0][1] >= lineDef->bBox[BOXTOP])
+    if(data->box[1][0] <= lineDef->aaBounds[BOXLEFT] ||
+       data->box[0][0] >= lineDef->aaBounds[BOXRIGHT] ||
+       data->box[1][1] <= lineDef->aaBounds[BOXBOTTOM] ||
+       data->box[0][1] >= lineDef->aaBounds[BOXTOP])
         // Bounding boxes do not overlap.
         return true;
 
@@ -788,7 +793,7 @@ Subsector& Map::pointInSubsector(dfloat x, dfloat y) const
     while(!tree->isLeaf())
     {
         const Node* node = reinterpret_cast<Node*>(tree->data());
-        tree = tree->child(R_PointOnSide(x, y, &node->partition));
+        tree = tree->child(node->partition.pointOnSide(x, y));
     }
 
     Face* face = reinterpret_cast<Face*>(tree->data());
@@ -799,38 +804,34 @@ Sector* Map::sectorForOrigin(const void* ddMobjBase) const
 {
     assert(ddMobjBase);
 
-    for(duint i = 0; i < _numSectors; ++i)
+    FOR_EACH(i, _sectors, Sectors::const_iterator)
     {
-        if(ddMobjBase == &sectors[i]->soundOrg)
-            return sectors[i];
+        if(ddMobjBase == &((*i)->soundOrg))
+            return *i;
     }
     return NULL;
 }
 
-#if 0
-Polyobj* Map::polyobjForOrigin(void* ddMobjBase) const
+Polyobj* Map::polyobjForOrigin(const void* ddMobjBase) const
 {
     assert(ddMobjBase);
 
-    for(duint i = 0; i < _numPolyObjs; ++i)
+    FOR_EACH(i, _polyobjs, Polyobjs::const_iterator)
     {
-        if(ddMobjBase == (ddmobj_base_t*) polyObjs[i])
-            return polyObjs[i];
+        if(ddMobjBase == reinterpret_cast<ddmobj_base_t*>(*i))
+            return *i;
     }
     return NULL;
 }
-#endif
 
 #if 0
 static void spawnMapParticleGens()
 {
-    ded_generator_t* def;
-    int i;
-
     if(isDedicated || !useParticles)
         return;
 
-    for(i = 0, def = defs.generators; i < defs.count.generators.num; ++i, def++)
+    ded_generator_t* def;
+    for(dint i = 0, def = defs.generators; i < defs.count.generators.num; ++i, def++)
     {
         if(!def->map[0] || stricmp(def->map, map->mapID))
             continue;
@@ -916,7 +917,7 @@ static void checkPtcPlanes(map_t* map)
         for(p = 0; p < 2; ++p)
         {
             uint plane = p;
-            material_t* mat = sector->SP_planematerial(plane);
+            Material* mat = sector->SP_planematerial(plane);
             const ded_generator_t* def = Material_GetGenerator(mat);
 
             if(!def)
@@ -1019,29 +1020,28 @@ void Map::update()
 #endif
 
     // Update all world surfaces.
-    for(duint i = 0; i < _numSectors; ++i)
+    FOR_EACH(i, _sectors, Sectors::iterator)
     {
-        Sector& sector = *sectors[i];
-        sector.floor().surface.update();
-        sector.ceiling().surface.update();
+        Sector* sector = *i;
+        sector->floor().surface().update();
+        sector->ceiling().surface().update();
     }
 
-    for(duint i = 0; i < _numSideDefs; ++i)
+    FOR_EACH(i, _sideDefs, SideDefs::iterator)
     {
-        SideDef& sideDef = *sideDefs[i];
-        sideDef.middle().update();
-        sideDef.bottom().update();
-        sideDef.top().update();
+        SideDef* sideDef = *i;
+        sideDef->middle().update();
+        sideDef->bottom().update();
+        sideDef->top().update();
     }
 
-    for(duint i = 0; i < _numPolyObjs; ++i)
+    FOR_EACH(i, _polyobjs, Polyobjs::iterator)
     {
-        Polyobj& polyobj = *polyObjs[i];
-
-        for(duint j = 0; j < polyobj.numLineDefs; ++j)
+        Polyobj* polyobj = *i;
+        for(duint j = 0; j < polyobj->_numLineDefs; ++j)
         {
-            LineDef& lineDef = *((LineDef*)(((objectrecord_t*) polyobj.lineDefs[j])->obj));
-            lineDef.front().middle().update();
+            LineDef* lineDef = reinterpret_cast<LineDef*>((reinterpret_cast<objectrecord_t*>(polyobj->lineDefs[j]))->obj);
+            lineDef->front().middle().update();
         }
     }
 }
@@ -1058,20 +1058,20 @@ bool Map::resetPlaneHeightTracking(Plane* plane)
     _watchedPlanes.erase(plane);
 
     /// @fixme Use Observer.
-    for(duint i = 0; i < _numSectors; ++i)
+    FOR_EACH(i, _sectors, Sectors::iterator)
     {
-        Sector& sector = *sectors[i];
+        Sector* sector = *i;
 
         // We can early out after the first match.
-        if(&sector.floor() == plane)
+        if(&sector->floor() == plane)
         {
-            R_MarkDependantSurfacesForDecorationUpdate(sector);
+            sector->markDependantSurfacesForDecorationUpdate();
             return true; // Continue iteration.
         }
 
-        if(&sector.ceiling() == plane)
+        if(&sector->ceiling() == plane)
         {
-            R_MarkDependantSurfacesForDecorationUpdate(sector);
+            sector->markDependantSurfacesForDecorationUpdate();
             return true; // Continue iteration.
         }
     }
@@ -1088,20 +1088,20 @@ bool Map::interpolatePlaneHeight(Plane* plane, dfloat frameTimePos)
         _watchedPlanes.erase(plane);
 
     /// @fixme Use Observer.
-    for(duint i = 0; i < _numSectors; ++i)
+    FOR_EACH(i, _sectors, Sectors::iterator)
     {
-        Sector& sector = *sectors[i];
+        Sector* sector = *i;
 
         // We can early out after the first match.
-        if(&sector.floor() == plane)
+        if(&sector->floor() == plane)
         {
-            R_MarkDependantSurfacesForDecorationUpdate(sector);
+            sector->markDependantSurfacesForDecorationUpdate();
             return true; // Continue iteration.
         }
 
-        if(&sector.ceiling() == plane)
+        if(&sector->ceiling() == plane)
         {
-            R_MarkDependantSurfacesForDecorationUpdate(sector);
+            sector->markDependantSurfacesForDecorationUpdate();
             return true; // Continue iteration.
         }
     }
@@ -1169,6 +1169,7 @@ void Map::updateMovingSurfaces()
         (*i)->updateScroll();
 }
 
+#if 0
 typedef struct {
     arvec2_t        bounds;
     boolean         inited;
@@ -1458,11 +1459,12 @@ static void buildLumobjBlockmap(map_t* map)
 #undef BLOCK_WIDTH
 #undef BLOCK_HEIGHT
 }
+#endif
 
 static dint C_DECL vertexCompare(const void* p1, const void* p2)
 {
-    const Vertex* a = *((const void**) p1);
-    const Vertex* b = *((const void**) p2);
+    const Vertex* a = reinterpret_cast<const Vertex*>(*((const void**) p1));
+    const Vertex* b = reinterpret_cast<const Vertex*>(*((const void**) p2));
 
     if(a == b)
         return 0;
@@ -1500,33 +1502,33 @@ static void detectDuplicateVertices(HalfEdgeDS& halfEdgeDS)
 
 void Map::findEquivalentVertexes()
 {
-    for(duint i = 0; i < _numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        LineDef* l = lineDefs[i];
+        LineDef* lineDef = *i;
 
         // Handle duplicated vertices.
-        while(reinterpret_cast<MVertex*>(l->buildData.v[0]->data)->equiv)
+        while(reinterpret_cast<MVertex*>(lineDef->buildData.v[0]->data)->equiv)
         {
-            reinterpret_cast<MVertex*>(l->buildData.v[0]->data)->refCount--;
-            l->buildData.v[0] = reinterpret_cast<MVertex*>(l->buildData.v[0]->data)->equiv;
-            reinterpret_cast<MVertex*>(l->buildData.v[0]->data)->refCount++;
+            reinterpret_cast<MVertex*>(lineDef->buildData.v[0]->data)->refCount--;
+            lineDef->buildData.v[0] = reinterpret_cast<MVertex*>(lineDef->buildData.v[0]->data)->equiv;
+            reinterpret_cast<MVertex*>(lineDef->buildData.v[0]->data)->refCount++;
         }
 
-        while(reinterpret_cast<MVertex*>(l->buildData.v[1]->data)->equiv)
+        while(reinterpret_cast<MVertex*>(lineDef->buildData.v[1]->data)->equiv)
         {
-            reinterpret_cast<MVertex*>(l->buildData.v[1]->data)->refCount--;
-            l->buildData.v[1] = reinterpret_cast<MVertex*>(l->buildData.v[1]->data)->equiv;
-            reinterpret_cast<MVertex*>(l->buildData.v[1]->data)->refCount++;
+            reinterpret_cast<MVertex*>(lineDef->buildData.v[1]->data)->refCount--;
+            lineDef->buildData.v[1] = reinterpret_cast<MVertex*>(lineDef->buildData.v[1]->data)->equiv;
+            reinterpret_cast<MVertex*>(lineDef->buildData.v[1]->data)->refCount++;
         }
     }
 }
 
 void Map::pruneLineDefs()
 {
-    duint newNum = 0, unused = 0;
-    for(duint i = 0; i < _numLineDefs; ++i)
+    LineDefs::size_type newIndex = 0, unused = 0;
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        LineDef* l = lineDefs[i];
+        LineDef* l = *i;
 
         if(!l->buildData.sideDefs[LineDef::FRONT] && !l->buildData.sideDefs[LineDef::BACK])
         {
@@ -1535,22 +1537,23 @@ void Map::pruneLineDefs()
             continue;
         }
 
-        l->buildData.index = newNum + 1;
-        lineDefs[newNum++] = l;
+        l->buildData.index = newIndex + 1;
+        _lineDefs[newIndex++] = l;
     }
 
-    if(newNum < _numLineDefs)
+    if(newIndex != _lineDefs.size())
     {
         if(unused > 0)
             LOG_MESSAGE("  Pruned %d unused linedefs.") << unused;
-        _numLineDefs = newNum;
+
+        _lineDefs.resize(newIndex);
     }
 }
 
 void Map::pruneVertexes()
 {
-    dsize numVertices = halfEdgeDS().numVertices();
-    dsize newNum = 0, unused = 0;
+    HalfEdgeDS::Vertices::size_type numVertices = halfEdgeDS().numVertices();
+    HalfEdgeDS::Vertices::size_type newIndex = 0, unused = 0;
     for(dsize i = 0; i < numVertices; ++i)
     {
         Vertex* v = halfEdgeDS().vertices[i];
@@ -1564,13 +1567,13 @@ void Map::pruneVertexes()
             continue;
         }
 
-        reinterpret_cast<MVertex*>(v->data)->index = newNum + 1;
-        halfEdgeDS().vertices[newNum++] = v;
+        reinterpret_cast<MVertex*>(v->data)->index = newIndex + 1;
+        halfEdgeDS().vertices[newIndex++] = v;
     }
 
-    if(newNum < numVertices)
+    if(newIndex != numVertices)
     {
-        dsize dupNum = numVertices - newNum - unused;
+        SideDefs::size_type dupNum = numVertices - newIndex - unused;
 
         if(unused > 0)
             LOG_MESSAGE("  Pruned %d unused vertices.") << unused;
@@ -1578,16 +1581,16 @@ void Map::pruneVertexes()
         if(dupNum > 0)
             LOG_MESSAGE("  Pruned %d duplicate vertices.") << dupNum;
 
-        halfEdgeDS().vertices.resize(newNum);
+        halfEdgeDS().vertices.resize(newIndex);
     }
 }
 
 void Map::pruneSideDefs()
 {
-    duint newNum = 0, unused = 0;
-    for(duint i = 0; i < _numSideDefs; ++i)
+    SideDefs::size_type newIndex = 0, unused = 0;
+    FOR_EACH(i, _sideDefs, SideDefs::iterator)
     {
-        SideDef* s = sideDefs[i];
+        SideDef* s = *i;
 
         if(s->buildData.refCount == 0)
         {
@@ -1596,13 +1599,13 @@ void Map::pruneSideDefs()
             continue;
         }
 
-        s->buildData.index = newNum + 1;
-        sideDefs[newNum++] = s;
+        s->buildData.index = newIndex + 1;
+        _sideDefs[newIndex++] = s;
     }
 
-    if(newNum < _numSideDefs)
+    if(newIndex != _sideDefs.size())
     {
-        dint dupNum = _numSideDefs - newNum - unused;
+        SideDefs::size_type dupNum = _sideDefs.size() - newIndex - unused;
 
         if(unused > 0)
             LOG_MESSAGE("  Pruned %d unused sidedefs.") << unused;
@@ -1610,24 +1613,24 @@ void Map::pruneSideDefs()
         if(dupNum > 0)
             LOG_MESSAGE("  Pruned %d duplicate sidedefs.") << dupNum;
 
-        _numSideDefs = newNum;
+        _sideDefs.resize(newIndex);
     }
 }
 
 void Map::pruneSectors()
 {
-    for(duint i = 0; i < _numSideDefs; ++i)
+    FOR_EACH(i, _sideDefs, SideDefs::iterator)
     {
-        const SideDef& s = *sideDefs[i];
-        if(!s.hasSector())
+        SideDef* s = *i;
+        if(!s->hasSector())
             continue;
-        s.sector().buildData.refCount++;
+        s->sector().buildData.refCount++;
     }
 
-    duint newNum = 0;
-    for(duint i = 0; i < _numSectors; ++i)
+    Sectors::size_type newIndex = 0;
+    FOR_EACH(i, _sectors, Sectors::iterator)
     {
-        Sector* s = sectors[i];
+        Sector* s = *i;
 
         if(s->buildData.refCount == 0)
         {
@@ -1635,14 +1638,14 @@ void Map::pruneSectors()
             continue;
         }
 
-        s->buildData.index = newNum + 1;
-        sectors[newNum++] = s;
+        s->buildData.index = newIndex + 1;
+        _sectors[newIndex++] = s;
     }
 
-    if(newNum < _numSectors)
+    if(newIndex != _sectors.size())
     {
-        LOG_MESSAGE("  Pruned %d unused sectors.") << _numSectors - newNum;
-        _numSectors = newNum;
+        LOG_MESSAGE("  Pruned %d unused sectors.") << _sectors.size() - newIndex;
+        _sectors.resize(newIndex);
     }
 }
 
@@ -1675,81 +1678,64 @@ void Map::pruneUnusedObjects(dint flags)
 */
 }
 
-void Map::hardenSectorSubsectorSet(duint sectorIndex)
-{
-    Sector& sector = *sectors[sectorIndex];
-    for(duint i = 0; i < _numSubsectors; ++i)
-    {
-        Subsector& subsector = *subsectors[i];
-        if(&subsector.sector() == &sector)
-            sector.subsectors.insert(&subsector);
-    }
-}
-
 void Map::buildSectorSubsectorSets()
 {
-    for(duint i = 0; i < _numSectors; ++i)
-        hardenSectorSubsectorSet(i);
+    FOR_EACH(i, _sectors, Sectors::iterator)
+        (*i)->buildSubsectorSet();
 }
 
 void Map::buildSectorLineDefSets()
 {
     typedef struct linelink_s {
-        linedef_t*      line;
+        LineDef* lineDef;
         struct linelink_s *next;
     } linelink_t;
 
-    uint i, j;
     zblockset_t* lineLinksBlockSet;
     linelink_t** sectorLineLinks;
 
     // build line tables for each sector.
     lineLinksBlockSet = Z_BlockCreate(sizeof(linelink_t), 512, PU_STATIC);
-    sectorLineLinks = M_Calloc(sizeof(linelink_t*) * map->numSectors);
+    sectorLineLinks = M_Calloc(sizeof(linelink_t*) * _sectors.size());
 
-    for(i = 0; i < map->numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        linedef_t* li = map->lineDefs[i];
-        uint secIDX;
-        linelink_t* link;
+        LineDef* lineDef = *i;
 
-        if(li->flags & LF_POLYOBJ)
+        if(lineDef->polyobjOwned)
             continue;
 
-        if(LINE_FRONTSIDE(li))
+        if(lineDef->hasFront())
         {
-            link = Z_BlockNewElement(lineLinksBlockSet);
+            linelink_t* link = Z_BlockNewElement(lineLinksBlockSet);
 
-            secIDX = P_ObjectRecord(DMU_SECTOR, LINE_FRONTSECTOR(li))->id - 1;
-            link->line = li;
+            duint secIDX = P_ObjectRecord(DMU_SECTOR, lineDef->frontSector())->id - 1;
+            link->lineDef = lineDef;
 
             link->next = sectorLineLinks[secIDX];
             sectorLineLinks[secIDX] = link;
-            LINE_FRONTSECTOR(li)->lineDefCount++;
         }
 
-        if(LINE_BACKSIDE(li) && LINE_BACKSECTOR(li) != LINE_FRONTSECTOR(li))
+        if(lineDef->hasBack() && &lineDef->backSector() != &lineDef->frontSector())
         {
-            link = Z_BlockNewElement(lineLinksBlockSet);
+            linelink_t* link = Z_BlockNewElement(lineLinksBlockSet);
 
-            secIDX = P_ObjectRecord(DMU_SECTOR, LINE_BACKSECTOR(li))->id - 1;
-            link->line = li;
+            duint secIDX = P_ObjectRecord(DMU_SECTOR, lineDef->backSector())->id - 1;
+            link->lineDef = lineDef;
 
             link->next = sectorLineLinks[secIDX];
             sectorLineLinks[secIDX] = link;
-            LINE_BACKSECTOR(li)->lineDefCount++;
         }
     }
 
     // Harden the sector line links into arrays.
-    for(i = 0; i < map->numSectors; ++i)
+    FOR_EACH(i, _sectors, Sectors::iterator)
     {
-        sector_t* sector = map->sectors[i];
+        Sector* sector = *i;
 
         if(sectorLineLinks[i])
         {
             linelink_t* link = sectorLineLinks[i];
-            uint numLineDefs;
 
             /**
              * The behaviour of some algorithms used in original DOOM are
@@ -1758,21 +1744,20 @@ void Map::buildSectorLineDefSets()
              *
              * Sort: LineDef index ascending (zero based).
              */
-            numLineDefs = 0;
+            duint numLineDefs = 0;
             while(link)
             {
                 numLineDefs++;
                 link = link->next;
             }
 
-            sector->lineDefs =
-                Z_Malloc((numLineDefs + 1) * sizeof(linedef_t*), PU_STATIC, 0);
+            sector->lineDefs = Z_Malloc((numLineDefs + 1) * sizeof(LineDef*), PU_STATIC, 0);
 
-            j = numLineDefs - 1;
+            duint j = numLineDefs - 1;
             link = sectorLineLinks[i];
             while(link)
             {
-                sector->lineDefs[j--] = link->line;
+                sector->lineDefs[j--] = link->lineDef;
                 link = link->next;
             }
 
@@ -1791,148 +1776,127 @@ void Map::buildSectorLineDefSets()
     M_Free(sectorLineLinks);
 }
 
-static void finishSectors2(map_t* map)
+void Map::finishSectors2()
 {
-    uint i;
-
-    for(i = 0; i < map->numSectors; ++i)
+    FOR_EACH(i, _sectors, Sectors::iterator)
     {
-        uint k;
-        float min[2], max[2];
-        sector_t* sec = map->sectors[i];
+        Sector* sec = *i;
 
-        Sector_UpdateBounds(sec);
-        Sector_Bounds(sec, min, max);
-
+        sec->updateBounds();
+        Vector2f min, max;
+        sec->bounds(min, max);
         // Set the degenmobj_t to the middle of the bounding box.
-        sec->soundOrg.pos[0] = (min[0] + max[0]) / 2;
-        sec->soundOrg.pos[1] = (min[1] + max[1]) / 2;
-        sec->soundOrg.pos[VZ] = 0;
+        sec->soundOrg.pos.x = (min.x + max.x) / 2;
+        sec->soundOrg.pos.y = (min.y + max.y) / 2;
+        sec->soundOrg.pos.z = 0;
 
         // Set the position of the sound origin for all plane sound origins.
         // Set target heights for all planes.
-        for(k = 0; k < sec->planeCount; ++k)
-        {
-            sec->planes[k]->target = sec->planes[k]->height;
-        }
+        sec->floor().target = sec->floor().height;
+        sec->ceiling().target = sec->ceiling().height;
     }
 }
 
-static void updateMapBounds(map_t* map)
+void Map::updateAABounds()
 {
-    uint i;
-
-    memset(map->bBox, 0, sizeof(map->bBox));
-    for(i = 0; i < map->numSectors; ++i)
+    if(_sectors.size() == 0)
     {
-        sector_t* sec = map->sectors[i];
+        aaBounds = MapRectangle(0, 0, 0, 0);
+        return;
+    }
 
-        if(i == 0)
+    FOR_EACH(i, _sectors, Sectors::iterator)
+    {
+        Sector* sec = *i;
+
+        if(i == _sectors.begin())
         {
             // The first sector is used as is.
-            memcpy(map->bBox, sec->bBox, sizeof(map->bBox));
+            aaBounds = sec->aaBounds;
         }
         else
         {
             // Expand the bounding box.
-            M_JoinBoxes(map->bBox, sec->bBox);
+            M_JoinBoxes(aaBounds, sec->aaBounds);
         }
     }
 }
 
-/**
- * Completes the linedef loading by resolving the front/back
- * sector ptrs which we couldn't do earlier as the sidedefs
- * hadn't been loaded at the time.
- */
-static void finishLineDefs2(map_t* map)
+void Map::finishLineDefs2()
 {
-    uint i;
-
-    for(i = 0; i < map->numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        linedef_t* ld = map->lineDefs[i];
-        vertex_t* v[2];
+        LineDef* ld = *i;
 
-        if(!ld->hEdges[0])
+        if(!ld->halfEdges[0])
             continue;
 
-        v[0] = ld->hEdges[0]->HE_v1;
-        v[1] = ld->hEdges[1]->HE_v2;
-
-        ld->dX = v[1]->pos[0] - v[0]->pos[0];
-        ld->dY = v[1]->pos[1] - v[0]->pos[1];
+        ld->delta = ld->vtx2().pos - ld->vtx1().pos;
 
         // Calculate the accurate length of each line.
-        ld->length = P_AccurateDistance(ld->dX, ld->dY);
-        ld->angle = bamsAtan2((int) (v[1]->pos[1] - v[0]->pos[1]),
-                              (int) (v[1]->pos[0] - v[0]->pos[0])) << FRACBITS;
+        ld->length = ld->delta.length();
+        ld->angle = bamsAtan2(dint(ld->delta.y), dint(ld->delta.x)) << FRACBITS;
 
-        if(!ld->dX)
-            ld->slopeType = ST_VERTICAL;
-        else if(!ld->dY)
-            ld->slopeType = ST_HORIZONTAL;
+        if(fequal(ld->delta.x, 0))
+            ld->slopeType = LineDef::ST_VERTICAL;
+        else if(fequal(ld->delta.y, 0))
+            ld->slopeType = LineDef::ST_HORIZONTAL;
         else
         {
-            if(ld->dY / ld->dX > 0)
-                ld->slopeType = ST_POSITIVE;
+            if(ld->delta.y / ld->delta.x > 0)
+                ld->slopeType = LineDef::ST_POSITIVE;
             else
-                ld->slopeType = ST_NEGATIVE;
+                ld->slopeType = LineDef::ST_NEGATIVE;
         }
 
-        if(v[0]->pos[0] < v[1]->pos[0])
+        if(ld->vtx1().pos.x < ld->vtx2().pos.x)
         {
-            ld->bBox[BOXLEFT]   = v[0]->pos[0];
-            ld->bBox[BOXRIGHT]  = v[1]->pos[0];
+            ld->aaBounds.left   = ld->vtx1().pos.x;
+            ld->aaBounds.right  = ld->vtx2().pos.x;
         }
         else
         {
-            ld->bBox[BOXLEFT]   = v[1]->pos[0];
-            ld->bBox[BOXRIGHT]  = v[0]->pos[0];
+            ld->aaBounds.left   = ld->vtx2().pos.x;
+            ld->aaBounds.right  = ld->vtx1().pos.x;
         }
 
-        if(v[0]->pos[1] < v[1]->pos[1])
+        if(ld->vtx1().pos.y < ld->vtx2().pos.y)
         {
-            ld->bBox[BOXBOTTOM] = v[0]->pos[1];
-            ld->bBox[BOXTOP]    = v[1]->pos[1];
+            ld->aaBounds.bottom = ld->vtx1().pos.y;
+            ld->aaBounds.top    = ld->vtx2().pos.y;
         }
         else
         {
-            ld->bBox[BOXBOTTOM] = v[1]->pos[1];
-            ld->bBox[BOXTOP]    = v[0]->pos[1];
+            ld->aaBounds.bottom = ld->vtx2().pos.y;
+            ld->aaBounds.top    = ld->vtx1().pos.y;
         }
     }
 }
 
-static void findSubsectorMidPoints(map_t* map)
+void Map::findSubsectorMidPoints()
 {
-    uint i;
-
-    for(i = 0; i < map->numSubsectors; ++i)
+    for(duint i = 0; i < _numSubsectors; ++i)
     {
-        subsector_t* subsector = map->subsectors[i];
+        Subsector* subsector = _subsectors[i];
 
-        Subsector_UpdateMidPoint(subsector);
+        subsector->updateMidPoint();
     }
 }
 
 /**
- * Compares the angles of two lines that share a common vertex.
+ * Compares the angles of two linelefs that share a common vertex.
  *
  * pre: rootVtx must point to the vertex common between a and b
  *      which are (lineowner_t*) ptrs.
  */
-static int C_DECL lineAngleSorter(const void* a, const void* b)
+static dint C_DECL lineAngleSorter(const void* a, const void* b)
 {
-    uint i;
-    fixed_t dx, dy;
-    binangle_t angles[2];
+    dbinangle angles[2];
     lineowner_t* own[2];
-    linedef_t* line;
-
     own[0] = (lineowner_t*) a;
     own[1] = (lineowner_t*) b;
-    for(i = 0; i < 2; ++i)
+
+    for(duint i = 0; i < 2; ++i)
     {
         if(own[i]->LO_prev) // We have a cached result.
         {
@@ -1940,15 +1904,12 @@ static int C_DECL lineAngleSorter(const void* a, const void* b)
         }
         else
         {
-            vertex_t* otherVtx;
+            LineDef* lineDef = own[i]->lineDef;
 
-            line = own[i]->lineDef;
-            otherVtx = line->buildData.v[line->buildData.v[0] == rootVtx? 1:0];
+            Vertex* otherVtx = lineDef->buildData.v[lineDef->buildData.v[0] == rootVtx? 1:0];
 
-            dx = otherVtx->pos[0] - rootVtx->pos[0];
-            dy = otherVtx->pos[1] - rootVtx->pos[1];
-
-            own[i]->angle = angles[i] = bamsAtan2(-100 *dx, 100 * dy);
+            Vector2f delta = otherVtx->pos - rootVtx->pos;
+            own[i]->angle = angles[i] = bamsAtan2(-100 * dint(dx), 100 * dint(dy));
 
             // Mark as having a cached angle.
             own[i]->LO_prev = (lineowner_t*) 1;
@@ -1964,7 +1925,7 @@ static int C_DECL lineAngleSorter(const void* a, const void* b)
  * @return              Ptr to the newly merged list.
  */
 static lineowner_t* mergeLineOwners(lineowner_t* left, lineowner_t* right,
-                                    int (C_DECL *compare) (const void* a, const void* b))
+                                    dint (C_DECL *compare) (const void* a, const void* b))
 {
     lineowner_t tmp, *np;
 
@@ -2026,7 +1987,7 @@ static lineowner_t* splitLineOwners(lineowner_t* list)
  * This routine uses a recursive mergesort algorithm; O(NlogN)
  */
 static lineowner_t* sortLineOwners(lineowner_t* list,
-                                   int (C_DECL *compare) (const void* a, const void* b))
+                                   dint (C_DECL *compare) (const void* a, const void* b))
 {
     lineowner_t* p;
 
@@ -2041,7 +2002,7 @@ static lineowner_t* sortLineOwners(lineowner_t* list,
     return list;
 }
 
-static void setVertexLineOwner(vertexinfo_t* vInfo, linedef_t* lineDef, byte vertex,
+static void setVertexLineOwner(vertexinfo_t* vInfo, LineDef* lineDef, dbyte vertex,
                                lineowner_t** storage)
 {
     lineowner_t* newOwner;
@@ -2080,11 +2041,9 @@ static void setVertexLineOwner(vertexinfo_t* vInfo, linedef_t* lineDef, byte ver
 }
 
 #if _DEBUG
-static void checkVertexOwnerRings(vertexinfo_t* vertexInfo, uint num)
+static void checkVertexOwnerRings(vertexinfo_t* vertexInfo, duint num)
 {
-    uint i;
-
-    for(i = 0; i < num; ++i)
+    for(duint i = 0; i < num; ++i)
     {
         vertexinfo_t* vInfo = &vertexInfo[i];
 
@@ -2097,12 +2056,13 @@ static void checkVertexOwnerRings(vertexinfo_t* vertexInfo, uint num)
             owner = base = vInfo->lineOwners;
             do
             {
-                if(owner->lineDef->validCount == validCount)
-                    Con_Error("LineDef linked multiple times in owner link ring!");
+                /// LineDef linked multiple times in owner link ring?
+                assert(owner->lineDef->validCount != validCount);
                 owner->lineDef->validCount = validCount;
 
-                if(owner->LO_prev->LO_next != owner || owner->LO_next->LO_prev != owner)
-                    Con_Error("Invalid line owner link ring!");
+                /// Invalid ring?
+                assert(owner->LO_prev->LO_next == owner);
+                assert(owner->LO_next->LO_prev == owner);
 
                 owner = owner->LO_next;
             } while(owner != base);
@@ -2216,46 +2176,46 @@ static void addPlanesToDMU(map_t* map)
         P_CreateObjectRecord(DMU_PLANE, map->planes[i]);
 }
 
-static int buildSeg(hedge_t* hEdge, void* context)
+static int buildSeg(HalfEdge* halfEdge, void* context)
 {
-    HalfEdgeInfo* info = (HalfEdgeInfo*) hEdge->data;
+    HalfEdgeInfo* info = (HalfEdgeInfo*) halfEdge->data;
 
-    hEdge->data = NULL;
+    halfEdge->data = NULL;
 
     if(!(info->lineDef &&
          (!info->sector || (info->side == BACK && info->lineDef->buildData.windowEffect))))
     {
-        Map_CreateSeg((map_t*) context, info->lineDef, info->side, hEdge);
+        Map_CreateSeg((map_t*) context, info->lineDef, info->side, halfEdge);
     }
 
     return true; // Continue iteration.
 }
 
-static sector_t* pickSectorFromHEdges(const hedge_t* firstHEdge, boolean allowSelfRef)
+static sector_t* pickSectorFromHEdges(const HalfEdge* firstHEdge, boolean allowSelfRef)
 {
-    const hedge_t* hEdge;
+    const HalfEdge* halfEdge;
     sector_t* sector = NULL;
 
-    hEdge = firstHEdge;
+    halfEdge = firstHEdge;
     do
     {
-        if(!allowSelfRef && hEdge->twin &&
-           ((HalfEdgeInfo*) hEdge->data)->sector ==
-           ((HalfEdgeInfo*) hEdge->twin->data)->sector)
+        if(!allowSelfRef && halfEdge->twin &&
+           ((HalfEdgeInfo*) halfEdge->data)->sector ==
+           ((HalfEdgeInfo*) halfEdge->twin->data)->sector)
             continue;
 
-        if(((HalfEdgeInfo*) hEdge->data)->lineDef &&
-           ((HalfEdgeInfo*) hEdge->data)->sector)
+        if(((HalfEdgeInfo*) halfEdge->data)->lineDef &&
+           ((HalfEdgeInfo*) halfEdge->data)->sector)
         {
-            linedef_t* lineDef = ((HalfEdgeInfo*) hEdge->data)->lineDef;
+            linedef_t* lineDef = ((HalfEdgeInfo*) halfEdge->data)->lineDef;
 
-            if(lineDef->buildData.windowEffect && ((HalfEdgeInfo*) hEdge->data)->side == 1)
+            if(lineDef->buildData.windowEffect && ((HalfEdgeInfo*) halfEdge->data)->side == 1)
                 sector = lineDef->buildData.windowEffect;
             else
                 sector = lineDef->buildData.sideDefs[
-                    ((HalfEdgeInfo*) hEdge->data)->side]->sector;
+                    ((HalfEdgeInfo*) halfEdge->data)->side]->sector;
         }
-    } while(!sector && (hEdge = hEdge->next) != firstHEdge);
+    } while(!sector && (halfEdge = halfEdge->next) != firstHEdge);
 
     return sector;
 }
@@ -2278,9 +2238,9 @@ static boolean C_DECL buildSubsector(binarytree_t* tree, void* context)
              * On the first pass, we are picky; do not consider half-edges from
              * self-referencing linedefs. If that fails, take whatever we can find.
              */
-            sector = pickSectorFromHEdges(face->hEdge, false);
+            sector = pickSectorFromHEdges(face->halfEdge, false);
             if(!sector)
-                sector = pickSectorFromHEdges(face->hEdge, true);
+                sector = pickSectorFromHEdges(face->halfEdge, true);
 
             Map_CreateSubsector((map_t*) context, face, sector);
         }
@@ -2296,9 +2256,9 @@ static boolean C_DECL buildSubsector(binarytree_t* tree, void* context)
              * On the first pass, we are picky; do not consider half-edges from
              * self-referencing linedefs. If that fails, take whatever we can find.
              */
-            sector = pickSectorFromHEdges(face->hEdge, false);
+            sector = pickSectorFromHEdges(face->halfEdge, false);
             if(!sector)
-                sector = pickSectorFromHEdges(face->hEdge, true);
+                sector = pickSectorFromHEdges(face->halfEdge, true);
 
             Map_CreateSubsector((map_t*) context, face, sector);
         }
@@ -2660,24 +2620,24 @@ boolean Map_EditEnd(map_t* map)
         for(j = 0; j < po->numLineDefs; ++j)
         {
             linedef_t* lineDef = po->lineDefs[j];
-            hedge_t* fHEdge, *bHEdge;
+            HalfEdge* fHEdge, *bHEdge;
 
             fHEdge = Z_Calloc(sizeof(*fHEdge), PU_STATIC, 0);
             fHEdge->face = NULL;
             fHEdge->vertex = map->_halfEdgeDS->vertices[
                 ((mvertex_t*) lineDef->buildData.v[0]->data)->index - 1];
-            fHEdge->vertex->hEdge = fHEdge;
+            fHEdge->vertex->halfEdge = fHEdge;
 
             bHEdge = Z_Calloc(sizeof(*bHEdge), PU_STATIC, 0);
             bHEdge->face = NULL;
             bHEdge->vertex = map->_halfEdgeDS->vertices[
                 ((mvertex_t*) lineDef->buildData.v[1]->data)->index - 1];
-            bHEdge->vertex->hEdge = bHEdge;
+            bHEdge->vertex->halfEdge = bHEdge;
 
             fHEdge->twin = bHEdge;
             bHEdge->twin = fHEdge;
 
-            lineDef->hEdges[0] = lineDef->hEdges[1] = fHEdge;
+            lineDef->halfEdges[0] = lineDef->halfEdges[1] = fHEdge;
 
             // The original Pts are based off the anchor Pt, and are unique
             // to each linedef.
@@ -2696,7 +2656,7 @@ boolean Map_EditEnd(map_t* map)
             linedef_t* lineDef = ((objectrecord_t*) po->lineDefs[j])->obj;
             seg_t* seg = &po->segs[j];
 
-            lineDef->hEdges[0]->data = seg;
+            lineDef->halfEdges[0]->data = seg;
             seg->sideDef = map->sideDefs[lineDef->buildData.sideDefs[FRONT]->buildData.index - 1];
         }
     }
@@ -2958,14 +2918,14 @@ void Map_MarkAllSectorsForLightGridUpdate(map_t* map)
     }
 }
 
-seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge)
+seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, HalfEdge* halfEdge)
 {
     assert(map);
-    assert(hEdge);
+    assert(halfEdge);
     {
     seg_t* seg = P_CreateSeg();
 
-    seg->hEdge = hEdge;
+    seg->halfEdge = halfEdge;
     seg->side = side;
     seg->sideDef = NULL;
     if(lineDef && lineDef->buildData.sideDefs[seg->side])
@@ -2976,18 +2936,18 @@ seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge)
         linedef_t* ldef = seg->sideDef->lineDef;
         vertex_t* vtx = ldef->buildData.v[seg->side];
 
-        seg->offset = P_AccurateDistance(hEdge->HE_v1->pos[0] - vtx->pos[0],
-                                         hEdge->HE_v1->pos[1] - vtx->pos[1]);
+        seg->offset = P_AccurateDistance(halfEdge->HE_v1->pos[0] - vtx->pos[0],
+                                         halfEdge->HE_v1->pos[1] - vtx->pos[1]);
     }
 
     seg->angle =
-        bamsAtan2((int) (hEdge->twin->vertex->pos[1] - hEdge->vertex->pos[1]),
-                  (int) (hEdge->twin->vertex->pos[0] - hEdge->vertex->pos[0])) << FRACBITS;
+        bamsAtan2((int) (halfEdge->twin->vertex->pos[1] - halfEdge->vertex->pos[1]),
+                  (int) (halfEdge->twin->vertex->pos[0] - halfEdge->vertex->pos[0])) << FRACBITS;
 
     // Calculate the length of the segment. We need this for
     // the texture coordinates. -jk
-    seg->length = P_AccurateDistance(hEdge->HE_v2->pos[0] - hEdge->HE_v1->pos[0],
-                                     hEdge->HE_v2->pos[1] - hEdge->HE_v1->pos[1]);
+    seg->length = P_AccurateDistance(halfEdge->HE_v2->pos[0] - halfEdge->HE_v1->pos[0],
+                                     halfEdge->HE_v2->pos[1] - halfEdge->HE_v1->pos[1]);
 
     if(seg->length == 0)
         seg->length = 0.01f; // Hmm...
@@ -2998,8 +2958,8 @@ seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge)
     {
         surface_t* surface = &seg->sideDef->SW_topsurface;
 
-        surface->normal[1] = (hEdge->HE_v1->pos[0] - hEdge->HE_v2->pos[0]) / seg->length;
-        surface->normal[0] = (hEdge->HE_v2->pos[1] - hEdge->HE_v1->pos[1]) / seg->length;
+        surface->normal[1] = (halfEdge->HE_v1->pos[0] - halfEdge->HE_v2->pos[0]) / seg->length;
+        surface->normal[0] = (halfEdge->HE_v2->pos[1] - halfEdge->HE_v1->pos[1]) / seg->length;
         surface->normal[VZ] = 0;
 
         // All surfaces of a sidedef have the same normal.
@@ -3007,7 +2967,7 @@ seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, hedge_t* hEdge)
         memcpy(seg->sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
     }
 
-    hEdge->data = seg;
+    halfEdge->data = seg;
 
     P_CreateObjectRecord(DMU_SEG, seg);
     map->segs = Z_Realloc(map->segs, ++map->numSegs * sizeof(seg_t*), PU_STATIC);
@@ -3023,14 +2983,14 @@ subsector_t* Map_CreateSubsector(map_t* map, face_t* face, sector_t* sector)
     {
     subsector_t* subsector = P_CreateSubsector();
     size_t hEdgeCount;
-    hedge_t* hEdge;
+    HalfEdge* halfEdge;
 
     hEdgeCount = 0;
-    hEdge = face->hEdge;
+    halfEdge = face->halfEdge;
     do
     {
         hEdgeCount++;
-    } while((hEdge = hEdge->next) != face->hEdge);
+    } while((halfEdge = halfEdge->next) != face->halfEdge);
 
     subsector->face = face;
     subsector->hEdgeCount = (uint) hEdgeCount;
@@ -3373,10 +3333,10 @@ objectrecordid_t Map_CreateLineDef(map_t* map, objectrecordid_t v1,
 }
 
 static sidedef_t* createSideDef(map_t* map, sector_t* sector, short flags,
-    material_t* topMaterial, float topOffsetX, float topOffsetY, float topRed,
-    float topGreen, float topBlue, material_t* middleMaterial, float middleOffsetX,
+    Material* topMaterial, float topOffsetX, float topOffsetY, float topRed,
+    float topGreen, float topBlue, Material* middleMaterial, float middleOffsetX,
     float middleOffsetY, float middleRed, float middleGreen, float middleBlue,
-    float middleAlpha, material_t* bottomMaterial, float bottomOffsetX,
+    float middleAlpha, Material* bottomMaterial, float bottomOffsetX,
     float bottomOffsetY, float bottomRed, float bottomGreen, float bottomBlue)
 {
     sidedef_t* s = NULL;
@@ -3406,10 +3366,10 @@ static sidedef_t* createSideDef(map_t* map, sector_t* sector, short flags,
 }
 
 objectrecordid_t Map_CreateSideDef(map_t* map, objectrecordid_t sector,
-    short flags, material_t* topMaterial, float topOffsetX, float topOffsetY,
-    float topRed, float topGreen, float topBlue, material_t* middleMaterial,
+    short flags, Material* topMaterial, float topOffsetX, float topOffsetY,
+    float topRed, float topGreen, float topBlue, Material* middleMaterial,
     float middleOffsetX, float middleOffsetY, float middleRed, float middleGreen,
-    float middleBlue, float middleAlpha, material_t* bottomMaterial,
+    float middleBlue, float middleAlpha, Material* bottomMaterial,
     float bottomOffsetX, float bottomOffsetY, float bottomRed, float bottomGreen,
     float bottomBlue)
 {
@@ -3466,7 +3426,7 @@ objectrecordid_t Map_CreateSector(map_t* map, float lightLevel, float red, float
     }
 }
 
-static plane_t* createPlane(map_t* map, float height, material_t* material,
+static plane_t* createPlane(map_t* map, float height, Material* material,
                             float matOffsetX, float matOffsetY, float r, float g,
                             float b, float a, float normalX, float normalY,
                             float normalZ)
@@ -3505,7 +3465,7 @@ static plane_t* createPlane(map_t* map, float height, material_t* material,
     return pln;
 }
 
-objectrecordid_t Map_CreatePlane(map_t* map, float height, material_t* material,
+objectrecordid_t Map_CreatePlane(map_t* map, float height, Material* material,
     float matOffsetX, float matOffsetY, float r, float g, float b, float a,
     float normalX, float normalY, float normalZ)
 {
@@ -3707,6 +3667,71 @@ boolean Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objcontactty
     return true;
 }
 
+void Map::initSectorShadows()
+{
+    duint startTime = Sys_GetRealTime();
+
+    duint i;
+    vec2_t bounds[2], point;
+    vertex_t* vtx0, *vtx1;
+    lineowner_t* vo0, *vo1;
+    shadowlinkerparms_t data;
+
+    /**
+     * The algorithm:
+     *
+     * 1. Use the subsector blockmap to look for all the blocks that are
+     *    within the linedef's shadow bounding box.
+     *
+     * 2. Check the subsectors whose sector is the same as the linedef.
+     *
+     * 3. If any of the shadow points are in the subsector, or any of the
+     *    shadow edges cross one of the subsector's edges (not parallel),
+     *    link the linedef to the subsector.
+     */
+    shadowLinksBlockSet = Z_BlockCreate(sizeof(shadowlink_t), 1024, PU_MAP);
+
+    for(i = 0; i < map->numSideDefs; ++i)
+    {
+        sidedef_t* side = map->sideDefs[i];
+        byte sid;
+
+        if(!R_IsShadowingLineDef(side->lineDef))
+            continue;
+
+        sid = LINE_BACKSIDE(side->lineDef) == side? BACK : FRONT;
+
+        vtx0 = LINE_VERTEX(side->lineDef, sid);
+        vtx1 = LINE_VERTEX(side->lineDef, sid^1);
+        vo0 = side->lineDef->L_vo(sid)->LO_next;
+        vo1 = side->lineDef->L_vo(sid^1)->LO_prev;
+
+        // Use the extended points, they are wider than inoffsets.
+        V2_Set(point, vtx0->pos[VX], vtx0->pos[VY]);
+        V2_InitBox(bounds, point);
+
+        V2_Sum(point, point, vo0->shadowOffsets.extended);
+        V2_AddToBox(bounds, point);
+
+        V2_Set(point, vtx1->pos[VX], vtx1->pos[VY]);
+        V2_AddToBox(bounds, point);
+
+        V2_Sum(point, point, vo1->shadowOffsets.extended);
+        V2_AddToBox(bounds, point);
+
+        data.lineDef = side->lineDef;
+        data.side = sid;
+
+        Map_SubsectorsBoxIteratorv(map, bounds, side->sector,
+                                   RIT_ShadowSubsectorLinker, &data, false);
+    }
+
+    // How much time did we spend?
+    VERBOSE(Con_Message
+            ("R_InitSectorShadows: Done in %.2f seconds.\n",
+             (Sys_GetRealTime() - startTime) / 1000.0f));
+}
+
 /**
  * Begin the process of loading a new map.
  *
@@ -3815,6 +3840,8 @@ boolean Map_Load(map_t* map)
             map->gravity = 1.0f;
             map->ambientLightLevel = 0;
         }
+
+        map->_halfEdgeDS.iterateVertices(updateVertexShadowOffsets);
 
         R_InitSectorShadows(map);
 
@@ -4033,63 +4060,6 @@ float P_GetObjectRecordFloat(map_t* map, int typeIdentifier, uint elmIdx, int pr
     return GameObjRecords_GetFloat(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
 }
 
-/**
- * Part of the Doomsday public API.
- */
-void Map_InitThinkers(map_t* map)
-{
-    assert(map);
-    Thinkers_Init(Map_Thinkers(map), ITF_PUBLIC); // Init the public thinker lists.
-}
-
-static int runThinker(void* p, void* context)
-{
-    thinker_t* th = (thinker_t*) p;
-
-    // Thinker cannot think when in stasis.
-    if(!th->inStasis)
-    {
-        if(th->function == (think_t) -1)
-        {   // Time to remove it.
-            Thinkers_Remove(Map_Thinkers(Thinker_Map(th)), th);
-            Thinker_SetMap(th, NULL);
-            Z_Free(th);
-        }
-        else if(th->function)
-        {
-            th->function(th);
-        }
-    }
-
-    return true; // Continue iteration.
-}
-
-/**
- * Part of the Doomsday public API.
- */
-void Map_RunThinkers(map_t* map)
-{
-    Map_IterateThinkers2(map, NULL, ITF_PUBLIC | ITF_PRIVATE, runThinker, NULL);
-}
-
-/**
- * Part of the Doomsday public API.
- */
-int Map_IterateThinkers(map_t* map, think_t func, int (*callback) (void* p, void* ctx),
-                       void* context)
-{
-    return Map_IterateThinkers2(map, func, ITF_PUBLIC, callback, context);
-}
-
-/**
- * Adds a new thinker to the thinker lists.
- * Part of the Doomsday public API.
- */
-void Map_ThinkerAdd(map_t* map, thinker_t* th)
-{
-    Map_AddThinker(map, th, true); // This is a public thinker.
-}
-
 void Map_SetSectorPlane(map_t* map, objectrecordid_t sector, uint type, objectrecordid_t plane)
 {
     assert(map);
@@ -4157,5 +4127,322 @@ boolean Map_GameObjectRecordProperty(map_t* map, const char* objName, uint idx,
                         def->name, propName));
 
     return false;
+    }
+}
+
+static boolean interceptLineDef(const linedef_t* li, losdata_t* los,
+                                divline_t* dl)
+{
+    divline_t localDL, *dlPtr;
+
+    // Try a quick, bounding-box rejection.
+    if(li->bBox[BOXLEFT]   > los->bBox[BOXRIGHT] ||
+       li->bBox[BOXRIGHT]  < los->bBox[BOXLEFT] ||
+       li->bBox[BOXBOTTOM] > los->bBox[BOXTOP] ||
+       li->bBox[BOXTOP]    < los->bBox[BOXBOTTOM])
+        return false;
+
+    if(P_PointOnDivlineSide(li->L_v1->pos[VX], li->L_v1->pos[VY], &los->trace) ==
+       P_PointOnDivlineSide(li->L_v2->pos[VX], li->L_v2->pos[VY], &los->trace))
+        return false; // Not crossed.
+
+    if(dl)
+        dlPtr = dl;
+    else
+        dlPtr = &localDL;
+
+    LineDef_ConstructDivline(li, dlPtr);
+
+    if(P_PointOnDivlineSide(FIX2FLT(los->trace.pos[VX]),
+                            FIX2FLT(los->trace.pos[VY]), dlPtr) ==
+       P_PointOnDivlineSide(los->to[VX], los->to[VY], dlPtr))
+        return false; // Not crossed.
+
+    return true; // Crossed.
+}
+
+static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
+{
+#define RTOP            0x1
+#define RBOTTOM         0x2
+#define RMIDDLE         0x4
+
+    float frac;
+    byte ranges = 0;
+    divline_t dl;
+    const sector_t* fsec, *bsec;
+    boolean noBack;
+
+    if(!interceptLineDef(li, los, &dl))
+        return true; // Ray does not intercept seg on the X/Y plane.
+
+    if(!LINE_SIDE(li, side))
+        return true; // Seg is on the back side of a one-sided window.
+
+    fsec = LINE_SECTOR(li, side);
+    bsec  = (LINE_BACKSIDE(li)? LINE_SECTOR(li, side^1) : NULL);
+    noBack = LINE_BACKSIDE(li)? false : true;
+
+    if(!noBack && !(los->flags & LS_PASSLEFT) &&
+       (!(bsec->SP_floorheight < fsec->SP_ceilheight) ||
+        !(fsec->SP_floorheight < bsec->SP_ceilheight)))
+        noBack = true;
+
+    if(noBack)
+    {
+        if((los->flags & LS_PASSLEFT) &&
+           side != LineDef_PointOnSide(li, FIX2FLT(los->trace.pos[VX]),
+                                           FIX2FLT(los->trace.pos[VY])))
+            return true; // Ray does not intercept seg from left to right.
+
+        if(!(los->flags & (LS_PASSOVER | LS_PASSUNDER)))
+            return false; // Stop iteration.
+    }
+
+    // Handle the case of a zero height backside in the top range.
+    if(noBack)
+    {
+        ranges |= RTOP;
+    }
+    else
+    {
+        if(bsec->SP_floorheight > fsec->SP_floorheight)
+            ranges |= RBOTTOM;
+        if(bsec->SP_ceilheight < fsec->SP_ceilheight)
+            ranges |= RTOP;
+        if(!(los->flags & LS_PASSMIDDLE))
+            ranges |= RMIDDLE;
+    }
+
+    if(!ranges)
+        return true;
+
+    frac = P_InterceptVector(&los->trace, &dl);
+
+    if(ranges & RMIDDLE)
+    {
+        surface_t* surface = &LINE_FRONTSIDE(li)->SW_middlesurface;
+
+        if(surface->material && !(surface->blendMode > 0) &&
+           !(surface->rgba[CA] < 1.0f) &&
+           (!(los->flags & LS_PASSLEFT) ||
+            side == LineDef_PointOnSide(li, FIX2FLT(los->trace.pos[VX]),
+                                        FIX2FLT(los->trace.pos[VY]))))
+        {
+            material_snapshot_t ms;
+
+            Materials_Prepare(surface->material, MPF_SMOOTH, NULL, &ms);
+            if(ms.isOpaque)
+            {
+                HalfEdge* halfEdge = li->halfEdges[0];
+                plane_t* ffloor, *fceil, *bfloor, *bceil;
+                float bottom, top;
+
+                R_PickPlanesForSegExtrusion(halfEdge, R_UseSectorsFromFrontSideDef(halfEdge, SEG_MIDDLE),
+                                            &ffloor, &fceil, &bfloor, &bceil);
+                if(R_FindBottomTopOfHEdgeSection(halfEdge, SEG_MIDDLE, ffloor, fceil, bfloor, bceil,
+                                                 &bottom, &top, NULL, NULL))
+                {
+                    if(!(los->bottomSlope > (top - los->startZ) / frac) ||
+                         los->topSlope < (bottom - los->startZ) / frac)
+                        return false; // Stop iteration.
+                }
+            }
+        }
+    }
+
+    if((ranges & ~RMIDDLE) == 0)
+        return true;
+
+    if(!noBack &&
+       (((los->flags & LS_PASSOVER_SKY) &&
+         IS_SKYSURFACE(&fsec->SP_ceilsurface) &&
+         IS_SKYSURFACE(&bsec->SP_ceilsurface) &&
+         los->bottomSlope > (bsec->SP_ceilheight - los->startZ) / frac) ||
+        ((los->flags & LS_PASSUNDER_SKY) &&
+         IS_SKYSURFACE(&fsec->SP_floorsurface) &&
+         IS_SKYSURFACE(&bsec->SP_floorsurface) &&
+         los->topSlope < (bsec->SP_floorheight - los->startZ) / frac)))
+        return true;
+
+    if((los->flags & LS_PASSOVER) &&
+       los->bottomSlope > (fsec->SP_ceilheight - los->startZ) / frac)
+        return true;
+
+    if((los->flags & LS_PASSUNDER) &&
+       los->topSlope < (fsec->SP_floorheight - los->startZ) / frac)
+        return true;
+
+    if(ranges & RTOP)
+    {
+        float slope, top;
+
+        top = (noBack? fsec->SP_ceilheight : bsec->SP_ceilheight);
+        slope = (top - los->startZ) / frac;
+
+        if((los->topSlope > slope) ^ (noBack && !(los->flags & LS_PASSOVER)) ||
+           (noBack && los->topSlope > (fsec->SP_floorheight - los->startZ) / frac))
+            los->topSlope = slope;
+        if((los->bottomSlope > slope) ^ (noBack && !(los->flags & LS_PASSUNDER)) ||
+           (noBack && los->bottomSlope > (fsec->SP_floorheight - los->startZ) / frac))
+            los->bottomSlope = slope;
+    }
+
+    if(ranges & RBOTTOM)
+    {
+        float bottom = (noBack? fsec->SP_floorheight : bsec->SP_floorheight);
+        float slope = (bottom - los->startZ) / frac;
+
+        if(los->bottomSlope < slope)
+            los->bottomSlope = slope;
+        if(los->topSlope < slope)
+            los->topSlope = slope;
+    }
+
+    if(los->topSlope <= los->bottomSlope)
+        return false; // Stop iteration.
+
+    return true;
+
+#undef RTOP
+#undef RBOTTOM
+}
+
+/**
+ * @return              @c true iff trace crosses the given subsector.
+ */
+static boolean crossSubsector(subsector_t* subsector, losdata_t* los)
+{
+    if(subsector->polyObj)
+    {   // Check polyobj lines.
+        polyobj_t* po = subsector->polyObj;
+        uint i;
+
+        for(i = 0; i < po->numLineDefs; ++i)
+        {
+            linedef_t* line = ((objectrecord_t*) po->lineDefs[i])->obj;
+
+            if(line->validCount != validCount)
+            {
+                line->validCount = validCount;
+
+                if(!crossLineDef(line, FRONT, los))
+                    return false; // Stop iteration.
+            }
+        }
+    }
+
+    {
+    // Check lines.
+    HalfEdge* halfEdge;
+
+    if((halfEdge = subsector->face->halfEdge))
+    {
+        do
+        {
+            const seg_t* seg = (seg_t*) (halfEdge)->data;
+
+            if(seg && seg->sideDef && seg->sideDef->lineDef->validCount != validCount)
+            {
+                linedef_t* li = seg->sideDef->lineDef;
+
+                li->validCount = validCount;
+
+                if(!crossLineDef(li, seg->side, los))
+                    return false;
+            }
+        } while((halfEdge = halfEdge->next) != subsector->face->halfEdge);
+    }
+    }
+
+    return true; // Continue iteration.
+}
+
+/**
+ * @return              @c true iff trace crosses the node.
+ */
+static boolean crossBSPNode(map_t* map, binarytree_t* tree, losdata_t* los)
+{
+    face_t* face;
+
+    while(!BinaryTree_IsLeaf(tree))
+    {
+        const node_t* node = BinaryTree_GetData(tree);
+        byte side = R_PointOnSide(FIX2FLT(los->trace.pos[VX]),
+                                  FIX2FLT(los->trace.pos[VY]),
+                                  &node->partition);
+
+        // Would the trace completely cross this partition?
+        if(side == R_PointOnSide(los->to[VX], los->to[VY],
+                                 &node->partition))
+        {   // Yes, decend!
+            tree = BinaryTree_GetChild(tree, side);
+        }
+        else
+        {   // No.
+            if(!crossBSPNode(map, BinaryTree_GetChild(tree, side), los))
+                return 0; // Cross the starting side.
+            else
+                tree = BinaryTree_GetChild(tree, side^1); // Cross the ending side.
+        }
+    }
+
+    face = (face_t*) BinaryTree_GetData(tree);
+    return crossSubsector((subsector_t*)face->data, los);
+}
+
+/**
+ * Traces a line of sight.
+ *
+ * @param from          World position, trace origin coordinates.
+ * @param to            World position, trace target coordinates.
+ * @param flags         Line Sight Flags (LS_*) @see lineSightFlags
+ *
+ * @return              @c true if the traverser function returns @c true
+ *                      for all visited lines.
+ */
+boolean Map_CheckLineSight(map_t* map, const float from[3], const float to[3],
+                           float bottomSlope, float topSlope, int flags)
+{
+    assert(map);
+    {
+    losdata_t los;
+
+    los.flags = flags;
+    los.startZ = from[VZ];
+    los.topSlope = to[VZ] + topSlope - los.startZ;
+    los.bottomSlope = to[VZ] + bottomSlope - los.startZ;
+    los.trace.pos[VX] = FLT2FIX(from[VX]);
+    los.trace.pos[VY] = FLT2FIX(from[VY]);
+    los.trace.dX = FLT2FIX(to[VX] - from[VX]);
+    los.trace.dY = FLT2FIX(to[VY] - from[VY]);
+    los.to[VX] = to[VX];
+    los.to[VY] = to[VY];
+    los.to[VZ] = to[VZ];
+
+    if(from[VX] > to[VX])
+    {
+        los.bBox[BOXRIGHT]  = from[VX];
+        los.bBox[BOXLEFT]   = to[VX];
+    }
+    else
+    {
+        los.bBox[BOXRIGHT]  = to[VX];
+        los.bBox[BOXLEFT]   = from[VX];
+    }
+
+    if(from[VY] > to[VY])
+    {
+        los.bBox[BOXTOP]    = from[VY];
+        los.bBox[BOXBOTTOM] = to[VY];
+    }
+    else
+    {
+        los.bBox[BOXTOP]    = to[VY];
+        los.bBox[BOXBOTTOM] = from[VY];
+    }
+
+    validCount++;
+    return crossBSPNode(map, map->_rootNode, &los);
     }
 }

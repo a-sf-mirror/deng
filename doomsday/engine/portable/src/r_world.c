@@ -134,42 +134,6 @@ int RIT_StopMatFader(void* p, void* context)
     return true; // Continue iteration.
 }
 
-/**
- * Called when a floor or ceiling height changes to update the plotted
- * decoration origins for surfaces whose material offset is dependant upon
- * the given plane.
- */
-void R_MarkDependantSurfacesForDecorationUpdate(sector_t* sector)
-{
-    linedef_t** linep;
-
-    if(!sector || !sector->lineDefs)
-        return;
-
-    // Mark the decor lights on the sides of this plane as requiring
-    // an update.
-    linep = sector->lineDefs;
-
-    while(*linep)
-    {
-        linedef_t* li = *linep;
-
-        if(!LINE_BACKSIDE(li))
-        {
-            Surface_Update(&LINE_FRONTSIDE(li)->SW_surface(SEG_MIDDLE));
-        }
-        else if(LINE_BACKSECTOR(li) != LINE_FRONTSECTOR(li))
-        {
-            Surface_Update(&LINE_FRONTSIDE(li)->SW_surface(SEG_BOTTOM));
-            Surface_Update(&LINE_FRONTSIDE(li)->SW_surface(SEG_TOP));
-            Surface_Update(&LINE_BACKSIDE(li)->SW_surface(SEG_BOTTOM));
-            Surface_Update(&LINE_BACKSIDE(li)->SW_surface(SEG_TOP));
-        }
-
-        *linep++;
-    }
-}
-
 void R_CreateBiasSurfacesForPlanesInSubsector(subsector_t* subsector)
 {
     uint i;
@@ -269,131 +233,6 @@ void R_CreateBiasSurfacesInSubsector(subsector_t* subsector)
 
     if(!subsector->bsuf)
         R_CreateBiasSurfacesForPlanesInSubsector(subsector);
-}
-
-/**
- * Permanently destroys the specified plane of the given sector.
- * The sector's plane list is updated accordingly.
- *
- * @param id            The sector, plane id to be destroyed.
- * @param sec           Ptr to sector for which a plane will be destroyed.
- */
-void R_DestroyPlaneOfSector(map_t* map, uint id, sector_t* sec)
-{
-    uint i;
-    plane_t* plane, **newList = NULL;
-
-    if(!map)
-        return;
-    if(!sec)
-        return; // Do wha?
-
-    if(id >= sec->planeCount)
-        Con_Error("P_DestroyPlaneOfSector: Plane id #%i is not valid for "
-                  "sector #%u", id, (uint) P_ObjectRecord(DMU_SECTOR, sec)->id);
-
-    plane = sec->planes[id];
-
-    // Create a new plane list?
-    if(sec->planeCount > 1)
-    {
-        uint n;
-
-        newList = Z_Malloc(sizeof(plane_t**) * sec->planeCount, PU_STATIC, 0);
-
-        // Copy ptrs to the planes.
-        n = 0;
-        for(i = 0; i < sec->planeCount; ++i)
-        {
-            if(i == id)
-                continue;
-            newList[n++] = sec->planes[i];
-        }
-        newList[n] = NULL; // Terminate.
-    }
-
-    // If this plane is currently being watched, remove it.
-    if(map->_watchedPlaneList)
-        PlaneList_Remove(map->_watchedPlaneList, plane);
-
-    // If this plane's surface is in the moving list, remove it.
-    if(map->_movingSurfaceList)
-        SurfaceList_Remove(map->_movingSurfaceList, &plane->surface);
-
-    // If this plane's surface is in the deocrated list, remove it.
-    if(map->_decoratedSurfaceList)
-        SurfaceList_Remove(map->_decoratedSurfaceList, &plane->surface);
-
-    if(plane->surface.decorations)
-        Z_Free(plane->surface.decorations);
-
-    // Stop active material fade on this surface.
-    Map_IterateThinkers2(map, R_MatFaderThinker, ITF_PRIVATE, // Always non-public
-                        RIT_StopMatFader, &plane->surface);
-
-    /**
-     * Destroy biassurfaces for planes in all sector subsectors if present
-     * (they will be created if needed when next drawn).
-     */
-    {
-    subsector_t** subsectorPtr = sec->subsectors;
-    while(*subsectorPtr)
-    {
-        R_DestroyBiasSurfacesForPlanesInSubSector(*subsectorPtr);
-        *subsectorPtr++;
-    }
-    }
-
-    // Destroy the specified plane.
-    Z_Free(plane);
-    sec->planeCount--;
-
-    // Link the new list to the sector.
-    Z_Free(sec->planes);
-    sec->planes = newList;
-}
-
-surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf)
-{
-    uint i;
-    surfacedecor_t* d, *s, *decorations;
-
-    if(!suf)
-        return NULL;
-
-    decorations = Z_Malloc(sizeof(*decorations) * (++suf->numDecorations), PU_STATIC, 0);
-
-    if(suf->numDecorations > 1)
-    {   // Copy the existing decorations.
-        for(i = 0; i < suf->numDecorations - 1; ++i)
-        {
-            d = &decorations[i];
-            s = &suf->decorations[i];
-
-            memcpy(d, s, sizeof(*d));
-        }
-
-        Z_Free(suf->decorations);
-    }
-
-    // Add the new decoration.
-    d = &decorations[suf->numDecorations - 1];
-    d->type = type;
-
-    suf->decorations = decorations;
-
-    return d;
-}
-
-void R_ClearSurfaceDecorations(surface_t* suf)
-{
-    if(!suf)
-        return;
-
-    if(suf->decorations)
-        Z_Free(suf->decorations);
-    suf->decorations = NULL;
-    suf->numDecorations = 0;
 }
 
 /**
@@ -1209,120 +1048,6 @@ linedef_t* R_FindLineAlignNeighbor(const sector_t* sec,
 #undef SEP
 }
 
-/**
- * Walk the half-edges of the specified subsector, looking for a half-edge
- * that is suitable for use as the base of a tri-fan.
- *
- * We do not want any overlapping tris so check that the area of each triangle
- * is > 0, if not; try the next vertice until we find a good one to use as the
- * center of the trifan. If a suitable point cannot be found use the center of
- * subsector instead (it will always be valid as subsectors are convex).
- */
-void R_PickSubsectorFanBase(subsector_t* subsector)
-{
-#define TRIFAN_LIMIT    0.1
-
-    hedge_t* base = NULL;
-
-    if(subsector->firstFanHEdge)
-        return; // Already chosen.
-
-    subsector->useMidPoint = false;
-
-    /**
-     * We need to find a good tri-fan base vertex, (one that doesn't
-     * generate zero-area triangles).
-     */
-    if(subsector->hEdgeCount > 3)
-    {
-        uint baseIDX;
-        hedge_t* hEdge;
-        vec2_t basepos, apos, bpos;
-
-        baseIDX = 0;
-        hEdge = subsector->face->hEdge;
-        do
-        {
-            uint i;
-            hedge_t* hEdge2;
-
-            i = 0;
-            base = hEdge;
-            V2_Set(basepos, base->HE_v1->pos[VX], base->HE_v1->pos[VY]);
-            hEdge2 = subsector->face->hEdge;
-            do
-            {
-                if(!(baseIDX > 0 && (i == baseIDX || i == baseIDX - 1)))
-                {
-                    V2_Set(apos, hEdge2->HE_v1->pos[VX], hEdge2->HE_v1->pos[VY]);
-                    V2_Set(bpos, hEdge2->HE_v2->pos[VX], hEdge2->HE_v2->pos[VY]);
-
-                    if(TRIFAN_LIMIT >= M_TriangleArea(basepos, apos, bpos))
-                    {
-                        base = NULL;
-                    }
-                }
-
-                i++;
-            } while(base && (hEdge2 = hEdge2->next) != subsector->face->hEdge);
-
-            if(!base)
-                baseIDX++;
-        } while(!base && (hEdge = hEdge->next) != subsector->face->hEdge);
-
-        if(!base)
-            subsector->useMidPoint = true;
-    }
-
-    if(base)
-        subsector->firstFanHEdge = base;
-    else
-        subsector->firstFanHEdge = subsector->face->hEdge;
-
-#undef TRIFAN_LIMIT
-}
-
-/**
- * The test is done on subsectors.
- */
-#if 0 /* Currently unused. */
-static sector_t* getContainingSectorOf(map_t* map, sector_t* sec)
-{
-    uint i;
-    float cdiff = -1, diff;
-    float inner[4], outer[4];
-    sector_t* other, *closest = NULL;
-
-    memcpy(inner, sec->bBox, sizeof(inner));
-
-    // Try all sectors that fit in the bounding box.
-    for(i = 0, other = map->sectors; i < map->numSectors; other++, ++i)
-    {
-        if(!other->lineDefCount || (other->flags & SECF_UNCLOSED))
-            continue;
-
-        if(other == sec)
-            continue; // Don't try on self!
-
-        memcpy(outer, other->bBox, sizeof(outer));
-        if(inner[BOXLEFT]  >= outer[BOXLEFT] &&
-           inner[BOXRIGHT] <= outer[BOXRIGHT] &&
-           inner[BOXTOP]   <= outer[BOXTOP] &&
-           inner[BOXBOTTOM]>= outer[BOXBOTTOM])
-        {
-            // Sec is totally and completely inside other!
-            diff = M_BoundingBoxDiff(inner, outer);
-            if(cdiff < 0 || diff <= cdiff)
-            {
-                closest = other;
-                cdiff = diff;
-            }
-        }
-    }
-    return closest;
-}
-#endif
-
 static __inline void initSurfaceMaterialOffset(surface_t* suf)
 {
     if(!suf)
@@ -1537,45 +1262,6 @@ void R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid)
                                            P_ToIndex(P_ObjectRecord(DMU_LINEDEF, lineDef)),
                                            DMU_LINEDEF, &viewer);
     }
-}
-
-/**
- * Is the specified plane glowing (it glows or is a sky mask surface)?
- *
- * @return              @c true, if the specified plane is non-glowing,
- *                      i.e. not glowing or a sky.
- */
-boolean R_IsGlowingPlane(const plane_t* pln)
-{
-    material_t* mat = pln->surface.material;
-
-    return ((mat && (mat->flags & MATF_NO_DRAW)) || pln->glow > 0 ||
-            IS_SKYSURFACE(&pln->surface));
-}
-
-/**
- * Does the specified sector contain any sky surfaces?
- *
- * @return              @c true, if one or more surfaces in the given sector
- *                      use the special sky mask material.
- */
-boolean R_SectorContainsSkySurfaces(const sector_t* sec)
-{
-    uint i;
-    boolean sectorContainsSkySurfaces;
-
-    // Does this sector feature any sky surfaces?
-    sectorContainsSkySurfaces = false;
-    i = 0;
-    do
-    {
-        if(IS_SKYSURFACE(&sec->SP_planesurface(i)))
-            sectorContainsSkySurfaces = true;
-        else
-            i++;
-    } while(!sectorContainsSkySurfaces && i < sec->planeCount);
-
-    return sectorContainsSkySurfaces;
 }
 
 boolean R_SideDefIsSoftSurface(sidedef_t* sideDef, segsection_t section)
@@ -1834,16 +1520,6 @@ boolean R_UpdatePlane(plane_t* pln, boolean forceUpdate)
     return changed;
 }
 
-#if 0
-/**
- * Stub.
- */
-boolean R_UpdateSubSector(face_t* subSector, boolean forceUpdate)
-{
-    return false; // Not changed.
-}
-#endif
-
 boolean R_UpdateSector(sector_t* sec, boolean forceUpdate)
 {
     uint i;
@@ -1879,39 +1555,6 @@ boolean R_UpdateSector(sector_t* sec, boolean forceUpdate)
     }
 
     return planeChanged;
-}
-
-/**
- * Stub.
- */
-boolean R_UpdateLineDef(linedef_t* line, boolean forceUpdate)
-{
-    return false; // Not changed.
-}
-
-/**
- * Stub.
- */
-boolean R_UpdateSideDef(sidedef_t* side, boolean forceUpdate)
-{
-    return false; // Not changed.
-}
-
-/**
- * Stub.
- */
-boolean R_UpdateSurface(surface_t* suf, boolean forceUpdate)
-{
-    return false; // Not changed.
-}
-
-/**
- * All links will be updated every frame (sectorheights may change at
- * any time without notice).
- */
-void R_UpdatePlanes(void)
-{
-    // Nothing to do.
 }
 
 /**

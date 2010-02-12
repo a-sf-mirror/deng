@@ -39,13 +39,13 @@ bool Seg::getProperty(setargs_t* args) const
     {
     case DMU_VERTEX0:
         {
-        objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, hEdge->HE_v1);
+        objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, halfEdge->HE_v1);
         DMU_GetValue(DMT_SEG_VERTEX1, &r, args, 0);
         break;
         }
     case DMU_VERTEX1:
         {
-        objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, hEdge->HE_v2);
+        objectrecord_t* r = P_ObjectRecord(DMU_VERTEX, halfEdge->HE_v2);
         DMU_GetValue(DMT_SEG_VERTEX2, &r, args, 0);
         break;
         }
@@ -71,7 +71,7 @@ bool Seg::getProperty(setargs_t* args) const
         }
     case DMU_FRONT_SECTOR:
         {
-        Subsector* subsector = (Subsector*) hEdge->face->data;
+        Subsector* subsector = (Subsector*) halfEdge->face->data;
         objectrecord_t* r = (subsector->sector && sideDef)?
             P_ObjectRecord(DMU_SECTOR, subsector->sector) : NULL;
         DMU_GetValue(DMT_SEG_FRONTSECTOR, &r, args, 0);
@@ -81,16 +81,16 @@ bool Seg::getProperty(setargs_t* args) const
         {
         void* ptr = NULL;
 
-        if(hEdge->twin)
+        if(halfEdge->twin)
         {
-            Subsector* subsector = (Subsector*) hEdge->twin->face->data;
+            Subsector* subsector = (Subsector*) halfEdge->twin->face->data;
 
             /**
              * The sector and the sidedef are checked due to the possibility
              * of the "back-sided window effect", which the games are not
              * currently aware of.
              */
-            if(subsector->sector && ((Seg*) hEdge->twin->data)->sideDef)
+            if(subsector->sector && ((Seg*) halfEdge->twin->data)->sideDef)
                 ptr = P_ObjectRecord(DMU_SECTOR, subsector->sector);
         }
 

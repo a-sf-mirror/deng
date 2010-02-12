@@ -88,46 +88,6 @@ typedef struct subsector_s {
     boolean             useMidPoint;
 } subsector_t;
 
-typedef struct materiallayer_s {
-    byte            flags; // MLF_* flags, @see materialLayerFlags
-    gltextureid_t   tex;
-    float           texOrigin[2];
-    float           texPosition[2]; // Current interpolated position.
-    float           moveAngle;
-    float           moveSpeed;
-} material_layer_t;
-
-typedef enum {
-    MEC_UNKNOWN = -1,
-    MEC_METAL = 0,
-    MEC_ROCK,
-    MEC_WOOD,
-    MEC_WATER,
-    MEC_CLOTH,
-    NUM_MATERIAL_ENV_CLASSES
-} material_env_class_t;
-
-typedef struct material_s {
-    material_namespace_t mnamespace;
-    boolean             isAutoMaterial; // Was generated automatically.
-    const struct ded_material_s* def;  // Can be NULL.
-    short               flags;         // MATF_* flags
-    short               width;         // Defined width & height of the material (not texture!).
-    short               height;
-    material_layer_t    layers[DDMAX_MATERIAL_LAYERS];
-    byte                numLayers;
-    material_env_class_t envClass;     // Used for environmental sound properties.
-    struct ded_detailtexture_s* detail;
-    struct ded_decor_s* decoration;
-    struct ded_ptcgen_s* generator;
-    struct ded_reflection_s* reflection;
-    boolean             inAnimGroup;   // True if belongs to some animgroup.
-    struct material_s*  current;
-    struct material_s*  next;
-    float               inter;
-    struct material_s*  globalNext;    // Linear list linking all materials.
-} material_t;
-
 // Internal surface flags:
 #define SUIF_PVIS             0x0001
 #define SUIF_MATERIAL_FIX     0x0002 // Current texture is a fix replacement
@@ -137,56 +97,6 @@ typedef struct material_s {
 
 #define SUIF_UPDATE_FLAG_MASK 0xff00
 #define SUIF_UPDATE_DECORATIONS 0x8000
-
-// Will the specified surface be added to the sky mask?
-#define IS_SKYSURFACE(s)         ((s) && (s)->material && ((s)->material->flags & MATF_SKYMASK))
-
-// Decoration types.
-typedef enum {
-    DT_LIGHT,
-    DT_MODEL,
-    NUM_DECORTYPES
-} decortype_t;
-
-// Helper macros for accessing decor data.
-#define DEC_LIGHT(x)         (&((x)->data.light))
-#define DEC_MODEL(x)         (&((x)->data.model))
-
-typedef struct surfacedecor_s {
-    float               pos[3]; // World coordinates of the decoration.
-    decortype_t         type;
-    subsector_t*        subsector;
-    union surfacedecor_data_u {
-        struct surfacedecor_light_s {
-            const struct ded_decorlight_s* def;
-        } light;
-        struct surfacedecor_model_s {
-            const struct ded_decormodel_s* def;
-            struct modeldef_s* mf;
-            float               pitch, yaw;
-        } model;
-    } data;
-} surfacedecor_t;
-
-typedef struct surface_s {
-    void*               owner;         // Either @c DMU_SIDEDEF, or @c DMU_PLANE
-    int                 flags;         // SUF_ flags
-    int                 oldFlags;
-    material_t*         material;
-    material_t*         materialB;
-    float               matBlendFactor;
-    blendmode_t         blendMode;
-    float               normal[3];     // Surface normal
-    float               oldNormal[3];
-    float               offset[2];     // [X, Y] Planar offset to surface material origin.
-    float               oldOffset[2][2];
-    float               visOffset[2];
-    float               visOffsetDelta[2];
-    float               rgba[4];       // Surface color tint
-    short               inFlags;       // SUIF_* flags
-    unsigned int        numDecorations;
-    surfacedecor_t      *decorations;
-} surface_t;
 
 #define PLN_FLOOR       0
 #define PLN_CEILING     1

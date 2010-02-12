@@ -43,24 +43,24 @@ SuperBlock::~SuperBlock()
     }
 }
 
-void SuperBlock::push(HalfEdge* hEdge)
+void SuperBlock::push(HalfEdge* halfEdge)
 {
-    assert(hEdge);
+    assert(halfEdge);
 #if _DEBUG
-// Ensure hEdge is not already in this SuperBlock. *Should* be impossible.
+// Ensure halfEdge is not already in this SuperBlock. *Should* be impossible.
 FOR_EACH(i, halfEdges, HalfEdges::iterator)
-    assert(*i != hEdge);
+    assert(*i != halfEdge);
 #endif
-    halfEdges.push_back(hEdge);
+    halfEdges.push_back(halfEdge);
 }
 
 HalfEdge* SuperBlock::pop()
 {
     if(!halfEdges.empty())
     {
-        HalfEdge* hEdge = halfEdges.back();
+        HalfEdge* halfEdge = halfEdges.back();
         halfEdges.pop_back();
-        return hEdge;
+        return halfEdge;
     }
     return NULL;
 }
@@ -124,12 +124,12 @@ void SuperBlock::print() const
 {
     FOR_EACH(i, halfEdges, HalfEdges::const_iterator)
     {
-        const HalfEdge* hEdge = (*i);
-        const HalfEdgeInfo* data = reinterpret_cast<HalfEdgeInfo*>(hEdge->data);
+        const HalfEdge* halfEdge = (*i);
+        const HalfEdgeInfo* data = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
 
         LOG_MESSAGE("Build: %s %p sector=%d %s -> %s")
-            << (data->lineDef? "NORM" : "MINI") << hEdge << data->sector->buildData.index
-            << hEdge->vertex->pos << hEdge->twin->vertex->pos;
+            << (data->lineDef? "NORM" : "MINI") << halfEdge << data->sector->buildData.index
+            << halfEdge->vertex->pos << halfEdge->twin->vertex->pos;
     }
 
     for(dint num = 0; num < 2; ++num)
@@ -414,14 +414,14 @@ static bool pickHEdgeWorker(const SuperBlock* partList,
     // Test each half-edge as a potential partition.
     FOR_EACH(i, partList->halfEdges, SuperBlock::HalfEdges::const_iterator)
     {
-        HalfEdge* hEdge = (*i);
-        HalfEdgeInfo* data = (HalfEdgeInfo*) hEdge->data;
+        HalfEdge* halfEdge = (*i);
+        HalfEdgeInfo* data = (HalfEdgeInfo*) halfEdge->data;
 
 /*#if _DEBUG
 LOG_MESSAGE("pickHEdgeWorker: %sSEG %p sector=%d %s -> %s")
-    << (data->lineDef? "" : "MINI") <<  hEdge
+    << (data->lineDef? "" : "MINI") <<  halfEdge
     << (data->sector? data->sector->index : -1)
-    << hEdge->vertex.pos, hEdge->twin->vertex.pos;
+    << halfEdge->vertex.pos, halfEdge->twin->vertex.pos;
 #endif*/
 
         // Ignore minihedges as partition candidates.
@@ -437,7 +437,7 @@ LOG_MESSAGE("pickHEdgeWorker: %sSEG %p sector=%d %s -> %s")
             continue;
         data->lineDef->validCount = validCount;
 
-        cost = evalPartition(hEdgeList, hEdge, factor, *bestCost);
+        cost = evalPartition(hEdgeList, halfEdge, factor, *bestCost);
 
         // half-edge unsuitable or too costly?
         if(cost < 0 || cost >= *bestCost)
@@ -447,7 +447,7 @@ LOG_MESSAGE("pickHEdgeWorker: %sSEG %p sector=%d %s -> %s")
         (*bestCost) = cost;
 
         // Remember which half-edge.
-        (*best) = hEdge;
+        (*best) = halfEdge;
     }
 
     // Recursively handle sub-blocks.

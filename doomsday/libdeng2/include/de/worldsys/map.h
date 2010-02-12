@@ -37,8 +37,10 @@
 #include "../GameObjRecords"
 #include "../Thinker"
 #include "../Node"
+#include "../Rectangle"
 
 #include <map>
+#include <vector>
 #include <set>
 
 namespace de
@@ -51,6 +53,7 @@ namespace de
     class Seg;
     class Subsector;
     class Polyobj;
+    class Decoration;
 
     /**
      * Contains everything that makes a map work: sectors, lines, scripts, 
@@ -70,6 +73,12 @@ namespace de
         DEFINE_ERROR(NotFoundError);
         
         typedef std::map<Id, Thinker*> Thinkers;
+
+        typedef std::vector<SideDef*> SideDefs;
+        typedef std::vector<LineDef*> LineDefs;
+        typedef std::vector<Plane*> Planes;
+        typedef std::vector<Sector*> Sectors;
+        typedef std::vector<Polyobj*> Polyobjs;
                 
     public:
         /**
@@ -138,6 +147,31 @@ namespace de
          * Returns all thinkers of the map.
          */
         const Thinkers& thinkers() const { return _thinkers; }
+
+        /**
+         * Returns all polyobjs of the map.
+         */
+        const Polyobjs& polyobjs() const { return _polyobjs; }
+
+        /**
+         * Returns all sidedefs of the map.
+         */
+        const SideDefs& sideDefs() const { return _sideDefs; }
+
+        /**
+         * Returns all linedefs of the map.
+         */
+        const LineDefs& lineDefs() const { return _lineDefs; }
+
+        /**
+         * Returns all planes of the map.
+         */
+        const Planes& planes() const { return _planes; }
+
+        /**
+         * Returns all sectors of the map.
+         */
+        const Sectors& sectors() const { return _sectors; }
 
         /**
          * Returns a thinker with the specified id, or @c NULL if it doesn't exist.
@@ -311,10 +345,6 @@ namespace de
             duint count;
         } ownerlist_t;
 
-        //char mapID[9];
-        //char uniqueID[256];
-
-        //struct thinkers_s* _thinkers;
         //struct gameobjrecords_s* _gameObjectRecords;
 
         HalfEdgeDS* _halfEdgeDS;
@@ -334,20 +364,28 @@ namespace de
 
         //struct lightgrid_s* _lightGrid;
 
-        dfloat bBox[4];
+        duint validCount;
 
-        duint _numSectors;
-        Sector** sectors;
+        /// Axis-Aligned Bounding Box.
+        MapRectangle aaBounds;
 
-        duint _numLineDefs;
-        LineDef** lineDefs;
+    private:
+        /// All sidedefs of the map.
+        SideDefs _sideDefs;
 
-        duint _numSideDefs;
-        SideDef** sideDefs;
+        /// All linedefs of the map.
+        LineDefs _lineDefs;
 
-        duint _numPlanes;
-        Plane** planes;
+        /// All planes of the map.
+        Planes _planes;
 
+        /// All sectors of the map.
+        Sectors _sectors;
+
+        /// All polyobjs of the map.
+        Polyobjs _polyobjs;
+
+    public:
         duint _numNodes;
         Node** nodes;
 
@@ -356,9 +394,6 @@ namespace de
 
         duint _numSegs;
         Seg** segs;
-
-        duint _numPolyObjs;
-        Polyobj** polyObjs;
 
         struct lineowner_s* lineOwners;
 
@@ -409,15 +444,16 @@ namespace de
         void bounds(dfloat* min, dfloat* max);
         dint ambientLightLevel();
 
-        duint numSectors();
-        duint numLineDefs();
-        duint numSideDefs();
+        Polyobjs::size_type numPolyobjs() const { return _polyobjs.size(); }
+        SideDefs::size_type numSideDefs() const { return _sideDefs.size(); }
+        LineDefs::size_type numLineDefs() const { return _lineDefs.size(); }
+        Planes::size_type numPlanes() const { return _planes.size(); }
+        Sectors::size_type numSectors() const { return _sectors.size(); }
+
         duint numVertexes();
-        duint numPolyobjs();
         duint numSegs();
         duint numSubsectors();
         duint numNodes();
-        duint numPlanes();
 
         void beginFrame(bool resetNextViewer);
         void endFrame();
@@ -489,20 +525,20 @@ namespace de
         objectrecordid_t createVertex(dfloat x, dfloat y);
         bool createVertices(dsize num, dfloat* values, objectrecordid_t* indices);
         objectrecordid_t createSideDef(objectrecordid_t sector, dshort flags,
-            struct material_s* topMaterial,
+            Material* topMaterial,
             dfloat topOffsetX, dfloat topOffsetY, dfloat topRed,
             dfloat topGreen, dfloat topBlue,
-            struct material_s* middleMaterial,
+            Material* middleMaterial,
             dfloat middleOffsetX, dfloat middleOffsetY,
             dfloat middleRed, dfloat middleGreen,
             dfloat middleBlue, dfloat middleAlpha,
-            struct material_s* bottomMaterial,
+            Material* bottomMaterial,
             dfloat bottomOffsetX, dfloat bottomOffsetY,
             dfloat bottomRed, dfloat bottomGreen,
             dfloat bottomBlue);
         objectrecordid_t createLineDef(objectrecordid_t v1, objectrecordid_t v2, duint frontSide, duint backSide, dint flags);
         objectrecordid_t createSector(dfloat lightlevel, dfloat red, dfloat green, dfloat blue);
-        objectrecordid_t createPlane(dfloat height, struct material_s* material,
+        objectrecordid_t createPlane(dfloat height, Material* material,
             dfloat matOffsetX, dfloat matOffsetY, dfloat r, dfloat g, dfloat b, dfloat a,
             dfloat normalX, dfloat normalY, dfloat normalZ);
         objectrecordid_t createPolyobj(objectrecordid_t* lines, duint linecount,
@@ -538,7 +574,7 @@ namespace de
         /**
          * @return              @c true, iff this is indeed a polyobj origin.
          */
-        Polyobj* polyobjForOrigin(const void* ddMobjBase);
+        Polyobj* polyobjForOrigin(const void* ddMobjBase) const;
 
         /**
          * Retrieve a ptr to Polyobj by index or by tag.
@@ -558,7 +594,7 @@ namespace de
         //lightgrid_t* lightGrid();
 
         // protected
-        Seg* createSeg(LineDef* lineDef, dbyte side, HalfEdge* hEdge);
+        Seg* createSeg(LineDef* lineDef, dbyte side, HalfEdge* halfEdge);
         Subsector* createSubsector(Face* face, Sector* sector);
         Node* createNode(const Partition& partition, const MapRectangle& rightAABB, const MapRectangle& leftAABB);
 
@@ -577,6 +613,7 @@ namespace de
         SideDef* createSideDef2();
         Sector* createSector2();
         Plane* createPlane2();
+        Polyobj* createPolyobj2();
 
         /**
          * @pre Thing must be currently unlinked.
@@ -603,6 +640,17 @@ namespace de
          */
         void initSubsectorContacts();
 
+        void finishSectors2();
+
+        /**
+         * Completes the linedef loading by resolving the front/back
+         * sector ptrs which we couldn't do earlier as the sidedefs
+         * hadn't been loaded at the time.
+         */
+        void finishLineDefs2();
+
+        void findSubsectorMidPoints();
+
         /**
          * Initialize the obj > subsector contact lists ready for adding new
          * luminous objects. Called by R_BeginWorldFrame() at the beginning of a new
@@ -618,9 +666,15 @@ namespace de
          *
          * @return              Ptr to the new objcontact.
          */
-        objcontact_t* allocObjContact(void);
+        objcontact_t* allocObjContact();
 
-        void clearSectorFlags();
+        /**
+         * Calculate sector edge shadow points, create the shadow polygons and link
+         * them to the subsectors.
+         *
+         * @pre Vertex shadow offsets must be initialized before calling.
+         */
+        void initSectorShadows();
 
         bool interpolatePlaneHeight(Plane* plane, dfloat frameTimePos);
         bool resetPlaneHeightTracking(Plane* plane);
@@ -642,8 +696,6 @@ namespace de
          */
         void pruneUnusedObjects(dint flags);
 
-        void hardenSectorSubsectorSet(duint sectorIndex);
-
         /**
          * Build Subsector sets for all Sectors.
          */
@@ -653,6 +705,8 @@ namespace de
          * Build LineDef sets for all Sectors.
          */
         void buildSectorLineDefSets();
+
+        void updateAABounds();
     };
 }
 

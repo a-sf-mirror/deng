@@ -898,34 +898,6 @@ typedef enum gfxmode_e {
     LGM_WHITE_ALPHA = 3
 } gfxmode_t;
 
-#define DDMAX_MATERIAL_LAYERS   2
-
-typedef enum material_namespace_e {
-    MN_ANY = -1,
-    MN_FIRST,
-    MN_TEXTURES = MN_FIRST,
-    MN_FLATS,
-    MN_SPRITES,
-    MN_SYSTEM,
-    NUM_MATERIAL_NAMESPACES
-} material_namespace_t;
-
-/**
- * @defGroup materialFlags Material Flags
- */
-/*@{*/
-#define MATF_NO_DRAW            0x0001 // Material should never be drawn.
-#define MATF_GLOW               0x0002 // Glowing material.
-#define MATF_SKYMASK            0x0004 // Sky-mask surfaces using this material.
-/*@}*/
-
-/**
- * @defGroup materialLayerFlags Material Layer Flags
- */
-/*@{*/
-#define MATLF_MASKED              0x1
-/*@}*/
-
 // Animation group flags.
 #define AGF_SMOOTH          0x1
 #define AGF_FIRST_ONLY      0x2

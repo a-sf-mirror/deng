@@ -1,10 +1,8 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- libdeng2
  *
- *\author Copyright © 2003-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,9 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LIBDENG2_MSURFACE_H
@@ -27,34 +23,14 @@
 
 #include "deng.h"
 
+#include "../App"
+#include "../Flag"
+#include "../Vector"
+
 namespace de
 {
-    // Decoration types.
-    /*typedef enum {
-        DT_LIGHT,
-        DT_MODEL,
-        NUM_DECORTYPES
-    } decortype_t;
-
-    // Helper macros for accessing decor data.
-    #define DEC_LIGHT(x)         (&((x)->data.light))
-    #define DEC_MODEL(x)         (&((x)->data.model))
-
-    typedef struct surfacedecor_s {
-        dfloat              pos[3]; // World coordinates of the decoration.
-        decortype_t         type;
-        Subsector*        subsector;
-        union surfacedecor_data_u {
-            struct surfacedecor_light_s {
-                const struct ded_decorlight_s* def;
-            } light;
-            struct surfacedecor_model_s {
-                const struct ded_decormodel_s* def;
-                struct modeldef_s* mf;
-                dfloat              pitch, yaw;
-            } model;
-        } data;
-    } surfacedecor_t;*/
+    class Decoration;
+    class Material;
 
     class MSurface
     {
@@ -73,9 +49,7 @@ namespace de
         void* owner; // Either @c DMU_SIDEDEF, or @c DMU_PLANE
         dint flags; // SUF_ flags
         dint oldFlags;
-        //struct material_t* material;
-        //struct material_t* materialB;
-        //dfloat matBlendFactor;
+
         //blendmode_t blendMode;
         Vector3f normal; // Surface normal
         Vector3f oldNormal;
@@ -88,9 +62,14 @@ namespace de
 
         dfloat rgba[4]; // Surface color tint
         dshort inFlags; // SUIF_* flags
-        //duint numDecorations;
-        //surfacedecor_t* decorations;
 
+        ~MSurface();
+
+        Material& material() const { return *_material; }
+
+        /**
+         * Mark the surface as requiring a full update. Called during engine-reset.
+         */
         void update();
 
         /**
@@ -105,8 +84,6 @@ namespace de
 
         void resetScroll();
 
-        //bool isSky() const { return (material && (material->flags & MATF_SKYMASK))? true : false; }
-
         /**
          * Change Material.
          *
@@ -114,7 +91,7 @@ namespace de
          * @param fade          @c true = allow blending
          * @return              @c true, if changed successfully.
          */
-        //bool setMaterial(Material* mat, bool fade);
+        bool setMaterial(Material* mat, bool fade);
 
         bool setMaterialOffsetX(dfloat x);
         bool setMaterialOffsetY(dfloat y);
@@ -127,8 +104,32 @@ namespace de
         bool setColorRGBA(dfloat r, dfloat g, dfloat b, dfloat a);
         //bool setBlendMode(blendmode_t blendMode);
 
+        /**
+         * Adds a decoration to the surface.
+         *
+         * @param decoration  Decoration to add. Surface takes ownership.
+         */
+        Decoration& add(Decoration* decoration);
+
+        void destroyDecorations();
+
+        /**
+         * Get the value of a surface property, selected by DMU_* name.
+         */
         //bool getProperty(setargs_t* args) const;
+
+        /**
+         * Update the surface, property is selected by DMU_* name.
+         */
         //bool setProperty(const setargs_t* args);
+
+    private:
+        typedef std::vector<Decoration*> Decorations;
+        Decorations _decorations;
+
+        Material* _material;
+        Material* _materialB;
+        dfloat _materialBlendFactor;
     };
 }
 

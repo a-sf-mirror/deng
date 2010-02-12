@@ -21,6 +21,10 @@
 #ifndef LIBDENG2_POLYOBJ_H
 #define LIBDENG2_POLYOBJ_H
 
+#include "../Vector"
+
+#include <vector>
+
 namespace de
 {
     class Subsector;
@@ -29,6 +33,9 @@ namespace de
 
     class Polyobj
     {
+    public:
+        typedef std::vector<Vector2f> EdgePoints;
+
     public:
         /// Thinker node.
         //thinker_t thinker;
@@ -67,10 +74,10 @@ namespace de
         Seg* segs;
 
         /// Used as the base for the rotations.
-        //struct fvertex_s* _originalPts;
+        EdgePoints _originalPts;
 
         /// Use to restore the old point values.
-        //struct fvertex_s* _prevPts;
+        EdgePoints _prevPts;
 
         /// Movement speed.
         dfloat speed;
@@ -92,7 +99,7 @@ namespace de
          */
         void initalize();
 
-        bool move(dfloat x, dfloat y);
+        bool translate(const Vector2f& delta);
 
         bool rotate(dangle angle);
 
@@ -114,9 +121,9 @@ namespace de
 
         void changed();
 
-        void linkLineDefs();
+        void linkInLineDefBlockmap();
 
-        void unlinkLineDefs();
+        void unlinkInLineDefBlockmap();
     };
 }
 

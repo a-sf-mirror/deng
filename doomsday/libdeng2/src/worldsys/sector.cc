@@ -31,20 +31,10 @@
 
 using namespace de;
 
-namespace de
+namespace
 {
-    // @fixme Not thread safe.
-    static bool noFit;
-}
-
-Sector::~Sector()
-{
-    subsectors.clear();
-    reverbSubsectors.clear();
-    lineDefs.clear();
-
-    if(blocks) Z_Free(blocks);
-}
+// @fixme Not thread safe.
+bool noFit;
 
 /**
  * Adjusts Thing::floorZ, Thing::ceilingZ, and possibly Thing::origin.z.
@@ -91,13 +81,49 @@ bool heightClip(Thing* thing)
     return true;
 }
 
-static bool PIT_SectorPlanesChanged(Thing* thing, void* data)
+bool PIT_SectorPlanesChanged(Thing* thing, void* data)
 {
      // Always keep checking.
     if(heightClip(thing))
         return true;
     noFit = true;
     return true;
+}
+}
+
+Sector::~Sector()
+{
+    subsectors.clear();
+    reverbSubsectors.clear();
+    lineDefs.clear();
+
+    if(blocks) Z_Free(blocks);
+}
+
+void Sector::clearFrameFlags()
+{
+    // Clear all flags that can be cleared before each frame.
+    frameFlags &= ~FRAME_CLEARMASK;
+}
+
+void Sector::markDependantSurfacesForDecorationUpdate()
+{
+    FOR_EACH(i, lineDefs, LineDefSet::iterator)
+    {
+        LineDef* lineDef = *i;
+        if(!lineDef->hasBack())
+        {
+            lineDef->front().middle().update();
+            continue;
+        }
+        if(&lineDef->backSector() != &lineDef->frontSector())
+        {
+            lineDef->front().bottom().update();
+            lineDef->front().top().update();
+            lineDef->back().bottom().update();
+            lineDef->back().top().update();
+        }
+    }
 }
 
 bool Sector::planesChanged()
@@ -155,40 +181,18 @@ bool Sector::pointInside2(dfloat x, dfloat y) const
     return subsector.pointInside(x, y);
 }
 
-/**
- * @pre Sector bounds must be setup before this is called!
- */
-void Sector::bounds(dfloat* min, dfloat* max) const
+void Sector::updateAABounds()
 {
-    if(min)
-    {
-        min[0] = bBox[BOXLEFT];
-        min[1] = bBox[BOXBOTTOM];
-    }
-    if(max)
-    {
-        max[0] = bBox[BOXRIGHT];
-        max[1] = bBox[BOXTOP];
-    }
-}
-
-/**
- * @pre Lines in sector must be setup before this is called!
- */
-void Sector::updateBounds()
-{
-    dfloat* bbox = bBox;
-
     if(!(lineDefs.size() > 0))
     {
-        memset(bBox, 0, sizeof(bBox));
+        aaBounds = MapRectangle(0, 0, 0, 0);
         return;
     }
 
-    bbox[BOXLEFT]   = MAXFLOAT;
-    bbox[BOXRIGHT]  = MINFLOAT;
-    bbox[BOXBOTTOM] = MAXFLOAT;
-    bbox[BOXTOP]    = MINFLOAT;
+    aaBounds[BOXLEFT]   = MAXFLOAT;
+    aaBounds[BOXRIGHT]  = MINFLOAT;
+    aaBounds[BOXBOTTOM] = MAXFLOAT;
+    aaBounds[BOXTOP]    = MINFLOAT;
 
     FOR_EACH(i, lineDefs, LineDefSet::const_iterator)
     {
@@ -198,19 +202,31 @@ void Sector::updateBounds()
             continue;
 
         const Vertex& vtx = lineDef.vtx1();
-        if(vtx.pos.x < bbox[BOXLEFT])
-            bbox[BOXLEFT]   = vtx.pos.x;
-        if(vtx.pos.x > bbox[BOXRIGHT])
-            bbox[BOXRIGHT]  = vtx.pos.x;
-        if(vtx.pos.y < bbox[BOXBOTTOM])
-            bbox[BOXBOTTOM] = vtx.pos.y;
-        if(vtx.pos.y > bbox[BOXTOP])
-            bbox[BOXTOP]    = vtx.pos.y;
+        if(vtx.pos.x < aaBounds[BOXLEFT])
+            aaBounds[BOXLEFT]   = vtx.pos.x;
+        if(vtx.pos.x > aaBounds[BOXRIGHT])
+            aaBounds[BOXRIGHT]  = vtx.pos.x;
+        if(vtx.pos.y < aaBounds[BOXBOTTOM])
+            aaBounds[BOXBOTTOM] = vtx.pos.y;
+        if(vtx.pos.y > aaBounds[BOXTOP])
+            aaBounds[BOXTOP]    = vtx.pos.y;
     }
 
     // This is very rough estimate of sector area.
-    approxArea = ((bbox[BOXRIGHT] - bbox[BOXLEFT]) / 128) *
-                 ((bbox[BOXTOP]   - bbox[BOXBOTTOM]) / 128);
+    approxArea = ((aaBounds[BOXRIGHT] - aaBounds[BOXLEFT]) / 128) *
+                 ((aaBounds[BOXTOP]   - aaBounds[BOXBOTTOM]) / 128);
+}
+
+void Sector::buildSubsectorSet()
+{
+    /// @fixme Sector should return the map its linked in.
+    Map& map = App::currentMap();
+    for(duint i = 0; i < map._numSubsectors; ++i)
+    {
+        Subsector* subsector = map._subsectors[i];
+        if(&subsector->sector() == this)
+            subsectors.insert(subsector);
+    }
 }
 
 #if 0

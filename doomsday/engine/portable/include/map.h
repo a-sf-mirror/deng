@@ -71,12 +71,6 @@ typedef struct dynlist_s {
     struct dynlistnode_s* head, *tail;
 } dynlist_t;
 
-typedef struct shadowlink_s {
-    struct shadowlink_s* next;
-    linedef_t*      lineDef;
-    byte            side;
-} shadowlink_t;
-
 #define MAP_SIZE            gx.mapSize
 
 extern int bspFactor;

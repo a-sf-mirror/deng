@@ -1185,10 +1185,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\src\p_material.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\src\p_materialmanager.c"
 				>
 			</File>
@@ -1202,10 +1198,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\p_players.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\p_sight.c"
 				>
 			</File>
 			<File
@@ -1242,10 +1234,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\src\r_model.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\src\r_shadow.c"
 				>
 			</File>
 			<File
@@ -2838,19 +2826,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\p_linedef.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\include\p_maptypes.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\p_maputil.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\p_material.h"
 				>
 			</File>
 			<File
@@ -2866,35 +2846,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\engine\portable\include\p_plane.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\engine\portable\include\p_players.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\p_polyob.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\p_sector.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\p_seg.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\p_sidedef.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\p_subsector.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\p_surface.h"
 				>
 			</File>
 			<File
@@ -2939,10 +2891,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\engine\portable\include\r_model.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\engine\portable\include\r_shadow.h"
 				>
 			</File>
 			<File

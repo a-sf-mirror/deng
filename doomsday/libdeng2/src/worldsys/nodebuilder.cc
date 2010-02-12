@@ -43,7 +43,7 @@ namespace
          * (i.e., if vertex is linked to the LineDef as vertex1, this half-edge
          * is that on the LineDef's front side, else, that on the back side).
          */
-        HalfEdge* hEdge;
+        HalfEdge* halfEdge;
     };
 
     /// Used when sorting vertex line owners.
@@ -121,13 +121,13 @@ void NodeBuilder::destroySuperBlock(SuperBlock* superBlock)
     moveSuperBlockToQuickAllocList(superBlock);
 }
 
-static void findMapLimits(Map& src, dint* bbox)
+static void findMapLimits(Map& map, dint* bbox)
 {
     M_ClearBox(bbox);
 
-    for(duint i = 0; i < src.numLineDefs(); ++i)
+    FOR_EACH(i, map.lineDefs(), Map::LineDefs::const_iterator)
     {
-        LineDef* lineDef = src.lineDefs[i];
+        LineDef* lineDef = (*i);
         const Vertex& from = *lineDef->buildData.v[0];
         const Vertex& to   = *lineDef->buildData.v[1];
 
@@ -167,22 +167,22 @@ void NodeBuilder::destroyRootSuperBlock()
     destroyUnusedSuperBlocks();
 }
 
-void  NodeBuilder::updateHalfEdgeInfo(const HalfEdge& hEdge)
+void  NodeBuilder::updateHalfEdgeInfo(const HalfEdge& halfEdge)
 {
-    HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(hEdge.data);
+    HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(halfEdge.data);
 
-    info->direction = hEdge.twin->vertex->pos - hEdge.vertex->pos;
+    info->direction = halfEdge.twin->vertex->pos - halfEdge.vertex->pos;
 
     info->length = info->direction.length();
     info->angle  = slopeToAngle(info->direction.x, info->direction.y);
 
     assert(info->length > 0);
 
-    info->perpendicularDistance =  hEdge.vertex->pos.y * info->direction.x - hEdge.vertex->pos.x * info->direction.y;
-    info->parallelDistance = -hEdge.vertex->pos.x * info->direction.x - hEdge.vertex->pos.y * info->direction.y;
+    info->perpendicularDistance =  halfEdge.vertex->pos.y * info->direction.x - halfEdge.vertex->pos.x * info->direction.y;
+    info->parallelDistance = -halfEdge.vertex->pos.x * info->direction.x - halfEdge.vertex->pos.y * info->direction.y;
 }
 
-void NodeBuilder::attachHalfEdgeInfo(HalfEdge& hEdge, LineDef* line,
+void NodeBuilder::attachHalfEdgeInfo(HalfEdge& halfEdge, LineDef* line,
     LineDef* sourceLineDef, Sector* sec, bool back)
 {
     halfEdgeInfo = reinterpret_cast<HalfEdgeInfo**>(std::realloc(halfEdgeInfo, ++numHalfEdgeInfo * sizeof(HalfEdgeInfo*)));
@@ -193,15 +193,15 @@ void NodeBuilder::attachHalfEdgeInfo(HalfEdge& hEdge, LineDef* line,
     info->sector = sec;
     info->sourceLineDef = sourceLineDef;
 
-    hEdge.data = info;
+    halfEdge.data = info;
 }
 
 HalfEdge& NodeBuilder::createHalfEdge(LineDef* line, LineDef* sourceLine,
     Vertex* start, Sector* sec, bool back)
 {
-    HalfEdge& hEdge = _map.halfEdgeDS().createHalfEdge(*start);
-    attachHalfEdgeInfo(hEdge, line, sourceLine, sec, back);
-    return hEdge;
+    HalfEdge& halfEdge = _map.halfEdgeDS().createHalfEdge(*start);
+    attachHalfEdgeInfo(halfEdge, line, sourceLine, sec, back);
+    return halfEdge;
 }
 
 HalfEdge& NodeBuilder::splitHalfEdge(HalfEdge& oldHEdge, ddouble x, ddouble y)
@@ -224,13 +224,13 @@ HalfEdge& NodeBuilder::splitHalfEdge(HalfEdge& oldHEdge, ddouble x, ddouble y)
         LineDef* lineDef = ((HalfEdgeInfo*) oldHEdge.data)->lineDef;
         if(((HalfEdgeInfo*) oldHEdge.data)->back)
         {
-            if(lineDef->hEdges[0] == oldHEdge.twin)
-                lineDef->hEdges[0] = newHEdge.twin;
+            if(lineDef->halfEdges[0] == oldHEdge.twin)
+                lineDef->halfEdges[0] = newHEdge.twin;
         }
         else
         {
-            if(lineDef->hEdges[1] == &oldHEdge)
-                lineDef->hEdges[1] = &newHEdge;
+            if(lineDef->halfEdges[1] == &oldHEdge)
+                lineDef->halfEdges[1] = &newHEdge;
         }
     }
 
@@ -252,8 +252,8 @@ HalfEdge& NodeBuilder::splitHalfEdge(HalfEdge& oldHEdge, ddouble x, ddouble y)
 static __inline dint pointOnHEdgeSide(ddouble x, ddouble y, const HalfEdge* part)
 {
     HalfEdgeInfo* data = (HalfEdgeInfo*) part->data;
-    return P_PointOnLineDefSide2(x, y, data->direction.x, data->direction.y, data->perpendicularDistance,
-                                 data->length, DIST_EPSILON);
+    return P_PointOnLineSide2(x, y, data->direction.x, data->direction.y, data->perpendicularDistance,
+                              data->length, DIST_EPSILON);
 }
 
 /**
@@ -276,9 +276,9 @@ static void testForWindowEffect(Map& map, LineDef* l)
 
     bool castHoriz = (fabs(lineDelta.x) < fabs(lineDelta.y)? true : false);
 
-    for(duint i = 0; i < map.numLineDefs(); ++i)
+    FOR_EACH(i, map.lineDefs(), Map::LineDefs::const_iterator)
     {
-        LineDef* n = map.lineDefs[i];
+        LineDef* n = (*i);
 
         if(n == l || (n->buildData.sideDefs[LineDef::FRONT] && n->buildData.sideDefs[LineDef::BACK] &&
             &n->buildData.sideDefs[LineDef::FRONT]->sector() == &n->buildData.sideDefs[LineDef::BACK]->sector()) /*|| n->buildData.overlap */)
@@ -555,9 +555,9 @@ typedef struct {
     // We know how many lineowners are needed: number of lineDefs * 2.
     lineOwners = storage = reinterpret_cast<LineDefOwner*>(std::calloc(1, sizeof(*lineOwners) * _map.numLineDefs() * 2));
 
-    for(i = 0; i < _map.numLineDefs(); ++i)
+    FOR_EACH(i, _map.lineDefs(), Map::LineDefs::const_iterator)
     {
-        LineDef* lineDef = _map.lineDefs[i];
+        LineDef* lineDef = (*i);
         Vertex* from, *to;
 
         if(lineDef->polyobjOwned)
@@ -587,9 +587,9 @@ typedef struct {
     {
     duint i, oneSiders, twoSiders;
 
-    for(i = 0; i < _map.numLineDefs(); ++i)
+    FOR_EACH(i, _map.lineDefs(), Map::LineDefs::const_iterator)
     {
-        LineDef* lineDef = _map.lineDefs[i];
+        LineDef* lineDef = (*i);
         Vertex* from, *to;
 
         if(lineDef->polyobjOwned)
@@ -632,9 +632,9 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
     }
     }
 
-    for(i = 0; i < _map.numLineDefs(); ++i)
+    FOR_EACH(i, _map.lineDefs(), Map::LineDefs::const_iterator)
     {
-        LineDef* lineDef = _map.lineDefs[i];
+        LineDef* lineDef = (*i);
 
         if(lineDef->polyobjOwned)
             continue;
@@ -654,9 +654,9 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
         updateHalfEdgeInfo(front);
         updateHalfEdgeInfo(back);
 
-        lineDef->hEdges[0] = lineDef->hEdges[1] = &front;
-        ((LineDefOwner*) lineDef->vo[0])->hEdge = &front;
-        ((LineDefOwner*) lineDef->vo[1])->hEdge = &back;
+        lineDef->halfEdges[0] = lineDef->halfEdges[1] = &front;
+        ((LineDefOwner*) lineDef->vo[0])->halfEdge = &front;
+        ((LineDefOwner*) lineDef->vo[1])->halfEdge = &back;
     }
 
     // Sort vertex owners, clockwise by angle (i.e., ascending).
@@ -687,13 +687,13 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
         owner = info->lineOwners;
         do
         {
-            HalfEdge* hEdge = owner->hEdge;
+            HalfEdge* halfEdge = owner->halfEdge;
 
-            hEdge->prev = owner->next ? owner->next->hEdge->twin : info->lineOwners->hEdge->twin;
-            hEdge->prev->next = hEdge;
+            halfEdge->prev = owner->next ? owner->next->halfEdge->twin : info->lineOwners->halfEdge->twin;
+            halfEdge->prev->next = halfEdge;
 
-            hEdge->twin->next = prev->hEdge;
-            hEdge->twin->next->prev = hEdge->twin;
+            halfEdge->twin->next = prev->halfEdge;
+            halfEdge->twin->next->prev = halfEdge->twin;
 
             prev = owner;
         } while((owner = owner->next) != NULL);
@@ -713,27 +713,27 @@ void NodeBuilder::createInitialHalfEdgesAndAddtoRootSuperBlock()
     createInitialHalfEdges();
     FOR_EACH(i, _map.halfEdgeDS().halfEdges(), HalfEdgeDS::HalfEdges::const_iterator)
     {
-        HalfEdge* hEdge = (*i);
+        HalfEdge* halfEdge = (*i);
 
-        if(!(((HalfEdgeInfo*) hEdge->data)->lineDef))
+        if(!(((HalfEdgeInfo*) halfEdge->data)->lineDef))
             continue;
 
-        if(((HalfEdgeInfo*) hEdge->data)->back &&
-           !((HalfEdgeInfo*) hEdge->data)->lineDef->buildData.sideDefs[LineDef::BACK])
+        if(((HalfEdgeInfo*) halfEdge->data)->back &&
+           !((HalfEdgeInfo*) halfEdge->data)->lineDef->buildData.sideDefs[LineDef::BACK])
             continue;
 
-        if(((HalfEdgeInfo*) hEdge->data)->back &&
-           ((HalfEdgeInfo*) hEdge->data)->lineDef->buildData.windowEffect)
+        if(((HalfEdgeInfo*) halfEdge->data)->back &&
+           ((HalfEdgeInfo*) halfEdge->data)->lineDef->buildData.windowEffect)
             continue;
 
-        addHalfEdgeToSuperBlock(_rootSuperBlock, hEdge);
+        addHalfEdgeToSuperBlock(_rootSuperBlock, halfEdge);
     }
 }
 
-void NodeBuilder::addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* hEdge)
+void NodeBuilder::addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* halfEdge)
 {
     assert(superBlock);
-    assert(hEdge);
+    assert(halfEdge);
 
 #define SUPER_IS_LEAF(s)  \
     ((s)->bbox[SuperBlock::BOXRIGHT] - (s)->bbox[SuperBlock::BOXLEFT] <= 256 && \
@@ -743,7 +743,7 @@ void NodeBuilder::addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* hEdg
     {
         dint p1, p2, child;
         SuperBlock* sub;
-        HalfEdgeInfo* info = (HalfEdgeInfo*) hEdge->data;
+        HalfEdgeInfo* info = (HalfEdgeInfo*) halfEdge->data;
 
         Vector2i midPoint = Vector2i(superBlock->bbox[SuperBlock::BOXLEFT] + superBlock->bbox[SuperBlock::BOXRIGHT],
                                      superBlock->bbox[SuperBlock::BOXBOTTOM] + superBlock->bbox[SuperBlock::BOXTOP]);
@@ -758,21 +758,21 @@ void NodeBuilder::addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* hEdg
 
         if(SUPER_IS_LEAF(superBlock))
         {   // Block is a leaf -- no subdivision possible.
-            superBlock->push(hEdge);
-            ((HalfEdgeInfo*) hEdge->data)->superBlock = superBlock;
+            superBlock->push(halfEdge);
+            ((HalfEdgeInfo*) halfEdge->data)->superBlock = superBlock;
             return;
         }
 
         if(superBlock->bbox[SuperBlock::BOXRIGHT] - superBlock->bbox[SuperBlock::BOXLEFT] >=
            superBlock->bbox[SuperBlock::BOXTOP]   - superBlock->bbox[SuperBlock::BOXBOTTOM])
         {   // Block is wider than it is high, or square.
-            p1 = hEdge->vertex->pos.x >= midPoint.x;
-            p2 = hEdge->twin->vertex->pos.x >= midPoint.x;
+            p1 = halfEdge->vertex->pos.x >= midPoint.x;
+            p2 = halfEdge->twin->vertex->pos.x >= midPoint.x;
         }
         else
         {   // Block is higher than it is wide.
-            p1 = hEdge->vertex->pos.y >= midPoint.y;
-            p2 = hEdge->twin->vertex->pos.y >= midPoint.y;
+            p1 = halfEdge->vertex->pos.y >= midPoint.y;
+            p2 = halfEdge->twin->vertex->pos.y >= midPoint.y;
         }
 
         if(p1 && p2)
@@ -781,8 +781,8 @@ void NodeBuilder::addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* hEdg
             child = 0;
         else
         {   // Line crosses midpoint -- link it in and return.
-            superBlock->push(hEdge);
-            ((HalfEdgeInfo*) hEdge->data)->superBlock = superBlock;
+            superBlock->push(halfEdge);
+            ((HalfEdgeInfo*) halfEdge->data)->superBlock = superBlock;
             return;
         }
 
@@ -826,28 +826,28 @@ static void sanityCheckClosed(const Face* face)
 {
     dint total = 0, gaps = 0;
 
-    const HalfEdge* hEdge = face->hEdge;
+    const HalfEdge* halfEdge = face->halfEdge;
     do
     {
-        const HalfEdge* a = hEdge;
-        const HalfEdge* b = hEdge->next;
+        const HalfEdge* a = halfEdge;
+        const HalfEdge* b = halfEdge->next;
 
         if(a->twin->vertex->pos != b->vertex->pos)
             gaps++;
 
         total++;
-    } while((hEdge = hEdge->next) != face->hEdge);
+    } while((halfEdge = halfEdge->next) != face->halfEdge);
 
     if(gaps > 0)
     {
         LOG_VERBOSE("HEdge list for face #%p is not closed (%d gaps, %d half-edges).")
             << face << gaps << total;
 
-/*hEdge = face->hEdge;
+/*halfEdge = face->halfEdge;
 do
 {
-    LOG_DEBUG("  half-edge %p (%s) --> (%s)") << hEdge << hEdge->vertex->pos << hEdge->twin->vertex->pos;
-} while((hEdge = hEdge->next) != face->hEdge);*/
+    LOG_DEBUG("  half-edge %p (%s) --> (%s)") << halfEdge << halfEdge->vertex->pos << halfEdge->twin->vertex->pos;
+} while((halfEdge = halfEdge->next) != face->halfEdge);*/
     }
 }
 
@@ -860,7 +860,7 @@ static void sanityCheckSameSector(const Face* face)
     const HalfEdge* n;
 
     // Find a suitable half-edge for comparison.
-    n = face->hEdge;
+    n = face->halfEdge;
     do
     {
         if(!((HalfEdgeInfo*) n->data)->sector)
@@ -868,7 +868,7 @@ static void sanityCheckSameSector(const Face* face)
 
         cur = n;
         break;
-    } while((n = n->next) != face->hEdge);
+    } while((n = n->next) != face->halfEdge);
 
     if(!cur)
         return;
@@ -904,19 +904,19 @@ static void sanityCheckSameSector(const Face* face)
             LOG_VERBOSE("Sector #%d has sidedef facing #%d.")
                 << data->sector->buildData.index
                 << curData->sector->buildData.index;
-    } while((cur = cur->next) != face->hEdge);
+    } while((cur = cur->next) != face->halfEdge);
 }
 
 static bool sanityCheckHasRealHEdge(const Face* face)
 {
     const HalfEdge* n;
 
-    n = face->hEdge;
+    n = face->halfEdge;
     do
     {
         if(((const HalfEdgeInfo*) n->data)->lineDef)
             return true;
-    } while((n = n->next) != face->hEdge);
+    } while((n = n->next) != face->halfEdge);
 
     return false;
 }
@@ -942,12 +942,12 @@ static bool C_DECL finishLeaf(BinaryTree<void*>* tree, void* data)
 
 void NodeBuilder::copyHalfEdgeListFromSuperBlock(Face& face, SuperBlock* superBlock)
 {
-    HalfEdge* hEdge;
-    while((hEdge = superBlock->pop()))
+    HalfEdge* halfEdge;
+    while((halfEdge = superBlock->pop()))
     {
-        ((HalfEdgeInfo*) hEdge->data)->superBlock = NULL;
+        ((HalfEdgeInfo*) halfEdge->data)->superBlock = NULL;
         // Link it into head of the leaf's list.
-        face.linkHEdge(hEdge);
+        face.linkHEdge(halfEdge);
     }
 
     // Recursively handle sub-blocks.
@@ -1112,11 +1112,11 @@ void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
 void NodeBuilder::divideHalfEdges(const BSPartition& partition, SuperBlock* hEdgeList,
     SuperBlock* rights, SuperBlock* lefts)
 {
-    HalfEdge* hEdge;
-    while((hEdge = hEdgeList->pop()))
+    HalfEdge* halfEdge;
+    while((halfEdge = hEdgeList->pop()))
     {
-        ((HalfEdgeInfo*) hEdge->data)->superBlock = NULL;
-        divideHalfEdge(partition, *hEdge, rights, lefts);
+        ((HalfEdgeInfo*) halfEdge->data)->superBlock = NULL;
+        divideHalfEdge(partition, *halfEdge, rights, lefts);
     }
 
     // Recursively handle sub-blocks.
@@ -1276,33 +1276,33 @@ void NodeBuilder::mergeIntersectionOverlaps()
  */
 static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockwise)
 {
-    HalfEdge* hEdge, *first;
+    HalfEdge* halfEdge, *first;
 
-    first = vertex->hEdge;
-    hEdge = first->twin->next;
+    first = vertex->halfEdge;
+    halfEdge = first->twin->next;
     do
     {
-        if(((HalfEdgeInfo*) hEdge->data)->angle <=
+        if(((HalfEdgeInfo*) halfEdge->data)->angle <=
            ((HalfEdgeInfo*) first->data)->angle)
-            first = hEdge;
-    } while((hEdge = hEdge->twin->next) != vertex->hEdge);
+            first = halfEdge;
+    } while((halfEdge = halfEdge->twin->next) != vertex->halfEdge);
 
     if(antiClockwise)
     {
         first = first->twin->next;
-        hEdge = first;
-        while(((HalfEdgeInfo*) hEdge->data)->angle > angle + ANG_EPSILON &&
-              (hEdge = hEdge->twin->next) != first);
+        halfEdge = first;
+        while(((HalfEdgeInfo*) halfEdge->data)->angle > angle + ANG_EPSILON &&
+              (halfEdge = halfEdge->twin->next) != first);
 
-        return hEdge->twin;
+        return halfEdge->twin;
     }
     else
     {
-        hEdge = first;
-        while(((HalfEdgeInfo*) hEdge->data)->angle < angle + ANG_EPSILON &&
-              (hEdge = hEdge->prev->twin) != first);
+        halfEdge = first;
+        while(((HalfEdgeInfo*) halfEdge->data)->angle < angle + ANG_EPSILON &&
+              (halfEdge = halfEdge->prev->twin) != first);
 
-        return hEdge;
+        return halfEdge;
     }
 }
 

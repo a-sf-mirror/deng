@@ -22,6 +22,11 @@
 
 using namespace de;
 
+MSurface::~MSurface()
+{
+    destroyDecorations();
+}
+
 void MSurface::resetScroll()
 {
     // X Offset.
@@ -313,65 +318,56 @@ boolean Surface_SetColorA(MSurface* suf, float a)
     return true;
 }
 
-/**
- * Update the surface, color.
- */
-boolean Surface_SetColorRGBA(MSurface* suf, float r, float g, float b,
-                             float a)
+bool MSurface::setColorRGBA(dfloat r, dfloat g, dfloat b, dfloat a)
 {
-    if(!suf)
-        return false;
+    r = de::clamp(0, r, 1);
+    g = de::clamp(0, g, 1);
+    b = de::clamp(0, b, 1);
+    a = de::clamp(0, a, 1);
 
-    r = MINMAX_OF(0, r, 1);
-    g = MINMAX_OF(0, g, 1);
-    b = MINMAX_OF(0, b, 1);
-    a = MINMAX_OF(0, a, 1);
-
-    if(suf->rgba[CR] == r && suf->rgba[CG] == g && suf->rgba[CB] == b &&
-       suf->rgba[CA] == a)
+    if(rgba[CR] == r && rgba[CG] == g && rgba[CB] == b && rgba[CA] == a)
         return true;
 
     // \todo when surface colours are intergrated with the
     // bias lighting model we will need to recalculate the
     // vertex colours when they are changed.
-    suf->rgba[CR] = r;
-    suf->rgba[CG] = g;
-    suf->rgba[CB] = b;
-    suf->rgba[CA] = a;
+    rgba[CR] = r;
+    rgba[CG] = g;
+    rgba[CB] = b;
+    rgba[CA] = a;
 
     return true;
 }
 
-/**
- * Update the surface, blendmode.
- */
-boolean Surface_SetBlendMode(MSurface* suf, blendmode_t blendMode)
+#if 0
+bool MSurface::setBlendMode(blendmode_t newBlendMode)
 {
-    if(!suf)
-        return false;
-
-    if(suf->blendMode == blendMode)
-        return true;
-
-    suf->blendMode = blendMode;
+    if(blendMode != newBlendMode)
+    blendMode = newBlendMode;
     return true;
 }
+#endif
 
-/**
- * Mark the surface as requiring a full update. Called during engine-reset.
- */
-void Surface_Update(MSurface* suf)
+void MSurface::update()
 {
-    if(!suf)
-        return;
-
-    suf->inFlags |= SUIF_UPDATE_DECORATIONS;
+    inFlags |= SUIF_UPDATE_DECORATIONS;
 }
 
-/**
- * Update the surface, property is selected by DMU_* name.
- */
-boolean Surface_SetProperty(MSurface* suf, const setargs_t* args)
+Decoration& MSurface::add(Decoration* decoration)
+{
+    _decorations.push_back(decoration);
+    return *decoration;
+}
+
+void MSurface::destroyDecorations()
+{
+    FOR_EACH(i, _decorations, Decorations::iterator)
+        delete (*i);
+    _decorations.clear();
+}
+
+#if 0
+bool MSurface::setProperty(const setargs_t* args)
 {
     switch(args->prop)
     {
@@ -463,16 +459,13 @@ boolean Surface_SetProperty(MSurface* suf, const setargs_t* args)
     return true; // Continue iteration.
 }
 
-/**
- * Get the value of a surface property, selected by DMU_* name.
- */
-boolean Surface_GetProperty(const MSurface *suf, setargs_t *args)
+bool MSurface::getProperty(setargs_t *args) const
 {
     switch(args->prop)
     {
     case DMU_MATERIAL:
         {
-        material_t*     mat = suf->material;
+        Material*     mat = suf->material;
         objectrecord_t* r;
 
         if(suf->inFlags & SUIF_MATERIAL_FIX)
@@ -536,3 +529,4 @@ boolean Surface_GetProperty(const MSurface *suf, setargs_t *args)
 
     return true; // Continue iteration.
 }
+#endif

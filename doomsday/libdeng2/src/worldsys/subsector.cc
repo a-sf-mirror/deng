@@ -53,17 +53,17 @@ namespace de
  */
 static void spreadInSubsector(Subsector& subsector, void* data)
 {
-    if(!subsector.face->hEdge)
+    if(!subsector.face->halfEdge)
         return;
 
-    HalfEdge& hEdge = *subsector.face->hEdge;
+    HalfEdge& halfEdge = *subsector.face->halfEdge;
     do
     {
-        processSeg(*reinterpret_cast<Seg*>(hEdge.data), data);
-        if(!(hEdge.next))
+        processSeg(*reinterpret_cast<Seg*>(halfEdge.data), data);
+        if(!(halfEdge.next))
             break;
-        hEdge = *hEdge.next;
-    } while((&hEdge != subsector.face->hEdge));
+        halfEdge = *halfEdge.next;
+    } while((&halfEdge != subsector.face->halfEdge));
 }
 
 static void processSeg(const Seg& seg, void* data)
@@ -113,7 +113,7 @@ static void processSeg(const Seg& seg, void* data)
             return;
     }
 
-    // Calculate 2D distance to hEdge.
+    // Calculate 2D distance to halfEdge.
     dfloat distance;
     
     {
@@ -345,19 +345,19 @@ void Subsector::spreadObjs()
 
 void Subsector::updateMidPoint()
 {
-    HalfEdge* hEdge;
+    HalfEdge* halfEdge;
 
     // Find the center point. First calculate the bounding box.
-    if((hEdge = face->hEdge))
+    if((halfEdge = face->halfEdge))
     {
-        const Vertex& vtx = *hEdge->vertex;
+        const Vertex& vtx = *halfEdge->vertex;
 
         bBox[0][0] = bBox[1][0] = midPoint.x = dfloat(vtx.pos.x);
         bBox[0][1] = bBox[1][1] = midPoint.y = dfloat(vtx.pos.y);
 
-        while((hEdge = hEdge->next) != face->hEdge)
+        while((halfEdge = halfEdge->next) != face->halfEdge)
         {
-            const Vertex& vtx = *hEdge->vertex;
+            const Vertex& vtx = *halfEdge->vertex;
 
             if(vtx.pos.x < bBox[0][0])
                 bBox[0][0] = dfloat(vtx.pos.x);
@@ -381,21 +381,70 @@ void Subsector::updateMidPoint()
     worldGridOffset.y = fmod(bBox[1][1], 64);
 }
 
+void Subsector::pickFanBaseSeg()
+{
+#define TRIFAN_LIMIT    0.1
+
+    HalfEdge* base = NULL;
+
+    if(firstFanHEdge)
+        return; // Already chosen.
+
+    useMidPoint = false;
+    if(hEdgeCount > 3)
+    {
+        duint baseIDX = 0;
+        HalfEdge* halfEdge = face->halfEdge;
+        do
+        {
+            base = halfEdge;
+            Vector2d& basepos = &base->vertex->pos;
+            HalfEdge* hEdge2 = face->halfEdge;
+            duint i = 0;
+            do
+            {
+                if(!(baseIDX > 0 && (i == baseIDX || i == baseIDX - 1)))
+                {
+                    if(TRIFAN_LIMIT >= M_TriangleArea(basepos, hEdge2->vertex->pos, hEdge2->twin->vertex->pos))
+                    {
+                        base = NULL;
+                    }
+                }
+
+                i++;
+            } while(base && (hEdge2 = hEdge2->next) != face->halfEdge);
+
+            if(!base)
+                baseIDX++;
+        } while(!base && (halfEdge = halfEdge->next) != face->halfEdge);
+
+        if(!base)
+            useMidPoint = true;
+    }
+
+    if(base)
+        firstFanHEdge = base;
+    else
+        firstFanHEdge = face->halfEdge;
+
+#undef TRIFAN_LIMIT
+}
+
 bool Subsector::pointInside(dfloat x, dfloat y) const
 {
-    const HalfEdge* hEdge = face->hEdge;
+    const HalfEdge* halfEdge = face->halfEdge;
 
     do
     {
-        const Vertex& v1 = *hEdge->vertex;
-        const Vertex& v2 = *hEdge->next->vertex;
+        const Vertex& v1 = *halfEdge->vertex;
+        const Vertex& v2 = *halfEdge->next->vertex;
 
         if(((v1.pos.y - y) * (v2.pos.x - v1.pos.x) -
             (v1.pos.x - x) * (v2.pos.y - v1.pos.y)) < 0)
         {
             return false; // Outside the subsector's edges.
         }
-    } while((hEdge = hEdge->next) != face->hEdge);
+    } while((halfEdge = halfEdge->next) != face->halfEdge);
 
     return true;
 }

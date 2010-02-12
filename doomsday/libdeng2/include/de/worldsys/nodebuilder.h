@@ -239,7 +239,7 @@ namespace de
         /**
          * Search the list for an intersection, if found; return it.
          *
-         * @param hEdge         Ptr to the intercept half-edge to look for.
+         * @param halfEdge         Ptr to the intercept half-edge to look for.
          *
          * @return              @c true iff an intersection is found ELSE @c false;
          */

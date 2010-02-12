@@ -28,7 +28,7 @@ using namespace de;
 
 Plane::~Plane()
 {
-    if(surface.decorations) Z_Free(surface.decorations);
+    _surface.destroyDecorations();
 }
 
 void Plane::resetHeightTracking()

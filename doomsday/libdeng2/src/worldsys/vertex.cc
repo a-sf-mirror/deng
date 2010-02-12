@@ -22,19 +22,125 @@
  * Boston, MA  02110-1301  USA
  */
 
-#include "de/Vertex"
 #include "de/Log"
+#include "de/Vector"
+#include "de/Vertex"
+#include "de/LineDef"
 
 using namespace de;
 
+namespace {
+/**
+ * @return          The width (world units) of the shadow edge.
+ *                  It is scaled depending on the length of the edge.
+ */
+dfloat shadowEdgeWidth(const Vector2f& edge)
+{
+    const dfloat normalWidth = 20; //16;
+    const dfloat maxWidth = 60;
+
+    // A long edge?
+    ddouble length = edge.length();
+    if(length > 600)
+    {
+        ddouble w = length - 600;
+        if(w > 1000)
+            w = 1000;
+        return normalWidth + dfloat(w / 1000 * maxWidth);
+    }
+
+    return normalWidth;
+}
+
+/**
+ * Line1 and line2 are the (dx,dy)s for two lines, connected at the
+ * origin (0,0).  Dist1 and dist2 are the distances from these lines.
+ * The returned point (in 'point') is dist1 away from line1 and dist2
+ * from line2, while also being the nearest point to the origin (in
+ * case the lines are parallel).
+ */
+void cornerNormalPoint(const Vector2d& line1, ddouble dist1,
+                       const Vector2d& line2, ddouble dist2, Vector2d* point,
+                       Vector2d* lp)
+{
+    // Calculate normals for both lines.
+    ddouble len1 = line1.length();
+    Vector2d norm1 = Vector2d(-line1.y, line1.x);
+    norm1.x /= len1; norm1.y /= len1;
+    norm1 *= dist1;
+
+    ddouble len2 = line2.length();
+    Vector2d norm2 = Vector2d(line2.y, -line2.x);
+    norm2.x /= len2; norm2.y /= len2;
+    norm2 *= dist2;
+
+    // Do we need to calculate the extended points, too?  Check that
+    // the extension does not bleed too badly outside the legal shadow
+    // area.
+    if(lp)
+    {
+        (*lp)    = line2;
+        (*lp).x /= len2; (*lp).y /= len2;
+        (*lp)   *= dist2;
+    }
+
+    // Are the lines parallel?  If so, they won't connect at any
+    // point, and it will be impossible to determine a corner point.
+    if(line1.isParallel(line2))
+    {
+        // Just use a normal as the point.
+        if(point) *point = norm1;
+        return;
+    }
+
+    // Find the intersection of normal-shifted lines.  That'll be our
+    // corner point.
+    if(point)
+        V2_Intersection(norm1, line1, norm2, line2, point);
+}
+}
+
+void MVertex::updateShadowOffsets()
+{
+    if(!(numLineOwners > 0))
+        return;
+
+    lineowner_t& own = *lineOwners;
+    do
+    {
+        const LineDef& lineDefB = *own.lineDef;
+        const LineDef& lineDefA = *own.next().lineDef;
+
+        Vector2f left, right;
+        if(reinterpret_cast<MVertex*>(lineDefB.vtx1().data) == this)
+            right = lineDefB.delta;
+        else
+            right = -lineDefB.delta;
+
+        if(reinterpret_cast<MVertex*>(lineDefA.vtx1().data) == this)
+            left = -lineDefA.delta;
+        else
+            left = lineDefA.delta;
+
+        // The left side is always flipped.
+        left = -left;
+
+        cornerNormalPoint(left, shadowEdgeWidth(left),
+                          right, shadowEdgeWidth(right),
+                          &own.shadowOffsets.inner, &own.shadowOffsets.extended);
+
+        own = own.next();
+    } while(&own != lineOwners);
+}
+
 #if 0
-bool Vertex::setProperty(const setargs_t* args)
+bool MVertex::setProperty(const setargs_t* args)
 {
     // Vertices are not writable through DMU.
     throw WriteError("Vertex::setProperty", "Not writable.");
 }
 
-bool Vertex::getProperty(setargs_t* args) const
+bool MVertex::getProperty(setargs_t* args) const
 {
     switch(args->prop)
     {

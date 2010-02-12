@@ -75,6 +75,12 @@ namespace de
         return abs(a - b) < EPSILON;
     }
 
+    /// Is value within inclusive range of the base plus/minus.
+    template <typename Type>
+    inline bool inrange(const Type& value, const Type& base, const Type& range) {
+        return !(value < base - range) && !(value > base + range);
+    }
+
     /// Return the first 32-bit integer larger than the specified value.
     template <typename Type>
     inline dint ceilpow2(const Type& val) {

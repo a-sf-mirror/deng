@@ -23,23 +23,16 @@
  * Boston, MA  02110-1301  USA
  */
 
-// HEADER FILES ------------------------------------------------------------
+#include "de/ParticleBlockmap"
 
-#include "de_base.h"
-#include "de_play.h"
-
-#include "particleblockmap.h"
-
-// MACROS ------------------------------------------------------------------
-
+namespace
+{
 //// \todo This stuff is obsolete and needs to be removed!
 #define MAPBLOCKUNITS   128
 #define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
 #define MAPBLOCKSHIFT   (FRACBITS+7)
 #define MAPBMASK        (MAPBLOCKSIZE-1)
 #define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
-
-// TYPES -------------------------------------------------------------------
 
 typedef struct listnode_s {
     struct listnode_s* next;
@@ -55,20 +48,6 @@ typedef struct {
     boolean       (*func) (particle_t*, void*);
     void*           context;
 } iterateparticles_args_t;
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
 
 static ParticleBlockmap* allocBlockmap(void)
 {
@@ -234,6 +213,7 @@ static void boxToBlocks(ParticleBlockmap* bmap, uint blockBox[4], const arvec2_t
 
     blockBox[BOXRIGHT]  = MINMAX_OF(0, (max[0] - bmap->aabb[0][0]) / bmap->blockSize[0], dimensions[0]);
     blockBox[BOXTOP]    = MINMAX_OF(0, (max[1] - bmap->aabb[0][1]) / bmap->blockSize[1], dimensions[1]);
+}
 }
 
 ParticleBlockmap* P_CreateParticleBlockmap(const pvec2_t min, const pvec2_t max,

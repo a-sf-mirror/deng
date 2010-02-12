@@ -35,14 +35,7 @@ SideDef::SideDef()
 }
 
 SideDef::~SideDef()
-{
-    if(_sections[MIDDLE].decorations)
-        Z_Free(_sections[MIDDLE].decorations);
-    if(_sections[BOTTOM].decorations)
-        Z_Free(_sections[BOTTOM].decorations);
-    if(_sections[TOP].decorations)
-        Z_Free(_sections[TOP].decorations);
-}
+{}
 
 void SideDef::colorTints(sidesection_t section, const dfloat** topColor, const dfloat** bottomColor)
 {

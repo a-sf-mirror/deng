@@ -84,6 +84,16 @@ namespace de
             y -= other.y;
             return *this;
         }
+        Vector2& operator *= (ddouble scalar) {
+            x = Type(x * scalar);
+            y = Type(y * scalar);
+            return *this;
+        }
+        Vector2& operator *= (const Vector2& other) {
+            x = Type(x * other.x);
+            y = Type(y * other.y);
+            return *this;
+        }
         bool operator == (const Vector2& other) const {
             return !(*this != other);
         }
@@ -388,15 +398,18 @@ namespace de
     }
     
     //@{
-    /// @ingroup types 
+    /// @ingroup types
+    typedef Vector2<dbyte> Vector2b;    ///< 2-component vector of byte values.
     typedef Vector2<dint> Vector2i;     ///< 2-component vector of integer values.
     typedef Vector2<duint> Vector2ui;   ///< 2-component vector of unsigned integer values.
     typedef Vector2<dfloat> Vector2f;   ///< 2-component vector of floating point values.
     typedef Vector2<ddouble> Vector2d;  ///< 2-component vector of high-precision floating point values.
+    typedef Vector3<dbyte> Vector3b;    ///< 3-component vector of byte values.
     typedef Vector3<dint> Vector3i;     ///< 3-component vector of integer values.
     typedef Vector3<duint> Vector3ui;   ///< 3-component vector of unsigned integer values.
     typedef Vector3<dfloat> Vector3f;   ///< 3-component vector of floating point values.
     typedef Vector3<ddouble> Vector3d;  ///< 3-component vector of high-precision floating point values.
+    typedef Vector4<dbyte> Vector4b;    ///< 4-component vector of byte values.
     typedef Vector4<dint> Vector4i;     ///< 4-component vector of integer values.
     typedef Vector4<duint> Vector4ui;   ///< 4-component vector of unsigned integer values.
     typedef Vector4<dfloat> Vector4f;   ///< 4-component vector of floating point values.

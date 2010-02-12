@@ -39,7 +39,7 @@ namespace de
     class Vertex
     {
     public:
-        HalfEdge* hEdge;
+        HalfEdge* halfEdge;
         Vector2d pos; // @todo Move out of the base class.
         void* data;
     };
@@ -68,11 +68,11 @@ namespace de
     class Face
     {
     public:
-        HalfEdge* hEdge; // First half-edge of this face.
+        HalfEdge* halfEdge; // First half-edge of this face.
         void* data;
 
-        void linkHEdge(HalfEdge* hEdge);
-        void unlinkHEdge(HalfEdge* hEdge);
+        void linkHEdge(HalfEdge* halfEdge);
+        void unlinkHEdge(HalfEdge* halfEdge);
         void switchToHEdgeLinks();
 
         /**
