@@ -772,8 +772,6 @@ typedef boolean (*traverser_t) (intercept_t* in);
 #define DDMF_LIGHTSCALESHIFT 7
 #define DDMF_LIGHTOFFSETSHIFT 12
 
-#define DDMOBJ_RADIUS_MAX   32
-
 // The high byte of the selector is not used for modeldef selecting.
 // 1110 0000 = alpha level (0: opaque => 7: transparent 7/8)
 #define DDMOBJ_SELECTOR_MASK 0x00ffffff

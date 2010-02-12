@@ -21,6 +21,7 @@
 #ifndef LIBDENG2_THING_H
 #define LIBDENG2_THING_H
 
+#include "../Error"
 #include "../Flag"
 #include "../String"
 #include "../Animator"
@@ -38,6 +39,9 @@ namespace de
     class Thing
     {
     public:
+        /// Attempt to access user when not present. @ingroup errors
+        DEFINE_ERROR(MissingUserError);
+
         /** @name Thing Link Flags */
         //@{
         DEFINE_FLAG(LINK_SECTOR, 1);
@@ -45,8 +49,22 @@ namespace de
         DEFINE_FINAL_FLAG(LINK_NOLINEDEF, 3, LinkFlags);
         //@}
 
+        /// Maximum radius of a thing in world units.
+        static const dint MAXRADIUS = 32;
+
     public:
         Thing();
+
+        /// Is this thing owned by a user?
+        bool hasUser() const { return _user != 0; }
+
+        /// Retrieve the User of this thing.
+        User& user() {
+            if(!hasUser())
+                /// @throw MissingUserError Attempt to access user when not present.
+                throw MissingUserError("Thing::user", "No user present.");
+            return _user;
+        }
 
     // @todo Make private.
         /// LineDefs to which this is linked.
@@ -68,6 +86,9 @@ namespace de
         /// Type identifier.
         String _id;
 
+        /// If the thing represents a User, this is it.
+        User* _user;
+
         /// @todo  Appearance: sprite frame, 3D model, etc.
         ///        Behavior: states, scripts, counters, etc.
         
@@ -76,6 +97,9 @@ namespace de
 
         /// Height of the thing.
         Animator _height;
+
+        /// Extra information about this linedef.
+        Record _info;
     };
 }
 

@@ -104,7 +104,6 @@ Map::Map()
     /*_bias.editGrabbedID(-1)*/
 {
     _halfEdgeDS = new HalfEdgeDS();
-    //_gameObjectRecords = P_CreateGameObjectRecords();
     //_lightGrid = P_CreateLightGrid();
     //_dlights.linkList = Z_Calloc(sizeof(dynlist_t), PU_STATIC, 0);
 }
@@ -758,9 +757,9 @@ void Map::link(Thing* thing, Thing::LinkFlags flags)
 
     // If this is a player - perform addtional tests to see if they have
     // entered or exited the void.
-    if(thing->dPlayer)
+    if(thing->user())
     {
-        ddplayer_t* player = thing->dPlayer;
+        ddplayer_t* player = thing->user();
 
         player->inVoid = true;
         if(subsector.sector().pointInside2(player->thing->origin.x, player->thing->origin.y) &&
@@ -2148,90 +2147,87 @@ static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
     }
 }
 
-static void addLineDefsToDMU(map_t* map)
+void Map::addLineDefsToDMU()
 {
-    uint i;
-    for(i = 0; i < map->numLineDefs; ++i)
-        P_CreateObjectRecord(DMU_LINEDEF, map->lineDefs[i]);
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
+        P_CreateObjectRecord(DMU_LINEDEF, *i);
 }
 
-static void addSideDefsToDMU(map_t* map)
+void Map::addSideDefsToDMU()
 {
-    uint i;
-    for(i = 0; i < map->numSideDefs; ++i)
-        P_CreateObjectRecord(DMU_SIDEDEF, map->sideDefs[i]);
+    FOR_EACH(i, _sideDefs, SideDefs::iterator)
+        P_CreateObjectRecord(DMU_SIDEDEF, *i);
 }
 
-static void addSectorsToDMU(map_t* map)
+void Map::addSectorsToDMU()
 {
-    uint i;
-    for(i = 0; i < map->numSectors; ++i)
-        P_CreateObjectRecord(DMU_SECTOR, map->sectors[i]);
+    FOR_EACH(i, _sectors, Sectors::iterator)
+        P_CreateObjectRecord(DMU_SECTOR, *i);
 }
 
-static void addPlanesToDMU(map_t* map)
+void Map::addPlanesToDMU()
 {
-    uint i;
-    for(i = 0; i < map->numPlanes; ++i)
-        P_CreateObjectRecord(DMU_PLANE, map->planes[i]);
+    FOR_EACH(i, _planes, Planes::iterator)
+        P_CreateObjectRecord(DMU_PLANE, *i);
 }
 
-static int buildSeg(HalfEdge* halfEdge, void* context)
+static dint buildSeg(HalfEdge* halfEdge, void* paramaters)
 {
-    HalfEdgeInfo* info = (HalfEdgeInfo*) halfEdge->data;
+    Map* map = reinterpret_cast<Map*>(paramaters);
+    HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
 
     halfEdge->data = NULL;
 
     if(!(info->lineDef &&
          (!info->sector || (info->side == BACK && info->lineDef->buildData.windowEffect))))
     {
-        Map_CreateSeg((map_t*) context, info->lineDef, info->side, halfEdge);
+        map->createSeg(info->lineDef, info->side, halfEdge);
     }
 
     return true; // Continue iteration.
 }
 
-static sector_t* pickSectorFromHEdges(const HalfEdge* firstHEdge, boolean allowSelfRef)
+static Sector* pickSectorFromHEdges(const HalfEdge* firstHEdge, bool allowSelfRef)
 {
     const HalfEdge* halfEdge;
-    sector_t* sector = NULL;
+    Sector* sector = NULL;
 
     halfEdge = firstHEdge;
     do
     {
         if(!allowSelfRef && halfEdge->twin &&
-           ((HalfEdgeInfo*) halfEdge->data)->sector ==
-           ((HalfEdgeInfo*) halfEdge->twin->data)->sector)
+           reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->sector ==
+           reinterpret_cast<HalfEdgeInfo*>(halfEdge->twin->data)->sector)
             continue;
 
-        if(((HalfEdgeInfo*) halfEdge->data)->lineDef &&
-           ((HalfEdgeInfo*) halfEdge->data)->sector)
+        if(reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->lineDef &&
+           reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->sector)
         {
-            linedef_t* lineDef = ((HalfEdgeInfo*) halfEdge->data)->lineDef;
+            LineDef* lineDef = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->lineDef;
 
-            if(lineDef->buildData.windowEffect && ((HalfEdgeInfo*) halfEdge->data)->side == 1)
+            if(lineDef->buildData.windowEffect && reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->side == 1)
                 sector = lineDef->buildData.windowEffect;
             else
                 sector = lineDef->buildData.sideDefs[
-                    ((HalfEdgeInfo*) halfEdge->data)->side]->sector;
+                    reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->side]->sector;
         }
     } while(!sector && (halfEdge = halfEdge->next) != firstHEdge);
 
     return sector;
 }
 
-static boolean C_DECL buildSubsector(binarytree_t* tree, void* context)
+static bool C_DECL buildSubsector(BinaryTree* tree, void* paramaters)
 {
-    if(!BinaryTree_IsLeaf(tree))
+    if(!tree->isLeaf())
     {
-        node_t* node = BinaryTree_GetData(tree);
-        binarytree_t* child;
+        Node* node = reinterpret_cast<Node*>(tree->data());
+        BinaryTree* child;
 
-        child = BinaryTree_GetChild(tree, RIGHT);
-        if(child && BinaryTree_IsLeaf(child))
+        child = tree->right();
+        if(child && child->isLeaf())
         {
-            face_t* face = (face_t*) BinaryTree_GetData(child);
-            sector_t* sector;
+            Face* face = reinterpret_cast<Face*>(child->data());
+            Sector* sector;
 
             /**
              * Determine which sector this subsector belongs to.
@@ -2242,14 +2238,14 @@ static boolean C_DECL buildSubsector(binarytree_t* tree, void* context)
             if(!sector)
                 sector = pickSectorFromHEdges(face->halfEdge, true);
 
-            Map_CreateSubsector((map_t*) context, face, sector);
+            reinterpret_cast<Map*>(paramaters)->createSubsector(face, sector);
         }
 
-        child = BinaryTree_GetChild(tree, LEFT);
-        if(child && BinaryTree_IsLeaf(child))
+        child = tree->left();
+        if(child && child->isLeaf())
         {
-            face_t* face = (face_t*) BinaryTree_GetData(child);
-            sector_t* sector;
+            Face* face = reinterpret_cast<Face*>(child->data());
+            Sector* sector;
 
             /**
              * Determine which sector this subsector belongs to.
@@ -2260,29 +2256,20 @@ static boolean C_DECL buildSubsector(binarytree_t* tree, void* context)
             if(!sector)
                 sector = pickSectorFromHEdges(face->halfEdge, true);
 
-            Map_CreateSubsector((map_t*) context, face, sector);
+            reinterpret_cast<Map*>(paramaters)->createSubsector(face, sector);
         }
     }
 
     return true; // Continue iteration.
 }
 
-/**
- * Build the BSP for the given map.
- *
- * @param map           The map to build the BSP for.
- * @return              @c true, if completed successfully.
- */
-static boolean buildBSP(map_t* map)
+bool buildNodes()
 {
-    uint startTime = Sys_GetRealTime();
-    nodebuilder_t* nb;
+    /// Does not yet support a live rebuild.
+    assert(_rootNode == 0);
 
-    VERBOSE(
-    Con_Message("buildBSP: Processing map using tunable factor of %d...\n",
-                bspFactor));
-
-    nb = P_CreateNodeBuilder(map, bspFactor);
+    /// @todo Do this in busy mode.
+    NodeBuilder* nb = P_CreateNodeBuilder(map, bspFactor);
     NodeBuilder_Build(nb);
     map->_rootNode = nb->rootNode;
 
@@ -2309,11 +2296,7 @@ static boolean buildBSP(map_t* map)
 
     P_DestroyNodeBuilder(nb);
 
-    // How much time did we spend?
-    VERBOSE(Con_Message("  Done in %.2f seconds.\n",
-                        (Sys_GetRealTime() - startTime) / 1000.0f));
-
-    return map->_rootNode != NULL;
+    return _rootNode != NULL;
 }
 
 #if 0 /* Currently unused. */
@@ -3762,7 +3745,7 @@ boolean Map_Load(map_t* map)
         // they're ready to begin receiving frames.
         for(i = 0; i < DDMAXPLAYERS; ++i)
         {
-            player_t* plr = &ddPlayers[i];
+            User* plr = &ddPlayers[i];
 
             if(!(plr->shared.flags & DDPF_LOCAL) && clients[i].connected)
             {
@@ -3870,7 +3853,7 @@ boolean Map_Load(map_t* map)
         int i;
         for(i = 0; i < DDMAXPLAYERS; ++i)
         {
-            player_t* plr = &ddPlayers[i];
+            User* plr = &ddPlayers[i];
 
             if(isServer && plr->shared.inGame)
                 clients[i].runTime = SECONDS_TO_TICKS(gameTime);
@@ -3988,78 +3971,6 @@ boolean Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, sector_t* sec
     }
 }
 
-gameobjrecords_t* Map_GameObjectRecords(map_t* map)
-{
-    assert(map);
-    return map->_gameObjectRecords;
-}
-
-/**
- * Destroy the given game map obj database.
- */
-void Map_DestroyGameObjectRecords(map_t* map)
-{
-    assert(map);
-    P_DestroyGameObjectRecords(map->_gameObjectRecords);
-    map->_gameObjectRecords = NULL;
-}
-
-/**
- * @note Part of the Doomsday public API.
- */
-uint P_NumObjectRecords(map_t* map, int typeIdentifier)
-{
-    return GameObjRecords_Num(Map_GameObjectRecords(map), typeIdentifier);
-}
-
-/**
- * @note Part of the Doomsday public API.
- */
-byte P_GetObjectRecordByte(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    return GameObjRecords_GetByte(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
-}
-
-/**
- * @note Part of the Doomsday public API.
- */
-short P_GetObjectRecordShort(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    return GameObjRecords_GetShort(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
-}
-
-/**
- * @note Part of the Doomsday public API.
- */
-int P_GetObjectRecordInt(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    return GameObjRecords_GetInt(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
-}
-
-/**
- * @note Part of the Doomsday public API.
- */
-fixed_t P_GetObjectRecordFixed(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    return GameObjRecords_GetFixed(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
-}
-
-/**
- * @note Part of the Doomsday public API.
- */
-angle_t P_GetObjectRecordAngle(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    return GameObjRecords_GetAngle(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
-}
-
-/**
- * @note Part of the Doomsday public API.
- */
-float P_GetObjectRecordFloat(map_t* map, int typeIdentifier, uint elmIdx, int propIdentifier)
-{
-    return GameObjRecords_GetFloat(Map_GameObjectRecords(map), typeIdentifier, elmIdx, propIdentifier);
-}
-
 void Map_SetSectorPlane(map_t* map, objectrecordid_t sector, uint type, objectrecordid_t plane)
 {
     assert(map);
@@ -4088,45 +3999,6 @@ void Map_SetSectorPlane(map_t* map, objectrecordid_t sector, uint type, objectre
     sec->planes = Z_Realloc(sec->planes, sizeof(plane_t*) * (++sec->planeCount + 1), PU_STATIC);
     sec->planes[type > PLN_CEILING? sec->planeCount-1 : type] = pln;
     sec->planes[sec->planeCount] = NULL; // Terminate.
-    }
-}
-
-boolean Map_GameObjectRecordProperty(map_t* map, const char* objName, uint idx,
-                                     const char* propName, valuetype_t type,
-                                     const void* data)
-{
-    assert(map);
-    {
-    uint i;
-    size_t len;
-    def_gameobject_t* def;
-
-    if(!map->editActive)
-        return false;
-    if(!objName || !propName || !data)
-        return false; // Hmm...
-
-    // Is this a known object?
-    if((def = P_GameObjectDef(0, objName, false)) == NULL)
-        return false; // Nope.
-
-    // Is this a known property?
-    len = strlen(propName);
-    for(i = 0; i < def->numProperties; ++i)
-    {
-        if(!strnicmp(propName, def->properties[i].name, len))
-        {   // Found a match!
-            // Create a record of this so that the game can query it later.
-            GameObjRecords_Update(Map_GameObjectRecords(map), def, i, idx, type, data);
-            return true; // We're done.
-        }
-    }
-
-    // An unknown property.
-    VERBOSE(Con_Message("Map_GameObjectRecordProperty: %s has no property \"%s\".\n",
-                        def->name, propName));
-
-    return false;
     }
 }
 

@@ -297,7 +297,7 @@ bool PTR_CheckThingBlocking(Thing* thing, void* paramaters)
     PIT_CheckThingBlockingParams* params = reinterpret_cast<PIT_CheckThingBlockingParams*>(paramaters);
 
     if((thing->ddFlags & DDMF_SOLID) ||
-       (thing->dPlayer && !(thing->dPlayer->flags & DDPF_CAMERA)))
+       (thing->hasUser() && !(thing->user().flags & DDPF_CAMERA)))
     {
         dfloat tmbbox[4];
 
@@ -306,10 +306,10 @@ bool PTR_CheckThingBlocking(Thing* thing, void* paramaters)
         tmbbox[BOXLEFT]   = thing->origin.x - thing->radius;
         tmbbox[BOXRIGHT]  = thing->origin.x + thing->radius;
 
-        if(!(tmbbox[BOXRIGHT]  <= params->lineDef->aaBounds[BOXLEFT] ||
-             tmbbox[BOXLEFT]   >= params->lineDef->aaBounds[BOXRIGHT] ||
-             tmbbox[BOXTOP]    <= params->lineDef->aaBounds[BOXBOTTOM] ||
-             tmbbox[BOXBOTTOM] >= params->lineDef->aaBounds[BOXTOP]))
+        if(!(tmbbox[BOXRIGHT]  <= params->lineDef->aaBounds()[BOXLEFT] ||
+             tmbbox[BOXLEFT]   >= params->lineDef->aaBounds()[BOXRIGHT] ||
+             tmbbox[BOXTOP]    <= params->lineDef->aaBounds()[BOXBOTTOM] ||
+             tmbbox[BOXBOTTOM] >= params->lineDef->aaBounds()[BOXTOP]))
         {
             if(params->lineDef->boxOnSide(tmbbox) == -1)
             {
@@ -333,10 +333,10 @@ static bool checkThingBlocking(LineDef* lineDef, Polyobj* polyobj)
     params.polyobj = polyobj;
 
     Vector2f bbox[2];
-    bbox[0][0] = lineDef->bBox[BOXLEFT]   - DDMOBJ_RADIUS_MAX;
-    bbox[0][1] = lineDef->bBox[BOXBOTTOM] - DDMOBJ_RADIUS_MAX;
-    bbox[1][0] = lineDef->bBox[BOXRIGHT]  + DDMOBJ_RADIUS_MAX;
-    bbox[1][1] = lineDef->bBox[BOXTOP]    + DDMOBJ_RADIUS_MAX;
+    bbox[0][0] = lineDef->aaBounds()[BOXLEFT]   - THING::MAXRADIUS;
+    bbox[0][1] = lineDef->aaBounds()[BOXBOTTOM] - THING::MAXRADIUS;
+    bbox[1][0] = lineDef->aaBounds()[BOXRIGHT]  + THING::MAXRADIUS;
+    bbox[1][1] = lineDef->aaBounds()[BOXTOP]    + THING::MAXRADIUS;
 
     // @fixme Polyobj should return the map its linked in.
     ThingBlockmap& thingBlockmap = App::currentMap().thingBlockmap();

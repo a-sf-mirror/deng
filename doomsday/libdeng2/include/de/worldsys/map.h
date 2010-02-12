@@ -345,8 +345,6 @@ namespace de
             duint count;
         } ownerlist_t;
 
-        //struct gameobjrecords_s* _gameObjectRecords;
-
         HalfEdgeDS* _halfEdgeDS;
         BinaryTree<void*>* _rootNode;
 
@@ -497,23 +495,6 @@ namespace de
 
         void updateSkyFixForSector(duint sectorIndex);
 
-#if 0
-        void addThinker(thinker_t* th, bool makePublic);
-        void removeThinker(thinker_t* th);
-        void thinkerSetStasis(thinker_t* th, bool on);
-
-        /**
-         * @defgroup iterateThinkerFlags Iterate Thinker Flags
-         * Used with Map_IterateThinkers2 to specify which thinkers to iterate.
-         */
-        /*@{*/
-        #define ITF_PUBLIC          0x1
-        #define ITF_PRIVATE         0x2
-        /*@}*/
-
-        bool iterateThinkers2(think_t func, dbyte flags, dint (*callback) (void* p, void*), void* context);
-#endif
-
         void addSubsectorContact(duint subsectorIdx, objcontacttype_t type, void* obj);
         bool iterateSubsectorContacts(duint subsectorIdx, objcontacttype_t type, bool (*func) (void*, void*), void* data);
 
@@ -543,8 +524,6 @@ namespace de
             dfloat normalX, dfloat normalY, dfloat normalZ);
         objectrecordid_t createPolyobj(objectrecordid_t* lines, duint linecount,
             dint tag, dint sequenceType, dfloat startX, dfloat startY);
-
-        //bool gameObjectRecordProperty(const char* objName, duint idx, const char* propName, valuetype_t type, void* data);
 
         /// Thing iterators:
         bool iterateThings(const dfloat box[4], bool (*func) (Thing*, void*), void* paramaters = 0);
@@ -600,9 +579,6 @@ namespace de
 
         void markAllSectorsForLightGridUpdate();
 
-        gameobjrecords_t* gameObjectRecords();
-        void destroyGameObjectRecords();
-
         void link(Thing* thing, Thing::LinkFlags flags);
 
         Thing::LinkFlags Map::unlink(Thing* thing);
@@ -614,6 +590,13 @@ namespace de
         Sector* createSector2();
         Plane* createPlane2();
         Polyobj* createPolyobj2();
+
+        /**
+         * (Re)build nodes for this map.
+         *
+         * @return              @c true, if completed successfully.
+         */
+        bool buildNodes();
 
         /**
          * @pre Thing must be currently unlinked.

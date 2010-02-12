@@ -47,7 +47,7 @@ bool heightClip(Thing* thing)
     bool onfloor;
 
     // During demo playback the player gets preferential treatment.
-    if(thing->dPlayer == &ddPlayers[consolePlayer].shared && playback)
+    if(thing->hasUser() && &thing->user() == &ddPlayers[consolePlayer].shared && playback)
         return true;
 
     onfloor = (thing->origin.z <= thing->floorZ);
@@ -71,9 +71,9 @@ bool heightClip(Thing* thing)
     // created by the Game, is the one that is visible and modified in this
     // function. We'll need to sync the hidden client mobj (that receives
     // all the changes from the server) to match the changes.
-    if(isClient && thing->dPlayer)
+    if(isClient && thing->user())
     {
-        Cl_UpdatePlayerPos(P_GetDDPlayerIdx(thing->dPlayer));
+        Cl_UpdatePlayerPos(P_GetDDPlayerIdx(thing->user()));
     }
 
     if(thing->ceilingZ - thing->floorZ < thing->height)
@@ -185,14 +185,14 @@ void Sector::updateAABounds()
 {
     if(!(lineDefs.size() > 0))
     {
-        aaBounds = MapRectangle(0, 0, 0, 0);
+        _aaBounds = MapRectangle(0, 0, 0, 0);
         return;
     }
 
-    aaBounds[BOXLEFT]   = MAXFLOAT;
-    aaBounds[BOXRIGHT]  = MINFLOAT;
-    aaBounds[BOXBOTTOM] = MAXFLOAT;
-    aaBounds[BOXTOP]    = MINFLOAT;
+    _aaBounds[BOXLEFT]   = MAXFLOAT;
+    _aaBounds[BOXRIGHT]  = MINFLOAT;
+    _aaBounds[BOXBOTTOM] = MAXFLOAT;
+    _aaBounds[BOXTOP]    = MINFLOAT;
 
     FOR_EACH(i, lineDefs, LineDefSet::const_iterator)
     {
@@ -202,19 +202,19 @@ void Sector::updateAABounds()
             continue;
 
         const Vertex& vtx = lineDef.vtx1();
-        if(vtx.pos.x < aaBounds[BOXLEFT])
-            aaBounds[BOXLEFT]   = vtx.pos.x;
-        if(vtx.pos.x > aaBounds[BOXRIGHT])
-            aaBounds[BOXRIGHT]  = vtx.pos.x;
-        if(vtx.pos.y < aaBounds[BOXBOTTOM])
-            aaBounds[BOXBOTTOM] = vtx.pos.y;
-        if(vtx.pos.y > aaBounds[BOXTOP])
-            aaBounds[BOXTOP]    = vtx.pos.y;
+        if(vtx.pos.x < _aaBounds[BOXLEFT])
+            _aaBounds[BOXLEFT]   = vtx.pos.x;
+        if(vtx.pos.x > _aaBounds[BOXRIGHT])
+            _aaBounds[BOXRIGHT]  = vtx.pos.x;
+        if(vtx.pos.y < _aaBounds[BOXBOTTOM])
+            _aaBounds[BOXBOTTOM] = vtx.pos.y;
+        if(vtx.pos.y > _aaBounds[BOXTOP])
+            _aaBounds[BOXTOP]    = vtx.pos.y;
     }
 
     // This is very rough estimate of sector area.
-    approxArea = ((aaBounds[BOXRIGHT] - aaBounds[BOXLEFT]) / 128) *
-                 ((aaBounds[BOXTOP]   - aaBounds[BOXBOTTOM]) / 128);
+    approxArea = ((_aaBounds[BOXRIGHT] - _aaBounds[BOXLEFT]) / 128) *
+                 ((_aaBounds[BOXTOP]   - _aaBounds[BOXBOTTOM]) / 128);
 }
 
 void Sector::buildSubsectorSet()
@@ -223,7 +223,7 @@ void Sector::buildSubsectorSet()
     Map& map = App::currentMap();
     for(duint i = 0; i < map._numSubsectors; ++i)
     {
-        Subsector* subsector = map._subsectors[i];
+        Subsector* subsector = map.subsectors[i];
         if(&subsector->sector() == this)
             subsectors.insert(subsector);
     }

@@ -405,7 +405,7 @@ static boolean addMobjIntercepts(mobj_t* mo, void* data)
     divline_t dl;
     float frac;
 
-    if(mo->dPlayer && (mo->dPlayer->flags & DDPF_CAMERA))
+    if(mo->user() && (mo->user().flags & DDPF_CAMERA))
         return true; // $democam: ssshh, keep going, we're not here...
 
     // Check a corner to corner crosubSectortion for hit.
