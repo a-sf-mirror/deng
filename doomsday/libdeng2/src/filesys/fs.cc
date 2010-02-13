@@ -1,7 +1,8 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2009-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +23,8 @@
 #include "de/DirectoryFeed"
 #include "de/ArchiveFeed"
 #include "de/Archive"
+#include "de/WADFeed"
+#include "de/WAD"
 #include "de/Log"
 
 using namespace de;
@@ -77,6 +80,17 @@ File* FS::interpret(File* sourceData)
             zip->setSource(sourceData);    
             zip->attach(new ArchiveFeed(*sourceData));
             return zip.release();
+        }
+        /// @todo  Move the WAD interpreter into a plugin.
+        if(WAD::recognize(*sourceData))
+        {
+            LOG_VERBOSE("Interpreted ") << sourceData->name() << " as a WAD archive";
+
+            // It is a WAD archive. The folder will own the source file.
+            std::auto_ptr<Folder> wad(new Folder(sourceData->name()));
+            wad->setSource(sourceData);
+            wad->attach(new WADFeed(*sourceData));
+            return wad.release();
         }
     }
     catch(const Error& err)
