@@ -1,11 +1,9 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- wadconverter
  *
- *\author Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2007-2010 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 1999 Activision
+ * Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2007-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 1999 Activision
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,258 +16,87 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * hexendefparser.c: Parser for Hexen definitions (MAPINFO, ANIMDEFS...)
- */
+#include <cstring>
 
-// HEADER FILES ------------------------------------------------------------
-
-#include <string.h>
-
-#include "doomsday.h"
-#include "dd_api.h"
-
-#include "wadconverter.h"
+#include "wadconverter/HexenDefParser"
 
 using namespace wadconverter;
 
-// MACROS ------------------------------------------------------------------
-
-#define MAX_SCRIPTNAME_LEN      (32)
-#define MAX_STRING_SIZE         (64)
-#define ASCII_COMMENT           (';')
-#define ASCII_QUOTE             (34)
-
-// TYPES -------------------------------------------------------------------
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-static int SC_MatchString(char** strings);
-static int SC_MustMatchString(char** strings);
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-char* sc_String;
-int sc_Number;
-int sc_LineNumber;
-char sc_ScriptName[MAX_SCRIPTNAME_LEN+1];
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-static boolean reachedScriptEnd;
-static boolean sc_FileScripts = false;
-static const char* sc_ScriptsDir = "";
-
-static char* scriptBuffer;
-static char* scriptPtr;
-static char* scriptEndPtr;
-static char stringBuffer[MAX_STRING_SIZE];
-static boolean scriptOpen = false;
-static boolean scriptFreeCLib; // true = de-allocate using free()
-static size_t scriptSize;
-static boolean alreadyGot = false;
-static boolean skipCurrentLine = false;
-
-// CODE --------------------------------------------------------------------
-
-static void checkOpen(void)
+HexenDefParser::HexenDefParser(const char* name, const char* script, unsigned int size)
+ : _scriptSize(size), _alreadyGot(false), _skipCurrentLine(false),
+   _reachedScriptEnd(false)
 {
-    if(scriptOpen == false)
+    strncpy(scriptName, name, MAX_SCRIPTNAME_LEN);
+
+    _script = script;
+    _scriptPtr = _script;
+    _scriptEndPtr = _scriptPtr + _scriptSize;
+    lineNumber = 1;
+    string = _stringBuffer;
+}
+
+void HexenDefParser::skipToStartOfNextLine(void)
+{
+    _skipCurrentLine = true;
+}
+
+bool HexenDefParser::getString(void)
+{
+    if(_alreadyGot)
     {
-        Con_Error("SC_ call before SC_Open().");
-    }
-}
-
-static void openScriptLump(lumpnum_t lump)
-{
-    SC_Close();
-
-    strcpy(sc_ScriptName, W_LumpName(lump));
-
-    scriptBuffer = (char *) W_CacheLumpNum(lump, PU_STATIC);
-    scriptSize = W_LumpLength(lump);
-
-    scriptFreeCLib = false; // De-allocate using Z_Free()
-
-    scriptPtr = scriptBuffer;
-    scriptEndPtr = scriptPtr + scriptSize;
-    sc_LineNumber = 1;
-    reachedScriptEnd = false;
-    scriptOpen = true;
-    sc_String = stringBuffer;
-    alreadyGot = false;
-}
-
-static void openScriptFile(const char* name)
-{
-    SC_Close();
-
-    scriptSize = M_ReadFile(name, (byte **) &scriptBuffer);
-    M_ExtractFileBase(sc_ScriptName, name, MAX_SCRIPTNAME_LEN);
-    scriptFreeCLib = false; // De-allocate using Z_Free()
-
-    scriptPtr = scriptBuffer;
-    scriptEndPtr = scriptPtr + scriptSize;
-    sc_LineNumber = 1;
-    reachedScriptEnd = false;
-    scriptOpen = true;
-    sc_String = stringBuffer;
-    alreadyGot = false;
-}
-
-static void openScriptCLib(const char* name)
-{
-    SC_Close();
-
-    scriptSize = M_ReadFileCLib(name, (byte **) &scriptBuffer);
-    M_ExtractFileBase(sc_ScriptName, name, MAX_SCRIPTNAME_LEN);
-    scriptFreeCLib = true;  // De-allocate using free()
-
-    scriptPtr = scriptBuffer;
-    scriptEndPtr = scriptPtr + scriptSize;
-    sc_LineNumber = 1;
-    reachedScriptEnd = false;
-    scriptOpen = true;
-    sc_String = stringBuffer;
-    alreadyGot = false;
-}
-
-static void SC_Open(const char* name)
-{
-    char fileName[128];
-
-    if(sc_FileScripts)
-    {
-        dd_snprintf(fileName, 128, "%s%s.txt", sc_ScriptsDir, name);
-        SC_OpenFile(fileName);
-    }
-    else
-    {
-        lumpnum_t lump = W_CheckNumForName(name);
-
-        if(lump == -1)
-            Con_Error("SC_Open: Failed opening lump %s.\n", name);
-
-        SC_OpenLump(lump);
-    }
-}
-
-/**
- * Loads a script (from the WAD files) and prepares it for parsing.
- */
-void wadconverter::SC_OpenLump(lumpnum_t lump)
-{
-    openScriptLump(lump);
-}
-
-/**
- * Loads a script (from a file) and prepares it for parsing.  Uses the
- * zone memory allocator for memory allocation and de-allocation.
- */
-void wadconverter::SC_OpenFile(const char* name)
-{
-    openScriptFile(name);
-}
-
-/**
- * Loads a script (from a file) and prepares it for parsing.  Uses C
- * library function calls for memory allocation and de-allocation.
- */
-void wadconverter::SC_OpenFileCLib(const char* name)
-{
-    openScriptCLib(name);
-}
-
-void wadconverter::SC_Close(void)
-{
-    if(scriptOpen)
-    {
-        if(scriptFreeCLib)
-        {
-            free(scriptBuffer);
-        }
-        else
-        {
-            Z_Free(scriptBuffer);
-        }
-
-        scriptOpen = false;
-    }
-}
-
-void wadconverter::SC_SkipToStartOfNextLine(void)
-{
-    skipCurrentLine = true;
-}
-
-boolean wadconverter::SC_GetString(void)
-{
-    char* text;
-    boolean foundToken;
-
-    checkOpen();
-    if(alreadyGot)
-    {
-        alreadyGot = false;
+        _alreadyGot = false;
         return true;
     }
 
-    foundToken = false;
-
-    if(scriptPtr >= scriptEndPtr)
+    if(_scriptPtr >= _scriptEndPtr)
     {
-        reachedScriptEnd = true;
+        _reachedScriptEnd = true;
         return false;
     }
 
+    bool foundToken = false;
     while(foundToken == false)
     {
-        while(*scriptPtr <= 32)
+        while(*_scriptPtr <= 32)
         {
-            if(scriptPtr >= scriptEndPtr)
+            if(_scriptPtr >= _scriptEndPtr)
             {
-                reachedScriptEnd = true;
+                _reachedScriptEnd = true;
                 return false;
             }
 
-            if(*scriptPtr++ == '\n')
+            if(*_scriptPtr++ == NEWLINE)
             {
-                sc_LineNumber++;
-                if(skipCurrentLine)
-                    skipCurrentLine = false;
+                lineNumber++;
+                if(_skipCurrentLine)
+                    _skipCurrentLine = false;
             }
         }
 
-        if(scriptPtr >= scriptEndPtr)
+        if(_scriptPtr >= _scriptEndPtr)
         {
-            reachedScriptEnd = true;
+            _reachedScriptEnd = true;
             return false;
         }
 
-        if(skipCurrentLine || *scriptPtr == ASCII_COMMENT)
+        if(_skipCurrentLine || *_scriptPtr == BEGIN_LINE_COMMENT)
         {
-            while(*scriptPtr++ != '\n')
+            while(*_scriptPtr++ != NEWLINE)
             {
-                if(scriptPtr >= scriptEndPtr)
+                if(_scriptPtr >= _scriptEndPtr)
                 {
-                    reachedScriptEnd = true;
+                    _reachedScriptEnd = true;
                     return false;
 
                 }
             }
 
-            sc_LineNumber++;
-            if(skipCurrentLine)
-                skipCurrentLine = false;
+            lineNumber++;
+            if(_skipCurrentLine)
+                _skipCurrentLine = false;
         }
         else
         {   // Found a token
@@ -277,141 +104,120 @@ boolean wadconverter::SC_GetString(void)
         }
     }
 
-    text = sc_String;
-
-    if(*scriptPtr == ASCII_QUOTE)
+    char* text = string;
+    if(*_scriptPtr == QUOTE)
     {   // Quoted string.
-        scriptPtr++;
-        while(*scriptPtr != ASCII_QUOTE)
+        _scriptPtr++;
+        while(*_scriptPtr != QUOTE)
         {
-            *text++ = *scriptPtr++;
-            if(scriptPtr == scriptEndPtr ||
-               text == &sc_String[MAX_STRING_SIZE - 1])
+            *text++ = *_scriptPtr++;
+            if(_scriptPtr == _scriptEndPtr ||
+               text == &string[MAX_STRING_SIZE - 1])
             {
                 break;
             }
         }
 
-        scriptPtr++;
+        _scriptPtr++;
     }
     else
     {   // Normal string.
-        while((*scriptPtr > 32) && (*scriptPtr != ASCII_COMMENT))
+        while(!(*_scriptPtr < '!') && *_scriptPtr != BEGIN_LINE_COMMENT)
         {
-            *text++ = *scriptPtr++;
-            if(scriptPtr == scriptEndPtr ||
-               text == &sc_String[MAX_STRING_SIZE - 1])
+            *text++ = *_scriptPtr++;
+            if(_scriptPtr == _scriptEndPtr ||
+               text == &string[MAX_STRING_SIZE - 1])
             {
                 break;
             }
         }
     }
-
     *text = 0;
+
     return true;
 }
 
-void wadconverter::SC_MustGetString(void)
+void HexenDefParser::mustGetString(void)
 {
-    if(!SC_GetString())
-    {
-        SC_ScriptError("Missing string.");
-    }
+    if(!getString())
+        scriptError("Missing string.");
 }
 
-void wadconverter::SC_MustGetStringName(char* name)
+void HexenDefParser::mustGetStringName(char* name)
 {
-    SC_MustGetString();
-    if(!SC_Compare(name))
-    {
-        SC_ScriptError(NULL);
-    }
+    mustGetString();
+    if(!compare(name))
+        scriptError(NULL);
 }
 
-boolean wadconverter::SC_GetNumber(void)
+bool HexenDefParser::getNumber(void)
 {
     char* stopper;
 
-    checkOpen();
-    if(SC_GetString())
+    if(getString())
     {
-        sc_Number = strtol(sc_String, &stopper, 0);
+        number = strtol(string, &stopper, 0);
         if(*stopper != 0)
         {
             Con_Error("SC_GetNumber: Bad numeric constant \"%s\".\n"
-                      "Script %s, Line %d", sc_String, sc_ScriptName, sc_LineNumber);
+                      "Script %s, Line %d", string, scriptName, lineNumber);
         }
-
         return true;
     }
-
     return false;
 }
 
-void wadconverter::SC_MustGetNumber(void)
+void HexenDefParser::mustGetNumber(void)
 {
-    if(!SC_GetNumber())
-    {
-        SC_ScriptError("Missing integer.");
-    }
+    if(!getNumber())
+        scriptError("Missing integer.");
 }
 
-/**
- * Assumes there is a valid string in sc_String.
- */
-void wadconverter::SC_UnGet(void)
+void HexenDefParser::unGet(void)
 {
-    alreadyGot = true;
+    _alreadyGot = true;
 }
 
-/**
- * @return              Index of the first match to sc_String from the
- *                      passed array of strings, ELSE @c -1,.
- */
-static int SC_MatchString(char** strings)
+int HexenDefParser::matchString(char** strings)
 {
-    int i;
-
-    for(i = 0; *strings != NULL; ++i)
+    assert(strings);
+    for(int i = 0; *strings != NULL; ++i)
     {
-        if(SC_Compare(*strings++))
+        if(compare(*strings++))
         {
             return i;
         }
     }
-
     return -1;
 }
 
-static int SC_MustMatchString(char** strings)
+int HexenDefParser::mustMatchString(char** strings)
 {
-    int i;
-
-    i = SC_MatchString(strings);
+    assert(strings);
+    int i = matchString(strings);
     if(i == -1)
     {
-        SC_ScriptError(NULL);
+        scriptError(NULL);
     }
-
     return i;
 }
 
-boolean wadconverter::SC_Compare(char* text)
+bool HexenDefParser::compare(char* text)
 {
-    if(strcasecmp(text, sc_String) == 0)
+    assert(text);
+    if(strcasecmp(text, string) == 0)
     {
         return true;
     }
-
     return false;
 }
 
-void wadconverter::SC_ScriptError(char* message)
+void HexenDefParser::scriptError(char* message)
 {
     if(message == NULL)
     {
         message = "Bad syntax.";
     }
 
-    Con_Error("Script error, \"%s\" line %d: %s", sc_ScriptName, sc_LineNumber, message);
+    Con_Error("Script error, \"%s\" line %d: %s", scriptName, lineNumber, message);
 }

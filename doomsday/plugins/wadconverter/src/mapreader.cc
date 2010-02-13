@@ -1,10 +1,8 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- wadconverter
  *
- *\author Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,24 +15,19 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "doomsday.h"
-
-#include "Map"
 
 #include <algorithm>
 #include <assert.h>
 
+#include "wadconverter/MapReader"
+
+#include <de/Map>
+
 using namespace wadconverter;
 
-/**
- * \note Map takes ownership of @a lumpNums.
- */
-Map::Map(LumpNums* lumpNums)
+MapReader::MapReader(LumpNums* lumpNums)
     : _lumpNums(lumpNums),
       _numVertexes(0),
       _numSectors(0),
@@ -55,7 +48,7 @@ Map::Map(LumpNums* lumpNums)
     {
         MapLumpId lumpType = dataTypeForLumpName(W_LumpName(*i));
         size_t elmSize = 0; // Num of bytes.
-        uint* ptr = NULL;
+        uint32_t* ptr = NULL;
 
         switch(lumpType)
         {
@@ -113,12 +106,12 @@ Map::Map(LumpNums* lumpNums)
         _formatId = UNKNOWN;
 }
 
-Map::~Map()
+MapReader::~MapReader()
 {
     clear();
 }
 
-Map::MaterialRefId Map::readMaterialReference(de::Reader& from, bool onPlane)
+MapReader::MaterialRefId MapReader::readMaterialReference(de::Reader& from, bool onPlane)
 {
 #pragma message( "Warning: Need to read DOOM64 format material references" )
 // DOOM64 material references are indexes into lump directory (for flats)
@@ -129,25 +122,25 @@ Map::MaterialRefId Map::readMaterialReference(de::Reader& from, bool onPlane)
     from >> byteSeq;
     // When loading DOOM or Hexen format maps check for the special case "-"
     // texture name (no texture).
-    if(!onPlane && (_formatId == Map::DOOM || _formatId == Map::HEXEN) &&
+    if(!onPlane && (_formatId == MapReader::DOOM || _formatId == MapReader::HEXEN) &&
        !name.compareWithCase("-"))
         return MaterialRefs::NONINDEX;
     return _materialRefs.insert(name);
 }
 
-material_t* Map::getMaterialForId(MaterialRefId id, bool onPlane)
+de::Material* MapReader::getMaterialForId(MaterialRefId id, bool onPlane)
 {
     if(id == MaterialRefs::NONINDEX)
         return NULL;
 
     const std::string& name = _materialRefs.get(id);
     // First try the prefered namespace, then any.
-    material_t* material = P_MaterialForName(onPlane? MN_FLATS : MN_TEXTURES, name.c_str());
+    de::Material* material = P_MaterialForName(onPlane? MN_FLATS : MN_TEXTURES, name.c_str());
     if(material) return material;
     return P_MaterialForName(MN_ANY, name.c_str());
 }
 
-Map::MapLumpId Map::dataTypeForLumpName(const char* name)
+MapReader::MapLumpId MapReader::dataTypeForLumpName(const char* name)
 {
     assert(name && name[0]);
 
@@ -192,14 +185,9 @@ Map::MapLumpId Map::dataTypeForLumpName(const char* name)
     return ML_INVALID;
 }
 
-/**
- * @return              @c  0 = Unclosed polygon.
- */
-int Map::isClosedPolygon(LineDef** lineList, size_t num)
+bool MapReader::isClosedPolygon(LineDef** lineList, size_t num)
 {
-    uint i;
-
-    for(i = 0; i < num; ++i)
+    for(uint32_t i = 0; i < num; ++i)
     {
         LineDef* line = lineList[i];
         LineDef* next = (i == num-1? lineList[0] : lineList[i+1]);
@@ -212,10 +200,7 @@ int Map::isClosedPolygon(LineDef** lineList, size_t num)
     return true;
 }
 
-/**
- * Create a temporary polyobj (read from the original map data).
- */
-void Map::createPolyobj(LineDef** lineDefs, uint lineDefCount, int tag,
+void MapReader::createPolyobj(LineDef** lineDefs, uint32_t lineDefCount, int tag,
     int sequenceType, int16_t anchorX, int16_t anchorY)
 {
     assert(lineDefs);
@@ -227,8 +212,8 @@ void Map::createPolyobj(LineDef** lineDefs, uint lineDefCount, int tag,
         throw std::runtime_error("LineDefs do not form a closed polygon.");
     }
 
-    uint* lineIndices = (uint*) malloc(sizeof(objectrecordid_t) * lineDefCount);
-    for(uint i = 0; i < lineDefCount; ++i)
+    uint32_t* lineIndices = reinterpret_cast<uint32_t*>(std::malloc(sizeof(uint32_t) * lineDefCount));
+    for(uint32_t i = 0; i < lineDefCount; ++i)
     {
         lineDefs[i]->polyobjOwned = true;
 
@@ -252,12 +237,8 @@ void Map::createPolyobj(LineDef** lineDefs, uint lineDefCount, int tag,
                 tag, sequenceType, anchorX, anchorY));
 }
 
-/**
- * @param lineList      @c NULL, will cause IterFindPolyLines to count
- *                      the number of _lineDefs in the polyobj.
- */
-bool Map::iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2],
-    uint* polyLineCount, LineDef** lineDefs)
+bool MapReader::iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2],
+    uint32_t* polyLineCount, LineDef** lineDefs)
 {
     if(x == polyStart[0] && y == polyStart[1])
     {
@@ -288,15 +269,7 @@ bool Map::iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2],
     return false;
 }
 
-/**
- * Find all linedefs marked as belonging to a polyobject with the given tag
- * and attempt to create a polyobject from them.
- *
- * @param tag           Line tag of linedefs to search for.
- *
- * @return              @c true = successfully created polyobj.
- */
-bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
+bool MapReader::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
 {
 #define MAXPOLYLINES         32
 #define SEQTYPE_NUMSEQ       10
@@ -308,10 +281,10 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
         LineDef* lineDef = (*i);
         if(lineDef->xType == PO_LINE_START && lineDef->xArgs[0] == tag)
         {
-            byte seqType;
+            uint8_t seqType;
             LineDef** lineList;
             int16_t v1[2], v2[2];
-            uint polyLineCount;
+            uint32_t polyLineCount;
             int16_t polyStart[2];
 
             lineDef->xType = 0;
@@ -350,11 +323,11 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
      */
     {
     LineDef* polyLineList[MAXPOLYLINES];
-    uint lineCount = 0;
-    uint psIndex, psIndexOld;
+    uint32_t lineCount = 0;
+    uint32_t psIndex, psIndexOld;
 
     psIndex = 0;
-    for(uint j = 1; j < MAXPOLYLINES; ++j)
+    for(uint32_t j = 1; j < MAXPOLYLINES; ++j)
     {
         psIndexOld = psIndex;
         for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
@@ -425,7 +398,7 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
 #undef MAXPOLYLINES
 }
 
-void Map::findPolyobjs(void)
+void MapReader::findPolyobjs(void)
 {
     for(Things::iterator i = _things.begin(); i != _things.end(); ++i)
     {
@@ -437,7 +410,7 @@ void Map::findPolyobjs(void)
     }
 }
 
-Map::FormatId Map::recognize(const LumpNums& lumpNums)
+MapReader::FormatId MapReader::recognize(const LumpNums& lumpNums)
 {
     FormatId formatId = UNKNOWN;
 
@@ -471,7 +444,7 @@ Map::FormatId Map::recognize(const LumpNums& lumpNums)
     return formatId;
 }
 
-void Map::clear(void)
+void MapReader::clear(void)
 {
     _lumpNums->clear();
     delete _lumpNums;
@@ -511,11 +484,7 @@ void Map::clear(void)
     _materialRefs.clear();
 }
 
-/**
- * Helper constructor. Given a map identifier search the Doomsday file system
- * for the associated lumps needed to instantiate Map.
- */
-Map* Map::construct(const char* mapID)
+MapReader* MapReader::construct(const char* mapID)
 {
     assert(mapID && mapID[0]);
 
@@ -558,10 +527,10 @@ Map* Map::construct(const char* mapID)
         throw std::runtime_error("Unknown map data format.");
     }
 
-    return new Map(lumpNums);
+    return new MapReader(lumpNums);
 }
 
-Map::SideDef* Map::SideDef::constructFrom(de::Reader& from, Map* map)
+MapReader::SideDef* MapReader::SideDef::constructFrom(de::Reader& from, MapReader* map)
 {
     SideDef* s = new SideDef(0, 0, 0, 0, 0, 0);
 
@@ -577,7 +546,7 @@ Map::SideDef* Map::SideDef::constructFrom(de::Reader& from, Map* map)
     return s;
 }
 
-Map::Sector* Map::Sector::constructFrom(de::Reader& from, Map* map)
+MapReader::Sector* MapReader::Sector::constructFrom(de::Reader& from, MapReader* map)
 {
     Sector* s = new Sector(0, 0, 0, 0, 0, 0, 0);
 
@@ -608,7 +577,7 @@ Map::Sector* Map::Sector::constructFrom(de::Reader& from, Map* map)
     return s;
 }
 
-Map::LineDef* Map::LineDef::constructFrom(de::Reader& from, Map* map)
+MapReader::LineDef* MapReader::LineDef::constructFrom(de::Reader& from, MapReader* map)
 {
     LineDef* l = new LineDef(0, 0, 0, 0, 0, 0, 0);
 
@@ -647,7 +616,7 @@ Map::LineDef* Map::LineDef::constructFrom(de::Reader& from, Map* map)
     return l;
 }
 
-Map::Thing* Map::Thing::constructFrom(de::Reader& from, Map* map)
+MapReader::Thing* MapReader::Thing::constructFrom(de::Reader& from, MapReader* map)
 {
 // New flags: \todo get these from a game api header.
 #define MTF_Z_FLOOR         0x20000000 // Spawn relative to floor height.
@@ -682,7 +651,7 @@ Map::Thing* Map::Thing::constructFrom(de::Reader& from, Map* map)
              >> t->pos[1];
 
         de::dint16 ang;
-        from >> ang; t->angle = ANG45 * static_cast<angle_t>(ang / 45);
+        from >> ang; t->angle = ANG45 * static_cast<uint32_t>(ang / 45);
 
         from >> t->doomEdNum;
 
@@ -726,7 +695,7 @@ Map::Thing* Map::Thing::constructFrom(de::Reader& from, Map* map)
              >> t->pos[2];
 
         de::dint16 ang;
-        from >> ang; t->angle = ANG45 * static_cast<angle_t>(ang / 45);
+        from >> ang; t->angle = ANG45 * static_cast<uint32_t>(ang / 45);
 
         from >> t->doomEdNum;
 
@@ -793,9 +762,9 @@ Map::Thing* Map::Thing::constructFrom(de::Reader& from, Map* map)
         if(t->doomEdNum != Thing::PO_ANCHOR &&
            t->doomEdNum != Thing::PO_SPAWN &&
            t->doomEdNum != Thing::PO_SPAWNCRUSH)
-            t->angle = ANG45 * static_cast<angle_t>(ang / 45);
+            t->angle = ANG45 * static_cast<uint32_t>(ang / 45);
         else
-            t->angle = static_cast<angle_t>(ang);
+            t->angle = static_cast<uint32_t>(ang);
 
         // Translate flags:
         de::dint16 flags;
@@ -840,7 +809,7 @@ Map::Thing* Map::Thing::constructFrom(de::Reader& from, Map* map)
 #undef MTF_Z_RANDOM
 }
 
-Map::SurfaceTint* Map::SurfaceTint::constructFrom(de::Reader& from, Map* map)
+MapReader::SurfaceTint* MapReader::SurfaceTint::constructFrom(de::Reader& from, MapReader* map)
 {
     SurfaceTint* s = new SurfaceTint(0, 0, 0, 0, 0, 0);
 
@@ -856,24 +825,24 @@ Map::SurfaceTint* Map::SurfaceTint::constructFrom(de::Reader& from, Map* map)
     return s;
 }
 
-void Map::loadVertexes(de::Reader& from, de::dsize numElements)
+void MapReader::loadVertexes(de::Reader& from, de::dsize numElements)
 {
     _vertexCoords.reserve(numElements * 2);
     for(de::dsize n = 0; n < numElements; ++n)
     {
-        de::dfloat x, y;
+        float x, y;
 
         if(_formatId == DOOM64)
         {
-            de::dint32 comp;
-            from >> comp; x = static_cast<de::dfloat>(comp) / FRACUNIT;
-            from >> comp; y = static_cast<de::dfloat>(comp) / FRACUNIT;
+            int32_t comp;
+            from >> comp; x = float(comp / (1<<16));
+            from >> comp; y = float(comp / (1<<16));
         }
         else
         {
-            de::dint16 comp;
-            from >> comp; x = static_cast<de::dfloat>(comp);
-            from >> comp; y = static_cast<de::dfloat>(comp);
+            int16_t comp;
+            from >> comp; x = float(comp);
+            from >> comp; y = float(comp);
         }
 
         _vertexCoords.push_back(x);
@@ -881,35 +850,35 @@ void Map::loadVertexes(de::Reader& from, de::dsize numElements)
     }
 }
 
-void Map::loadLinedefs(de::Reader& from, de::dsize numElements)
+void MapReader::loadLinedefs(de::Reader& from, de::dsize numElements)
 {
     _lineDefs.reserve(numElements);
     for(de::dsize n = 0; n < numElements; ++n)
         _lineDefs.push_back(LineDef::constructFrom(from, this));
 }
 
-void Map::loadSidedefs(de::Reader& from, de::dsize numElements)
+void MapReader::loadSidedefs(de::Reader& from, de::dsize numElements)
 {
     _sideDefs.reserve(numElements);
     for(de::dsize n = 0; n < numElements; ++n)
         _sideDefs.push_back(SideDef::constructFrom(from, this));
 }
 
-void Map::loadSectors(de::Reader& from, de::dsize numElements)
+void MapReader::loadSectors(de::Reader& from, de::dsize numElements)
 {
     _sectors.reserve(numElements);
     for(de::dsize n = 0; n < numElements; ++n)
         _sectors.push_back(Sector::constructFrom(from, this));
 }
 
-void Map::loadThings(de::Reader& from, de::dsize numElements)
+void MapReader::loadThings(de::Reader& from, de::dsize numElements)
 {
     _things.reserve(numElements);
     for(de::dsize n = 0; n < numElements; ++n)
         _things.push_back(Thing::constructFrom(from, this));
 }
 
-void Map::loadLights(de::Reader& from, de::dsize numElements)
+void MapReader::loadLights(de::Reader& from, de::dsize numElements)
 {
     _surfaceTints.reserve(numElements);
     for(de::dsize n = 0; n < numElements; ++n)
@@ -919,7 +888,7 @@ void Map::loadLights(de::Reader& from, de::dsize numElements)
 static const de::FixedByteArray* bufferLump(de::Block& buffer, lumpnum_t lumpNum)
 {
     size_t lumpLength = W_LumpLength(lumpNum);
-    byte* temp = new byte[lumpLength];
+    uint8_t* temp = new uint8_t[lumpLength];
     W_ReadLump(lumpNum, temp);
     de::FixedByteArray* data = new de::FixedByteArray(buffer, 0, lumpLength);
     data->set(0, temp, lumpLength);
@@ -927,7 +896,7 @@ static const de::FixedByteArray* bufferLump(de::Block& buffer, lumpnum_t lumpNum
     return data;
 }
 
-bool Map::load(void)
+bool MapReader::load(void)
 {
     de::Block buffer(0);
     for(LumpNums::iterator i = _lumpNums->begin(); i != _lumpNums->end(); ++i)
@@ -1003,70 +972,66 @@ bool Map::load(void)
     return true; // Read and converted successfully.
 }
 
-bool Map::transfer(void)
+bool MapReader::transfer(void)
 {
-    uint startTime = Sys_GetRealTime();
-
-    struct map_s* deMap = P_CurrentMap();
-    bool result;
-
-    Map_EditBegin(deMap);
+    class de::Map& map = P_CurrentMap();
+    map.editBegin();
 
     // Vertexes
     {
     /// @todo Map_CreateVertices only accepts an array so do the necessary.
-    size_t numCoords = _vertexCoords.capacity();
+    Vertexes::size_type numCoords = _vertexCoords.capacity();
     float* coords = new float[numCoords];
     copy(_vertexCoords.begin(), _vertexCoords.end(), coords);
-    Map_CreateVertices(deMap, numCoords>>1, coords, NULL);
+    map.createVertices(numCoords>>1, coords, NULL);
     delete coords;
     }
 
     // Sectors.
-    {uint n = 0;
+    {uint32_t n = 0;
     for(Sectors::iterator i = _sectors.begin(); i != _sectors.end(); ++i, ++n)
     {
         Sector* sector = (*i);
-        uint sectorIDX = Map_CreateSector(deMap, (float) sector->lightLevel / 255.0f, 1, 1, 1);
+        uint32_t sectorIDX = map.createSector(sector->lightLevel/255.0f, 1, 1, 1);
 
-        uint floorIDX = Map_CreatePlane(deMap, sector->floorHeight,
+        uint32_t floorIDX = map.createPlane(sector->floorHeight,
                                    getMaterialForId(sector->floorMaterial, true),
                                    0, 0, 1, 1, 1, 1, 0, 0, 1);
-        uint ceilIDX = Map_CreatePlane(deMap, sector->ceilHeight,
+        uint32_t ceilIDX = map.createPlane(sector->ceilHeight,
                                  getMaterialForId(sector->ceilMaterial, true),
                                   0, 0, 1, 1, 1, 1, 0, 0, -1);
 
-        Map_SetSectorPlane(deMap, sectorIDX, 0, floorIDX);
-        Map_SetSectorPlane(deMap, sectorIDX, 1, ceilIDX);
+        map.setSectorPlane(sectorIDX, 0, floorIDX);
+        map.setSectorPlane(sectorIDX, 1, ceilIDX);
 
-        Map_GameObjectRecordProperty(deMap, "XSector", n, "ID", DDVT_INT, &n);
-        Map_GameObjectRecordProperty(deMap, "XSector", n, "Tag", DDVT_SHORT, &sector->tag);
-        Map_GameObjectRecordProperty(deMap, "XSector", n, "Type", DDVT_SHORT, &sector->type);
+        Map_GameObjectRecordProperty("XSector", n, "ID", DDVT_INT, &n);
+        Map_GameObjectRecordProperty("XSector", n, "Tag", DDVT_SHORT, &sector->tag);
+        Map_GameObjectRecordProperty("XSector", n, "Type", DDVT_SHORT, &sector->type);
 
         if(_formatId == DOOM64)
         {
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "Flags", DDVT_SHORT, &sector->d64flags);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "CeilingColor", DDVT_SHORT, &sector->d64ceilColor);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "FloorColor", DDVT_SHORT, &sector->d64floorColor);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "UnknownColor", DDVT_SHORT, &sector->d64unknownColor);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "WallTopColor", DDVT_SHORT, &sector->d64wallTopColor);
-            Map_GameObjectRecordProperty(deMap, "XSector", n, "WallBottomColor", DDVT_SHORT, &sector->d64wallBottomColor);
+            Map_GameObjectRecordProperty("XSector", n, "Flags", DDVT_SHORT, &sector->d64flags);
+            Map_GameObjectRecordProperty("XSector", n, "CeilingColor", DDVT_SHORT, &sector->d64ceilColor);
+            Map_GameObjectRecordProperty("XSector", n, "FloorColor", DDVT_SHORT, &sector->d64floorColor);
+            Map_GameObjectRecordProperty("XSector", n, "UnknownColor", DDVT_SHORT, &sector->d64unknownColor);
+            Map_GameObjectRecordProperty("XSector", n, "WallTopColor", DDVT_SHORT, &sector->d64wallTopColor);
+            Map_GameObjectRecordProperty("XSector", n, "WallBottomColor", DDVT_SHORT, &sector->d64wallBottomColor);
         }
     }}
 
-    {uint n = 0;
+    {uint32_t n = 0;
     for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i, ++n)
     {
         LineDef* lineDef = (*i);
-        uint frontIdx = 0, backIdx = 0;
+        uint32_t frontIdx = 0, backIdx = 0;
 
         if(lineDef->sides[0])
         {
             const SideDef* s = _sideDefs[lineDef->sides[0]-1];
 
             frontIdx =
-                Map_CreateSideDef(deMap, s->sectorId,
-                                  (_formatId == DOOM64? SDF_MIDDLE_STRETCH : 0),
+                map.createSideDef(s->sectorId,
+                                 (_formatId == DOOM64? de::SideDef::MIDDLE_STRETCH : 0),
                                   getMaterialForId(s->topMaterial, false),
                                   s->offset[0], s->offset[1], 1, 1, 1,
                                   getMaterialForId(s->middleMaterial, false),
@@ -1080,8 +1045,8 @@ bool Map::transfer(void)
             const SideDef* s = _sideDefs[lineDef->sides[1]-1];
 
             backIdx =
-                Map_CreateSideDef(deMap, s->sectorId,
-                                  (_formatId == DOOM64? SDF_MIDDLE_STRETCH : 0),
+                map.createSideDef(s->sectorId,
+                                  (_formatId == DOOM64? de::SideDef::MIDDLE_STRETCH : 0),
                                   getMaterialForId(s->topMaterial, false),
                                   s->offset[0], s->offset[1], 1, 1, 1,
                                   getMaterialForId(s->middleMaterial, false),
@@ -1090,99 +1055,90 @@ bool Map::transfer(void)
                                   s->offset[0], s->offset[1], 1, 1, 1);
         }
 
-        Map_CreateLineDef(deMap, lineDef->v[0], lineDef->v[1], frontIdx, backIdx, 0);
+        map.createLineDef(lineDef->v[0], lineDef->v[1], frontIdx, backIdx, 0);
 
-        Map_GameObjectRecordProperty(deMap, "XLinedef", n, "ID", DDVT_INT, &n);
-        Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Flags", DDVT_SHORT, &lineDef->flags);
+        Map_GameObjectRecordProperty(map, "XLinedef", n, "ID", DDVT_INT, &n);
+        Map_GameObjectRecordProperty(map, "XLinedef", n, "Flags", DDVT_SHORT, &lineDef->flags);
 
         switch(_formatId)
         {
         default:
         case DOOM:
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Type", DDVT_SHORT, &lineDef->dType);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Tag", DDVT_SHORT, &lineDef->dTag);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Type", DDVT_SHORT, &lineDef->dType);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Tag", DDVT_SHORT, &lineDef->dTag);
             break;
 
         case DOOM64:
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "DrawFlags", DDVT_BYTE, &lineDef->d64drawFlags);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "TexFlags", DDVT_BYTE, &lineDef->d64texFlags);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Type", DDVT_BYTE, &lineDef->d64type);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "UseType", DDVT_BYTE, &lineDef->d64useType);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Tag", DDVT_SHORT, &lineDef->d64tag);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "DrawFlags", DDVT_BYTE, &lineDef->d64drawFlags);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "TexFlags", DDVT_BYTE, &lineDef->d64texFlags);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Type", DDVT_BYTE, &lineDef->d64type);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "UseType", DDVT_BYTE, &lineDef->d64useType);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Tag", DDVT_SHORT, &lineDef->d64tag);
             break;
 
         case HEXEN:
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Type", DDVT_BYTE, &lineDef->xType);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg0", DDVT_BYTE, &lineDef->xArgs[0]);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg1", DDVT_BYTE, &lineDef->xArgs[1]);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg2", DDVT_BYTE, &lineDef->xArgs[2]);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg3", DDVT_BYTE, &lineDef->xArgs[3]);
-            Map_GameObjectRecordProperty(deMap, "XLinedef", n, "Arg4", DDVT_BYTE, &lineDef->xArgs[4]);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Type", DDVT_BYTE, &lineDef->xType);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Arg0", DDVT_BYTE, &lineDef->xArgs[0]);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Arg1", DDVT_BYTE, &lineDef->xArgs[1]);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Arg2", DDVT_BYTE, &lineDef->xArgs[2]);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Arg3", DDVT_BYTE, &lineDef->xArgs[3]);
+            Map_GameObjectRecordProperty(map, "XLinedef", n, "Arg4", DDVT_BYTE, &lineDef->xArgs[4]);
             break;
         }
     }}
 
-    {uint n = 0;
+    {uint32_t n = 0;
     for(SurfaceTints::iterator i = _surfaceTints.begin(); i != _surfaceTints.end(); ++i, ++n)
     {
         SurfaceTint* surfaceTint = (*i);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "ColorR", DDVT_FLOAT, &surfaceTint->rgb[0]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "ColorG", DDVT_FLOAT, &surfaceTint->rgb[1]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "ColorB", DDVT_FLOAT, &surfaceTint->rgb[2]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "XX0", DDVT_BYTE, &surfaceTint->xx[0]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "XX1", DDVT_BYTE, &surfaceTint->xx[1]);
-        Map_GameObjectRecordProperty(deMap, "Light", n, "XX2", DDVT_BYTE, &surfaceTint->xx[2]);
+        Map_GameObjectRecordProperty(map, "Light", n, "ColorR", DDVT_FLOAT, &surfaceTint->rgb[0]);
+        Map_GameObjectRecordProperty(map, "Light", n, "ColorG", DDVT_FLOAT, &surfaceTint->rgb[1]);
+        Map_GameObjectRecordProperty(map, "Light", n, "ColorB", DDVT_FLOAT, &surfaceTint->rgb[2]);
+        Map_GameObjectRecordProperty(map, "Light", n, "XX0", DDVT_BYTE, &surfaceTint->xx[0]);
+        Map_GameObjectRecordProperty(map, "Light", n, "XX1", DDVT_BYTE, &surfaceTint->xx[1]);
+        Map_GameObjectRecordProperty(map, "Light", n, "XX2", DDVT_BYTE, &surfaceTint->xx[2]);
     }}
 
-    {uint n = 0;
+    {uint32_t n = 0;
     for(Polyobjs::iterator i = _polyobjs.begin();
         i != _polyobjs.end(); ++i, ++n)
     {
-        objectrecordid_t* lineList;
-        uint j;
-
-        lineList = (objectrecordid_t*) malloc(sizeof(objectrecordid_t) * i->lineCount);
-        for(j = 0; j < i->lineCount; ++j)
+        uint32_t* lineList = reinterpret_cast<uint32_t*>(std::malloc(sizeof(uint32_t) * i->lineCount));
+        for(uint32_t j = 0; j < i->lineCount; ++j)
             lineList[j] = i->lineIndices[j] + 1;
-        Map_CreatePolyobj(deMap, lineList, i->lineCount, i->tag,
-                          i->seqType, (float) i->anchor[0],
-                          (float) i->anchor[1]);
-        free(lineList);
+        map.createPolyobj(lineList, i->lineCount, i->tag,
+                          i->seqType, float(i->anchor[0]),
+                          float(i->anchor[1]));
+        std::free(lineList);
     }}
 
-    {uint n = 0;
+    {uint32_t n = 0;
     for(Things::iterator i = _things.begin(); i != _things.end(); ++i, ++n)
     {
         Thing* thing = (*i);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "X", DDVT_SHORT, &thing->pos[0]);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "Y", DDVT_SHORT, &thing->pos[1]);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "Z", DDVT_SHORT, &thing->pos[2]);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "Angle", DDVT_ANGLE, &thing->angle);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "DoomEdNum", DDVT_SHORT, &thing->doomEdNum);
-        Map_GameObjectRecordProperty(deMap, "Thing", n, "Flags", DDVT_INT, &thing->flags);
+        Map_GameObjectRecordProperty(map, "Thing", n, "X", DDVT_SHORT, &thing->pos[0]);
+        Map_GameObjectRecordProperty(map, "Thing", n, "Y", DDVT_SHORT, &thing->pos[1]);
+        Map_GameObjectRecordProperty(map, "Thing", n, "Z", DDVT_SHORT, &thing->pos[2]);
+        Map_GameObjectRecordProperty(map, "Thing", n, "Angle", DDVT_ANGLE, &thing->angle);
+        Map_GameObjectRecordProperty(map, "Thing", n, "DoomEdNum", DDVT_SHORT, &thing->doomEdNum);
+        Map_GameObjectRecordProperty(map, "Thing", n, "Flags", DDVT_INT, &thing->flags);
 
         if(_formatId == DOOM64)
         {
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "ID", DDVT_SHORT, &thing->d64TID);
+            Map_GameObjectRecordProperty(map, "Thing", n, "ID", DDVT_SHORT, &thing->d64TID);
         }
         else if(_formatId == HEXEN)
         {
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Special", DDVT_BYTE, &thing->xSpecial);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "ID", DDVT_SHORT, &thing->xTID);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg0", DDVT_BYTE, &thing->xArgs[0]);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg1", DDVT_BYTE, &thing->xArgs[1]);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg2", DDVT_BYTE, &thing->xArgs[2]);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg3", DDVT_BYTE, &thing->xArgs[3]);
-            Map_GameObjectRecordProperty(deMap, "Thing", n, "Arg4", DDVT_BYTE, &thing->xArgs[4]);
+            Map_GameObjectRecordProperty(map, "Thing", n, "Special", DDVT_BYTE, &thing->xSpecial);
+            Map_GameObjectRecordProperty(map, "Thing", n, "ID", DDVT_SHORT, &thing->xTID);
+            Map_GameObjectRecordProperty(map, "Thing", n, "Arg0", DDVT_BYTE, &thing->xArgs[0]);
+            Map_GameObjectRecordProperty(map, "Thing", n, "Arg1", DDVT_BYTE, &thing->xArgs[1]);
+            Map_GameObjectRecordProperty(map, "Thing", n, "Arg2", DDVT_BYTE, &thing->xArgs[2]);
+            Map_GameObjectRecordProperty(map, "Thing", n, "Arg3", DDVT_BYTE, &thing->xArgs[3]);
+            Map_GameObjectRecordProperty(map, "Thing", n, "Arg4", DDVT_BYTE, &thing->xArgs[4]);
         }
     }}
 
     // Let Doomsday know that we've finished with this wadmap.
-    result = Map_EditEnd(deMap)? true : false;
-
-    if(ArgExists("-verbose"))
-        Con_Message("WadConverter::TransferMap: Done in %.2f seconds.\n",
-                    (Sys_GetRealTime() - startTime) / 1000.0f);
-
-    return result;
+    return map.editEnd();
 }

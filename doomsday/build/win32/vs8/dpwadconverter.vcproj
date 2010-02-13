@@ -51,7 +51,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\libdeng2\include;..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
+				AdditionalIncludeDirectories="..\..\..\libdeng2\include;..\..\..\plugins\wadconverter\include;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;EXAMPLE_PLUGIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;DPWADCONVERTER_EXPORTS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -80,7 +80,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Doomsday.lib libdeng2.lib"
+				AdditionalDependencies="libdeng2.lib"
 				OutputFile="$(OutDir)$(ProjectName).dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -783,21 +783,21 @@
 				RelativePath="..\..\..\plugins\wadconverter\src\main.cc"
 				>
 			</File>
-			<Filter
-				Name="MapReader"
+			<File
+				RelativePath="..\..\..\plugins\wadconverter\src\mapreader.cc"
 				>
-				<File
-					RelativePath="..\..\..\plugins\wadconverter\src\mapreader\map.cc"
-					>
-				</File>
-			</Filter>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath="..\..\..\plugins\wadconverter\include\version.h"
+				RelativePath="..\..\..\plugins\wadconverter\include\wadconverter\hexendefparser.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\plugins\wadconverter\include\wadconverter\mapreader.h"
 				>
 			</File>
 			<File
@@ -809,14 +809,6 @@
 				>
 				<File
 					RelativePath="..\..\..\plugins\wadconverter\res\resource.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="MapReader"
-				>
-				<File
-					RelativePath="..\..\..\plugins\wadconverter\include\mapreader\map.h"
 					>
 				</File>
 			</Filter>

@@ -1,10 +1,8 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- wadconverter
  *
- *\author Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,28 +15,19 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * animated.c: Reader for BOOM "ANIMATED" lumps.
- */
-
-// HEADER FILES ------------------------------------------------------------
-
-#include <string.h>
-
-#include "doomsday.h"
-#include "dd_api.h"
+#include <cstring>
 
 #include "wadconverter.h"
 
-// MACROS ------------------------------------------------------------------
+#include <de/Material>
 
-// TYPES -------------------------------------------------------------------
+using namespace wadconverter;
 
+namespace
+{
 /**
  * This struct is directly read from the lump, therefor we must ensure that
  * it is aligned.
@@ -53,18 +42,7 @@ typedef struct animdef_s {
     int         speed;
 } animdef_t;
 #pragma pack()
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
+}
 
 /**
  * From PrBoom:
@@ -80,7 +58,7 @@ typedef struct animdef_s {
  * PWAD lump called ANIMATED rather than a static table in this module to
  * allow wad designers to insert or modify animation sequences.
  *
- * Lump format is an array of byte packed animdef_t structures, terminated
+ * Lump format is an array of uint8_t packed animdef_t structures, terminated
  * by a structure with istexture == -1. The lump can be generated from a
  * text source file using SWANTBLS.EXE, distributed with the BOOM utils.
  * The standard list of switches and animations is contained in the example
@@ -88,20 +66,19 @@ typedef struct animdef_s {
  */
 static void loadAnimDefs(animdef_t* animDefs)
 {
-    int                 i;
+    int i;
 
     // Read structures until -1 is found
     for(i = 0; animDefs[i].istexture != -1 ; ++i)
     {
-        int                 groupNum, ticsPerFrame, numFrames;
-        material_namespace_t     mnamespace =
-            (animDefs[i].istexture? MN_TEXTURES : MN_FLATS);
+        int groupNum, ticsPerFrame, numFrames;
+        material_namespace_t mnamespace = (animDefs[i].istexture? MN_TEXTURES : MN_FLATS);
 
         switch(mnamespace)
         {
         case MN_FLATS:
             {
-            lumpnum_t           startFrame, endFrame, n;
+            lumpnum_t startFrame, endFrame, n;
 
             if((startFrame = R_TextureIdForName(MN_FLATS, animDefs[i].startname)) == -1 ||
                (endFrame = R_TextureIdForName(MN_FLATS, animDefs[i].endname)) == -1)
@@ -137,7 +114,7 @@ static void loadAnimDefs(animdef_t* animDefs)
                 {
                     for(n = startFrame; n <= endFrame; n++)
                     {
-                        material_t* mat = R_MaterialForTextureId(MN_FLATS, n);
+                        de::Material* mat = R_MaterialForTextureId(MN_FLATS, n);
 
                         if(mat)
                             P_AddMaterialToGroup(groupNum, P_ToIndex(mat), ticsPerFrame, 0);
@@ -147,7 +124,7 @@ static void loadAnimDefs(animdef_t* animDefs)
                 {
                     for(n = endFrame; n >= startFrame; n--)
                     {
-                        material_t*         mat = R_MaterialForTextureId(MN_FLATS, n);
+                        de::Material* mat = R_MaterialForTextureId(MN_FLATS, n);
 
                         if(mat)
                             P_AddMaterialToGroup(groupNum, P_ToIndex(mat), ticsPerFrame, 0);
@@ -158,7 +135,7 @@ static void loadAnimDefs(animdef_t* animDefs)
             }
         case MN_TEXTURES:
             {   // Same as above but for texture groups.
-            int             startFrame, endFrame, n;
+            int startFrame, endFrame, n;
 
             if((startFrame = R_TextureIdForName(MN_TEXTURES, animDefs[i].startname)) == -1 ||
                (endFrame = R_TextureIdForName(MN_TEXTURES, animDefs[i].endname)) == -1)
@@ -200,27 +177,21 @@ static void loadAnimDefs(animdef_t* animDefs)
     }
 }
 
-void wadconverter::LoadANIMATED(void)
+void LoadANIMATED(lumpnum_t lump)
 {
-    int lump;
+    animdef_t* animDefs;
 
-    // Is there an ANIMATED lump?
-    if((lump = W_CheckNumForName("ANIMATED")) > 0)
-    {
-        animdef_t* animDefs;
+    /**
+     * We'll support this BOOM extension by reading the data and then
+     * registering the new animations into Doomsday using the animation
+     * groups feature.
+     *
+     * Support for this extension should be considered depreciated.
+     * All new features should be added, accessed via DED.
+     */
+    Con_Message("WadConverter::LoadAnimated: Reading animations...\n");
 
-        /**
-         * We'll support this BOOM extension by reading the data and then
-         * registering the new animations into Doomsday using the animation
-         * groups feature.
-         *
-         * Support for this extension should be considered depreciated.
-         * All new features should be added, accessed via DED.
-         */
-        Con_Message("WadConverter::LoadAnimated: Reading animations...\n");
-
-        animDefs = (animdef_t *)W_CacheLumpNum(lump, PU_STATIC);
-        loadAnimDefs(animDefs);
-        Z_Free(animDefs);
-    }
+    animDefs = (animdef_t*) W_CacheLumpNum(lump, PU_STATIC);
+    loadAnimDefs(animDefs);
+    Z_Free(animDefs);
 }

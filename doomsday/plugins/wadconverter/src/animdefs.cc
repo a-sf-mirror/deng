@@ -1,10 +1,8 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- wadconverter
  *
- *\author Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2003-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,67 +15,43 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * animdefs.c: Parser for ANIMDEFS lumps.
- */
+#include <cstring>
+#include <cstdlib>
+#include <sstream>
 
-// HEADER FILES ------------------------------------------------------------
+#include <de/Log>
+#include <de/Material>
 
-#include <string.h>
-#include <stdlib.h>
-
-#include "doomsday.h"
-#include "dd_api.h"
-
-#include "wadconverter.h"
+#include "wadconverter/HexenDefParser"
 
 using namespace wadconverter;
 
-// MACROS ------------------------------------------------------------------
-
-// TYPES -------------------------------------------------------------------
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
-
-static void parseAnimGroup(material_namespace_t mnamespace)
+static void parseAnimGroup(HexenDefParser& parser, material_namespace_t mnamespace)
 {
-    boolean ignore;
-    boolean done;
+    bool ignore, done;
     int groupNumber = 0, texNumBase = 0, flatNumBase = 0;
 
     if(!(mnamespace == MN_FLATS || mnamespace == MN_TEXTURES))
         Con_Error("parseAnimGroup: Internal Error, invalid namespace %i.",
                   (int) mnamespace);
 
-    if(!SC_GetString()) // Name.
+    if(!parser.getString()) // Name.
     {
-        SC_ScriptError("Missing string.");
+        parser.scriptError("Missing string.");
     }
 
     ignore = true;
     if(mnamespace == MN_TEXTURES)
     {
-        if((texNumBase = R_TextureIdForName(MN_TEXTURES, sc_String)) != -1)
+        if((texNumBase = R_TextureIdForName(MN_TEXTURES, parser.string)) != -1)
             ignore = false;
     }
     else
     {
-        if((flatNumBase = R_TextureIdForName(MN_FLATS, sc_String)) != -1)
+        if((flatNumBase = R_TextureIdForName(MN_FLATS, parser.string)) != -1)
             ignore = false;
     }
 
@@ -87,36 +61,36 @@ static void parseAnimGroup(material_namespace_t mnamespace)
     done = false;
     do
     {
-        if(SC_GetString())
+        if(parser.getString())
         {
-            if(SC_Compare("pic"))
+            if(parser.compare("pic"))
             {
                 int picNum, min, max = 0;
 
-                SC_MustGetNumber();
-                picNum = sc_Number;
+                parser.mustGetNumber();
+                picNum = parser.number;
 
-                SC_MustGetString();
-                if(SC_Compare("tics"))
+                parser.mustGetString();
+                if(parser.compare("tics"))
                 {
-                    SC_MustGetNumber();
-                    min = sc_Number;
+                    parser.mustGetNumber();
+                    min = parser.number;
                 }
-                else if(SC_Compare("rand"))
+                else if(parser.compare("rand"))
                 {
-                    SC_MustGetNumber();
-                    min = sc_Number;
-                    SC_MustGetNumber();
-                    max = sc_Number;
+                    parser.mustGetNumber();
+                    min = parser.number;
+                    parser.mustGetNumber();
+                    max = parser.number;
                 }
                 else
                 {
-                    SC_ScriptError(NULL);
+                    parser.scriptError(NULL);
                 }
 
                 if(!ignore)
                 {
-                    material_t*         mat = R_MaterialForTextureId(mnamespace,
+                    de::Material* mat = R_MaterialForTextureId(mnamespace,
                         (mnamespace == MN_TEXTURES ? texNumBase : flatNumBase) + picNum - 1);
 
                     if(mat)
@@ -126,7 +100,7 @@ static void parseAnimGroup(material_namespace_t mnamespace)
             }
             else
             {
-                SC_UnGet();
+                parser.unGet();
                 done = true;
             }
         }
@@ -140,33 +114,39 @@ static void parseAnimGroup(material_namespace_t mnamespace)
 /**
  * Parse an ANIMDEFS definition for flat/texture animations.
  */
-void wadconverter::LoadANIMDEFS(void)
+void LoadANIMDEFS(wadconverter::lumpnum_t lump)
 {
-    lumpnum_t lump = W_CheckNumForName("ANIMDEFS");
+    char* script = reinterpret_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+    HexenDefParser* parser = new HexenDefParser(W_LumpName(lump), script, W_LumpLength(lump));
 
-    if(lump != -1)
+    while(parser->getString())
     {
-        SC_OpenLump(lump);
-
-        while(SC_GetString())
+        try
         {
-            if(SC_Compare("flat"))
+            if(parser->compare("flat"))
             {
                 parseAnimGroup(MN_FLATS);
+                continue;
             }
-            else if(SC_Compare("texture"))
+            if(parser->compare("texture"))
             {
                 parseAnimGroup(MN_TEXTURES);
+                continue;
             }
-            else
-            {
-                Con_Message("WadConverter::HexenScriptParse: %s Unknown token '%s', "
-                            "at line #%i, skipping.\n", sc_ScriptName, sc_String,
-                            sc_LineNumber);
-                SC_SkipToStartOfNextLine();
-            }
-        }
 
-        SC_Close();
+            std::ostringstream os;
+            os << "Unknown token " << parser->string << " in " << parser->scriptName << " at line #" << parser->lineNumber;
+            /// @throw UnknownTokenError An unknown token was encountered.
+            throw UnknownTokenError("WadConverter::LoadANIMDEFS", os.str());
+        }
+        catch(de::Error& err)
+        {
+            // If recoverable, log the error and attempt to continue parsing.
+            de::LOG_WARNING("") << err.asText();
+            parser->skipToStartOfNextLine();
+        }
     }
+
+    delete parser;
+    Z_Free(script);
 }

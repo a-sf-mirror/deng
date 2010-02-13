@@ -1,9 +1,7 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project -- wadconverter
  *
- *\author Copyright © 2007-2010 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2007-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,21 +14,22 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WADCONVERTER_MAP_H
-#define WADCONVERTER_MAP_H
+#ifndef LIBWADCONVERTER_MAP_H
+#define LIBWADCONVERTER_MAP_H
+
+#include "wadconverter.h"
+
+#include <de/String>
+#include <de/StringTable>
+#include <de/FixedByteArray>
+#include <de/Block>
+#include <de/Reader>
+#include <de/Material>
 
 #include <vector>
-
-#include "de/String"
-#include "de/StringTable"
-#include "de/FixedByteArray"
-#include "de/Block"
-#include "de/Reader"
 
 namespace wadconverter
 {
@@ -42,7 +41,7 @@ namespace wadconverter
      *
      * @ingroup mapreader
      */
-    class Map
+    class MapReader
     {
     private:
         /// Identifier used to describe the determined map data format.
@@ -120,17 +119,19 @@ namespace wadconverter
         MaterialRefs _materialRefs;
 
         MaterialRefId readMaterialReference(de::Reader& from, bool onPlane);
-        material_t* getMaterialForId(MaterialRefId id, bool onPlane);
+        de::Material* getMaterialForId(MaterialRefId id, bool onPlane);
 
     private:
         /**
          * Map constructor. Concrete instances cannot be constructed by the
          * caller, instead use the static construct methods (e.g., Map::construct)
+         *
+         * \note MapReader takes ownership of @a lumpNums.
          */
-        Map(LumpNums* lumpNums);
+        MapReader(LumpNums* lumpNums);
 
     public:
-        ~Map();
+        ~MapReader();
 
         void clear();
 
@@ -155,17 +156,18 @@ namespace wadconverter
         LumpNums* _lumpNums;
 
         /// Number of map data elements in found lumps.
-        uint _numVertexes;
-        uint _numSectors;
-        uint _numLineDefs;
-        uint _numSideDefs;
-        uint _numThings;
-        uint _numSurfaceTints;
+        uint32_t _numVertexes;
+        uint32_t _numSectors;
+        uint32_t _numLineDefs;
+        uint32_t _numSideDefs;
+        uint32_t _numThings;
+        uint32_t _numSurfaceTints;
 
         /**
          * Vertex coords.
          */
-        std::vector<float> _vertexCoords; // [v0 X, vo Y, v1 X, v1 Y...]
+        typedef std::vector<float> Vertexes;
+        Vertexes _vertexCoords; // [v0 X, vo Y, v1 X, v1 Y...]
 
         /**
          * Sectors.
@@ -226,7 +228,7 @@ namespace wadconverter
                   d64wallTopColor(d64wallTopColor),
                   d64wallBottomColor(d64wallBottomColor) {}
 
-            static Sector* constructFrom(de::Reader& from, Map* map);
+            static Sector* constructFrom(de::Reader& from, MapReader* map);
         };
 
         typedef std::vector<Sector*> Sectors;
@@ -236,8 +238,8 @@ namespace wadconverter
          * LineDefs.
          */
         struct LineDef {
-            uint v[2];
-            uint sides[2];
+            uint32_t v[2];
+            uint32_t sides[2];
             int16_t flags; // MF_* flags, read from the LINEDEFS, map data lump.
 
             bool polyobjOwned;
@@ -247,18 +249,18 @@ namespace wadconverter
             int16_t dTag;
 
             // Hexen format members:
-            byte xType;
-            byte xArgs[5];
+            uint8_t xType;
+            uint8_t xArgs[5];
 
             // DOOM64 format members:
-            byte d64drawFlags;
-            byte d64texFlags;
-            byte d64type;
-            byte d64useType;
+            uint8_t d64drawFlags;
+            uint8_t d64texFlags;
+            uint8_t d64type;
+            uint8_t d64useType;
             int16_t d64tag;
 
             // DOOM format constructor.
-            LineDef(uint v1, uint v2, uint frontSide, uint backSide, int16_t flags,
+            LineDef(uint32_t v1, uint32_t v2, uint32_t frontSide, uint32_t backSide, int16_t flags,
                     int16_t dType, int16_t dTag)
                 : flags(flags),
                   dType(dType),
@@ -273,9 +275,9 @@ namespace wadconverter
                 { v[0] = v1; v[1] = v2; sides[0] = frontSide; sides[1] = backSide; xArgs[0] = xArgs[1] = xArgs[2] = xArgs[3] = xArgs[4] = 0; }
 
             // DOOM64 format constructor.
-            LineDef(uint v1, uint v2, uint frontSide, uint backSide, int16_t flags,
-                    byte d64drawFlags, byte d64texFlags, byte d64type,
-                    byte d64useType, int16_t d64tag)
+            LineDef(uint32_t v1, uint32_t v2, uint32_t frontSide, uint32_t backSide, int16_t flags,
+                    uint8_t d64drawFlags, uint8_t d64texFlags, uint8_t d64type,
+                    uint8_t d64useType, int16_t d64tag)
                 : flags(flags),
                   d64drawFlags(d64drawFlags),
                   d64texFlags(d64texFlags),
@@ -289,9 +291,9 @@ namespace wadconverter
                 { v[0] = v1; v[1] = v2; sides[0] = frontSide; sides[1] = backSide; xArgs[0] = xArgs[1] = xArgs[2] = xArgs[3] = xArgs[4] = 0; }
 
             // Hexen format constructor.
-            LineDef(uint v1, uint v2, uint frontSide, uint backSide, int16_t flags,
-                    byte xType, byte arg1, byte arg2, byte arg3, byte arg4,
-                    byte arg5, bool polyobjOwned)
+            LineDef(uint32_t v1, uint32_t v2, uint32_t frontSide, uint32_t backSide, int16_t flags,
+                    uint8_t xType, uint8_t arg1, uint8_t arg2, uint8_t arg3, uint8_t arg4,
+                    uint8_t arg5, bool polyobjOwned)
                 : flags(flags),
                   xType(xType),
                   polyobjOwned(polyobjOwned),
@@ -304,7 +306,7 @@ namespace wadconverter
                   d64tag(0)
                 { v[0] = v1; v[1] = v2; sides[0] = frontSide; sides[1] = backSide; xArgs[0] = arg1; xArgs[1] = arg2; xArgs[2] = arg3; xArgs[3] = arg4; xArgs[4] = arg5; }
 
-            static LineDef* constructFrom(de::Reader& from, Map* map);
+            static LineDef* constructFrom(de::Reader& from, MapReader* map);
         };
 
         typedef std::vector<LineDef*> LineDefs;
@@ -318,18 +320,18 @@ namespace wadconverter
             MaterialRefId topMaterial;
             MaterialRefId bottomMaterial;
             MaterialRefId middleMaterial;
-            uint sectorId;
+            uint32_t sectorId;
 
             SideDef(int16_t offX, int16_t offY, MaterialRefId topMat,
                     MaterialRefId bottomMat, MaterialRefId midMat,
-                    uint sectorId)
+                    uint32_t sectorId)
                 : topMaterial(topMat),
                   bottomMaterial(bottomMat),
                   middleMaterial(midMat),
                   sectorId(sectorId)
                 { offset[0] = offX; offset[1] = offY; }
 
-            static SideDef* constructFrom(de::Reader& from, Map* map);
+            static SideDef* constructFrom(de::Reader& from, MapReader* map);
         };
 
         typedef std::vector<SideDef*> SideDefs;
@@ -351,20 +353,20 @@ namespace wadconverter
             /*}*/
 
             int16_t pos[3];
-            angle_t angle;
+            uint32_t angle;
             int16_t doomEdNum; // @see ThingEdNums.
             int32_t flags;
 
             // Hexen format members:
             int16_t xTID;
-            byte xSpecial;
-            byte xArgs[5];
+            uint8_t xSpecial;
+            uint8_t xArgs[5];
 
             // DOOM64 format members:
             int16_t d64TID;
 
             // DOOM format constructor
-            Thing(int16_t x, int16_t y, int16_t z, angle_t angle, int16_t doomEdNum, int32_t flags)
+            Thing(int16_t x, int16_t y, int16_t z, uint32_t angle, int16_t doomEdNum, int32_t flags)
                 : angle(angle),
                   doomEdNum(doomEdNum),
                   flags(flags),
@@ -374,7 +376,7 @@ namespace wadconverter
                 { pos[0] = x; pos[1] = y; pos[2] = z; xArgs[0] = xArgs[1] = xArgs[2] = xArgs[3] = xArgs[4] = 0; }
 
             // DOOM64 format constructor
-            Thing(int16_t x, int16_t y, int16_t z, angle_t angle, int16_t doomEdNum, int32_t flags, int16_t tid)
+            Thing(int16_t x, int16_t y, int16_t z, uint32_t angle, int16_t doomEdNum, int32_t flags, int16_t tid)
                 : angle(angle),
                   doomEdNum(doomEdNum),
                   flags(flags),
@@ -384,7 +386,7 @@ namespace wadconverter
                 { pos[0] = x; pos[1] = y; pos[2] = z; xArgs[0] = xArgs[1] = xArgs[2] = xArgs[3] = xArgs[4] = 0; }
 
             // Hexen format constructor
-            Thing(int16_t x, int16_t y, int16_t z, angle_t angle, int16_t doomEdNum, int32_t flags, int16_t tid, byte special, byte arg1, byte arg2, byte arg3, byte arg4, byte arg5)
+            Thing(int16_t x, int16_t y, int16_t z, uint32_t angle, int16_t doomEdNum, int32_t flags, int16_t tid, uint8_t special, uint8_t arg1, uint8_t arg2, uint8_t arg3, uint8_t arg4, uint8_t arg5)
                 : angle(angle),
                   doomEdNum(doomEdNum),
                   flags(flags),
@@ -392,7 +394,7 @@ namespace wadconverter
                   d64TID(0)
                 { pos[0] = x; pos[1] = y; pos[2] = z; xArgs[0] = arg1; xArgs[1] = arg2; xArgs[2] = arg3; xArgs[3] = arg4; xArgs[4] = arg5; }
 
-            static Thing* constructFrom(de::Reader& from, Map* map);
+            static Thing* constructFrom(de::Reader& from, MapReader* map);
         };
 
         typedef std::vector<Thing*> Things;
@@ -402,14 +404,14 @@ namespace wadconverter
          * Polyobjs (Hexen only).
          */
         struct Polyobj {
-            uint idx; // Idx of polyobject
-            uint* lineIndices;
-            uint lineCount;
+            uint32_t idx; // Idx of polyobject
+            uint32_t* lineIndices;
+            uint32_t lineCount;
             int tag; // Reference tag assigned in HereticEd
             int seqType;
             int16_t anchor[2];
 
-            Polyobj(uint idx, uint* lineIndices, uint lineCount, int tag, int seqType, int16_t anchorX, int16_t anchorY)
+            Polyobj(uint32_t idx, uint32_t* lineIndices, uint32_t lineCount, int tag, int seqType, int16_t anchorX, int16_t anchorY)
                 : idx(idx),
                   lineIndices(lineIndices),
                   lineCount(lineCount),
@@ -420,19 +422,19 @@ namespace wadconverter
 
         typedef std::vector<Polyobj> Polyobjs;
         Polyobjs _polyobjs;
-        uint _numPolyobjs;
+        uint32_t _numPolyobjs;
 
         /**
          * Surface color tints (DOOM64 only).
          */
         struct SurfaceTint {
             float rgb[3];
-            byte xx[3];
+            uint8_t xx[3];
 
-            SurfaceTint(float red, float green, float blue, byte x1, byte x2, byte x3)
+            SurfaceTint(float red, float green, float blue, uint8_t x1, uint8_t x2, uint8_t x3)
                 { rgb[0] = red; rgb[1] = green, rgb[2] = blue; xx[0] = x1; xx[1] = x2; xx[2] = x3; }
 
-            static SurfaceTint* constructFrom(de::Reader& from, Map* map);
+            static SurfaceTint* constructFrom(de::Reader& from, MapReader* map);
         };
 
         typedef std::vector<SurfaceTint*> SurfaceTints;
@@ -446,12 +448,30 @@ namespace wadconverter
         void loadLights(de::Reader& from, de::dsize num);
 
         void findPolyobjs();
+
+        /**
+         * Find all linedefs marked as belonging to a polyobject with the given tag
+         * and attempt to create a polyobject from them.
+         *
+         * @param tag           Line tag of linedefs to search for.
+         *
+         * @return              @c true = successfully created polyobj.
+         */
         bool findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY);
-        bool iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2], uint* polyLineCount, LineDef** lineList);
-        void createPolyobj(LineDef** lineList, uint num, int tag, int sequenceType, int16_t anchorX, int16_t anchorY);
+
+        /**
+         * @param lineList      @c NULL, will cause IterFindPolyLines to count
+         *                      the number of _lineDefs in the polyobj.
+         */
+        bool iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2], uint32_t* polyLineCount, LineDef** lineList);
+        void createPolyobj(LineDef** lineList, uint32_t num, int tag, int sequenceType, int16_t anchorX, int16_t anchorY);
 
     public:
-        static Map* construct(const char* mapID);
+        /**
+         * Helper constructor. Given a map identifier search the Doomsday file system
+         * for the associated lumps needed to instantiate Map.
+         */
+        static MapReader* construct(const char* identifier);
 
         /**
          * Given a lump name return the expected data identifier.
@@ -462,8 +482,12 @@ namespace wadconverter
 
     private:
         static FormatId recognize(const LumpNums& lumpNums);
-        static int isClosedPolygon(LineDef** lineList, size_t num);
+
+        /**
+         * @return              @c  0 = Unclosed polygon.
+         */
+        static bool isClosedPolygon(LineDef** lineList, size_t num);
     };
 }
 
-#endif /* WADCONVERTER_MAP_H */
+#endif /* LIBWADCONVERTER_MAP_H */
