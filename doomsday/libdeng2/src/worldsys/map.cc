@@ -614,10 +614,10 @@ static bool PIT_LinkToLineDef(LineDef* lineDef, void* paramaters)
 {
     Map::linelinker_data_t* data = reinterpret_cast<Map::linelinker_data_t*>(paramaters);
 
-    if(data->box[1][0] <= lineDef->aaBounds[BOXLEFT] ||
-       data->box[0][0] >= lineDef->aaBounds[BOXRIGHT] ||
-       data->box[1][1] <= lineDef->aaBounds[BOXBOTTOM] ||
-       data->box[0][1] >= lineDef->aaBounds[BOXTOP])
+    if(data->box[1][0] <= lineDef->aaBounds()[BOXLEFT] ||
+       data->box[0][0] >= lineDef->aaBounds()[BOXRIGHT] ||
+       data->box[1][1] <= lineDef->aaBounds()[BOXBOTTOM] ||
+       data->box[0][1] >= lineDef->aaBounds()[BOXTOP])
         // Bounding boxes do not overlap.
         return true;
 
@@ -755,17 +755,17 @@ void Map::link(Thing* thing, Thing::LinkFlags flags)
         linkToLineDefs(thing);
     }
 
-    // If this is a player - perform addtional tests to see if they have
+    // If this is a user - perform addtional tests to see if they have
     // entered or exited the void.
-    if(thing->user())
+    if(thing->hasUser())
     {
-        ddplayer_t* player = thing->user();
+        User& user = thing->user();
 
-        player->inVoid = true;
-        if(subsector.sector().pointInside2(player->thing->origin.x, player->thing->origin.y) &&
-           (player->thing->origin.z < subsector.ceiling().visHeight - 4 &&
-            player->thing->origin.z >= subsector.floor().visHeight))
-            player->inVoid = false;
+        user.inVoid = true;
+        if(subsector.sector().pointInside2(thing->origin.x, thing->origin.y) &&
+           (thing->origin.z < subsector.ceiling().visHeight - 4 &&
+            thing->origin.z >= subsector.floor().visHeight))
+            user.inVoid = false;
     }
 }
 
@@ -1781,12 +1781,10 @@ void Map::finishSectors2()
     {
         Sector* sec = *i;
 
-        sec->updateBounds();
-        Vector2f min, max;
-        sec->bounds(min, max);
+        sec->updateAABounds();
+
         // Set the degenmobj_t to the middle of the bounding box.
-        sec->soundOrg.pos.x = (min.x + max.x) / 2;
-        sec->soundOrg.pos.y = (min.y + max.y) / 2;
+        sec->soundOrg.pos = sec->aaBounds().middle();
         sec->soundOrg.pos.z = 0;
 
         // Set the position of the sound origin for all plane sound origins.
@@ -1811,12 +1809,12 @@ void Map::updateAABounds()
         if(i == _sectors.begin())
         {
             // The first sector is used as is.
-            aaBounds = sec->aaBounds;
+            aaBounds = sec->aaBounds();
         }
         else
         {
             // Expand the bounding box.
-            M_JoinBoxes(aaBounds, sec->aaBounds);
+            M_JoinBoxes(aaBounds, sec->aaBounds());
         }
     }
 }
@@ -1876,7 +1874,7 @@ void Map::findSubsectorMidPoints()
 {
     for(duint i = 0; i < _numSubsectors; ++i)
     {
-        Subsector* subsector = _subsectors[i];
+        Subsector* subsector = subsectors[i];
 
         subsector->updateMidPoint();
     }
@@ -1890,14 +1888,14 @@ void Map::findSubsectorMidPoints()
  */
 static dint C_DECL lineAngleSorter(const void* a, const void* b)
 {
-    dbinangle angles[2];
     lineowner_t* own[2];
-    own[0] = (lineowner_t*) a;
-    own[1] = (lineowner_t*) b;
+    own[0] = reinterpret_cast<lineowner_t*>(const_cast<void*>(a));
+    own[1] = reinterpret_cast<lineowner_t*>(const_cast<void*>(b));
 
+    dbinangle angles[2];
     for(duint i = 0; i < 2; ++i)
     {
-        if(own[i]->LO_prev) // We have a cached result.
+        if(own[i]->link[0]) // We have a cached result.
         {
             angles[i] = own[i]->angle;
         }
@@ -1907,11 +1905,11 @@ static dint C_DECL lineAngleSorter(const void* a, const void* b)
 
             Vertex* otherVtx = lineDef->buildData.v[lineDef->buildData.v[0] == rootVtx? 1:0];
 
-            Vector2f delta = otherVtx->pos - rootVtx->pos;
-            own[i]->angle = angles[i] = bamsAtan2(-100 * dint(dx), 100 * dint(dy));
+            Vector2d delta = otherVtx->pos - rootVtx->pos;
+            own[i]->angle = angles[i] = bamsAtan2(-100 * dint(delta.x), 100 * dint(delta.y));
 
             // Mark as having a cached angle.
-            own[i]->LO_prev = (lineowner_t*) 1;
+            own[i]->link[0] = (lineowner_t*) 1;
         }
     }
 
@@ -1929,36 +1927,36 @@ static lineowner_t* mergeLineOwners(lineowner_t* left, lineowner_t* right,
     lineowner_t tmp, *np;
 
     np = &tmp;
-    tmp.LO_next = np;
+    tmp.link[1] = np;
     while(left != NULL && right != NULL)
     {
         if(compare(left, right) <= 0)
         {
-            np->LO_next = left;
+            np->link[1] = left;
             np = left;
 
-            left = left->LO_next;
+            left = &left->next();
         }
         else
         {
-            np->LO_next = right;
+            np->link[1] = right;
             np = right;
 
-            right = right->LO_next;
+            right = &right->next();
         }
     }
 
     // At least one of these lists is now empty.
     if(left)
-        np->LO_next = left;
+        np->link[1] = left;
     if(right)
-        np->LO_next = right;
+        np->link[1] = right;
 
     // Is the list empty?
-    if(tmp.LO_next == &tmp)
+    if(&tmp.next() == &tmp)
         return NULL;
 
-    return tmp.LO_next;
+    return &tmp.next();
 }
 
 static lineowner_t* splitLineOwners(lineowner_t* list)
@@ -1972,13 +1970,13 @@ static lineowner_t* splitLineOwners(lineowner_t* list)
     do
     {
         listc = listb;
-        listb = listb->LO_next;
-        lista = lista->LO_next;
+        listb = &listb->next();
+        lista = &lista->next();
         if(lista != NULL)
-            lista = lista->LO_next;
+            lista = &lista->next();
     } while(lista);
 
-    listc->LO_next = NULL;
+    listc->link[1] = NULL;
     return listb;
 }
 
@@ -1990,7 +1988,7 @@ static lineowner_t* sortLineOwners(lineowner_t* list,
 {
     lineowner_t* p;
 
-    if(list && list->LO_next)
+    if(list && list->link[1])
     {
         p = splitLineOwners(list);
 
@@ -2016,7 +2014,7 @@ static void setVertexLineOwner(vertexinfo_t* vInfo, LineDef* lineDef, dbyte vert
             if(owner->lineDef == lineDef)
                 return; // Yes, we can exit.
 
-            owner = owner->LO_next;
+            owner = &owner->next();
         } while(owner);
     }
 
@@ -2025,18 +2023,18 @@ static void setVertexLineOwner(vertexinfo_t* vInfo, LineDef* lineDef, dbyte vert
 
     newOwner = (*storage)++;
     newOwner->lineDef = lineDef;
-    newOwner->LO_prev = NULL;
+    newOwner->link[0] = NULL;
 
     // Link it in.
     // NOTE: We don't bother linking everything at this stage since we'll
     // be sorting the lists anyway. After which we'll finish the job by
     // setting the prev and circular links.
     // So, for now this is only linked singlely, forward.
-    newOwner->LO_next = vInfo->lineOwners;
+    newOwner->link[1] = vInfo->lineOwners;
     vInfo->lineOwners = newOwner;
 
     // Link the line to its respective owner node.
-    lineDef->L_vo(vertex) = newOwner;
+    lineDef->vo[vertex] = newOwner;
 }
 
 #if _DEBUG
@@ -2060,47 +2058,41 @@ static void checkVertexOwnerRings(vertexinfo_t* vertexInfo, duint num)
                 owner->lineDef->validCount = validCount;
 
                 /// Invalid ring?
-                assert(owner->LO_prev->LO_next == owner);
-                assert(owner->LO_next->LO_prev == owner);
+                assert(&owner->prev().next() == owner);
+                assert(&owner->next().prev() == owner);
 
-                owner = owner->LO_next;
+                owner = &owner->next();
             } while(owner != base);
         }
     }
 }
 #endif
 
-/**
- * Generates the line owner rings for each vertex. Each ring includes all
- * the lines which the vertex belongs to sorted by angle, (the rings are
- * arranged in clockwise order, east = 0).
- */
-static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
+void Map::buildVertexOwnerRings(vertexinfo_t* vertexInfo)
 {
-    lineowner_t* allocator;
-    halfedgeds_t* halfEdgeDS = Map_HalfEdgeDS(map);
-    uint i, numVertices = HalfEdgeDS_NumVertices(halfEdgeDS);
-
     // We know how many vertex line owners we need (numLineDefs * 2).
-    map->lineOwners = Z_Calloc(sizeof(lineowner_t) * map->numLineDefs * 2, PU_STATIC, 0);
+
+    HalfEdgeDS::Vertices::size_type numVertices = _halfEdgeDS->numVertices();
+
+    lineowner_t* allocator;
+    lineOwners = Z_Calloc(sizeof(lineowner_t) * _lineDefs.size() * 2, PU_STATIC, 0);
     allocator = map->lineOwners;
 
-    for(i = 0; i < map->numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        linedef_t* lineDef = map->lineDefs[i];
-        uint j;
+        LineDef* lineDef = *i;
 
-        for(j = 0; j < 2; ++j)
+        for(duint j = 0; j < 2; ++j)
         {
             vertexinfo_t* vInfo =
-                &vertexInfo[((mvertex_t*) lineDef->buildData.v[j]->data)->index - 1];
+                &vertexInfo[reinterpret_cast<MVertex*>(lineDef->buildData.v[j]->data)->index - 1];
 
             setVertexLineOwner(vInfo, lineDef, j, &allocator);
         }
     }
 
     // Sort line owners and then finish the rings.
-    for(i = 0; i < numVertices; ++i)
+    for(HalfEdgeDS::Vertices::size_type i = 0; i < numVertices; ++i)
     {
         vertexinfo_t* vInfo = &vertexInfo[i];
 
@@ -2108,18 +2100,18 @@ static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
         if(vInfo->numLineOwners != 0)
         {
             lineowner_t* owner, *last;
-            binangle_t firstAngle;
+            dbinangle firstAngle;
 
             // Redirect the linedef links to the hardened map.
             owner = vInfo->lineOwners;
             while(owner)
             {
-                owner->lineDef = map->lineDefs[owner->lineDef->buildData.index - 1];
-                owner = owner->LO_next;
+                owner->lineDef = _lineDefs[owner->lineDef->buildData.index - 1];
+                owner = owner->next();
             }
 
             // Sort them; ordered clockwise by angle.
-            rootVtx = halfEdgeDS->vertices[i];
+            rootVtx = _halfEdgeDS->vertices[i];
             vInfo->lineOwners = sortLineOwners(vInfo->lineOwners, lineAngleSorter);
 
             // Finish the linking job and convert to relative angles.
@@ -2127,19 +2119,19 @@ static void buildVertexOwnerRings(map_t* map, vertexinfo_t* vertexInfo)
             // and circularly linked.
             firstAngle = vInfo->lineOwners->angle;
             last = vInfo->lineOwners;
-            owner = last->LO_next;
+            owner = &last->next();
             while(owner)
             {
-                owner->LO_prev = last;
+                owner->link[0] = last;
 
                 // Convert to a relative angle between last and this.
                 last->angle = last->angle - owner->angle;
 
                 last = owner;
-                owner = owner->LO_next;
+                owner = &owner->next();
             }
-            last->LO_next = vInfo->lineOwners;
-            vInfo->lineOwners->LO_prev = last;
+            last->link[1] = vInfo->lineOwners;
+            vInfo->lineOwners->link[0] = last;
 
             // Set the angle of the last owner.
             last->angle = last->angle - firstAngle;
@@ -3686,8 +3678,8 @@ void Map::initSectorShadows()
 
         vtx0 = LINE_VERTEX(side->lineDef, sid);
         vtx1 = LINE_VERTEX(side->lineDef, sid^1);
-        vo0 = side->lineDef->L_vo(sid)->LO_next;
-        vo1 = side->lineDef->L_vo(sid^1)->LO_prev;
+        vo0 = side->lineDef->L_vo(sid)->next();
+        vo1 = side->lineDef->L_vo(sid^1)->prev();
 
         // Use the extended points, they are wider than inoffsets.
         V2_Set(point, vtx0->pos[VX], vtx0->pos[VY]);
@@ -3971,10 +3963,8 @@ boolean Map_SubsectorsBoxIteratorv(map_t* map, const arvec2_t box, sector_t* sec
     }
 }
 
-void Map_SetSectorPlane(map_t* map, objectrecordid_t sector, uint type, objectrecordid_t plane)
+void Map::setSectorPlane(objectrecordid_t sector, uint type, objectrecordid_t plane)
 {
-    assert(map);
-    {
     sector_t* sec;
     plane_t* pln;
     uint i;
@@ -3999,7 +3989,6 @@ void Map_SetSectorPlane(map_t* map, objectrecordid_t sector, uint type, objectre
     sec->planes = Z_Realloc(sec->planes, sizeof(plane_t*) * (++sec->planeCount + 1), PU_STATIC);
     sec->planes[type > PLN_CEILING? sec->planeCount-1 : type] = pln;
     sec->planes[sec->planeCount] = NULL; // Terminate.
-    }
 }
 
 static boolean interceptLineDef(const linedef_t* li, losdata_t* los,

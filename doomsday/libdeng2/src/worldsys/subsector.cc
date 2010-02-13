@@ -267,10 +267,10 @@ static void spreadMobjs(const Subsector* subsector)
     uint blockBox[4];
     vec2_t bbox[2];
 
-    bbox[0][0] = subsector->bBox[0][0] - THING::MAXRADIUS;
-    bbox[0][1] = subsector->bBox[0][1] - THING::MAXRADIUS;
-    bbox[1][0] = subsector->bBox[1][0] + THING::MAXRADIUS;
-    bbox[1][1] = subsector->bBox[1][1] + THING::MAXRADIUS;
+    bbox[0][0] = subsector->bBox[0][0] - Thing::MAXRADIUS;
+    bbox[0][1] = subsector->bBox[0][1] - Thing::MAXRADIUS;
+    bbox[1][0] = subsector->bBox[1][0] + Thing::MAXRADIUS;
+    bbox[1][1] = subsector->bBox[1][1] + Thing::MAXRADIUS;
 
     MobjBlockmap_BoxToBlocks(bmap, blockBox, bbox);
     MobjBlockmap_BoxIterate(bmap, blockBox, PTR_SpreadContacts, &type);

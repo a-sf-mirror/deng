@@ -886,6 +886,16 @@ typedef enum resourcetype_e {
     NUM_RESOURCE_TYPES
 } resourcetype_t;
 
+typedef enum material_namespace_e {
+    MN_ANY = -1,
+    MN_FIRST,
+    MN_TEXTURES = MN_FIRST,
+    MN_FLATS,
+    MN_SPRITES,
+    MN_SYSTEM,
+    NUM_MATERIAL_NAMESPACES
+} material_namespace_t;
+
 /**
  * Processing modes for GL_LoadGraphics.
  */

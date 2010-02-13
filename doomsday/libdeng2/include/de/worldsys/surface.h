@@ -35,19 +35,8 @@ namespace de
     class MSurface
     {
     public:
-        // Internal surface flags:
-        /*#define SUIF_PVIS             0x0001
-        #define SUIF_MATERIAL_FIX     0x0002 // Current texture is a fix replacement
-                                             // (not sent to clients, returned via DMU etc).
-        #define SUIF_BLEND            0x0004 // Surface possibly has a blended texture.
-        #define SUIF_NO_RADIO         0x0008 // No fakeradio for this surface.
-
-        #define SUIF_UPDATE_FLAG_MASK 0xff00
-        #define SUIF_UPDATE_DECORATIONS 0x8000*/
-
-    public:
         void* owner; // Either @c DMU_SIDEDEF, or @c DMU_PLANE
-        dint flags; // SUF_ flags
+        dint flags;
         dint oldFlags;
 
         //blendmode_t blendMode;
@@ -61,7 +50,6 @@ namespace de
         dfloat visOffsetDelta[2];
 
         dfloat rgba[4]; // Surface color tint
-        dshort inFlags; // SUIF_* flags
 
         ~MSurface();
 
@@ -124,8 +112,24 @@ namespace de
         //bool setProperty(const setargs_t* args);
 
     private:
+        /** @name SurfaceInternalFlags */
+        //@{
+        /// Surface is currently potentially visible.
+        DEFINE_FLAG(POTENTIALLYVISIBLE, 1);
+        /// Current texture is a fix replacement (not sent to clients, returned via DMU etc).
+        DEFINE_FLAG(MATERIALFIX, 2);
+        /// Surface possibly has a blended texture.
+        DEFINE_FLAG(BLEND, 3);
+        /// No fakeradio for this surface.
+        DEFINE_FINAL_FLAG(NORADIO, 4, InternalFlags);
+        //@}
+
+    private:
+        InternalFlags _inFlags;
+
         typedef std::vector<Decoration*> Decorations;
         Decorations _decorations;
+        bool updateDecorations;
 
         Material* _material;
         Material* _materialB;

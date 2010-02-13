@@ -34,7 +34,6 @@
 #include "../SubsectorBlockmap"
 #include "../LumObjBlockmap"
 #include "../ParticleBlockmap"
-#include "../GameObjRecords"
 #include "../Thinker"
 #include "../Node"
 #include "../Rectangle"
@@ -501,6 +500,7 @@ namespace de
         /**
          * Map Edit interface.
          */
+        bool editBegin();
         bool editEnd();
 
         objectrecordid_t createVertex(dfloat x, dfloat y);
@@ -524,6 +524,7 @@ namespace de
             dfloat normalX, dfloat normalY, dfloat normalZ);
         objectrecordid_t createPolyobj(objectrecordid_t* lines, duint linecount,
             dint tag, dint sequenceType, dfloat startX, dfloat startY);
+        void setSectorPlane(objectrecordid_t sector, uint32_t type, objectrecordid_t plane);
 
         /// Thing iterators:
         bool iterateThings(const dfloat box[4], bool (*func) (Thing*, void*), void* paramaters = 0);
@@ -658,6 +659,13 @@ namespace de
          * @pre Vertex shadow offsets must be initialized before calling.
          */
         void initSectorShadows();
+
+        /**
+         * Generates the line owner rings for each vertex. Each ring includes all
+         * the lines which the vertex belongs to sorted by angle, (the rings are
+         * arranged in clockwise order, east = 0).
+         */
+        void buildVertexOwnerRings(vertexinfo_t* vertexInfo);
 
         bool interpolatePlaneHeight(Plane* plane, dfloat frameTimePos);
         bool resetPlaneHeightTracking(Plane* plane);

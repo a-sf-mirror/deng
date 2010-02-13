@@ -71,7 +71,7 @@ bool heightClip(Thing* thing)
     // created by the Game, is the one that is visible and modified in this
     // function. We'll need to sync the hidden client mobj (that receives
     // all the changes from the server) to match the changes.
-    if(isClient && thing->user())
+    if(isClient && thing->hasUser())
     {
         Cl_UpdatePlayerPos(P_GetDDPlayerIdx(thing->user()));
     }

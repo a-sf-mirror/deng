@@ -51,12 +51,12 @@ void LineDef::updateAABounds()
     bool edge;
 
     edge = (vtx1().pos.x < vtx2().pos.x);
-    aaBounds[BOXLEFT]  = vtx(edge^1).pos.x;
-    aaBounds[BOXRIGHT] = vtx(edge).pos.x;
+    _aaBounds[BOXLEFT]  = vtx(edge^1).pos.x;
+    _aaBounds[BOXRIGHT] = vtx(edge).pos.x;
 
     edge = (vtx1().pos.y < vtx2().pos.y);
-    aaBounds[BOXBOTTOM] = vtx(edge^1).pos.y;
-    aaBounds[BOXTOP]    = vtx(edge).pos.y;
+    _aaBounds[BOXBOTTOM] = vtx(edge^1).pos.y;
+    _aaBounds[BOXTOP]    = vtx(edge).pos.y;
 
     // Update the lineDef's slopetype.
     delta = vtx2().pos - vtx1().pos;

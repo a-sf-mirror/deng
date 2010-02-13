@@ -27,6 +27,7 @@
 #include "../Animator"
 #include "../NodePile"
 #include "../Subsector"
+#include "../User"
 
 namespace de
 {
@@ -63,7 +64,7 @@ namespace de
             if(!hasUser())
                 /// @throw MissingUserError Attempt to access user when not present.
                 throw MissingUserError("Thing::user", "No user present.");
-            return _user;
+            return *_user;
         }
 
     // @todo Make private.

@@ -543,8 +543,6 @@ typedef struct {
     LineDefOwner* lineOwners; // Head of the lineowner list.
 } ownerinfo_t;
 
-    duint startTime = Sys_GetRealTime();
-
     LineDefOwner* lineOwners, *storage;
     ownerinfo_t* vertexInfo;
     duint i, numVertices;
@@ -702,10 +700,6 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
     // Release temporary storage.
     std::free(lineOwners);
     std::free(vertexInfo);
-
-    // How much time did we spend?
-    LOG_VERBOSE("Nodebuilder::createInitialHalfEdges: Done in %.2f seconds.")
-        << ((Sys_GetRealTime() - startTime) / 1000.0f);
 }
 
 void NodeBuilder::createInitialHalfEdgesAndAddtoRootSuperBlock()

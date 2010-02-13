@@ -31,16 +31,6 @@
 
 namespace de
 {
-    typedef enum material_namespace_e {
-        MN_ANY = -1,
-        MN_FIRST,
-        MN_TEXTURES = MN_FIRST,
-        MN_FLATS,
-        MN_SPRITES,
-        MN_SYSTEM,
-        NUM_MATERIAL_NAMESPACES
-    } material_namespace_t;
-
     /**
      * @defGroup materialFlags Material Flags
      */
@@ -160,8 +150,6 @@ namespace de
         };
 
     public:
-        material_namespace_t mnamespace;
-
         const struct ded_material_s* def;  // Can be NULL.
         bool isAutoMaterial; // Was generated automatically.
 
