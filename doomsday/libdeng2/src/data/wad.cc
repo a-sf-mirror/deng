@@ -80,6 +80,22 @@ WAD::WAD(const IByteArray& wad) : _source(&wad)
         de::FixedByteArray byteSeq(lumpName, 0, 8);
         reader >> byteSeq;
 
+        /**
+         * The Hexen demo on Mac uses the 0x80 on some lumps, maybe has
+         * significance?
+         * \todo: Ensure that this doesn't break other IWADs. The 0x80-0xff
+         * range isn't normally used in lump names, right??
+         * \todo: The DOOM64 IWAD uses the high range with the first character
+         * to signify it as compressed.
+         */
+        for(duint i = 0; i < 8; ++i)
+        {
+            dbyte c;
+            byteSeq.get(i, &c, 1);
+            c &= 0x7f;
+            byteSeq.set(i, &c, 1);
+        }
+
         _index[lumpName] = entry;
 
         // Reader is now positioned at the start of the next directory entry.
