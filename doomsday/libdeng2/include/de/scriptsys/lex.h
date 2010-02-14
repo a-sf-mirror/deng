@@ -1,7 +1,8 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2009-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,7 +64,7 @@ namespace de
         };
         
     public:
-        Lex(const String& input = "");
+        Lex(const String& input = "", duchar lineCommentChar = '#');
         
         /// Returns the input string in its entirety.
         const String& input() const;

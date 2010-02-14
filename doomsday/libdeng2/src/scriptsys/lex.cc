@@ -1,7 +1,8 @@
 /*
  * The Doomsday Engine Project -- libdeng2
  *
- * Copyright (c) 2004-2009 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2009-2010 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * Copyright © 2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +24,8 @@
 
 using namespace de;
 
-Lex::Lex(const String& input) : _input(&input), _lineCommentChar('#')
+Lex::Lex(const String& input, duchar lineCommentChar)
+  : _input(&input), _lineCommentChar(lineCommentChar)
 {}
 
 const String& Lex::input() const
