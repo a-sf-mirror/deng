@@ -22,6 +22,7 @@
 #define LIBWADCONVERTER_ANIMATEDINTERPRETER_H
 
 #include <de/Error>
+#include <de/String>
 #include <de/Fs>
 #include <de/FixedByteArray>
 #include <de/Reader>
@@ -36,7 +37,7 @@ namespace wadconverter
      * File format interpreter for the ANIMATED texture/flat definition format,
      * originally designed and implemented in BOOM. Given ANIMATED format
      * source data this class will read and interpret them into Doomsday
-     * Material animations using the AnimGroups feature.
+     * Material animations by outputing new AnimGroup definitions.
      * 
      * \note Support for the ANIMATED format is to be considered depreciated.
      *
@@ -58,11 +59,14 @@ namespace wadconverter
         /// Source data format error (it may not be in ANIMATED format). @ingroup errors
         DEFINE_ERROR(FormatError);
 
-        static void interpret(const de::File& file);
+        static void interpret(const de::File& file, de::String& output);
 
     private:
         /// Failed interpretation of the source data. @ingroup errors
         DEFINE_ERROR(InterpretError);
+
+        /// Unknown material reference. @ingroup errors
+        DEFINE_SUB_ERROR(InterpretError, UnknownMaterialError);
 
         /// Intermediate representation of ANIMATED definitions.
         struct AnimationDef {
@@ -89,9 +93,10 @@ namespace wadconverter
         typedef std::vector<AnimationDef> AnimationDefs;
 
         static AnimationDefs* readAnimationDefs(const de::File& file);
-        static void interpretAnimationDef(const AnimationDef& def);
-        static void interpretFlatAnimationDef(const AnimationDef& def);
-        static void interpretTextureAnimationDef(const AnimationDef& def);
+
+        static de::String interpretAnimationDef(const AnimationDef& def);
+        static de::String interpretFlatAnimationDef(const AnimationDef& def);
+        static de::String interpretTextureAnimationDef(const AnimationDef& def);
     };
 }
 

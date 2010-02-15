@@ -26,13 +26,25 @@
 
 using namespace wadconverter;
 
-void AnimatedInterpreter::interpretTextureAnimationDef(const AnimationDef& def)
+de::String AnimatedInterpreter::interpretTextureAnimationDef(const AnimationDef& def)
 {
     int startFrame = R_TextureIdForName(MN_TEXTURES, def.startName);
+    if(startFrame == -1)
+    {
+        std::ostringstream os;
+        os << "Unknown Texture: \"" << def.startName << "\".";
+        /// @throw UnknownMaterialError Reference to unknown texture.
+        throw UnknownMaterialError("interpretTextureAnimationDef", os.str());
+    }
+    
     int endFrame = R_TextureIdForName(MN_TEXTURES, def.endName);
-
-    if(startFrame == -1 || endFrame == -1)
-        return;
+    if(endFrame == -1)
+    {
+        std::ostringstream os;
+        os << "Unknown Texture: \"" << def.endName << "\".";
+        /// @throw UnknownMaterialError Reference to unknown texture.
+        throw UnknownMaterialError("interpretTextureAnimationDef", os.str());
+    }
 
     int numFrames = endFrame - startFrame + 1;
     if(numFrames < 2)
@@ -43,32 +55,47 @@ void AnimatedInterpreter::interpretTextureAnimationDef(const AnimationDef& def)
         throw InterpretError("interpretTextureAnimationDef", os.str());
     }
 
-    // Create a new animation group for it.
-    int groupNum = P_NewMaterialGroup(AGF_SMOOTH);
-
+    // Add all frames from start to end to the group.
+    de::String frames;
     if(endFrame > startFrame)
     {
         for(int n = startFrame; n <= endFrame; n++)
-            P_AddMaterialToGroup(groupNum, P_ToIndex(R_MaterialForTextureId(MN_TEXTURES, n)), def.speed, 0);
+        {
+            de::Material* material = R_MaterialForTextureId(MN_TEXTURES, n);
+            frames += de::String(4, ' ') + "Texture { ID = \"" + reinterpret_cast<char*>(P_GetPtrp(material, DMU_NAME)) + "\"; Tics = " + def.speed + "; }\n";
+        }
     }
     else
     {
         for(int n = endFrame; n >= startFrame; n--)
-            P_AddMaterialToGroup(groupNum, P_ToIndex(R_MaterialForTextureId(MN_TEXTURES, n)), def.speed, 0);
+        {
+            de::Material* material = R_MaterialForTextureId(MN_TEXTURES, n);
+            frames += de::String(4, ' ') + "Texture { ID = \"" + reinterpret_cast<char*>(P_GetPtrp(material, DMU_NAME)) + "\"; Tics = " + def.speed + "; }\n";
+        }
     }
 
-    std::ostringstream os;
-    os << "New Material animation (Texture): \"" << def.startName << "\"...\"" << def.endName << " (" << def.speed << ")";
-    LOG_VERBOSE(os.str());
+    return de::String("Group {\n") + frames + de::String("}\n");
 }
 
-void AnimatedInterpreter::interpretFlatAnimationDef(const AnimationDef& def)
+de::String AnimatedInterpreter::interpretFlatAnimationDef(const AnimationDef& def)
 {
     lumpnum_t startFrame = R_TextureIdForName(MN_FLATS, def.startName);
-    lumpnum_t endFrame = R_TextureIdForName(MN_FLATS, def.endName);
+    if(startFrame == -1)
+    {
+        std::ostringstream os;
+        os << "Unknown Flat: \"" << def.startName << "\".";
+        /// @throw UnknownMaterialError Reference to unknown flat.
+        throw UnknownMaterialError("interpretFlatAnimationDef", os.str());
+    }
 
-    if(startFrame == -1 || endFrame == -1)
-        return;
+    lumpnum_t endFrame = R_TextureIdForName(MN_FLATS, def.endName);
+    if(endFrame == -1)
+    {
+        std::ostringstream os;
+        os << "Unknown Flat: \"" << def.endName << "\".";
+        /// @throw UnknownMaterialError Reference to unknown flat.
+        throw UnknownMaterialError("interpretFlatAnimationDef", os.str());
+    }
 
     int numFrames = endFrame - startFrame + 1;
     if(numFrames < 2)
@@ -87,54 +114,46 @@ void AnimatedInterpreter::interpretFlatAnimationDef(const AnimationDef& def)
      * numbers and would animate all textures/flats inbetween).
      */
 
-    // Create a new animation group for it.
-    int groupNum = P_NewMaterialGroup(AGF_SMOOTH);
-
     // Add all frames from start to end to the group.
+    de::String frames;
     if(endFrame > startFrame)
     {
         for(lumpnum_t n = startFrame; n <= endFrame; n++)
         {
-            de::Material* mat = R_MaterialForTextureId(MN_FLATS, n);
-
-            if(mat)
-                P_AddMaterialToGroup(groupNum, P_ToIndex(mat), def.speed, 0);
+            de::Material* material = R_MaterialForTextureId(MN_FLATS, n);
+            frames += de::String(4, ' ') + "Flat { ID = \"" + reinterpret_cast<char*>(P_GetPtrp(material, DMU_NAME)) + "\"; Tics = " + def.speed + "; }\n";
         }
     }
     else
     {
         for(lumpnum_t n = endFrame; n >= startFrame; n--)
         {
-            de::Material* mat = R_MaterialForTextureId(MN_FLATS, n);
-
-            if(mat)
-                P_AddMaterialToGroup(groupNum, P_ToIndex(mat), def.speed, 0);
+            de::Material* material = R_MaterialForTextureId(MN_FLATS, n);
+            frames += de::String(4, ' ') + "Flat { ID = \"" + reinterpret_cast<char*>(P_GetPtrp(material, DMU_NAME)) + "\"; Tics = " + def.speed + "; }\n";
         }
     }
 
-    std::ostringstream os;
-    os << "New Material animation (Flat): \"" << def.startName << "\"...\"" << def.endName << " (" << def.speed << ")";
-    LOG_VERBOSE(os.str());
+    return de::String("Group {\n") + frames + de::String("}\n");
 }
 
-void AnimatedInterpreter::interpretAnimationDef(const AnimationDef& def)
+de::String AnimatedInterpreter::interpretAnimationDef(const AnimationDef& def)
 {
     if(def.isTexture)
     {
-        interpretTextureAnimationDef(def);
-        return;
+        return interpretTextureAnimationDef(def);
     }
-    interpretFlatAnimationDef(def);
+    return interpretFlatAnimationDef(def);
 }
 
 AnimatedInterpreter::AnimationDefs* AnimatedInterpreter::readAnimationDefs(const de::File& file)
 {
     if(!(file.size() > 23+4) || (file.size()-4) % 23 != 0)
         /// @throw FormatError Data does not conform to the expected format.
-        throw AnimatedInterpreter::FormatError("Unexpected source data format.");
+        throw FormatError("Unexpected source data format.");
 
     uint32_t numDefs = (file.size()-4) / 23;
-    AnimationDefs* defs = new AnimationDefs(numDefs);
+    AnimationDefs* defs = new AnimationDefs();
+    defs->reserve(numDefs);
     de::Reader reader = de::Reader(file, de::littleEndianByteOrder);
     for(uint32_t i = 0; i < numDefs; ++i)
     {
@@ -145,7 +164,7 @@ AnimatedInterpreter::AnimationDefs* AnimatedInterpreter::readAnimationDefs(const
     return defs;
 }
 
-void AnimatedInterpreter::interpret(const de::File& file)
+void AnimatedInterpreter::interpret(const de::File& file, de::String& output)
 {
     const AnimationDefs* defs = readAnimationDefs(file);
     for(AnimationDefs::const_iterator i = defs->begin();
@@ -153,7 +172,7 @@ void AnimatedInterpreter::interpret(const de::File& file)
     {
         try
         {
-            interpretAnimationDef(*i);
+            output / interpretAnimationDef(*i);
         }
         catch(InterpretError& err)
         {

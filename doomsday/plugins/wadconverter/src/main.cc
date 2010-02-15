@@ -71,7 +71,10 @@ void LoadResources(void)
         const File& file = App::app().fileSystem().findSingle("ANIMATED");
         try
         {
-            AnimatedInterpreter::interpret(file);
+            de::String definitions;
+            AnimatedInterpreter::interpret(file, &definitions);
+
+            /// \todo Do something with the newly interpreted definitions.
         }
         catch(AnimatedInterpreter::FormatError& err)
         {
