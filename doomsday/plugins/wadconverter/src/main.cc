@@ -17,12 +17,17 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <de/App>
+#include <de/Log>
+#include <de/Error>
+#include <de/FS>
+
 #include "wadconverter.h"
 
 #include "wadconverter/MapReader"
+#include "wadconverter/AnimatedInterpreter"
 
-#include <de/Log>
-#include <de/Error>
+using namespace wadconverter;
 
 /**
  * This function is called when Doomsday is asked to load a map that is not
@@ -33,7 +38,7 @@
  */
 bool ConvertMap(const char* identifier)
 {
-    using namespace wadconverter;
+    using namespace de;
 
     MapReader* mapReader = NULL;
     try
@@ -43,12 +48,12 @@ bool ConvertMap(const char* identifier)
         mapReader->transfer(); // Transfer the map to the engine.
         delete mapReader;
     }
-    catch(de::Error &err)
+    catch(Error &err)
     {
         if(mapReader) delete mapReader;
         /// \fixme Obviously we should be re-throwing back to the caller
         /// but for now we'll just log it and signal 'failure'.
-        de::LOG_MESSAGE("WadConverter::Convert: %s.") << err.asText();
+        LOG_WARNING("WadConverter::Convert: %s.") << err.asText();
         return false;
     }
 
@@ -57,28 +62,30 @@ bool ConvertMap(const char* identifier)
 
 void LoadResources(void)
 {
-    using namespace wadconverter;
+    using namespace de;
 
-    de::LOG_MESSAGE("WadConverter::LoadResources: Processing...");
+    LOG_TRACE("WadConverter::LoadResources: Processing...");
 
-    {lumpnum_t lumpnum = W_CheckNumForName("ANIMATED");
-    if(lumpnum != -1)
-        LoadANIMATED(lumpnum);
+    try
+    {
+        const File& file = App::app().fileSystem().findSingle("ANIMATED");
+        try
+        {
+            AnimatedInterpreter::interpret(file);
+        }
+        catch(AnimatedInterpreter::FormatError& err)
+        {
+            /// Announce but otherwise quitely ignore errors with ANIMATED data.
+            LOG_WARNING("Error reading " + file.name() + (file.source()? " (" + file.source()->name() + "):" : ":") + err.asText());
+        }
+    }
+    catch(FS::NotFoundError)
+    {
+        /// Ignore, this is not required data.
     }
 
     {lumpnum_t lumpnum = W_CheckNumForName("ANIMDEFS");
     if(lumpnum != -1)
         LoadANIMDEFS(lumpnum);
     }
-}
-
-/**
- * This function is called automatically when the plugin is loaded.
- * We let the engine know what we'd like to do by attaching to hooks.
- */
-void DP_Initialize(void)
-{
-    Plug_AddHook(HOOK_INIT, LoadResources);
-    Plug_AddHook(HOOK_UPDATE, LoadResources);
-    Plug_AddHook(HOOK_MAP_CONVERT, ConvertMap);
 }

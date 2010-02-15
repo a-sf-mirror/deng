@@ -768,7 +768,7 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\..\plugins\wadconverter\src\animated.cc"
+				RelativePath="..\..\..\plugins\wadconverter\src\animatedinterpreter.cc"
 				>
 			</File>
 			<File
@@ -792,6 +792,10 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
+			<File
+				RelativePath="..\..\..\plugins\wadconverter\include\wadconverter\animatedinterpreter.h"
+				>
+			</File>
 			<File
 				RelativePath="..\..\..\plugins\wadconverter\include\wadconverter\hexendefparser.h"
 				>

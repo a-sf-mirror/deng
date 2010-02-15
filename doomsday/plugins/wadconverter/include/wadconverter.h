@@ -53,7 +53,6 @@ namespace wadconverter
 {
     typedef unsigned int lumpnum_t;
 
-    void LoadANIMATED(lumpnum_t lump);
     void LoadANIMDEFS(lumpnum_t lump);
 }
 
