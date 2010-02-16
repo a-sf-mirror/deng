@@ -257,6 +257,10 @@ namespace de
         Intersections _intersections;
         SuperBlock* _rootSuperBlock;
         SuperBlock* _quickAllocSuperBlocks;
+
+        /// Used by pickHalfEdgeWorker to exclude all half-edges along a lineDef
+        /// for subsequent consideration in the current cycle.
+        dint _validCount;
     };
 }
 

@@ -36,11 +36,10 @@ SuperBlock::~SuperBlock()
 {
     halfEdges.clear();
     // Recursively handle sub-blocks.
-    for(duint num = 0; num < 2; ++num)
-    {
-        if(subs[num])
-            delete subs[num];
-    }
+    if(rightChild)
+        delete rightChild;
+    if(leftChild)
+        delete leftChild;
 }
 
 void SuperBlock::push(HalfEdge* halfEdge)
@@ -103,11 +102,10 @@ static void findBoundsWorker(const SuperBlock* block, dfloat* bbox)
     }
 
     // Recursively handle sub-blocks.
-    for(duint num = 0; num < 2; ++num)
-    {
-        if(block->subs[num])
-            findBoundsWorker(block->subs[num], bbox);
-    }
+    if(block->rightChild)
+        findBoundsWorker(block->rightChild, bbox);
+    if(block->leftChild)
+        findBoundsWorker(block->leftChild, bbox);
 }
 
 MapRectangle SuperBlock::aaBounds() const
@@ -132,11 +130,10 @@ void SuperBlock::print() const
             << halfEdge->vertex->pos << halfEdge->twin->vertex->pos;
     }
 
-    for(dint num = 0; num < 2; ++num)
-    {
-        if(subs[num])
-            subs[num]->print();
-    }
+    if(rightChild)
+        rightChild->print();
+    if(leftChild)
+        leftChild->print();
 }
 #endif
 
@@ -328,14 +325,10 @@ static dint evalPartitionWorker(const SuperBlock* hEdgeList,
     }
 
     // Handle sub-blocks recursively.
-    for(num = 0; num < 2; ++num)
-    {
-        if(!hEdgeList->subs[num])
-            continue;
-
-        if(evalPartitionWorker(hEdgeList->subs[num], partHEdge, factor, bestCost, info))
-            return true;
-    }
+    if(hEdgeList->rightChild && evalPartitionWorker(hEdgeList->rightChild, partHEdge, factor, bestCost, info))
+        return true;
+    if(hEdgeList->leftChild && evalPartitionWorker(hEdgeList->leftChild, partHEdge, factor, bestCost, info))
+        return true;
 
     // No "bad half-edge" was found. Good.
     return false;
@@ -406,8 +399,9 @@ LOG_MESSAGE("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d cost=%d.%
 /**
  * @return              @c false, if cancelled.
  */
-static bool pickHEdgeWorker(const SuperBlock* partList,
-    const SuperBlock* hEdgeList, dint factor, HalfEdge** best, dint* bestCost)
+static bool pickHalfEdgeWorker(const SuperBlock* partList,
+    const SuperBlock* hEdgeList, dint factor, HalfEdge** best, dint* bestCost,
+    dint validCount)
 {
     dint cost;
 
@@ -418,7 +412,7 @@ static bool pickHEdgeWorker(const SuperBlock* partList,
         HalfEdgeInfo* data = (HalfEdgeInfo*) halfEdge->data;
 
 /*#if _DEBUG
-LOG_MESSAGE("pickHEdgeWorker: %sSEG %p sector=%d %s -> %s")
+LOG_MESSAGE("pickHalfEdgeWorker: %sSEG %p sector=%d %s -> %s")
     << (data->lineDef? "" : "MINI") <<  halfEdge
     << (data->sector? data->sector->index : -1)
     << halfEdge->vertex.pos, halfEdge->twin->vertex.pos;
@@ -451,11 +445,10 @@ LOG_MESSAGE("pickHEdgeWorker: %sSEG %p sector=%d %s -> %s")
     }
 
     // Recursively handle sub-blocks.
-    for(dint num = 0; num < 2; ++num)
-    {
-        if(partList->subs[num])
-            pickHEdgeWorker(partList->subs[num], hEdgeList, factor, best, bestCost);
-    }
+    if(partList->rightChild)
+        pickHalfEdgeWorker(partList->rightChild, hEdgeList, factor, best, bestCost, validCount);
+    if(partList->leftChild)
+        pickHalfEdgeWorker(partList->leftChild, hEdgeList, factor, best, bestCost, validCount);
 
     return true;
 }
@@ -472,8 +465,8 @@ bool NodeBuilder::pickPartition(const SuperBlock* hEdgeList, BSPartition& bsp)
     dint bestCost = INT_MAX;
     HalfEdge* best = NULL;
 
-    validCount++;
-    if(pickHEdgeWorker(hEdgeList, hEdgeList, _splitFactor, &best, &bestCost))
+    _validCount++;
+    if(pickHalfEdgeWorker(hEdgeList, hEdgeList, _splitFactor, &best, &bestCost, _validCount))
     {   // Finished, return the best partition if found.
         const HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(best->data);
 

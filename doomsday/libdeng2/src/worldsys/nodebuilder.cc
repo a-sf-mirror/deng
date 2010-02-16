@@ -77,29 +77,29 @@ void NodeBuilder::destroyUnusedSuperBlocks()
     while(_quickAllocSuperBlocks)
     {
         SuperBlock* superBlock = _quickAllocSuperBlocks;
-        _quickAllocSuperBlocks = superBlock->subs[0];
-        superBlock->subs[0] = NULL;
+        _quickAllocSuperBlocks = superBlock->rightChild;
+        superBlock->rightChild = NULL;
         delete superBlock;
     }
 }
 
 void NodeBuilder::moveSuperBlockToQuickAllocList(SuperBlock* superBlock)
 {
-    dint num;
-
     // Recursively handle child blocks.
-    for(num = 0; num < 2; ++num)
+    if(superBlock->rightChild)
     {
-        if(superBlock->subs[num])
-        {
-            moveSuperBlockToQuickAllocList(superBlock->subs[num]);
-            superBlock->subs[num] = NULL;
-        }
+        moveSuperBlockToQuickAllocList(superBlock->rightChild);
+        superBlock->rightChild = NULL;
+    }
+    if(superBlock->leftChild)
+    {
+        moveSuperBlockToQuickAllocList(superBlock->leftChild);
+        superBlock->leftChild = NULL;
     }
 
-    // Add superBlock to quick-alloc list. Note that subs[0] is used for
+    // Add superBlock to quick-alloc list. Note that rightChild is used for
     // linking the blocks together.
-    superBlock->subs[0] = _quickAllocSuperBlocks;
+    superBlock->rightChild = _quickAllocSuperBlocks;
     superBlock->parent = NULL;
     _quickAllocSuperBlocks = superBlock;
 }
@@ -110,7 +110,7 @@ SuperBlock* NodeBuilder::createSuperBlock()
         return new SuperBlock();
 
     SuperBlock* superBlock = _quickAllocSuperBlocks;
-    _quickAllocSuperBlocks = superBlock->subs[0];
+    _quickAllocSuperBlocks = superBlock->rightChild;
     // Clear out any old rubbish.
     memset(superBlock, 0, sizeof(*superBlock));
     return superBlock;
@@ -735,9 +735,8 @@ void NodeBuilder::addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* half
 
     for(;;)
     {
-        dint p1, p2, child;
-        SuperBlock* sub;
-        HalfEdgeInfo* info = (HalfEdgeInfo*) halfEdge->data;
+        dint p1, p2;
+        HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
 
         Vector2i midPoint = Vector2i(superBlock->bbox[SuperBlock::BOXLEFT] + superBlock->bbox[SuperBlock::BOXRIGHT],
                                      superBlock->bbox[SuperBlock::BOXBOTTOM] + superBlock->bbox[SuperBlock::BOXTOP]);
@@ -753,7 +752,7 @@ void NodeBuilder::addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* half
         if(SUPER_IS_LEAF(superBlock))
         {   // Block is a leaf -- no subdivision possible.
             superBlock->push(halfEdge);
-            ((HalfEdgeInfo*) halfEdge->data)->superBlock = superBlock;
+            reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->superBlock = superBlock;
             return;
         }
 
@@ -769,48 +768,55 @@ void NodeBuilder::addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* half
             p2 = halfEdge->twin->vertex->pos.y >= midPoint.y;
         }
 
+        bool isLeft;
         if(p1 && p2)
-            child = 1;
+            isLeft = true;
         else if(!p1 && !p2)
-            child = 0;
+            isLeft = false;
         else
         {   // Line crosses midpoint -- link it in and return.
             superBlock->push(halfEdge);
-            ((HalfEdgeInfo*) halfEdge->data)->superBlock = superBlock;
+            reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->superBlock = superBlock;
             return;
         }
 
-        // The seg lies in one half of this superBlock. Create the superBlock if it
-        // doesn't already exist, and loop back to add the seg.
-        if(!superBlock->subs[child])
+        // The seg lies in one half of this superBlock. Create the SuperBlock
+        // if it doesn't already exist, and loop back to add the seg.
+        if((!isLeft && !superBlock->rightChild)||
+            (isLeft && !superBlock->leftChild))
         {
-            superBlock->subs[child] = sub = new SuperBlock();
+            SuperBlock* sub = new SuperBlock();
+
             sub->parent = superBlock;
+            if(isLeft)
+                superBlock->leftChild = sub;
+            else
+                superBlock->rightChild = sub;
 
             if(superBlock->bbox[SuperBlock::BOXRIGHT] - superBlock->bbox[SuperBlock::BOXLEFT] >=
                superBlock->bbox[SuperBlock::BOXTOP]   - superBlock->bbox[SuperBlock::BOXBOTTOM])
             {
                 sub->bbox[SuperBlock::BOXLEFT] =
-                    (child? midPoint.x : superBlock->bbox[SuperBlock::BOXLEFT]);
+                    (isLeft? midPoint.x : superBlock->bbox[SuperBlock::BOXLEFT]);
                 sub->bbox[SuperBlock::BOXBOTTOM] = superBlock->bbox[SuperBlock::BOXBOTTOM];
 
                 sub->bbox[SuperBlock::BOXRIGHT] =
-                    (child? superBlock->bbox[SuperBlock::BOXRIGHT] : midPoint.x);
+                    (isLeft? superBlock->bbox[SuperBlock::BOXRIGHT] : midPoint.x);
                 sub->bbox[SuperBlock::BOXTOP] = superBlock->bbox[SuperBlock::BOXTOP];
             }
             else
             {
                 sub->bbox[SuperBlock::BOXLEFT] = superBlock->bbox[SuperBlock::BOXLEFT];
                 sub->bbox[SuperBlock::BOXBOTTOM] =
-                    (child? midPoint.y : superBlock->bbox[SuperBlock::BOXBOTTOM]);
+                    (isLeft? midPoint.y : superBlock->bbox[SuperBlock::BOXBOTTOM]);
 
                 sub->bbox[SuperBlock::BOXRIGHT] = superBlock->bbox[SuperBlock::BOXRIGHT];
                 sub->bbox[SuperBlock::BOXTOP] =
-                    (child? superBlock->bbox[SuperBlock::BOXTOP] : midPoint.y);
+                    (isLeft? superBlock->bbox[SuperBlock::BOXTOP] : midPoint.y);
             }
         }
 
-        superBlock = superBlock->subs[child];
+        superBlock = isLeft? superBlock->leftChild : superBlock->rightChild;
     }
 
 #undef SUPER_IS_LEAF
@@ -945,20 +951,25 @@ void NodeBuilder::copyHalfEdgeListFromSuperBlock(Face& face, SuperBlock* superBl
     }
 
     // Recursively handle sub-blocks.
-    for(duint num = 0; num < 2; ++num)
+    if(superBlock->rightChild)
     {
-        SuperBlock* a = superBlock->subs[num];
+        copyHalfEdgeListFromSuperBlock(face, superBlock->rightChild);
 
-        if(a)
-        {
-            copyHalfEdgeListFromSuperBlock(face, a);
+        if(superBlock->rightChild->realNum + superBlock->rightChild->miniNum > 0)
+            LOG_ERROR("copyHalfEdgeListFromSuperBlock: Right child not empty!");
 
-            if(a->realNum + a->miniNum > 0)
-                LOG_ERROR("copyHalfEdgeListFromSuperBlock: child %d not empty!") << num;
+        destroySuperBlock(superBlock->rightChild);
+        superBlock->rightChild = NULL;
+    }
+    if(superBlock->leftChild)
+    {
+        copyHalfEdgeListFromSuperBlock(face, superBlock->leftChild);
 
-            destroySuperBlock(a);
-            superBlock->subs[num] = NULL;
-        }
+        if(superBlock->leftChild->realNum + superBlock->leftChild->miniNum > 0)
+            LOG_ERROR("copyHalfEdgeListFromSuperBlock: Left child not empty!");
+
+        destroySuperBlock(superBlock->leftChild);
+        superBlock->leftChild = NULL;
     }
 
     superBlock->realNum = superBlock->miniNum = 0;
@@ -1114,20 +1125,25 @@ void NodeBuilder::divideHalfEdges(const BSPartition& partition, SuperBlock* hEdg
     }
 
     // Recursively handle sub-blocks.
-    for(duint num = 0; num < 2; ++num)
+    if(hEdgeList->rightChild)
     {
-        SuperBlock* a = hEdgeList->subs[num];
+        divideHalfEdges(partition, hEdgeList->rightChild, rights, lefts);
 
-        if(a)
-        {
-            divideHalfEdges(partition, a, rights, lefts);
+        if(hEdgeList->rightChild->realNum + hEdgeList->rightChild->miniNum > 0)
+            LOG_ERROR("NodeBuilder::divideHalfEdges: Right child not empty!");
 
-            if(a->realNum + a->miniNum > 0)
-                LOG_ERROR("NodeBuilder::divideHalfEdges: child %d not empty!") << num;
+        destroySuperBlock(hEdgeList->rightChild);
+        hEdgeList->rightChild = NULL;
+    }
+    if(hEdgeList->leftChild)
+    {
+        divideHalfEdges(partition, hEdgeList->leftChild, rights, lefts);
 
-            destroySuperBlock(a);
-            hEdgeList->subs[num] = NULL;
-        }
+        if(hEdgeList->leftChild->realNum + hEdgeList->leftChild->miniNum > 0)
+            LOG_ERROR("NodeBuilder::divideHalfEdges: Left child not empty!");
+
+        destroySuperBlock(hEdgeList->leftChild);
+        hEdgeList->leftChild = NULL;
     }
 
     hEdgeList->realNum = hEdgeList->miniNum = 0;

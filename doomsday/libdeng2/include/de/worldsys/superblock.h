@@ -50,10 +50,10 @@ namespace de
         /// Parent of this block, or NULL for a top-level block.
         SuperBlock* parent;
 
-        /// Sub-blocks. NULL when empty. [0] has the lower coordinates, and
-        /// [1] has the higher coordinates. Division of a square always
+        /// Sub-blocks. NULL when empty. Right has the lower coordinates, and
+        /// Left has the higher coordinates. Division of a square always
         /// occurs horizontally (e.g. 512x512 -> 256x512 -> 256x256).
-        SuperBlock* subs[2];
+        SuperBlock* leftChild, *rightChild;
 
         /// Coordinates on map for this block, from lower-left corner to
         /// upper-right corner. Pseudo-inclusive, i.e (x,y) is inside block
