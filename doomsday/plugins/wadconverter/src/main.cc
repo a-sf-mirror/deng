@@ -68,7 +68,7 @@ void LoadResources(void)
 
     try
     {
-        const File& file = App::app().fileSystem().findSingle("ANIMATED");
+        const File& file = App::app().fileSystem().findSingle("animated.lmp");
         try
         {
             de::String definitions;

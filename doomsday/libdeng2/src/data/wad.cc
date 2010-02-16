@@ -96,6 +96,8 @@ WAD::WAD(const IByteArray& wad) : _source(&wad)
             byteSeq.set(i, &c, 1);
         }
 
+        lumpName / ".lmp";
+
         _index[lumpName] = entry;
 
         // Reader is now positioned at the start of the next directory entry.

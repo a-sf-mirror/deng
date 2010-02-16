@@ -46,9 +46,9 @@ int deng_Main(int argc, char** argv)
         LOG_MESSAGE("Here's test.wad's info:\n") << wad.info();
         LOG_MESSAGE("Root's info:\n") << app.fileRoot().info();
 
-        const File& hello = wad.locate<File>("HELLO");
+        const File& hello = wad.locate<File>("hello.lmp");
         File::Status stats = hello.status();
-        LOG_MESSAGE("HELLO size: %i bytes") << stats.size;
+        LOG_MESSAGE("hello.lmp size: %i bytes") << stats.size;
 
         String content(hello);
         LOG_MESSAGE("The contents: \"%s\"") << content;
