@@ -141,7 +141,7 @@ dint boxOnLineSide(const dint bbox[4], ddouble lineSX, ddouble lineSY,
 
 NodeBuilder::NodeBuilder(Map& map, dint splitFactor)
   : _splitFactor(splitFactor),
-    rootNode(0),
+    bspTree(0),
     _map(map),
     numHalfEdgeInfo(0),
     halfEdgeInfo(0)
@@ -447,16 +447,17 @@ static void testForWindowEffect(Map& map, LineDef* l)
     }
 
 /*
-LOG_DEBUG("back line: %d  back dist: %1.1f  back_open: %s")
-    << (backLine? backLine->buildData.index : -1) << backDist << (backOpen? "OPEN" : "CLOSED");
-LOG_DEBUG("front line: %d  front dist: %1.1f  front_open: %s")
-    << (frontLine? frontLine->buildData.index : -1) << frontDist << (frontOpen? "OPEN" : "CLOSED");
+LOG_DEBUG("back line: ") << (backLine? backLine->buildData.index : -1)
+    << " back dist: " << backDist << " back_open: " << (backOpen? "OPEN" : "CLOSED");
+LOG_DEBUG("front line: ") << (frontLine? frontLine->buildData.index : -1)
+    << " front dist: " << frontDist << " front_open: " << (frontOpen? "OPEN" : "CLOSED");
 */
 
     if(backOpen && frontOpen && backOpen == &l->buildData.sideDefs[LineDef::FRONT]->sector())
     {
-        LOG_MESSAGE("LineDef #%d seems to be a One-Sided Window (back faces sector #%d).")
-            << (l->buildData.index - 1) << (backOpen->buildData.index - 1);
+        LOG_VERBOSE("LineDef #") << (l->buildData.index - 1)
+            << " seems to be a One-Sided Window (back faces sector #"
+            << (backOpen->buildData.index - 1) << ").";
 
         l->buildData.windowEffect = frontOpen;
     }
@@ -929,13 +930,13 @@ static void sanityCheckClosed(const Face* face)
 
     if(gaps > 0)
     {
-        LOG_VERBOSE("HEdge list for face #%p is not closed (%d gaps, %d half-edges).")
-            << face << gaps << total;
+        LOG_VERBOSE("HEdge list for face #") << face << " is not closed ("
+            << gaps << "gaps, " << total << " half-edges).";
 
 /*halfEdge = face->halfEdge;
 do
 {
-    LOG_DEBUG("  half-edge %p (%s) --> (%s)") << halfEdge << halfEdge->vertex->pos << halfEdge->twin->vertex->pos;
+    LOG_DEBUG("  half-edge ") << halfEdge << " " << halfEdge->vertex->pos << " --> " << halfEdge->twin->vertex->pos;
 } while((halfEdge = halfEdge->next) != face->halfEdge);*/
     }
 }
@@ -985,14 +986,12 @@ static void sanityCheckSameSector(const Face* face)
             curData->sector->buildData.index;
 
         if(curData->lineDef)
-            LOG_VERBOSE("Sector #%d has sidedef facing #%d (line #%d).")
-                << data->sector->buildData.index
-                << curData->sector->buildData.index
-                << curData->lineDef->buildData.index;
+            LOG_VERBOSE("Sector #") << data->sector->buildData.index
+                << " has sidedef facing #" << curData->sector->buildData.index
+                << " (line #" << curData->lineDef->buildData.index << ").";
         else
-            LOG_VERBOSE("Sector #%d has sidedef facing #%d.")
-                << data->sector->buildData.index
-                << curData->sector->buildData.index;
+            LOG_VERBOSE("Sector #") << data->sector->buildData.index
+                << " has sidedef facing #" << curData->sector->buildData.index << ".";
     } while((cur = cur->next) != face->halfEdge);
 }
 
@@ -1010,7 +1009,7 @@ static bool sanityCheckHasRealHEdge(const Face* face)
     return false;
 }
 
-static bool C_DECL finishLeaf(BinaryTree<void*>* tree, void* data)
+static bool C_DECL finishLeaf(NodeBuilder::BSPTree* tree, void* data)
 {
     if(tree->isLeaf())
     {
@@ -1022,7 +1021,7 @@ static bool C_DECL finishLeaf(BinaryTree<void*>* tree, void* data)
         sanityCheckSameSector(face);
         if(!sanityCheckHasRealHEdge(face))
         {
-            LOG_ERROR("BSP leaf #%p has no linedef-linked half-edge.") << face;
+            LOG_ERROR("BSP leaf #") << face << " has no linedef-linked half-edge.";
         }
     }
 
@@ -1269,7 +1268,7 @@ void NodeBuilder::partitionHalfEdges(const BSPartition& partition,
     *left = bLeft;
 }
 
-BinaryTree<void*>* NodeBuilder::buildNodes(SuperBlock* hEdgeList)
+NodeBuilder::BSPTree* NodeBuilder::buildNodes(SuperBlock* hEdgeList)
 {
     // Pick half-edge with which to derive the next partition.
     try
@@ -1277,14 +1276,13 @@ BinaryTree<void*>* NodeBuilder::buildNodes(SuperBlock* hEdgeList)
         BSPartition& bsp = pickPartition(hEdgeList);
 
 /*#if _DEBUG
-LOG_MESSAGE("NodeBuilder::buildNodes: Partition P %s D %s.")
-    << bsp.point << bsp.direction;
+LOG_MESSAGE("NodeBuilder::buildNodes: p(") << bsp.point.asText() <<  ") d(" << bsp.direction.asText();
 #endif*/
 
         SuperBlock* rightHEdges, *leftHEdges;
         partitionHalfEdges(bsp, hEdgeList, &rightHEdges, &leftHEdges);
 
-        BinaryTree<void*>* tree = new BinaryTree<void*>(reinterpret_cast<void*>(
+        BSPTree* tree = new BSPTree(reinterpret_cast<void*>(
             _map.createNode(bsp, rightHEdges->aaBounds(), leftHEdges->aaBounds())));
 
         // Recurse on right half-edge list.
@@ -1299,7 +1297,7 @@ LOG_MESSAGE("NodeBuilder::buildNodes: Partition P %s D %s.")
     }
     catch(NoSuitablePartitionError)
     {   // No partition required, already convex.
-        return new BinaryTree<void*>(reinterpret_cast<void*>(&createBSPLeaf(_map.halfEdgeDS().createFace(), hEdgeList)));
+        return new BSPTree(reinterpret_cast<void*>(&createBSPLeaf(_map.halfEdgeDS().createFace(), hEdgeList)));
     }
 }
 
@@ -1307,7 +1305,7 @@ void NodeBuilder::build()
 {
     createInitialHalfEdgesAndAddtoRootSuperBlock();
 
-    rootNode = buildNodes(_rootSuperBlock);
+    bspTree = buildNodes(_rootSuperBlock);
     /**
      * Traverse the BSP tree and put all the half-edges in each
      * subsector into clockwise order.
@@ -1319,8 +1317,8 @@ void NodeBuilder::build()
      * danij 25/10/2009: Actually, this CAN (and should) be done during
      * buildNodes, it just requires updating any present faces.
      */
-    if(rootNode)
-        rootNode->postOrder(finishLeaf, NULL);
+    if(bspTree)
+        bspTree->postOrder(finishLeaf, NULL);
 }
 
 void NodeBuilder::insertIntersection(HalfEdge* halfEdge, ddouble distance)
@@ -1358,13 +1356,14 @@ void NodeBuilder::mergeIntersectionOverlaps()
 
         ddouble len = cur->distance - prev->distance;
         if(len < -0.1)
-            LOG_ERROR("CutList::mergeOverlap: Bad order %1.3f > %1.3f")
-                << dfloat(prev->distance) << dfloat(cur->distance);
+            LOG_ERROR("CutList::mergeOverlap: Bad order ")
+                << dfloat(prev->distance) << " > " << dfloat(cur->distance) << ".";
         if(len > 0.2)
             continue;
 /*      if(len > DIST_EPSILON)
         {
-            LOG_MESSAGE("Skipping very short half-edge (len=%1.3f) near %s") << len << prev->vertex.pos;
+            LOG_MESSAGE("Skipping very short half-edge (len=") << len
+                << ") near " << prev->vertex.pos << ".";
             continue;
         }*/
 
@@ -1475,8 +1474,8 @@ void NodeBuilder::connectIntersectionGaps(const BSPartition& partition,
                     pos.x /= 2;
                     pos.y /= 2;
 
-                    LOG_VERBOSE("Warning: Unclosed sector #%d near %s")
-                        << nearSector->buildData.index - 1 << pos;
+                    LOG_VERBOSE("Warning: Unclosed sector #") << nearSector->buildData.index - 1
+                        << " near " << pos << ".";
                 }
             }
             else if(!nearSector && farSector)
@@ -1489,8 +1488,8 @@ void NodeBuilder::connectIntersectionGaps(const BSPartition& partition,
                     pos.x /= 2;
                     pos.y /= 2;
 
-                    LOG_VERBOSE("Warning: Unclosed s    ector #%d near %s")
-                        << (farSector->buildData.index - 1) << pos;
+                    LOG_VERBOSE("Warning: Unclosed sector #") << (farSector->buildData.index - 1)
+                        << " near " << pos << ".";
                 }
             }
             else
@@ -1505,9 +1504,9 @@ void NodeBuilder::connectIntersectionGaps(const BSPartition& partition,
                     if(!isIntersectionOnSelfRefLineDef(prev->halfEdge) &&
                        !isIntersectionOnSelfRefLineDef(cur->halfEdge))
                     {
-                        LOG_DEBUG("Sector mismatch: #%d %s != #%d %s")
-                            << (nearSector->buildData.index - 1) << prev->halfEdge->vertex->pos
-                            << (farSector->buildData.index - 1) << cur->halfEdge->vertex->pos;
+                        LOG_DEBUG("Sector mismatch: #")
+                            << (nearSector->buildData.index - 1) << " " << prev->halfEdge->vertex->pos
+                            << " != #" << (farSector->buildData.index - 1) << " " << cur->halfEdge->vertex->pos << ".";
                     }
 
                     // Choose the non-self-referencing sector when we can.
@@ -1556,14 +1555,6 @@ testVertexHEdgeRings(cur->halfEdge->vertex);
                     Face_LinkHEdge(farHalfEdge->prev->face, &left);
                 else*/
                     addHalfEdgeToSuperBlock(leftList, &left);
-
-                LOG_DEBUG(" Capped intersection:");
-                LOG_DEBUG("  %p RIGHT  sector %d %s -> %s")
-                    << &right << (reinterpret_cast<HalfEdgeInfo*>(nearHalfEdge->data)->sector? reinterpret_cast<HalfEdgeInfo*>(nearHalfEdge->data)->sector->buildData.index : -1)
-                    << right.vertex->pos << right.twin->vertex->pos;
-                LOG_DEBUG("  %p LEFT sector %d %s -> %s")
-                    << &left << (reinterpret_cast<HalfEdgeInfo*>(farHalfEdge->prev->data)->sector? reinterpret_cast<HalfEdgeInfo*>(farHalfEdge->prev->data)->sector->buildData.index : -1)
-                    << left.vertex->pos << left.twin->vertex->pos;
                 }
             }
         }
@@ -1766,13 +1757,6 @@ dint NodeBuilder::evalPartition(const SuperBlock* hEdgeList, const BSPartition& 
     if(bsp.direction.x != 0 && bsp.direction.y != 0)
         params.cost += 25;
 
-/*#if _DEBUG
-LOG_MESSAGE("Eval: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d cost=%d.%02d")
-    << params.splits << params.iffy << params.nearMiss << params.realLeft
-    << params.miniLeft << params.realRight << params.miniRight << (params.cost / 100)
-    << (params.cost % 100);
-#endif*/
-
     return params.cost;
 }
 
@@ -1785,13 +1769,6 @@ void NodeBuilder::pickPartitionWorker(const SuperBlock* partList,
     {
         HalfEdge* halfEdge = (*i);
         const HalfEdgeInfo* hInfo = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
-
-/*#if _DEBUG
-LOG_MESSAGE("pickPartitionWorker: %sSEG %p sector=%d %s -> %s")
-    << (hInfo->lineDef? "" : "MINI") <<  halfEdge
-    << (hInfo->sector? hInfo->sector->index : -1)
-    << halfEdge->vertex.pos, halfEdge->twin->vertex.pos;
-#endif*/
 
         // Ignore mini edges as partition candidates.
         if(!hInfo->lineDef)

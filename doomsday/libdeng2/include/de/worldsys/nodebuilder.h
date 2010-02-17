@@ -100,8 +100,9 @@ namespace de
             BSPartition(const Vector2d& point, const Vector2d& direction,
                 LineDef* lineDef, LineDef* sourceLineDef, ddouble length,
                 ddouble perp, ddouble para)
-              : Partition(), lineDef(lineDef), sourceLineDef(sourceLineDef),
-                length(length), perp(perp), para(para) {};
+              : Partition(point, direction), lineDef(lineDef),
+                sourceLineDef(sourceLineDef), length(length), perp(perp),
+                para(para) {};
         };
 
         /**
@@ -121,7 +122,9 @@ namespace de
         typedef std::list<Intersection> Intersections;
 
     public:
-        BinaryTree<void*>* rootNode;
+        typedef BinaryTree<void*> BSPTree;
+
+        BSPTree* bspTree;
 
         dsize numHalfEdgeInfo;
         HalfEdgeInfo** halfEdgeInfo;
@@ -218,7 +221,7 @@ namespace de
          *                      intersections (cuts).
          * @return              Ptr to the newly created subtree ELSE @c NULL.
          */
-        BinaryTree<void*>* buildNodes(SuperBlock* hEdgeList);
+        BSPTree* buildNodes(SuperBlock* hEdgeList);
 
         /**
          * Analyze the intersection list, and add any needed minihedges to the given
