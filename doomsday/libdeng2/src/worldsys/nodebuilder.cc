@@ -1719,7 +1719,7 @@ LOG_MESSAGE("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d cost=%d.%
 /**
  * @return              @c false, if cancelled.
  */
-static bool pickHalfEdgeWorker(const SuperBlock* partList,
+static void pickHalfEdgeWorker(const SuperBlock* partList,
     const SuperBlock* hEdgeList, dint factor, HalfEdge** best, dint* bestCost,
     dint validCount)
 {
@@ -1770,8 +1770,6 @@ LOG_MESSAGE("pickHalfEdgeWorker: %sSEG %p sector=%d %s -> %s")
         pickHalfEdgeWorker(partList->rightChild, hEdgeList, factor, best, bestCost, validCount);
     if(partList->leftChild)
         pickHalfEdgeWorker(partList->leftChild, hEdgeList, factor, best, bestCost, validCount);
-
-    return true;
 }
 
 bool NodeBuilder::pickPartition(const SuperBlock* hEdgeList, BSPartition& bsp)
@@ -1780,8 +1778,9 @@ bool NodeBuilder::pickPartition(const SuperBlock* hEdgeList, BSPartition& bsp)
     HalfEdge* best = NULL;
 
     _validCount++;
-    if(pickHalfEdgeWorker(hEdgeList, hEdgeList, _splitFactor, &best, &bestCost, _validCount))
-    {   // Finished, return the best partition if found.
+    pickHalfEdgeWorker(hEdgeList, hEdgeList, _splitFactor, &best, &bestCost, _validCount);
+    if(best)
+    {   // Further partition is necessary.
         const HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(best->data);
 
         bsp.point = best->vertex->pos;
