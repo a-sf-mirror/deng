@@ -249,7 +249,7 @@ namespace de
            SuperBlock* bRight, SuperBlock* bLeft);
 
         void divideHalfEdges(const BSPartition& partition, SuperBlock* hEdgeList,
-            SuperBlock* rights, SuperBlock* lefts);
+            SuperBlock* right, SuperBlock* left);
 
         /**
          * Remove all the half-edges from the list, partitioning them into the left
@@ -257,7 +257,7 @@ namespace de
          * onto the intersection list as it goes.
          */
         void partitionHalfEdges(const BSPartition& partition, SuperBlock* hEdgeList,
-            SuperBlock** right, SuperBlock** left);
+            SuperBlock** rights, SuperBlock** lefts);
 
         void copyHalfEdgeListFromSuperBlock(Face& face, SuperBlock* block);
 

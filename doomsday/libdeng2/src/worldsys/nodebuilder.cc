@@ -1250,8 +1250,8 @@ void NodeBuilder::partitionHalfEdges(const BSPartition& partition,
     SuperBlock* bRight = createSuperBlock();
     SuperBlock* bLeft = createSuperBlock();
 
-    M_CopyBox(bRight->bbox, hEdgeList->bbox);
-    M_CopyBox(bLeft->bbox, hEdgeList->bbox);
+    bRight->bbox = hEdgeList->aaBounds();
+    bLeft->bbox = hEdgeList->aaBounds();
 
     divideHalfEdges(partition, hEdgeList, bRight, bLeft);
 
@@ -1282,18 +1282,17 @@ LOG_MESSAGE("NodeBuilder::buildNodes: p(") << bsp.point.asText() <<  ") d(" << b
         SuperBlock* rightHEdges, *leftHEdges;
         partitionHalfEdges(bsp, hEdgeList, &rightHEdges, &leftHEdges);
 
-        BSPTree* tree = new BSPTree(reinterpret_cast<void*>(
-            _map.createNode(bsp, rightHEdges->aaBounds(), leftHEdges->aaBounds())));
+        Node* node = _map.createNode(bsp, rightHEdges->aaBounds(), leftHEdges->aaBounds());
 
         // Recurse on right half-edge list.
-        tree->setRight(buildNodes(rightHEdges));
+        BSPTree* rightTree = buildNodes(rightHEdges);
         destroySuperBlock(rightHEdges);
 
         // Recurse on left half-edge list.
-        tree->setLeft(buildNodes(leftHEdges));
+        BSPTree* leftTree = buildNodes(leftHEdges);
         destroySuperBlock(leftHEdges);
 
-        return tree;
+        return new BSPTree(reinterpret_cast<void*>(node), rightTree, leftTree);
     }
     catch(NoSuitablePartitionError)
     {   // No partition required, already convex.
