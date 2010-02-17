@@ -153,6 +153,13 @@ namespace de
          */
         void addHalfEdgeToSuperBlock(SuperBlock* superBlock, HalfEdge* halfEdge);
 
+        /**
+         * Find the best half-edge in the list to use as a partition.
+         *
+         * @param hEdgeList     List of half-edges to choose from.
+         *
+         * @return              @true iff a new partition is found (and necessary).
+         */
         bool pickPartition(const SuperBlock* hEdgeList, BSPartition& partition);
 
         /**
