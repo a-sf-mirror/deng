@@ -145,9 +145,7 @@ NodeBuilder::NodeBuilder(Map& map, dint splitFactor)
     _map(map),
     numHalfEdgeInfo(0),
     halfEdgeInfo(0)
-{
-    createSuperBlock();
-}
+{}
 
 NodeBuilder::~NodeBuilder()
 {
@@ -157,103 +155,7 @@ NodeBuilder::~NodeBuilder()
             std::free(halfEdgeInfo[i]);
         std::free(halfEdgeInfo);
     }
-    destroyRootSuperBlock();
     _intersections.clear();
-}
-
-void NodeBuilder::destroyUnusedSuperBlocks()
-{
-    while(_quickAllocSuperBlocks)
-    {
-        SuperBlock* superBlock = _quickAllocSuperBlocks;
-        _quickAllocSuperBlocks = superBlock->rightChild;
-        superBlock->rightChild = NULL;
-        delete superBlock;
-    }
-}
-
-void NodeBuilder::moveSuperBlockToQuickAllocList(SuperBlock* superBlock)
-{
-    // Recursively handle child blocks.
-    if(superBlock->rightChild)
-    {
-        moveSuperBlockToQuickAllocList(superBlock->rightChild);
-        superBlock->rightChild = NULL;
-    }
-    if(superBlock->leftChild)
-    {
-        moveSuperBlockToQuickAllocList(superBlock->leftChild);
-        superBlock->leftChild = NULL;
-    }
-
-    // Add superBlock to quick-alloc list. Note that rightChild is used for
-    // linking the blocks together.
-    superBlock->rightChild = _quickAllocSuperBlocks;
-    superBlock->parent = NULL;
-    _quickAllocSuperBlocks = superBlock;
-}
-
-SuperBlock* NodeBuilder::createSuperBlock()
-{
-    if(_quickAllocSuperBlocks == NULL)
-        return new SuperBlock();
-
-    SuperBlock* superBlock = _quickAllocSuperBlocks;
-    _quickAllocSuperBlocks = superBlock->rightChild;
-    // Clear out any old rubbish.
-    memset(superBlock, 0, sizeof(*superBlock));
-    return superBlock;
-}
-
-void NodeBuilder::destroySuperBlock(SuperBlock* superBlock)
-{
-    moveSuperBlockToQuickAllocList(superBlock);
-}
-
-static void findMapLimits(Map& map, dint* bbox)
-{
-    M_ClearBox(bbox);
-
-    FOR_EACH(i, map.lineDefs(), Map::LineDefs::const_iterator)
-    {
-        LineDef* lineDef = (*i);
-        const Vertex& from = *lineDef->buildData.v[0];
-        const Vertex& to   = *lineDef->buildData.v[1];
-
-        Vector2d topLeft = from.pos.min(to.pos);
-        M_AddToBox(bbox, Vector2i(dint(floor(topLeft.x)), dint(floor(topLeft.y))));
-
-        Vector2d bottomRight = from.pos.max(to.pos);
-        M_AddToBox(bbox, Vector2i(dint(ceil(bottomRight.x)), dint(ceil(bottomRight.y))));
-    }
-}
-
-void NodeBuilder::createRootSuperBlock()
-{   
-    _quickAllocSuperBlocks = NULL;
-
-    SuperBlock* superBlock = createSuperBlock();
-    dint mapBounds[4];
-    findMapLimits(_map, mapBounds);
-
-    superBlock->bbox[SuperBlock::BOXLEFT]   = mapBounds[SuperBlock::BOXLEFT]   - (mapBounds[SuperBlock::BOXLEFT]   & 0x7);
-    superBlock->bbox[SuperBlock::BOXBOTTOM] = mapBounds[SuperBlock::BOXBOTTOM] - (mapBounds[SuperBlock::BOXBOTTOM] & 0x7);
-
-    dint bw = ((mapBounds[SuperBlock::BOXRIGHT] - superBlock->bbox[SuperBlock::BOXLEFT])   / 128) + 1;
-    dint bh = ((mapBounds[SuperBlock::BOXTOP]   - superBlock->bbox[SuperBlock::BOXBOTTOM]) / 128) + 1;
-
-    superBlock->bbox[SuperBlock::BOXRIGHT] = superBlock->bbox[SuperBlock::BOXLEFT]   + 128 * de::ceilpow2(bw);
-    superBlock->bbox[SuperBlock::BOXTOP]   = superBlock->bbox[SuperBlock::BOXBOTTOM] + 128 * de::ceilpow2(bh);
-
-    _rootSuperBlock = superBlock;
-}
-
-void NodeBuilder::destroyRootSuperBlock()
-{
-    if(_rootSuperBlock)
-        destroySuperBlock(_rootSuperBlock);
-    _rootSuperBlock = NULL;
-    destroyUnusedSuperBlocks();
 }
 
 void  NodeBuilder::updateHalfEdgeInfo(const HalfEdge& halfEdge)
@@ -792,25 +694,22 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
     std::free(vertexInfo);
 }
 
-void NodeBuilder::createInitialHalfEdgesAndAddtoRootSuperBlock()
+void NodeBuilder::createInitialHalfEdgesAndAddtoSuperBlock(SuperBlock* superBlock)
 {
     createInitialHalfEdges();
     FOR_EACH(i, _map.halfEdgeDS().halfEdges(), HalfEdgeDS::HalfEdges::const_iterator)
     {
         HalfEdge* halfEdge = (*i);
+        const HalfEdgeInfo* hInfo = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
 
-        if(!(((HalfEdgeInfo*) halfEdge->data)->lineDef))
+        if(!hInfo->lineDef)
+            continue;
+        if(hInfo->back && !hInfo->lineDef->buildData.sideDefs[LineDef::BACK])
+            continue;
+        if(hInfo->back && hInfo->lineDef->buildData.windowEffect)
             continue;
 
-        if(((HalfEdgeInfo*) halfEdge->data)->back &&
-           !((HalfEdgeInfo*) halfEdge->data)->lineDef->buildData.sideDefs[LineDef::BACK])
-            continue;
-
-        if(((HalfEdgeInfo*) halfEdge->data)->back &&
-           ((HalfEdgeInfo*) halfEdge->data)->lineDef->buildData.windowEffect)
-            continue;
-
-        addHalfEdgeToSuperBlock(_rootSuperBlock, halfEdge);
+        addHalfEdgeToSuperBlock(superBlock, halfEdge);
     }
 }
 
@@ -1046,8 +945,7 @@ void NodeBuilder::copyHalfEdgeListFromSuperBlock(Face& face, SuperBlock* superBl
         if(superBlock->rightChild->realNum + superBlock->rightChild->miniNum > 0)
             LOG_ERROR("copyHalfEdgeListFromSuperBlock: Right child not empty!");
 
-        destroySuperBlock(superBlock->rightChild);
-        superBlock->rightChild = NULL;
+        delete superBlock->rightChild; superBlock->rightChild = NULL;
     }
     if(superBlock->leftChild)
     {
@@ -1056,8 +954,7 @@ void NodeBuilder::copyHalfEdgeListFromSuperBlock(Face& face, SuperBlock* superBl
         if(superBlock->leftChild->realNum + superBlock->leftChild->miniNum > 0)
             LOG_ERROR("copyHalfEdgeListFromSuperBlock: Left child not empty!");
 
-        destroySuperBlock(superBlock->leftChild);
-        superBlock->leftChild = NULL;
+        delete superBlock->leftChild; superBlock->leftChild = NULL;
     }
 
     superBlock->realNum = superBlock->miniNum = 0;
@@ -1220,8 +1117,7 @@ void NodeBuilder::divideHalfEdges(const BSPartition& partition, SuperBlock* hEdg
         if(hEdgeList->rightChild->realNum + hEdgeList->rightChild->miniNum > 0)
             LOG_ERROR("NodeBuilder::divideHalfEdges: Right child not empty!");
 
-        destroySuperBlock(hEdgeList->rightChild);
-        hEdgeList->rightChild = NULL;
+        delete hEdgeList->rightChild; hEdgeList->rightChild = NULL;
     }
     if(hEdgeList->leftChild)
     {
@@ -1230,8 +1126,7 @@ void NodeBuilder::divideHalfEdges(const BSPartition& partition, SuperBlock* hEdg
         if(hEdgeList->leftChild->realNum + hEdgeList->leftChild->miniNum > 0)
             LOG_ERROR("NodeBuilder::divideHalfEdges: Left child not empty!");
 
-        destroySuperBlock(hEdgeList->leftChild);
-        hEdgeList->leftChild = NULL;
+        delete hEdgeList->leftChild; hEdgeList->leftChild = NULL;
     }
 
     hEdgeList->realNum = hEdgeList->miniNum = 0;
@@ -1247,8 +1142,8 @@ void NodeBuilder::createHalfEdgesAlongPartition(const BSPartition& partition,
 void NodeBuilder::partitionHalfEdges(const BSPartition& partition,
     SuperBlock* hEdgeList, SuperBlock** right, SuperBlock** left)
 {
-    SuperBlock* bRight = createSuperBlock();
-    SuperBlock* bLeft = createSuperBlock();
+    SuperBlock* bRight = new SuperBlock();
+    SuperBlock* bLeft = new SuperBlock();
 
     bRight->bbox = hEdgeList->aaBounds();
     bLeft->bbox = hEdgeList->aaBounds();
@@ -1286,11 +1181,11 @@ LOG_MESSAGE("NodeBuilder::buildNodes: p(") << bsp.point.asText() <<  ") d(" << b
 
         // Recurse on right half-edge list.
         BSPTree* rightTree = buildNodes(rightHEdges);
-        destroySuperBlock(rightHEdges);
+        delete rightHEdges;
 
         // Recurse on left half-edge list.
         BSPTree* leftTree = buildNodes(leftHEdges);
-        destroySuperBlock(leftHEdges);
+        delete leftHEdges;
 
         return new BSPTree(reinterpret_cast<void*>(node), rightTree, leftTree);
     }
@@ -1300,11 +1195,55 @@ LOG_MESSAGE("NodeBuilder::buildNodes: p(") << bsp.point.asText() <<  ") d(" << b
     }
 }
 
+namespace
+{
+void findMapLimits(const Map& map, dint* bbox)
+{
+    M_ClearBox(bbox);
+
+    FOR_EACH(i, map.lineDefs(), Map::LineDefs::const_iterator)
+    {
+        LineDef* lineDef = (*i);
+        const Vertex& from = *lineDef->buildData.v[0];
+        const Vertex& to   = *lineDef->buildData.v[1];
+
+        Vector2d topLeft = from.pos.min(to.pos);
+        M_AddToBox(bbox, Vector2i(dint(floor(topLeft.x)), dint(floor(topLeft.y))));
+
+        Vector2d bottomRight = from.pos.max(to.pos);
+        M_AddToBox(bbox, Vector2i(dint(ceil(bottomRight.x)), dint(ceil(bottomRight.y))));
+    }
+}
+
+SuperBlock* createRootSuperBlock(const Map& map)
+{   
+    SuperBlock* superBlock = new SuperBlock();
+    dint mapBounds[4];
+    findMapLimits(map, mapBounds);
+
+    superBlock->bbox[SuperBlock::BOXLEFT]   = mapBounds[SuperBlock::BOXLEFT]   - (mapBounds[SuperBlock::BOXLEFT]   & 0x7);
+    superBlock->bbox[SuperBlock::BOXBOTTOM] = mapBounds[SuperBlock::BOXBOTTOM] - (mapBounds[SuperBlock::BOXBOTTOM] & 0x7);
+
+    dint bw = ((mapBounds[SuperBlock::BOXRIGHT] - superBlock->bbox[SuperBlock::BOXLEFT])   / 128) + 1;
+    dint bh = ((mapBounds[SuperBlock::BOXTOP]   - superBlock->bbox[SuperBlock::BOXBOTTOM]) / 128) + 1;
+
+    superBlock->bbox[SuperBlock::BOXRIGHT] = superBlock->bbox[SuperBlock::BOXLEFT]   + 128 * de::ceilpow2(bw);
+    superBlock->bbox[SuperBlock::BOXTOP]   = superBlock->bbox[SuperBlock::BOXBOTTOM] + 128 * de::ceilpow2(bh);
+
+    return superBlock;
+}
+}
+
 void NodeBuilder::build()
 {
-    createInitialHalfEdgesAndAddtoRootSuperBlock();
+    SuperBlock* superBlock = createRootSuperBlock(_map);
 
-    bspTree = buildNodes(_rootSuperBlock);
+    createInitialHalfEdgesAndAddtoSuperBlock(superBlock);
+
+    bspTree = buildNodes(superBlock);
+
+    delete superBlock;
+
     /**
      * Traverse the BSP tree and put all the half-edges in each
      * subsector into clockwise order.

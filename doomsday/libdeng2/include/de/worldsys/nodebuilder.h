@@ -158,7 +158,7 @@ namespace de
          */
         void createInitialHalfEdges();
 
-        void createInitialHalfEdgesAndAddtoRootSuperBlock();
+        void createInitialHalfEdgesAndAddtoSuperBlock(SuperBlock* superBlock);
 
         /**
          * Add the given half-edge to the specified blockmap.
@@ -269,27 +269,6 @@ namespace de
          */
         Face& createBSPLeaf(Face& face, SuperBlock* hEdgeList);
 
-        /**
-         * Free all the SuperBlocks on the quick-alloc list.
-         */
-        void destroyUnusedSuperBlocks();
-
-        /**
-         * Free all memory allocated for the specified SuperBlock.
-         */
-        void moveSuperBlockToQuickAllocList(SuperBlock* block);
-
-        /**
-         * Acquire memory for a new SuperBlock.
-         */
-        SuperBlock* createSuperBlock();
-
-        void destroySuperBlock(SuperBlock* block);
-
-        void createRootSuperBlock();
-
-        void destroyRootSuperBlock();
-
         void insertIntersection(HalfEdge* halfEdge, ddouble distance);
 
         /**
@@ -311,8 +290,6 @@ namespace de
         Map& _map;
 
         Intersections _intersections;
-        SuperBlock* _rootSuperBlock;
-        SuperBlock* _quickAllocSuperBlocks;
 
         /// Used by pickPartitionWorker to exclude all half-edges along a lineDef
         /// for subsequent consideration in the current cycle.
