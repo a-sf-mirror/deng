@@ -25,6 +25,7 @@
 
 #include "deng.h"
 
+#include "../Error"
 #include "../Vector"
 #include "../HalfEdgeDS"
 #include "../SuperBlock"
@@ -84,6 +85,10 @@ namespace de
     class NodeBuilder
     {
     private:
+        /// No suitable partition found for the set of half-edges.
+        /// Thrown when the set is considered to be convex. @ingroup errors
+        DEFINE_ERROR(NoSuitablePartitionError);
+
         struct BSPartition : Partition
         {
             LineDef* lineDef;
@@ -92,7 +97,11 @@ namespace de
             ddouble perp;
             ddouble para;
 
-            BSPartition() : Partition() {};
+            BSPartition(const Vector2d& point, const Vector2d& direction,
+                LineDef* lineDef, LineDef* sourceLineDef, ddouble length,
+                ddouble perp, ddouble para)
+              : Partition(), lineDef(lineDef), sourceLineDef(sourceLineDef),
+                length(length), perp(perp), para(para) {};
         };
 
         /**
@@ -158,9 +167,46 @@ namespace de
          *
          * @param hEdgeList     List of half-edges to choose from.
          *
-         * @return              @true iff a new partition is found (and necessary).
+         * @return              The new partition.
          */
-        bool pickPartition(const SuperBlock* hEdgeList, BSPartition& partition);
+        BSPartition pickPartition(const SuperBlock* hEdgeList);
+
+        void pickPartitionWorker(const SuperBlock* partList,
+            const SuperBlock* hEdgeList, dint factor, HalfEdge** best, dint* bestCost,
+            dint validCount);
+
+        /**
+         * Evaluate a partition and determine the cost, taking into account the
+         * number of splits and the difference between left and right.
+         *
+         * @return              The computed cost, or a negative value if the edge
+         *                      should be skipped altogether.
+         */
+        dint evalPartition(const SuperBlock* hEdgeList, const BSPartition& bsp,
+            dint factor, dint bestCost);
+
+        struct EvalPartitionParamaters {
+            dint cost;
+            dint splits;
+            dint iffy;
+            dint nearMiss;
+            dint realLeft;
+            dint realRight;
+            dint miniLeft;
+            dint miniRight;
+        };
+
+        /**
+         * To be able to divide the nodes down, evalPartition must decide which is
+         * the best half-edge to use as a nodeline. It does this by selecting the
+         * line with least splits and has least difference of half-edges on either
+         * side of it.
+         *
+         * @return              @c true, if a "bad half-edge" was found early.
+         */
+        bool evalPartition2(const SuperBlock* hEdgeList,
+            const BSPartition& bsp, dint factor, dint bestCost,
+            EvalPartitionParamaters& params);
 
         /**
          * Takes the half-edge list and determines if it is convex, possibly
@@ -265,7 +311,7 @@ namespace de
         SuperBlock* _rootSuperBlock;
         SuperBlock* _quickAllocSuperBlocks;
 
-        /// Used by pickHalfEdgeWorker to exclude all half-edges along a lineDef
+        /// Used by pickPartitionWorker to exclude all half-edges along a lineDef
         /// for subsequent consideration in the current cycle.
         dint _validCount;
     };

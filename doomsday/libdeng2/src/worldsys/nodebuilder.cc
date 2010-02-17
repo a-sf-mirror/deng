@@ -49,16 +49,94 @@ struct LineDefOwner
 /// Used when sorting vertex line owners.
 static Vertex* rootVtx;
 
-struct EvalPartitionParamaters {
-    dint cost;
-    dint splits;
-    dint iffy;
-    dint nearMiss;
-    dint realLeft;
-    dint realRight;
-    dint miniLeft;
-    dint miniRight;
-};
+/**
+ * Where is the given point in relation to the line.
+ *
+ * @param pointX        X coordinate of the point.
+ * @param pointY        Y coordinate of the point.
+ * @param lineDX        X delta of the line.
+ * @param lineDY        Y delta of the line.
+ * @param linePerp      Perpendicular d of the line.
+ * @param lineLength    Length of the line.
+ *
+ * @return              @c <0= on left side.
+ *                      @c  0= intersects.
+ *                      @c >0= on right side.
+ */
+dint pointOnLineSide(ddouble pointX, ddouble pointY, ddouble lineDX,
+    ddouble lineDY, ddouble linePerp, ddouble lineLength, ddouble epsilon)
+{
+    ddouble perp = M_PerpDist(lineDX, lineDY, linePerp, lineLength, pointX, pointY);
+    if(de::abs(perp) <= epsilon)
+        return 0;
+    return (perp < 0? -1 : +1);
+}
+
+/**
+ * Check the spatial relationship between the given box and a partitioning
+ * line.
+ *
+ * @param bbox          Ptr to the box being tested.
+ * @param lineSX        X coordinate of the start of the line.
+ * @param lineSY        Y coordinate of the end of the line.
+ * @param lineDX        X delta of the line (slope).
+ * @param lineDY        Y delta of the line (slope).
+ * @param linePerp      Perpendicular d of the line.
+ * @param lineLength    Length of the line.
+ * @param epsilon       Points within this distance will be considered equal.
+ *
+ * @return              @c <0= bbox is wholly on the left side.
+ *                      @c  0= line intersects bbox.
+ *                      @c >0= bbox wholly on the right side.
+ */
+dint boxOnLineSide(const dint bbox[4], ddouble lineSX, ddouble lineSY,
+    ddouble lineDX, ddouble lineDY, ddouble linePerp, ddouble lineLength,
+    ddouble epsilon)
+{
+    ddouble x1 = static_cast<ddouble>(bbox[BOXLEFT])   - IFFY_LEN * 1.5;
+    ddouble y1 = static_cast<ddouble>(bbox[BOXBOTTOM]) - IFFY_LEN * 1.5;
+    ddouble x2 = static_cast<ddouble>(bbox[BOXRIGHT])  + IFFY_LEN * 1.5;
+    ddouble y2 = static_cast<ddouble>(bbox[BOXTOP])    + IFFY_LEN * 1.5;
+
+    dint p1, p2;
+    if(lineDX == 0)
+    {   // Horizontal.
+        p1 = (x1 > lineSX? +1 : -1);
+        p2 = (x2 > lineSX? +1 : -1);
+
+        if(lineDY < 0)
+        {
+            p1 = -p1;
+            p2 = -p2;
+        }
+    }
+    else if(lineDY == 0)
+    {   // Vertical.
+        p1 = (y1 < lineSY? +1 : -1);
+        p2 = (y2 < lineSY? +1 : -1);
+
+        if(lineDX < 0)
+        {
+            p1 = -p1;
+            p2 = -p2;
+        }
+    }
+    else if(lineDX * lineDY > 0)
+    {   // Positive slope.
+        p1 = pointOnLineSide(x1, y2, lineDX, lineDY, linePerp, lineLength, epsilon);
+        p2 = pointOnLineSide(x2, y1, lineDX, lineDY, linePerp, lineLength, epsilon);
+    }
+    else
+    {   // Negative slope.
+        p1 = pointOnLineSide(x1, y1, lineDX, lineDY, linePerp, lineLength, epsilon);
+        p2 = pointOnLineSide(x2, y2, lineDX, lineDY, linePerp, lineLength, epsilon);
+    }
+
+    if(p1 == p2)
+        return p1;
+
+    return 0;
+}
 }
 
 NodeBuilder::NodeBuilder(Map& map, dint splitFactor)
@@ -260,11 +338,11 @@ HalfEdge& NodeBuilder::splitHalfEdge(HalfEdge& oldHEdge, ddouble x, ddouble y)
     return newHEdge;
 }
 
-static __inline dint pointOnHEdgeSide(ddouble x, ddouble y, const HalfEdge* part)
+static __inline dint pointOnHalfEdgeSide(ddouble x, ddouble y, const HalfEdge* part)
 {
-    HalfEdgeInfo* data = (HalfEdgeInfo*) part->data;
-    return P_PointOnLineSide2(x, y, data->direction.x, data->direction.y, data->perpendicularDistance,
-                              data->length, DIST_EPSILON);
+    HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(part->data);
+    return pointOnLineSide(x, y, info->direction.x, info->direction.y, info->perpendicularDistance,
+                           info->length, DIST_EPSILON);
 }
 
 /**
@@ -1194,32 +1272,35 @@ void NodeBuilder::partitionHalfEdges(const BSPartition& partition,
 BinaryTree<void*>* NodeBuilder::buildNodes(SuperBlock* hEdgeList)
 {
     // Pick half-edge with which to derive the next partition.
-    BSPartition partition;
-    if(!pickPartition(hEdgeList, partition))
-    {   // No partition required, already convex.
-        return new BinaryTree<void*>(reinterpret_cast<void*>(&createBSPLeaf(_map.halfEdgeDS().createFace(), hEdgeList)));
-    }
+    try
+    {
+        BSPartition& bsp = pickPartition(hEdgeList);
 
 /*#if _DEBUG
 LOG_MESSAGE("NodeBuilder::buildNodes: Partition P %s D %s.")
-    << partition.point << partition.direction;
+    << bsp.point << bsp.direction;
 #endif*/
 
-    SuperBlock* rightHEdges, *leftHEdges;
-    partitionHalfEdges(partition, hEdgeList, &rightHEdges, &leftHEdges);
+        SuperBlock* rightHEdges, *leftHEdges;
+        partitionHalfEdges(bsp, hEdgeList, &rightHEdges, &leftHEdges);
 
-    BinaryTree<void*>* tree = new BinaryTree<void*>(reinterpret_cast<void*>(
-        _map.createNode(partition, rightHEdges->aaBounds(), leftHEdges->aaBounds())));
+        BinaryTree<void*>* tree = new BinaryTree<void*>(reinterpret_cast<void*>(
+            _map.createNode(bsp, rightHEdges->aaBounds(), leftHEdges->aaBounds())));
 
-    // Recurse on right half-edge list.
-    tree->setRight(buildNodes(rightHEdges));
-    destroySuperBlock(rightHEdges);
+        // Recurse on right half-edge list.
+        tree->setRight(buildNodes(rightHEdges));
+        destroySuperBlock(rightHEdges);
 
-    // Recurse on left half-edge list.
-    tree->setLeft(buildNodes(leftHEdges));
-    destroySuperBlock(leftHEdges);
+        // Recurse on left half-edge list.
+        tree->setLeft(buildNodes(leftHEdges));
+        destroySuperBlock(leftHEdges);
 
-    return tree;
+        return tree;
+    }
+    catch(NoSuitablePartitionError)
+    {   // No partition required, already convex.
+        return new BinaryTree<void*>(reinterpret_cast<void*>(&createBSPLeaf(_map.halfEdgeDS().createFace(), hEdgeList)));
+    }
 }
 
 void NodeBuilder::build()
@@ -1489,79 +1570,64 @@ testVertexHEdgeRings(cur->halfEdge->vertex);
     }
 }
 
-/**
- * To be able to divide the nodes down, evalPartition must decide which is
- * the best half-edge to use as a nodeline. It does this by selecting the
- * line with least splits and has least difference of hald-edges on either
- * side of it.
- *
- * @return              @c true, if a "bad half-edge" was found early.
- */
-static dint evalPartitionWorker(const SuperBlock* hEdgeList,
-    HalfEdge* partHEdge, dint factor, dint bestCost, EvalPartitionParamaters* info)
+bool NodeBuilder::evalPartition2(const SuperBlock* hEdgeList,
+    const BSPartition& bsp, dint factor, dint bestCost,
+    EvalPartitionParamaters& params)
 {
 #define ADD_LEFT()  \
-      do {  \
-        if (other->lineDef) info->realLeft += 1;  \
-        else                info->miniLeft += 1;  \
-      } while (0)
+        if(hInfo->lineDef) params.realLeft += 1;  \
+        else               params.miniLeft += 1;
 
 #define ADD_RIGHT()  \
-      do {  \
-        if (other->lineDef) info->realRight += 1;  \
-        else                info->miniRight += 1;  \
-      } while (0)
-
-    ddouble qnty, a, b, fa, fb;
-    HalfEdgeInfo* part = (HalfEdgeInfo*) partHEdge->data;
-    dint num;
-
+        if(hInfo->lineDef) params.realRight += 1;  \
+        else               params.miniRight += 1;
+    
     /**
      * This is the heart of my SuperBlock idea, it tests the _whole_ block
      * against the partition line to quickly handle all the half-edges
      * within it at once. Only when the partition line intercepts the box do
      * we need to go deeper into it - AJA.
      */
-    num = P_BoxOnLineSide3(hEdgeList->bbox, partHEdge->vertex->pos.x,
-                           partHEdge->vertex->pos.y,
-                           part->direction.x, part->direction.y, part->perpendicularDistance,
-                           part->length, DIST_EPSILON);
+    dint num = boxOnLineSide(hEdgeList->bbox, bsp.point.x, bsp.point.y,
+                             bsp.direction.x, bsp.direction.y, bsp.perp,
+                             bsp.length, DIST_EPSILON);
     if(num < 0)
     {   // Left.
-        info->realLeft += hEdgeList->realNum;
-        info->miniLeft += hEdgeList->miniNum;
+        params.realLeft += hEdgeList->realNum;
+        params.miniLeft += hEdgeList->miniNum;
         return false;
     }
     else if(num > 0)
     {   // Right.
-        info->realRight += hEdgeList->realNum;
-        info->miniRight += hEdgeList->miniNum;
+        params.realRight += hEdgeList->realNum;
+        params.miniRight += hEdgeList->miniNum;
         return false;
     }
 
     // Check partition against all half-edges.
     FOR_EACH(i, hEdgeList->halfEdges, SuperBlock::HalfEdges::const_iterator)
     {
-        const HalfEdge* otherHEdge = (*i);
-        HalfEdgeInfo* other = (HalfEdgeInfo*) otherHEdge->data;
+        const HalfEdge* halfEdge = (*i);
+        const HalfEdgeInfo* hInfo = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
 
         // This is the heart of my pruning idea - it catches
         // "bad half-edges" early on - LK.
 
-        if(info->cost > bestCost)
+        if(params.cost > bestCost)
             return true;
 
-        // Get state of lines' relation to each other.
-        if(other->sourceLineDef == part->sourceLineDef)
+        // Get state of lines' relation to each hInfo.
+        ddouble a, b, fa, fb;
+        if(hInfo->sourceLineDef == bsp.sourceLineDef)
         {
             a = b = fa = fb = 0;
         }
         else
         {
-            a = M_PerpDist(part->direction.x, part->direction.y, part->perpendicularDistance, part->length,
-                           otherHEdge->vertex->pos.x, otherHEdge->vertex->pos.y);
-            b = M_PerpDist(part->direction.x, part->direction.y, part->perpendicularDistance, part->length,
-                           otherHEdge->twin->vertex->pos.x, otherHEdge->twin->vertex->pos.y);
+            a = M_PerpDist(bsp.direction.x, bsp.direction.y, bsp.perp, bsp.length,
+                           halfEdge->vertex->pos.x, halfEdge->vertex->pos.y);
+            b = M_PerpDist(bsp.direction.x, bsp.direction.y, bsp.perp, bsp.length,
+                           halfEdge->twin->vertex->pos.x, halfEdge->twin->vertex->pos.y);
 
             fa = fabs(a);
             fb = fabs(b);
@@ -1571,7 +1637,7 @@ static dint evalPartitionWorker(const SuperBlock* hEdgeList,
         if(fa <= DIST_EPSILON && fb <= DIST_EPSILON)
         {   // This half-edge runs along the same line as the partition.
             // Check whether it goes in the same direction or the opposite.
-            if(other->direction.x * part->direction.x + other->direction.y * part->direction.y < 0)
+            if(hInfo->direction.x * bsp.direction.x + hInfo->direction.y * bsp.direction.y < 0)
             {
                 ADD_LEFT();
             }
@@ -1596,20 +1662,20 @@ static dint evalPartitionWorker(const SuperBlock* hEdgeList,
                 continue;
             }
 
-            info->nearMiss++;
+            params.nearMiss++;
 
             /**
              * Near misses are bad, since they have the potential to cause
              * really short minihedges to be created in future processing.
              * Thus the closer the near miss, the higher the cost - AJA.
              */
-
+            ddouble qnty;
             if(a <= DIST_EPSILON || b <= DIST_EPSILON)
                 qnty = IFFY_LEN / de::max(a, b);
             else
                 qnty = IFFY_LEN / de::min(a, b);
 
-            info->cost += (dint) (100 * factor * (qnty * qnty - 1.0));
+            params.cost += dint(100 * factor * (qnty * qnty - 1.0));
             continue;
         }
 
@@ -1626,15 +1692,16 @@ static dint evalPartitionWorker(const SuperBlock* hEdgeList,
                 continue;
             }
 
-            info->nearMiss++;
+            params.nearMiss++;
 
             // The closer the miss, the higher the cost (see note above).
+            ddouble qnty;
             if(a >= -DIST_EPSILON || b >= -DIST_EPSILON)
                 qnty = IFFY_LEN / -de::min(a, b);
             else
                 qnty = IFFY_LEN / -de::max(a, b);
 
-            info->cost += (dint) (70 * factor * (qnty * qnty - 1.0));
+            params.cost += dint(70 * factor * (qnty * qnty - 1.0));
             continue;
         }
 
@@ -1643,8 +1710,8 @@ static dint evalPartitionWorker(const SuperBlock* hEdgeList,
          * hence this half-edge will be split by the partition line.
          */
 
-        info->splits++;
-        info->cost += 100 * factor;
+        params.splits++;
+        params.cost += 100 * factor;
 
         /**
          * Check if the split point is very close to one end, which is quite
@@ -1654,18 +1721,18 @@ static dint evalPartitionWorker(const SuperBlock* hEdgeList,
          */
         if(fa < IFFY_LEN || fb < IFFY_LEN)
         {
-            info->iffy++;
+            params.iffy++;
 
             // The closer to the end, the higher the cost.
-            qnty = IFFY_LEN / de::min(fa, fb);
-            info->cost += (dint) (140 * factor * (qnty * qnty - 1.0));
+            ddouble qnty = IFFY_LEN / de::min(fa, fb);
+            params.cost += dint(140 * factor * (qnty * qnty - 1.0));
         }
     }
 
     // Handle sub-blocks recursively.
-    if(hEdgeList->rightChild && evalPartitionWorker(hEdgeList->rightChild, partHEdge, factor, bestCost, info))
+    if(hEdgeList->rightChild && evalPartition2(hEdgeList->rightChild, bsp, factor, bestCost, params))
         return true;
-    if(hEdgeList->leftChild && evalPartitionWorker(hEdgeList->leftChild, partHEdge, factor, bestCost, info))
+    if(hEdgeList->leftChild && evalPartition2(hEdgeList->leftChild, bsp, factor, bestCost, params))
         return true;
 
     // No "bad half-edge" was found. Good.
@@ -1675,18 +1742,12 @@ static dint evalPartitionWorker(const SuperBlock* hEdgeList,
 #undef ADD_RIGHT
 }
 
-/**
- * Evaluate a partition and determine the cost, taking into account the
- * number of splits and the difference between left and right.
- *
- * @return              The computed cost, or a negative value if the edge
- *                      should be skipped altogether.
- */
-static dint evalPartition(const SuperBlock* hEdgeList, HalfEdge* part,
+dint NodeBuilder::evalPartition(const SuperBlock* hEdgeList, const BSPartition& bsp,
     dint factor, dint bestCost)
 {
     EvalPartitionParamaters params;
-    if(evalPartitionWorker(hEdgeList, part, factor, bestCost, &params))
+
+    if(evalPartition2(hEdgeList, bsp, factor, bestCost, params))
         return -1;
 
     // Make sure there is at least one real seg on each side.
@@ -1702,13 +1763,12 @@ static dint evalPartition(const SuperBlock* hEdgeList, HalfEdge* part,
 
     // Another little twist, here we show a slight preference for partition
     // lines that lie either purely horizontally or purely vertically - AJA.
-    HalfEdgeInfo* hInfo = reinterpret_cast<HalfEdgeInfo*>(part->data);
-    if(hInfo->direction.x != 0 && hInfo->direction.y != 0)
+    if(bsp.direction.x != 0 && bsp.direction.y != 0)
         params.cost += 25;
 
 /*#if _DEBUG
-LOG_MESSAGE("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d cost=%d.%02d")
-    << part << params.splits << params.iffy << params.nearMiss << params.realLeft
+LOG_MESSAGE("Eval: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d cost=%d.%02d")
+    << params.splits << params.iffy << params.nearMiss << params.realLeft
     << params.miniLeft << params.realRight << params.miniRight << (params.cost / 100)
     << (params.cost % 100);
 #endif*/
@@ -1716,10 +1776,7 @@ LOG_MESSAGE("Eval %p: splits=%d iffy=%d near=%d left=%d+%d right=%d+%d cost=%d.%
     return params.cost;
 }
 
-/**
- * @return              @c false, if cancelled.
- */
-static void pickHalfEdgeWorker(const SuperBlock* partList,
+void NodeBuilder::pickPartitionWorker(const SuperBlock* partList,
     const SuperBlock* hEdgeList, dint factor, HalfEdge** best, dint* bestCost,
     dint validCount)
 {
@@ -1727,29 +1784,35 @@ static void pickHalfEdgeWorker(const SuperBlock* partList,
     FOR_EACH(i, partList->halfEdges, SuperBlock::HalfEdges::const_iterator)
     {
         HalfEdge* halfEdge = (*i);
-        HalfEdgeInfo* data = (HalfEdgeInfo*) halfEdge->data;
+        const HalfEdgeInfo* hInfo = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
 
 /*#if _DEBUG
-LOG_MESSAGE("pickHalfEdgeWorker: %sSEG %p sector=%d %s -> %s")
-    << (data->lineDef? "" : "MINI") <<  halfEdge
-    << (data->sector? data->sector->index : -1)
+LOG_MESSAGE("pickPartitionWorker: %sSEG %p sector=%d %s -> %s")
+    << (hInfo->lineDef? "" : "MINI") <<  halfEdge
+    << (hInfo->sector? hInfo->sector->index : -1)
     << halfEdge->vertex.pos, halfEdge->twin->vertex.pos;
 #endif*/
 
-        // Ignore minihedges as partition candidates.
-        if(!data->lineDef)
+        // Ignore mini edges as partition candidates.
+        if(!hInfo->lineDef)
             continue;
 
-        if(data->lineDef && !data->sector)
+        if(hInfo->lineDef && !hInfo->sector)
             continue;
 
         // Only test half-edges from the same linedef once per round of
         // partition picking (they are collinear).
-        if(data->lineDef->validCount == validCount)
+        if(hInfo->lineDef->validCount == validCount)
             continue;
-        data->lineDef->validCount = validCount;
+        // Remember a half-edge along this lineDef has already been tested.
+        hInfo->lineDef->validCount = validCount;
 
-        dint cost = evalPartition(hEdgeList, halfEdge, factor, *bestCost);
+        // Construct the potential partition from this half-edge.
+        BSPartition bsp = BSPartition(halfEdge->vertex->pos, hInfo->direction,
+            hInfo->lineDef, hInfo->sourceLineDef, hInfo->length,
+            hInfo->perpendicularDistance, hInfo->parallelDistance);
+
+        dint cost = evalPartition(hEdgeList, bsp, factor, *bestCost);
 
         // Unsuitable?
         if(cost < 0)
@@ -1767,30 +1830,26 @@ LOG_MESSAGE("pickHalfEdgeWorker: %sSEG %p sector=%d %s -> %s")
 
     // Recursively handle sub-blocks.
     if(partList->rightChild)
-        pickHalfEdgeWorker(partList->rightChild, hEdgeList, factor, best, bestCost, validCount);
+        pickPartitionWorker(partList->rightChild, hEdgeList, factor, best, bestCost, validCount);
     if(partList->leftChild)
-        pickHalfEdgeWorker(partList->leftChild, hEdgeList, factor, best, bestCost, validCount);
+        pickPartitionWorker(partList->leftChild, hEdgeList, factor, best, bestCost, validCount);
 }
 
-bool NodeBuilder::pickPartition(const SuperBlock* hEdgeList, BSPartition& bsp)
+NodeBuilder::BSPartition NodeBuilder::pickPartition(const SuperBlock* hEdgeList)
 {
     dint bestCost = INT_MAX;
     HalfEdge* best = NULL;
-
     _validCount++;
-    pickHalfEdgeWorker(hEdgeList, hEdgeList, _splitFactor, &best, &bestCost, _validCount);
-    if(best)
-    {   // Further partition is necessary.
-        const HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(best->data);
+    pickPartitionWorker(hEdgeList, hEdgeList, _splitFactor, &best, &bestCost, _validCount);
 
-        bsp.point = best->vertex->pos;
-        bsp.direction = best->twin->vertex->pos - best->vertex->pos;
-        bsp.lineDef = info->lineDef;
-        bsp.sourceLineDef = info->sourceLineDef;
-        bsp.perp = info->perpendicularDistance;
-        bsp.para = info->parallelDistance;
-        bsp.length = info->length;
-        return true;
+    if(!best)
+    {
+        /// @throw NoSuitablePartitionError No suitable partition found.
+        throw NoSuitablePartitionError("NodeBuilder::pickPartition", "No suitable partition");
     }
-    return false; // BuildNodes will detect the cancellation.
+ 
+    // Further partitioning is necessary.
+    const HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(best->data);
+    return BSPartition(best->vertex->pos, best->twin->vertex->pos - best->vertex->pos,
+        info->lineDef, info->sourceLineDef, info->length, info->perpendicularDistance, info->parallelDistance);
 }
