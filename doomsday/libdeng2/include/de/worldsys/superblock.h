@@ -43,9 +43,6 @@ namespace de
             BOXRIGHT    = 3
         };
 
-        // Smallest distance between two points before being considered equal.
-        #define DIST_EPSILON (1.0 / 128.0)
-
     public:
         /// Parent of this block, or NULL for a top-level block.
         SuperBlock* parent;

@@ -121,13 +121,11 @@ namespace de
         };
         typedef std::list<Intersection> Intersections;
 
+        typedef std::vector<HalfEdgeInfo*> HalfEdgeInfos;
+
     public:
         typedef BinaryTree<void*> BSPTree;
-
         BSPTree* bspTree;
-
-        dsize numHalfEdgeInfo;
-        HalfEdgeInfo** halfEdgeInfo;
 
         NodeBuilder(Map& map, dint splitFactor=7);
         ~NodeBuilder();
@@ -290,6 +288,7 @@ namespace de
         Map& _map;
 
         Intersections _intersections;
+        HalfEdgeInfos _halfEdgeInfo;
 
         /// Used by pickPartitionWorker to exclude all half-edges along a lineDef
         /// for subsequent consideration in the current cycle.
