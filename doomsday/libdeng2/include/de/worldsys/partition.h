@@ -18,34 +18,143 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBDENG2_PARTITION_H
-#define LIBDENG2_PARTITION_H
+#ifndef LIBDENG2_LINE_H
+#define LIBDENG2_LINE_H
 
+#include "../ISerializable"
+#include "../Writer"
+#include "../Reader"
+#include "../String"
 #include "../Vector"
+
+#include <sstream>
 
 namespace de
 {
     /**
-     * An infinite line of the form point + direction vectors.
+     * Template for 2D lines of the form point + direction vectors.
+     * The members are public for convenient access.
+     * The used value type must be serializable.
+     *
+     * @ingroup types
      */
-    struct Partition
+    template <typename Type>
+    class Line2 : public ISerializable
     {
-        Vector2d point;
-        Vector2d direction;
+    public:
+        typedef Type ValueType;
 
-        Partition() : point(0, 0), direction(0, 0) {};
-        Partition(const Vector2d& _point, const Vector2d& _direction)
-            : point(_point), direction(_direction) {};
-        Partition(ddouble x, ddouble y, ddouble dX, ddouble dY)
+    public:
+        Line2(Type x = 0, Type y = 0, Type dX = 0, Type dY = 0)
             : point(x, y), direction(dX, dY) {};
+        Line2(const Vector2<Type>& _point, const Vector2<Type>& _direction)
+            : point(_point), direction(_direction) {};
 
         /**
          * Which side of the partition does the point lie?
          * @return              @c false = front.
          */
-        bool pointOnSide(ddouble x, ddouble y) const;
-        bool pointOnSide(const Vector2d& otherPoint) const { return pointOnSide(otherPoint.x, otherPoint.y); }
+        bool Line2::pointOnSide(Type x, Type y) const
+        {
+            if(fequal(direction.x, 0))
+            {
+                if(x <= point.x)
+                    return direction.y > 0? 1 : 0;
+                return direction.y < 0? 1 : 0;
+            }
+
+            if(fequal(direction.y, 0))
+            {
+                if(y <= point.y)
+                    return direction.x < 0? 1 : 0;
+                return direction.x > 0? 1 : 0;
+            }
+
+            // Try to quickly decide by looking at the signs.
+            Vector2<type> delta = point - Vector2<type>(x, y);
+            if(direction.x < 0)
+            {
+                if(direction.y < 0)
+                {
+                    if(delta.x < 0)
+                    {
+                        if(delta.y >= 0)
+                            return 0;
+                    }
+                    else if(delta.y < 0)
+                        return 1;
+                }
+                else
+                {
+                    if(delta.x < 0)
+                    {
+                        if(delta.y < 0)
+                            return 1;
+                    }
+                    else if(delta.y >= 0)
+                        return 0;
+                }
+            }
+            else
+            {
+                if(direction.y < 0)
+                {
+                    if(delta.x < 0)
+                    {
+                        if(delta.y < 0)
+                            return 0;
+                    }
+                    else if(delta.y >= 0)
+                        return 1;
+                }
+                else
+                {
+                    if(delta.x < 0)
+                    {
+                        if(delta.y >= 0)
+                            return 1;
+                    }
+                    else if(delta.y < 0)
+                        return 0;
+                }
+            }
+
+            if(delta.y * direction.x < direction.y * delta.x)
+                return 0; // front side
+
+            return 1; // back side
+        }
+
+        bool pointOnSide(const Vector2<Type>& otherPoint) const {
+            return pointOnSide(otherPoint.x, otherPoint.y);
+        }
+
+        // Implements ISerializable.
+        void operator >> (Writer& to) const {
+            to << point << direction;
+        }
+        void operator << (Reader& from) {
+            from >> point >> direction;
+        }
+
+    public:
+        Vector2<Type> point;
+        Vector2<Type> direction;
     };
+
+    template <typename Type> 
+    std::ostream& operator << (std::ostream& os, const Line2<Type>& line2)
+    {
+        os << "(" << line2.point << " | " << line2.direction << ")";
+        return os;
+    }
+
+    //@{
+    /// @ingroup types
+    typedef Line2<dint> Line2i;     ///< 2D line with integer components.
+    typedef Line2<dfloat> Line2f;   ///< 2D line with floating point components.
+    typedef Line2<ddouble> Line2d;  ///< 2D line with high-precision floating point components.
+    //@}
 }
 
-#endif /* LIBDENG2_PARTITION_H */
+#endif /* LIBDENG2_LINE_H */
