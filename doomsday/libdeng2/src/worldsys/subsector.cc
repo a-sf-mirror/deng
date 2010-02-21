@@ -381,6 +381,19 @@ void Subsector::updateMidPoint()
     worldGridOffset.y = fmod(bBox[1][1], 64);
 }
 
+namespace
+{
+ddouble triangleArea(const Vector2d& v1, const Vector2d& v2, const Vector2d& v3)
+{
+    Vector2d a = v2 - v1;
+    Vector2d b = v3 - v1;
+    ddouble area = (a.x * b.y - b.x * a.y) / 2;
+    if(area < 0)
+        return -area;
+     return area;
+}
+}
+
 void Subsector::pickFanBaseSeg()
 {
 #define TRIFAN_LIMIT    0.1
@@ -405,7 +418,7 @@ void Subsector::pickFanBaseSeg()
             {
                 if(!(baseIDX > 0 && (i == baseIDX || i == baseIDX - 1)))
                 {
-                    if(TRIFAN_LIMIT >= M_TriangleArea(basepos, hEdge2->vertex->pos, hEdge2->twin->vertex->pos))
+                    if(TRIFAN_LIMIT >= triangleArea(basepos, hEdge2->vertex->pos, hEdge2->twin->vertex->pos))
                     {
                         base = NULL;
                     }

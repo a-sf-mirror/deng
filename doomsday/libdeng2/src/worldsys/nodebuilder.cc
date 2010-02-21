@@ -26,6 +26,7 @@
 #include "de/Log"
 #include "de/NodeBuilder"
 #include "de/SuperBlock"
+#include "de/HalfEdgeInfo"
 #include "de/Node"
 #include "de/Map"
 

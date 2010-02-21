@@ -21,13 +21,15 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "de/Map"
-#include "de/Object"
-#include "de/Writer"
-#include "de/Reader"
 #include "de/App"
 #include "de/Library"
+#include "de/Writer"
+#include "de/Reader"
+#include "de/Object"
 #include "de/Polyobj"
+#include "de/Map"
+#include "de/NodeBuilder"
+#include "de/HalfEdgeInfo"
 
 using namespace de;
 
@@ -225,7 +227,7 @@ Map::~Map()
     _lineDefs.clear();
 
     if(lineOwners)
-        Z_Free(lineOwners);
+        std::free(lineOwners);
     lineOwners = NULL;
 
     FOR_EACH(i, _polyobjs, Polyobjs::iterator)
@@ -475,6 +477,9 @@ bool Map::iterateObjects(bool (*callback)(Object*, void*), void* parameters)
 
 void Map::think(const Time::Delta& elapsed)
 {
+    // New ptcgens for planes?
+    checkPtcPlanes();
+
     freezeThinkerList(true);
 
     FOR_EACH(i, _thinkers, Thinkers::iterator)
@@ -614,10 +619,10 @@ static bool PIT_LinkToLineDef(LineDef* lineDef, void* paramaters)
 {
     Map::linelinker_data_t* data = reinterpret_cast<Map::linelinker_data_t*>(paramaters);
 
-    if(data->box[1][0] <= lineDef->aaBounds()[BOXLEFT] ||
-       data->box[0][0] >= lineDef->aaBounds()[BOXRIGHT] ||
-       data->box[1][1] <= lineDef->aaBounds()[BOXBOTTOM] ||
-       data->box[0][1] >= lineDef->aaBounds()[BOXTOP])
+    if(data->box[1][0] <= lineDef->aaBounds().left ||
+       data->box[0][0] >= lineDef->aaBounds().right ||
+       data->box[1][1] <= lineDef->aaBounds().bottom ||
+       data->box[0][1] >= lineDef->aaBounds().top)
         // Bounding boxes do not overlap.
         return true;
 
@@ -1695,7 +1700,7 @@ void Map::buildSectorLineDefSets()
 
     // build line tables for each sector.
     lineLinksBlockSet = Z_BlockCreate(sizeof(linelink_t), 512, PU_STATIC);
-    sectorLineLinks = M_Calloc(sizeof(linelink_t*) * _sectors.size());
+    sectorLineLinks = reinterpret_cast<linelink_t*>(std::calloc(1, sizeof(linelink_t*) * _sectors.size()));
 
     FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
@@ -1772,7 +1777,7 @@ void Map::buildSectorLineDefSets()
 
     // Free temporary storage.
     Z_BlockDestroy(lineLinksBlockSet);
-    M_Free(sectorLineLinks);
+    std::free(sectorLineLinks);
 }
 
 void Map::finishSectors2()
@@ -1999,7 +2004,7 @@ static lineowner_t* sortLineOwners(lineowner_t* list,
     return list;
 }
 
-static void setVertexLineOwner(vertexinfo_t* vInfo, LineDef* lineDef, dbyte vertex,
+static void setVertexLineOwner(Map::vertexinfo_t* vInfo, LineDef* lineDef, dbyte vertex,
                                lineowner_t** storage)
 {
     lineowner_t* newOwner;
@@ -2038,11 +2043,11 @@ static void setVertexLineOwner(vertexinfo_t* vInfo, LineDef* lineDef, dbyte vert
 }
 
 #if _DEBUG
-static void checkVertexOwnerRings(vertexinfo_t* vertexInfo, duint num)
+static void checkVertexOwnerRings(Map::vertexinfo_t* vertexInfo, duint num)
 {
     for(duint i = 0; i < num; ++i)
     {
-        vertexinfo_t* vInfo = &vertexInfo[i];
+        Map::vertexinfo_t* vInfo = &vertexInfo[i];
 
         validCount++;
 
@@ -2074,10 +2079,9 @@ void Map::buildVertexOwnerRings(vertexinfo_t* vertexInfo)
 
     HalfEdgeDS::Vertices::size_type numVertices = _halfEdgeDS->numVertices();
 
-    lineowner_t* allocator;
-    lineOwners = Z_Calloc(sizeof(lineowner_t) * _lineDefs.size() * 2, PU_STATIC, 0);
-    allocator = map->lineOwners;
+    lineOwners = reinterpret_cast<lineowner_t*>(std::calloc(1, sizeof(lineowner_t) * _lineDefs.size() * 2));
 
+    lineowner_t* allocator = lineOwners;
     FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
         LineDef* lineDef = *i;
@@ -2107,7 +2111,7 @@ void Map::buildVertexOwnerRings(vertexinfo_t* vertexInfo)
             while(owner)
             {
                 owner->lineDef = _lineDefs[owner->lineDef->buildData.index - 1];
-                owner = owner->next();
+                owner = &owner->next();
             }
 
             // Sort them; ordered clockwise by angle.
@@ -2139,31 +2143,7 @@ void Map::buildVertexOwnerRings(vertexinfo_t* vertexInfo)
     }
 }
 
-void Map::addLineDefsToDMU()
-{
-    FOR_EACH(i, _lineDefs, LineDefs::iterator)
-        P_CreateObjectRecord(DMU_LINEDEF, *i);
-}
-
-void Map::addSideDefsToDMU()
-{
-    FOR_EACH(i, _sideDefs, SideDefs::iterator)
-        P_CreateObjectRecord(DMU_SIDEDEF, *i);
-}
-
-void Map::addSectorsToDMU()
-{
-    FOR_EACH(i, _sectors, Sectors::iterator)
-        P_CreateObjectRecord(DMU_SECTOR, *i);
-}
-
-void Map::addPlanesToDMU()
-{
-    FOR_EACH(i, _planes, Planes::iterator)
-        P_CreateObjectRecord(DMU_PLANE, *i);
-}
-
-static dint buildSeg(HalfEdge* halfEdge, void* paramaters)
+static bool C_DECL buildSeg(HalfEdge* halfEdge, void* paramaters)
 {
     Map* map = reinterpret_cast<Map*>(paramaters);
     HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
@@ -2171,9 +2151,9 @@ static dint buildSeg(HalfEdge* halfEdge, void* paramaters)
     halfEdge->data = NULL;
 
     if(!(info->lineDef &&
-         (!info->sector || (info->side == BACK && info->lineDef->buildData.windowEffect))))
+        (!info->sector || (info->back && info->lineDef->buildData.windowEffect))))
     {
-        map->createSeg(info->lineDef, info->side, halfEdge);
+        map->createSeg(info->lineDef, info->back, halfEdge);
     }
 
     return true; // Continue iteration.
@@ -2197,23 +2177,23 @@ static Sector* pickSectorFromHEdges(const HalfEdge* firstHEdge, bool allowSelfRe
         {
             LineDef* lineDef = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->lineDef;
 
-            if(lineDef->buildData.windowEffect && reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->side == 1)
+            if(lineDef->buildData.windowEffect && reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->back)
                 sector = lineDef->buildData.windowEffect;
             else
-                sector = lineDef->buildData.sideDefs[
-                    reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->side]->sector;
+                sector = &lineDef->buildData.sideDefs[
+                    reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->back? 1 : 0]->sector();
         }
     } while(!sector && (halfEdge = halfEdge->next) != firstHEdge);
 
     return sector;
 }
 
-static bool C_DECL buildSubsector(BinaryTree* tree, void* paramaters)
+static bool C_DECL buildSubsector(BinaryTree<void*>* tree, void* paramaters)
 {
     if(!tree->isLeaf())
     {
         Node* node = reinterpret_cast<Node*>(tree->data());
-        BinaryTree* child;
+        BinaryTree<void*>* child;
 
         child = tree->right();
         if(child && child->isLeaf())
@@ -2255,38 +2235,31 @@ static bool C_DECL buildSubsector(BinaryTree* tree, void* paramaters)
     return true; // Continue iteration.
 }
 
-bool buildNodes()
+bool Map::buildNodes()
 {
     /// Does not yet support a live rebuild.
     assert(_rootNode == 0);
 
     /// @todo Do this in busy mode.
-    NodeBuilder* nb = P_CreateNodeBuilder(map, bspFactor);
-    NodeBuilder_Build(nb);
-    map->_rootNode = nb->rootNode;
+    NodeBuilder nodeBuilder = NodeBuilder(this, bspFactor);
 
-    if(map->_rootNode)
+    nodeBuilder.build();
+    _rootNode = nodeBuilder.bspTree;
+
+    if(_rootNode)
     {   // Build subsectors and segs.
-        BinaryTree_PostOrder(map->_rootNode, buildSubsector, map);
-        HalfEdgeDS_IterateHEdges(map->_halfEdgeDS, buildSeg, map);
+        _rootNode->postOrder(buildSubsector, this);
+        halfEdgeDS().iterateHalfEdges(buildSeg, this);
 
-        if(verbose >= 1)
-        {
-            Con_Message("  Built %d Nodes, %d Subsectors, %d Segs.\n",
-                        map->numNodes, map->numSubsectors, map->numSegs);
+        LOG_VERBOSE("  Built ")
+            << _numNodes << " Nodes, " << _numSubsectors << " Subsectors, "
+            << _numSegs << " Segs.";
 
-            if(!BinaryTree_IsLeaf(map->_rootNode))
-            {
-                long rHeight = (long) BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, RIGHT));
-                long lHeight = (long) BinaryTree_GetHeight(BinaryTree_GetChild(map->_rootNode, LEFT));
-
-                Con_Message("  Balance %+ld (l%ld - r%ld).\n",
-                            lHeight - rHeight, lHeight, rHeight);
-            }
-        }
+        if(!_rootNode->isLeaf())
+            LOG_VERBOSE("  Balance: r")
+                << (_rootNode->right()? _rootNode->right()->height() : 0) << " | "
+                << (_rootNode->left()? _rootNode->left()->height() : 0) << ".";
     }
-
-    P_DestroyNodeBuilder(nb);
 
     return _rootNode != NULL;
 }
@@ -2398,9 +2371,9 @@ void MPE_DetectOverlappingLines(map_t* map)
 }
 #endif
 
-static ownernode_t* newOwnerNode(void)
+static Map::ownernode_t* newOwnerNode(void)
 {
-    ownernode_t*        node;
+    Map::ownernode_t* node;
 
     if(unusedNodeList)
     {   // An existing node is available for re-use.
@@ -2412,16 +2385,14 @@ static ownernode_t* newOwnerNode(void)
     }
     else
     {   // Need to allocate another.
-        node = M_Malloc(sizeof(ownernode_t));
+        node = reinterpret_cast<Map::ownernode_t*>(std::malloc(sizeof(Map::ownernode_t)));
     }
 
     return node;
 }
 
-static void setSectorOwner(ownerlist_t* ownerList, subsector_t* subsector)
+static void setSectorOwner(Map::ownerlist_t* ownerList, Subsector* subsector)
 {
-    ownernode_t* node;
-
     if(!subsector)
         return;
 
@@ -2429,43 +2400,34 @@ static void setSectorOwner(ownerlist_t* ownerList, subsector_t* subsector)
     // NOTE: No need to check for duplicates.
     ownerList->count++;
 
-    node = newOwnerNode();
+    Map::ownernode_t* node = newOwnerNode();
     node->data = subsector;
     node->next = ownerList->head;
     ownerList->head = node;
 }
 
-static void findSubSectorsAffectingSector(map_t* map, uint secIDX)
+void Map::findSubSectorsAffectingSector(duint secIDX)
 {
-    uint i;
-    ownernode_t* node, *p;
-    float bbox[4];
     ownerlist_t subsectorOwnerList;
-    sector_t* sec = map->sectors[secIDX];
-
     memset(&subsectorOwnerList, 0, sizeof(subsectorOwnerList));
 
-    memcpy(bbox, sec->bBox, sizeof(bbox));
-    bbox[BOXLEFT]   -= 128;
-    bbox[BOXRIGHT]  += 128;
-    bbox[BOXTOP]    += 128;
-    bbox[BOXBOTTOM] -= 128;
-/*
-#if _DEBUG
-Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
-            bbox[BOXLEFT], bbox[BOXTOP], bbox[BOXRIGHT], bbox[BOXBOTTOM]);
-#endif
-*/
-    for(i = 0; i < map->numSubsectors; ++i)
+    Sector* sec = _sectors[secIDX];
+    MapRectangle affectBounds = sec->aaBounds();
+    affectBounds.left   -= 128;
+    affectBounds.right  += 128;
+    affectBounds.top    += 128;
+    affectBounds.bottom -= 128;
+
+    for(duint i = 0; i < _numSubsectors; ++i)
     {
-        subsector_t* subsector =  map->subsectors[i];
+        Subsector* subsector =  subsectors[i];
 
         // Is this subsector close enough?
-        if(subsector->sector == sec || // subsector is IN this sector
-           (subsector->midPoint[0] > bbox[BOXLEFT] &&
-            subsector->midPoint[0] < bbox[BOXRIGHT] &&
-            subsector->midPoint[1] < bbox[BOXTOP] &&
-            subsector->midPoint[1] > bbox[BOXBOTTOM]))
+        if(&subsector->sector() == sec || // subsector is IN this sector
+           (subsector->midPoint.x > affectBounds.left &&
+            subsector->midPoint.x < affectBounds.right &&
+            subsector->midPoint.y < affectBounds.top &&
+            subsector->midPoint.y > affectBounds.bottom))
         {
             // It will contribute to the reverb settings of this sector.
             setSectorOwner(&subsectorOwnerList, subsector);
@@ -2476,26 +2438,28 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
     sec->numReverbSubsectorAttributors = subsectorOwnerList.count;
     if(sec->numReverbSubsectorAttributors)
     {
-        subsector_t** ptr;
+        ownernode_t* node, *p;
+        Subsector** ptr;
 
         sec->reverbSubsectors =
-            Z_Malloc((sec->numReverbSubsectorAttributors + 1) * sizeof(subsector_t*),
+            Z_Malloc((sec->numReverbSubsectorAttributors + 1) * sizeof(Subsector*),
                      PU_STATIC, 0);
 
-        for(i = 0, ptr = sec->reverbSubsectors, node = subsectorOwnerList.head;
-            i < sec->numReverbSubsectorAttributors; ++i, ptr++)
+        ptr = sec->reverbSubsectors;
+        node = subsectorOwnerList.head;
+        for(duint i = 0; i < sec->numReverbSubsectorAttributors; ++i, ptr++)
         {
             p = node->next;
-            *ptr = (subsector_t*) node->data;
+            *ptr = reinterpret_cast<Subsector*>(node->data);
 
-            if(i < map->numSectors - 1)
+            if(i < numSectors() - 1)
             {   // Move this node to the unused list for re-use.
                 node->next = unusedNodeList;
                 unusedNodeList = node;
             }
             else
             {   // No further use for the nodes.
-                M_Free(node);
+                std::free(node);
             }
             node = p;
         }
@@ -2503,96 +2467,55 @@ Con_Message("sector %i: (%f,%f) - (%f,%f)\n", c,
     }
 }
 
-/**
- * Called during map init to determine which subsectors affect the reverb
- * properties of all sectors. Given that subsectors do not change shape (in
- * two dimensions at least), they do not move and are not created/destroyed
- * once the map has been loaded; this step can be pre-processed.
- */
-static void initSoundEnvironment(map_t* map)
+void Map::initSoundEnvironment()
 {
-    ownernode_t* node, *p;
-    uint i;
-
-    for(i = 0; i < map->numSectors; ++i)
+    for(duint i = 0; i < numSectors(); ++i)
     {
-        findSubSectorsAffectingSector(map, i);
+        findSubSectorsAffectingSector(i);
     }
 
     // Free any nodes left in the unused list.
-    node = unusedNodeList;
+    ownernode_t* node = unusedNodeList;
+    ownernode_t* p;
     while(node)
     {
         p = node->next;
-        M_Free(node);
+        std::free(node);
         node = p;
     }
     unusedNodeList = NULL;
 }
 
-static int addVertexToDMU(vertex_t* vertex, void* context)
+bool Map::editBegin()
 {
-    P_CreateObjectRecord(DMU_VERTEX, vertex);
-    return true; // Continue iteration.
-}
-
-/**
- * Called to begin the map building process.
- */
-boolean Map_EditBegin(map_t* map)
-{
-    assert(map);
-    map->editActive = true;
+    _editActive = true;
     return true;
 }
 
-boolean Map_EditEnd(map_t* map)
+bool Map::editEnd()
 {
-    assert(map);
-    {
-    uint i;
-
-    if(!map->editActive)
+    if(!_editActive)
         return true;
 
     /**
      * Perform cleanup on the loaded map data, removing duplicate vertexes,
      * pruning unused sectors etc, etc...
      */
-    detectDuplicateVertices(map->_halfEdgeDS);
-    pruneUnusedObjects(map, PRUNE_ALL);
+    detectDuplicateVertices(*_halfEdgeDS);
+    pruneUnusedObjects(PRUNE_ALL);
 
-    addSectorsToDMU(map);
-    addPlanesToDMU(map);
-    addSideDefsToDMU(map);
-    addLineDefsToDMU(map);
+    buildLineDefBlockmap(this);
 
-    /**
-     * Build a LineDef blockmap for this map.
-     */
+    /*builtOK =*/ buildNodes();
+
+    FOR_EACH(i, polyObjs, PolyObjs::iterator)
     {
-    uint startTime = Sys_GetRealTime();
-
-    buildLineDefBlockmap(map);
-
-    // How much time did we spend?
-    VERBOSE(Con_Message("buildLineDefBlockmap: Done in %.2f seconds.\n",
-            (Sys_GetRealTime() - startTime) / 1000.0f))
-    }
-
-    /*builtOK =*/ buildBSP(map);
-
-    HalfEdgeDS_IterateVertices(map->_halfEdgeDS, addVertexToDMU, NULL);
-
-    for(i = 0; i < map->numPolyObjs; ++i)
-    {
-        Polyobj* po = map->polyObjs[i];
-        uint j;
+        Polyobj* po = *i;
 
         po->originalPts = Z_Malloc(po->numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
         po->prevPts = Z_Malloc(po->numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
 
-        for(j = 0; j < po->numLineDefs; ++j)
+        for(duint j = 0; j < po->numLineDefs; ++j)
         {
             linedef_t* lineDef = po->lineDefs[j];
             HalfEdge* fHEdge, *bHEdge;
@@ -2626,7 +2549,7 @@ boolean Map_EditEnd(map_t* map)
         po->numSegs = po->numLineDefs;
         po->segs = Z_Calloc(sizeof(seg_t) * po->numSegs, PU_STATIC, 0);
 
-        for(j = 0; j < po->numSegs; ++j)
+        for(duint j = 0; j < po->numSegs; ++j)
         {
             linedef_t* lineDef = ((objectrecord_t*) po->lineDefs[j])->obj;
             seg_t* seg = &po->segs[j];
@@ -2636,60 +2559,37 @@ boolean Map_EditEnd(map_t* map)
         }
     }
 
-    buildSectorSubsectorLists(map);
-    buildSectorLineLists(map);
-    finishLineDefs2(map);
-    finishSectors2(map);
-    updateMapBounds(map);
+    buildSectorSubsectorLists();
+    buildSectorLineLists();
+    finishLineDefs2();
+    finishSectors2();
+    updateMapBounds();
 
-    initSoundEnvironment(map);
-    findSubsectorMidPoints(map);
+    initSoundEnvironment();
+    findSubsectorMidPoints();
 
-    {
-    uint numVertices = HalfEdgeDS_NumVertices(map->_halfEdgeDS);
-    vertexinfo_t* vertexInfo = M_Calloc(sizeof(vertexinfo_t) * numVertices);
+    vertexinfo_t* vertexInfo = std::calloc(1, sizeof(vertexinfo_t) * numVertices());
 
-    buildVertexOwnerRings(map, vertexInfo);
+    buildVertexOwnerRings(vertexInfo);
 
 #if _DEBUG
-checkVertexOwnerRings(vertexInfo, numVertices);
+checkVertexOwnerRings(vertexInfo, numVertices());
 #endif
 
     // Build the vertex lineowner info.
     // @todo now redundant, rewire fakeradio to use HalfEdgeDS.
-    for(i = 0; i < numVertices; ++i)
+    for(duint i = 0; i < numVertices(); ++i)
     {
-        vertex_t* vertex = map->_halfEdgeDS->vertices[i];
+        Vertex* vertex = _halfEdgeDS->vertices[i];
         vertexinfo_t* vInfo = &vertexInfo[i];
 
-        ((mvertex_t*) vertex->data)->lineOwners = vInfo->lineOwners;
-        ((mvertex_t*) vertex->data)->numLineOwners = vInfo->numLineOwners;
+        reinterpret_cast<MVertex*>(vertex->data)->lineOwners = vInfo->lineOwners;
+        reinterpret_cast<MVertex*>(vertex->data)->numLineOwners = vInfo->numLineOwners;
     }
-    M_Free(vertexInfo);
-    }
+    std::free(vertexInfo);
 
-    map->editActive = false;
+    _editActive = false;
     return true;
-    }
-}
-
-static boolean PIT_ClientMobjTicker(clmobj_t *cmo, void *parm)
-{
-    P_MobjTicker((thinker_t*) &cmo->mo, NULL);
-    return true; // Continue iteration.
-}
-
-void Map_Ticker(map_t* map, timespan_t time)
-{
-    assert(map);
-
-    // New ptcgens for planes?
-    checkPtcPlanes(map);
-
-    Thinkers_Iterate(map->_thinkers, gx.MobjThinker, ITF_PUBLIC | ITF_PRIVATE, P_MobjTicker, NULL);
-
-    // Check all client mobjs.
-    Cl_MobjIterator(map, PIT_ClientMobjTicker, NULL);
 }
 
 void Map_BeginFrame(map_t* map, boolean resetNextViewer)

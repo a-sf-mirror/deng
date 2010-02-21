@@ -392,7 +392,7 @@ namespace de
         duint _numSegs;
         Seg** segs;
 
-        struct lineowner_s* lineOwners;
+        lineowner_t* lineOwners;
 
     private:
         /// Map editing is in progress.
@@ -500,6 +500,10 @@ namespace de
         /**
          * Map Edit interface.
          */
+
+        /**
+         * Called to begin the map building process.
+         */
         bool editBegin();
         bool editEnd();
 
@@ -574,7 +578,7 @@ namespace de
         //lightgrid_t* lightGrid();
 
         // protected
-        Seg* createSeg(LineDef* lineDef, dbyte side, HalfEdge* halfEdge);
+        Seg* createSeg(LineDef* lineDef, bool back, HalfEdge* halfEdge);
         Subsector* createSubsector(Face* face, Sector* sector);
         Node* createNode(const Partition& partition, const MapRectangle& rightAABB, const MapRectangle& leftAABB);
 
@@ -696,6 +700,16 @@ namespace de
          * Build LineDef sets for all Sectors.
          */
         void buildSectorLineDefSets();
+
+        void findSubSectorsAffectingSector(duint secIDX);
+
+        /**
+         * Called during map init to determine which subsectors affect the reverb
+         * properties of all sectors. Given that subsectors do not change shape (in
+         * two dimensions at least), they do not move and are not created/destroyed
+         * once the map has been loaded; this step can be pre-processed.
+         */
+        void initSoundEnvironment();
 
         void updateAABounds();
     };

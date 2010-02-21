@@ -49,33 +49,7 @@ namespace de
     class Map;
     class LineDef;
     class Sector;
-
-    struct HalfEdgeInfo
-    {
-        /// The SuperBlock that contains this half-edge, or NULL if the half-edge
-        /// is no longer in any SuperBlock (e.g., now in a leaf).
-        SuperBlock* superBlock;
-
-        // Precomputed data for faster calculations.
-        Vector2d direction;
-        ddouble length;
-        ddouble angle;
-        ddouble parallelDistance;
-        ddouble perpendicularDistance;
-
-        // LineDef that this half-edge goes along, or NULL if miniseg.
-        LineDef* lineDef;
-
-        // LineDef that this half-edge initially comes from.
-        // For "real" half-edges, this is just the same as the 'linedef' field
-        // above. For "miniedges", this is the linedef of the partition line.
-        LineDef* sourceLineDef;
-
-        Sector* sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
-
-        /// @c true = this is on the backside of the edge.
-        bool back;
-    };
+    struct HalfEdgeInfo;
 
     /**
      * BSP node builder.
