@@ -37,13 +37,6 @@ namespace de
         /// is no longer in any SuperBlock (e.g., now in a leaf).
         SuperBlock* superBlock;
 
-        // Precomputed data for faster calculations.
-        Vector2d direction;
-        ddouble length;
-        ddouble angle;
-        ddouble parallelDistance;
-        ddouble perpendicularDistance;
-
         // LineDef that this half-edge goes along, or NULL if miniseg.
         LineDef* lineDef;
 

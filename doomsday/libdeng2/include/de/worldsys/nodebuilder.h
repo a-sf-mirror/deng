@@ -67,16 +67,11 @@ namespace de
         {
             LineDef* lineDef;
             LineDef* sourceLineDef;
-            ddouble length;
-            ddouble perp;
-            ddouble para;
 
             BSPartition(const Vector2d& point, const Vector2d& direction,
-                LineDef* lineDef, LineDef* sourceLineDef, ddouble length,
-                ddouble perp, ddouble para)
+                LineDef* lineDef, LineDef* sourceLineDef)
               : Node::Partition(point, direction), lineDef(lineDef),
-                sourceLineDef(sourceLineDef), length(length), perp(perp),
-                para(para) {};
+                sourceLineDef(sourceLineDef) {};
         };
 
         /**
@@ -121,8 +116,6 @@ namespace de
          * incorrect counts.
          */
         HalfEdge& splitHalfEdge(HalfEdge& halfEdge, ddouble x, ddouble y);
-
-        void updateHalfEdgeInfo(const HalfEdge& halfEdge);
 
     private:
         /**

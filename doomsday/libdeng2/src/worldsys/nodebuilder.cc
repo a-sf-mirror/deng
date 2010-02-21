@@ -124,21 +124,6 @@ NodeBuilder::~NodeBuilder()
     _intersections.clear();
 }
 
-void  NodeBuilder::updateHalfEdgeInfo(const HalfEdge& halfEdge)
-{
-    HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(halfEdge.data);
-
-    info->direction = halfEdge.twin->vertex->pos - halfEdge.vertex->pos;
-
-    info->length = info->direction.length();
-    info->angle  = slopeToAngle(info->direction.x, info->direction.y);
-
-    assert(info->length > 0);
-
-    info->perpendicularDistance =  halfEdge.vertex->pos.y * info->direction.x - halfEdge.vertex->pos.x * info->direction.y;
-    info->parallelDistance = -halfEdge.vertex->pos.x * info->direction.x - halfEdge.vertex->pos.y * info->direction.y;
-}
-
 void NodeBuilder::attachHalfEdgeInfo(HalfEdge& halfEdge, LineDef* line,
     LineDef* sourceLineDef, Sector* sec, bool back)
 {
@@ -188,11 +173,6 @@ HalfEdge& NodeBuilder::splitHalfEdge(HalfEdge& oldHEdge, ddouble x, ddouble y)
                 lineDef->halfEdges[1] = &newHEdge;
         }
     }
-
-    updateHalfEdgeInfo(oldHEdge);
-    updateHalfEdgeInfo(*oldHEdge.twin);
-    updateHalfEdgeInfo(newHEdge);
-    updateHalfEdgeInfo(*newHEdge.twin);
 
     /*if(!oldHEdge.twin->face && reinterpret_cast<HalfEdgeInfo*>(oldHEdge.twin->data)->superBlock)
     {
@@ -598,9 +578,6 @@ Con_Message("FUNNY LINE %d : end vertex %d has odd number of one-siders\n",
         back.twin = &front;
         front.twin = &back;
 
-        updateHalfEdgeInfo(front);
-        updateHalfEdgeInfo(back);
-
         lineDef->halfEdges[0] = lineDef->halfEdges[1] = &front;
         ((LineDefOwner*) lineDef->vo[0])->halfEdge = &front;
         ((LineDefOwner*) lineDef->vo[1])->halfEdge = &back;
@@ -930,11 +907,11 @@ static __inline void calcIntersection(const HalfEdge* cur, ddouble x,
     ddouble y, ddouble dX, ddouble dY, ddouble perpC, ddouble perpD,
     ddouble* iX, ddouble* iY)
 {
-    HalfEdgeInfo* data = reinterpret_cast<HalfEdgeInfo*>(cur->data);
+    const Vector2d direction = cur->twin->vertex->pos - cur->vertex->pos;
     ddouble ds;
 
     // Horizontal partition against vertical half-edge.
-    if(dY == 0 && data->direction.x == 0)
+    if(dY == 0 && direction.x == 0)
     {
         *iX = cur->vertex->pos.x;
         *iY = y;
@@ -942,7 +919,7 @@ static __inline void calcIntersection(const HalfEdge* cur, ddouble x,
     }
 
     // Vertical partition against horizontal half-edge.
-    if(dX == 0 && data->direction.y == 0)
+    if(dX == 0 && direction.y == 0)
     {
         *iX = x;
         *iY = cur->vertex->pos.y;
@@ -952,15 +929,15 @@ static __inline void calcIntersection(const HalfEdge* cur, ddouble x,
     // 0 = start, 1 = end.
     ds = perpC / (perpC - perpD);
 
-    if(data->direction.x == 0)
+    if(direction.x == 0)
         *iX = cur->vertex->pos.x;
     else
-        *iX = cur->vertex->pos.x + (data->direction.x * ds);
+        *iX = cur->vertex->pos.x + (direction.x * ds);
 
-    if(data->direction.y == 0)
+    if(direction.y == 0)
         *iY = cur->vertex->pos.y;
     else
-        *iY = cur->vertex->pos.y + (data->direction.y * ds);
+        *iY = cur->vertex->pos.y + (direction.y * ds);
 }
 
 void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
@@ -991,7 +968,8 @@ void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
 
         // This seg runs along the same line as the  Check
         // whether it goes in the same direction or the opposite.
-        if(data->direction.x * bsp.direction.x + data->direction.y * bsp.direction.y < 0)
+        const Vector2d direction = curHEdge.twin->vertex->pos - curHEdge.vertex->pos;
+        if(direction.x * bsp.direction.x + direction.y * bsp.direction.y < 0)
         {
             addHalfEdgeToSuperBlock(bLeft, &curHEdge);
         }
@@ -1274,28 +1252,33 @@ static HalfEdge* vertexCheckOpen(Vertex* vertex, angle_g angle, dbyte antiClockw
     halfEdge = first->twin->next;
     do
     {
-        if(reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->angle <=
-           reinterpret_cast<HalfEdgeInfo*>(first->data)->angle)
+        const Vector2d a = halfEdge->twin->vertex->pos - halfEdge->vertex->pos;
+        const Vector2d b = first->twin->vertex->pos - first->vertex->pos;
+        
+        if(slopeToAngle(a.x, a.y) <= slopeToAngle(b.x, b.y))
             first = halfEdge;
     } while((halfEdge = halfEdge->twin->next) != vertex->halfEdge);
 
     if(antiClockwise)
     {
         first = first->twin->next;
-        halfEdge = first;
-        while(reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->angle > angle + ANG_EPSILON &&
-              (halfEdge = halfEdge->twin->next) != first);
-
+        for(halfEdge = first; halfEdge != first; halfEdge = halfEdge->twin->next)
+        {
+            const Vector2d diff = halfEdge->twin->vertex->pos - halfEdge->vertex->pos;
+            if(!(slopeToAngle(diff.x, diff.y) > angle + ANG_EPSILON))
+                break;
+        }
         return halfEdge->twin;
     }
-    else
-    {
-        halfEdge = first;
-        while(reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->angle < angle + ANG_EPSILON &&
-              (halfEdge = halfEdge->prev->twin) != first);
 
-        return halfEdge;
+    // Clockwise.
+    for(halfEdge = first; halfEdge != first; halfEdge = halfEdge->prev->twin)
+    {
+        const Vector2d diff = halfEdge->twin->vertex->pos - halfEdge->vertex->pos;
+        if(!(slopeToAngle(diff.x, diff.y) < angle + ANG_EPSILON))
+            break;
     }
+    return halfEdge;
 }
 
 static bool isIntersectionOnSelfRefLineDef(const HalfEdge* halfEdge)
@@ -1316,6 +1299,8 @@ static bool isIntersectionOnSelfRefLineDef(const HalfEdge* halfEdge)
 void NodeBuilder::connectIntersectionGaps(const BSPartition& partition,
     SuperBlock* rightList, SuperBlock* leftList)
 {
+    angle_g partAngle = slopeToAngle(-partition.direction.x, -partition.direction.y);
+
     Intersections::iterator i = _intersections.begin();
     for(;;)
     {
@@ -1328,11 +1313,11 @@ void NodeBuilder::connectIntersectionGaps(const BSPartition& partition,
         // Is this half-edge exactly aligned to the partition?
         bool alongPartition = false;
         {
-        angle_g angle = slopeToAngle(-partition.direction.x, -partition.direction.y);
         HalfEdge* halfEdge = prev->halfEdge;
         do
         {
-            angle_g diff = de::abs(reinterpret_cast<HalfEdgeInfo*>(halfEdge->data)->angle - angle);
+            const Vector2d direction = halfEdge->twin->vertex->pos - halfEdge->vertex->pos;
+            angle_g diff = de::abs(slopeToAngle(direction.x, direction.y) - partAngle);
             if(diff < ANG_EPSILON || diff > (360.0 - ANG_EPSILON))
             {
                 alongPartition = true;
@@ -1433,9 +1418,6 @@ testVertexHEdgeRings(prev->halfEdge->vertex);
 testVertexHEdgeRings(cur->halfEdge->vertex);
 #endif
 
-                updateHalfEdgeInfo(right);
-                updateHalfEdgeInfo(left);
-
                 // Add the new half-edges to the appropriate lists.
 
                 /*if(nearHalfEdge->face)
@@ -1488,7 +1470,6 @@ bool NodeBuilder::evalPartition2(const SuperBlock* hEdgeList,
     FOR_EACH(i, hEdgeList->halfEdges, SuperBlock::HalfEdges::const_iterator)
     {
         const HalfEdge* halfEdge = (*i);
-        const HalfEdgeInfo* hInfo = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
 
         // This is the heart of my pruning idea - it catches
         // "bad half-edges" early on - LK.
@@ -1496,7 +1477,8 @@ bool NodeBuilder::evalPartition2(const SuperBlock* hEdgeList,
         if(params.cost > bestCost)
             return true;
 
-        // Get state of lines' relation to each hInfo.
+        // Determine the relationship between partition and the half-edge.
+        const HalfEdgeInfo* hInfo = reinterpret_cast<HalfEdgeInfo*>(halfEdge->data);
         ddouble a, b, fa, fb;
         if(hInfo->sourceLineDef == bsp.sourceLineDef)
         {
@@ -1515,7 +1497,8 @@ bool NodeBuilder::evalPartition2(const SuperBlock* hEdgeList,
         if(fa <= DIST_EPSILON && fb <= DIST_EPSILON)
         {   // This half-edge runs along the same line as the partition.
             // Check whether it goes in the same direction or the opposite.
-            if(hInfo->direction.x * bsp.direction.x + hInfo->direction.y * bsp.direction.y < 0)
+            const Vector2d direction = halfEdge->twin->vertex->pos - halfEdge->vertex->pos;
+            if(direction.dotProduct(bsp.direction) < 0)
             {
                 ADD_LEFT();
             }
@@ -1672,9 +1655,9 @@ void NodeBuilder::pickPartitionWorker(const SuperBlock* partList,
         hInfo->lineDef->validCount = validCount;
 
         // Construct the potential partition from this half-edge.
-        BSPartition bsp = BSPartition(halfEdge->vertex->pos, hInfo->direction,
-            hInfo->lineDef, hInfo->sourceLineDef, hInfo->length,
-            hInfo->perpendicularDistance, hInfo->parallelDistance);
+        BSPartition bsp = BSPartition(halfEdge->vertex->pos,
+            halfEdge->twin->vertex->pos - halfEdge->vertex->pos,
+            hInfo->lineDef, hInfo->sourceLineDef);
 
         dint cost = evalPartition(hEdgeList, bsp, factor, *bestCost);
 
@@ -1714,6 +1697,5 @@ NodeBuilder::BSPartition NodeBuilder::pickPartition(const SuperBlock* hEdgeList)
  
     // Further partitioning is necessary.
     const HalfEdgeInfo* info = reinterpret_cast<HalfEdgeInfo*>(best->data);
-    return BSPartition(best->vertex->pos, best->twin->vertex->pos - best->vertex->pos,
-        info->lineDef, info->sourceLineDef, info->length, info->perpendicularDistance, info->parallelDistance);
+    return BSPartition(best->vertex->pos, best->twin->vertex->pos - best->vertex->pos, info->lineDef, info->sourceLineDef);
 }
