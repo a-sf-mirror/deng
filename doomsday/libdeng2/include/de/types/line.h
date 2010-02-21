@@ -50,83 +50,27 @@ namespace de
         Line2(const Vector2<Type>& _point, const Vector2<Type>& _direction)
             : point(_point), direction(_direction) {};
 
-        /**
-         * Which side of the partition does the point lie?
-         * @return              @c false = front.
-         */
-        bool Line2::pointOnSide(Type x, Type y) const
-        {
-            if(fequal(direction.x, 0))
-            {
-                if(x <= point.x)
-                    return direction.y > 0? 1 : 0;
-                return direction.y < 0? 1 : 0;
-            }
-
-            if(fequal(direction.y, 0))
-            {
-                if(y <= point.y)
-                    return direction.x < 0? 1 : 0;
-                return direction.x > 0? 1 : 0;
-            }
-
-            // Try to quickly decide by looking at the signs.
-            Vector2<type> delta = point - Vector2<type>(x, y);
-            if(direction.x < 0)
-            {
-                if(direction.y < 0)
-                {
-                    if(delta.x < 0)
-                    {
-                        if(delta.y >= 0)
-                            return 0;
-                    }
-                    else if(delta.y < 0)
-                        return 1;
-                }
-                else
-                {
-                    if(delta.x < 0)
-                    {
-                        if(delta.y < 0)
-                            return 1;
-                    }
-                    else if(delta.y >= 0)
-                        return 0;
-                }
-            }
-            else
-            {
-                if(direction.y < 0)
-                {
-                    if(delta.x < 0)
-                    {
-                        if(delta.y < 0)
-                            return 0;
-                    }
-                    else if(delta.y >= 0)
-                        return 1;
-                }
-                else
-                {
-                    if(delta.x < 0)
-                    {
-                        if(delta.y >= 0)
-                            return 1;
-                    }
-                    else if(delta.y < 0)
-                        return 0;
-                }
-            }
-
-            if(delta.y * direction.x < direction.y * delta.x)
-                return 0; // front side
-
-            return 1; // back side
+        operator String () const {
+            return asText();
+        }
+        String asText() const { 
+            std::ostringstream s;
+            s << *this;
+            return s.str();
         }
 
-        bool pointOnSide(const Vector2<Type>& otherPoint) const {
-            return pointOnSide(otherPoint.x, otherPoint.y);
+        /**
+         * Which side of the line does the point lie?
+         * @return              @c false = front.
+         */
+        bool side(const Vector2<Type>& otherPoint) const {
+            Vector2<Type> diff = otherPoint - point;
+            Vector2<Type> perp = Vector2<Type>(-diff.y, diff.x);
+            return sign(Vector2<Type>(direction - point).dotProduct(perp)) == -1;
+        }
+
+        bool side(Type x, Type y) const {
+            return side(Vector2<Type>(x, y));
         }
 
         // Implements ISerializable.

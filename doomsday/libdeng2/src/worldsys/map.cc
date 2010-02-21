@@ -42,7 +42,7 @@ Map::ownernode_t* unusedNodeList = NULL;
 
 struct losdata_t {
     dint flags; // LS_* flags @see lineSightFlags
-    divline_t trace;
+    Line2i trace;
     dfloat startZ; // Eye z of looker.
     dfloat topSlope; // Slope to top of target.
     dfloat bottomSlope; // Slope to bottom of target.
@@ -797,7 +797,7 @@ Subsector& Map::pointInSubsector(dfloat x, dfloat y) const
     while(!tree->isLeaf())
     {
         const Node* node = reinterpret_cast<Node*>(tree->data());
-        tree = tree->child(node->partition.pointOnSide(x, y));
+        tree = tree->child(node->partition.side(x, y));
     }
 
     Face* face = reinterpret_cast<Face*>(tree->data());

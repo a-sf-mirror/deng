@@ -54,11 +54,6 @@ namespace de
     class Polyobj;
     class Decoration;
 
-    struct divline_t {
-        dfixed pos[2];
-        dfixed dX, dY;
-    };
-
     /**
      * Contains everything that makes a map work: sectors, lines, scripts, 
      * objects, etc. The game plugin is responsible for creating concrete

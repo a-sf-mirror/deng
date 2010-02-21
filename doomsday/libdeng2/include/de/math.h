@@ -97,6 +97,12 @@ namespace de
         return 0;
     }
 
+    /// General sign of logical value extension.
+    template <typename Type>
+    inline dint sign(const Type& val) {
+        return (val < 0? -1 : 1);
+    }
+
     /**
      * 16.16 fixed point math.
      */

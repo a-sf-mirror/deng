@@ -41,11 +41,6 @@ Vector2f LineDef::unitVector() const
     return Vector2f(0, 0);
 }
 
-dint LineDef::pointOnSide(dfloat x, dfloat y) const
-{
-    return !P_PointOnLineSide(x, y, vtx1().pos.x, vtx1().pos.y, delta.x, delta.y);
-}
-
 void LineDef::updateAABounds()
 {
     bool edge;
@@ -109,13 +104,13 @@ dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
         break;
 
       case ST_POSITIVE:
-        a = pointOnSide(xl, yh);
-        b = pointOnSide(xh, yl);
+        a = side(xl, yh);
+        b = side(xh, yl);
         break;
 
     case ST_NEGATIVE:
-        a = pointOnSide(xh, yh);
-        b = pointOnSide(xl, yl);
+        a = side(xh, yh);
+        b = side(xl, yl);
         break;
     }
 
@@ -131,19 +126,6 @@ dint LineDef::boxOnSide(const Vector2f& bottomLeft, const Vector2f& topRight) co
 }
 
 #if 0
-void LineDef::constructDivline(const LineDef& lineDef, divline_t* divline)
-{
-    assert(lineDef);
-    assert(divline);
-
-    const Vertex* vtx = lineDef.vtx1();
-
-    divline->pos[VX] = FLT2FIX(vtx->pos[VX]);
-    divline->pos[VY] = FLT2FIX(vtx->pos[VY]);
-    divline->dX = FLT2FIX(lineDef->dX);
-    divline->dY = FLT2FIX(lineDef->dY);
-}
-
 bool LineDef::setProperty(const setargs_t* args)
 {
     switch(args->prop)
