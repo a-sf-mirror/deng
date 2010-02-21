@@ -59,7 +59,7 @@ namespace de
     public:
         lineowner_t* vo[2]; // Links to vertex line owner nodes [left, right]
         HalfEdge* halfEdges[2]; // [leftmost front seg, rightmost front seg]
-        Vector2f delta;
+        Vector2d direction;
         dbinangle angle; // Calculated from front side's normal
         dfloat length; // Accurate length
         slopetype_t slopeType;

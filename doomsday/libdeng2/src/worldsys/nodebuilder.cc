@@ -51,86 +51,56 @@ struct LineDefOwner
 static Vertex* rootVtx;
 
 /**
- * Where is the given point in relation to the line.
- *
- * @param pointX        X coordinate of the point.
- * @param pointY        Y coordinate of the point.
- * @param lineDX        X delta of the line.
- * @param lineDY        Y delta of the line.
- * @param linePerp      Perpendicular d of the line.
- * @param lineLength    Length of the line.
- *
- * @return              @c <0= on left side.
- *                      @c  0= intersects.
- *                      @c >0= on right side.
- */
-dint pointOnLineSide(ddouble pointX, ddouble pointY, ddouble lineDX,
-    ddouble lineDY, ddouble linePerp, ddouble lineLength, ddouble epsilon)
-{
-    ddouble perp = M_PerpDist(lineDX, lineDY, linePerp, lineLength, pointX, pointY);
-    if(de::abs(perp) <= epsilon)
-        return 0;
-    return (perp < 0? -1 : +1);
-}
-
-/**
  * Check the spatial relationship between the given box and a partitioning
  * line.
  *
  * @param bbox          Ptr to the box being tested.
- * @param lineSX        X coordinate of the start of the line.
- * @param lineSY        Y coordinate of the end of the line.
- * @param lineDX        X delta of the line (slope).
- * @param lineDY        Y delta of the line (slope).
- * @param linePerp      Perpendicular d of the line.
- * @param lineLength    Length of the line.
  * @param epsilon       Points within this distance will be considered equal.
  *
  * @return              @c <0= bbox is wholly on the left side.
  *                      @c  0= line intersects bbox.
  *                      @c >0= bbox wholly on the right side.
  */
-dint boxOnLineSide(const dint bbox[4], ddouble lineSX, ddouble lineSY,
-    ddouble lineDX, ddouble lineDY, ddouble linePerp, ddouble lineLength,
-    ddouble epsilon)
+dint boxOnLineSide(const Line2d& line, const dint bbox[4], ddouble epsilon)
 {
-    ddouble x1 = static_cast<ddouble>(bbox[BOXLEFT])   - IFFY_LEN * 1.5;
-    ddouble y1 = static_cast<ddouble>(bbox[BOXBOTTOM]) - IFFY_LEN * 1.5;
-    ddouble x2 = static_cast<ddouble>(bbox[BOXRIGHT])  + IFFY_LEN * 1.5;
-    ddouble y2 = static_cast<ddouble>(bbox[BOXTOP])    + IFFY_LEN * 1.5;
+    Vector2d min = Vector2d(bbox[BOXLEFT], bbox[BOXBOTTOM]);
+    min -= Vector2d(IFFY_LEN * 1.5, IFFY_LEN * 1.5);
+
+    Vector2d max = Vector2d(bbox[BOXRIGHT], bbox[BOXTOP]);
+    min += Vector2d(IFFY_LEN * 1.5, IFFY_LEN * 1.5);
 
     dint p1, p2;
-    if(lineDX == 0)
+    if(line.direction.x == 0)
     {   // Horizontal.
-        p1 = (x1 > lineSX? +1 : -1);
-        p2 = (x2 > lineSX? +1 : -1);
+        p1 = (min.x > line.point.x? +1 : -1);
+        p2 = (max.x > line.point.x? +1 : -1);
 
-        if(lineDY < 0)
+        if(line.direction.y < 0)
         {
             p1 = -p1;
             p2 = -p2;
         }
     }
-    else if(lineDY == 0)
+    else if(line.direction.y == 0)
     {   // Vertical.
-        p1 = (y1 < lineSY? +1 : -1);
-        p2 = (y2 < lineSY? +1 : -1);
+        p1 = (min.y < line.point.y? +1 : -1);
+        p2 = (max.y < line.point.y? +1 : -1);
 
-        if(lineDX < 0)
+        if(line.direction.x < 0)
         {
             p1 = -p1;
             p2 = -p2;
         }
     }
-    else if(lineDX * lineDY > 0)
+    else if(line.direction.x * line.direction.y > 0)
     {   // Positive slope.
-        p1 = pointOnLineSide(x1, y2, lineDX, lineDY, linePerp, lineLength, epsilon);
-        p2 = pointOnLineSide(x2, y1, lineDX, lineDY, linePerp, lineLength, epsilon);
+        p1 = line.side(min.x, max.y, epsilon);
+        p2 = line.side(max.x, min.y, epsilon);
     }
     else
     {   // Negative slope.
-        p1 = pointOnLineSide(x1, y1, lineDX, lineDY, linePerp, lineLength, epsilon);
-        p2 = pointOnLineSide(x2, y2, lineDX, lineDY, linePerp, lineLength, epsilon);
+        p1 = line.side(min, epsilon);
+        p2 = line.side(max, epsilon);
     }
 
     if(p1 == p2)
@@ -997,7 +967,7 @@ void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
    SuperBlock* bRight, SuperBlock* bLeft)
 {
 #define INTERSECT(e, p) if(!findIntersection(e)) \
-    insertIntersection(e, M_ParallelDist((p).direction.x, (p).direction.y, (p).para, (p).length, (e)->vertex->pos.x, (e)->vertex->pos.y))
+    insertIntersection(e, (p).paraDistance((e)->vertex->pos))
 
     HalfEdgeInfo* data = reinterpret_cast<HalfEdgeInfo*>(curHEdge.data);
     ddouble perpC, perpD;
@@ -1009,10 +979,8 @@ void NodeBuilder::divideHalfEdge(const BSPartition& bsp, HalfEdge& curHEdge,
     }
     else
     {
-        perpC = M_PerpDist(bsp.direction.x, bsp.direction.y, bsp.perp, bsp.length,
-                       curHEdge.vertex->pos.x, curHEdge.vertex->pos.y);
-        perpD = M_PerpDist(bsp.direction.x, bsp.direction.y, bsp.perp, bsp.length,
-                       curHEdge.twin->vertex->pos.x, curHEdge.twin->vertex->pos.y);
+        perpC = bsp.perpDistance(curHEdge.vertex->pos);
+        perpD = bsp.perpDistance(curHEdge.twin->vertex->pos);
     }
 
     // Check for being on the same line.
@@ -1502,9 +1470,7 @@ bool NodeBuilder::evalPartition2(const SuperBlock* hEdgeList,
      * within it at once. Only when the partition line intercepts the box do
      * we need to go deeper into it - AJA.
      */
-    dint num = boxOnLineSide(hEdgeList->bbox, bsp.point.x, bsp.point.y,
-                             bsp.direction.x, bsp.direction.y, bsp.perp,
-                             bsp.length, DIST_EPSILON);
+    dint num = boxOnLineSide(bsp, hEdgeList->bbox, DIST_EPSILON);
     if(num < 0)
     {   // Left.
         params.realLeft += hEdgeList->realNum;
@@ -1538,10 +1504,8 @@ bool NodeBuilder::evalPartition2(const SuperBlock* hEdgeList,
         }
         else
         {
-            a = M_PerpDist(bsp.direction.x, bsp.direction.y, bsp.perp, bsp.length,
-                           halfEdge->vertex->pos.x, halfEdge->vertex->pos.y);
-            b = M_PerpDist(bsp.direction.x, bsp.direction.y, bsp.perp, bsp.length,
-                           halfEdge->twin->vertex->pos.x, halfEdge->twin->vertex->pos.y);
+            a = bsp.perpDistance(halfEdge->vertex->pos);
+            b = bsp.perpDistance(halfEdge->twin->vertex->pos);
 
             fa = fabs(a);
             fb = fabs(b);

@@ -35,9 +35,9 @@ dfloat LineDef::lightLevelDelta() const
 
 Vector2f LineDef::unitVector() const
 {
-    dfloat length = M_ApproxDistancef(delta.x, delta.y);
+    dfloat length = M_ApproxDistancef(direction.x, direction.y);
     if(length != 0)
-        return Vector2f(delta.x / length, delta.y / length);
+        return Vector2f(direction.x / length, direction.y / length);
     return Vector2f(0, 0);
 }
 
@@ -54,18 +54,18 @@ void LineDef::updateAABounds()
     _aaBounds[BOXTOP]    = vtx(edge).pos.y;
 
     // Update the lineDef's slopetype.
-    delta = vtx2().pos - vtx1().pos;
-    if(fequal(delta.x, 0))
+    direction = vtx2().pos - vtx1().pos;
+    if(fequal(direction.x, 0))
     {
         slopeType = ST_VERTICAL;
     }
-    else if(fequal(delta.y, 0))
+    else if(fequal(direction.y, 0))
     {
         slopeType = ST_HORIZONTAL;
     }
     else
     {
-        if(delta.y / delta.x > 0)
+        if(direction.y / direction.x > 0)
         {
             slopeType = ST_POSITIVE;
         }
@@ -86,7 +86,7 @@ dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
       case ST_HORIZONTAL:
         a = yh > vtx1().pos.y;
         b = yl > vtx1().pos.y;
-        if(delta.x < 0)
+        if(direction.x < 0)
         {
             a ^= 1;
             b ^= 1;
@@ -96,7 +96,7 @@ dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
       case ST_VERTICAL:
         a = xh < vtx1().pos.x;
         b = xl < vtx1().pos.x;
-        if(delta.y < 0)
+        if(direction.y < 0)
         {
             a ^= 1;
             b ^= 1;

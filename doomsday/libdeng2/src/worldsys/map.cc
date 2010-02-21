@@ -797,7 +797,7 @@ Subsector& Map::pointInSubsector(dfloat x, dfloat y) const
     while(!tree->isLeaf())
     {
         const Node* node = reinterpret_cast<Node*>(tree->data());
-        tree = tree->child(node->partition.side(x, y));
+        tree = tree->child(node->partition.side(x, y)<=0);
     }
 
     Face* face = reinterpret_cast<Face*>(tree->data());
@@ -1833,19 +1833,19 @@ void Map::finishLineDefs2()
         if(!ld->halfEdges[0])
             continue;
 
-        ld->delta = ld->vtx2().pos - ld->vtx1().pos;
+        ld->direction = ld->vtx2().pos - ld->vtx1().pos;
 
         // Calculate the accurate length of each line.
-        ld->length = ld->delta.length();
-        ld->angle = bamsAtan2(dint(ld->delta.y), dint(ld->delta.x)) << FRACBITS;
+        ld->length = ld->direction.length();
+        ld->angle = bamsAtan2(dint(ld->direction.y), dint(ld->direction.x)) << FRACBITS;
 
-        if(fequal(ld->delta.x, 0))
+        if(fequal(ld->direction.x, 0))
             ld->slopeType = LineDef::ST_VERTICAL;
-        else if(fequal(ld->delta.y, 0))
+        else if(fequal(ld->direction.y, 0))
             ld->slopeType = LineDef::ST_HORIZONTAL;
         else
         {
-            if(ld->delta.y / ld->delta.x > 0)
+            if(ld->direction.y / ld->direction.x > 0)
                 ld->slopeType = LineDef::ST_POSITIVE;
             else
                 ld->slopeType = LineDef::ST_NEGATIVE;
@@ -2508,7 +2508,7 @@ bool Map::editEnd()
 
     /*builtOK =*/ buildNodes();
 
-    FOR_EACH(i, polyObjs, PolyObjs::iterator)
+    FOR_EACH(i, polyobjs, Polyobjs::iterator)
     {
         Polyobj* po = *i;
 
@@ -3429,13 +3429,13 @@ Polyobj* Map::polyobj(duint num)
         duint idx = num & 0x7fffffff;
 
         if(idx < _numPolyObjs)
-            return polyObjs[idx];
+            return polyobjs[idx];
         return NULL;
     }
 
     for(duint i = 0; i < _numPolyObjs; ++i)
     {
-        Polyobj* po = polyObjs[i];
+        Polyobj* po = polyobjs[i];
 
         if(duint(po->tag) == num)
         {

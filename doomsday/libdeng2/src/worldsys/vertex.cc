@@ -113,14 +113,14 @@ void MVertex::updateShadowOffsets()
 
         Vector2f left, right;
         if(reinterpret_cast<MVertex*>(lineDefB.vtx1().data) == this)
-            right = lineDefB.delta;
+            right = lineDefB.direction;
         else
-            right = -lineDefB.delta;
+            right = -lineDefB.direction;
 
         if(reinterpret_cast<MVertex*>(lineDefA.vtx1().data) == this)
-            left = -lineDefA.delta;
+            left = -lineDefA.direction;
         else
-            left = lineDefA.delta;
+            left = lineDefA.direction;
 
         // The left side is always flipped.
         left = -left;

@@ -59,18 +59,34 @@ namespace de
             return s.str();
         }
 
-        /**
-         * Which side of the line does the point lie?
-         * @return              @c false = front.
-         */
-        bool side(const Vector2<Type>& otherPoint) const {
-            Vector2<Type> diff = otherPoint - point;
-            Vector2<Type> perp = Vector2<Type>(-diff.y, diff.x);
-            return sign(Vector2<Type>(direction - point).dotProduct(perp)) == -1;
+        /// Perpendicular distance.
+        template <typename PointType>
+        PointType perpDistance(const Vector2<PointType> otherPoint) const {
+            Type perp = point.y * direction.x - point.x * direction.y;
+            return (otherPoint.x * direction.y - otherPoint.y * direction.x + perp) / direction.length();
         }
 
-        bool side(Type x, Type y) const {
-            return side(Vector2<Type>(x, y));
+        /// Parallel distance.
+        template <typename PointType>
+        PointType paraDistance(const Vector2<PointType> otherPoint) const {
+            Type para = -point.x * direction.x - point.y * direction.y;
+            return (otherPoint.x * direction.x + otherPoint.y * direction.y + para) / direction.length();
+        }
+
+        /**
+         * Which side of the line does the point lie?
+         * @return              @c <0= on left side.
+         *                      @c  0= intersects.
+         *                      @c >0= on right side.
+         */
+        template <typename PointType>
+        dint side(const Vector2<PointType>& otherPoint, ddouble epsilon = EPSILON) const {
+            Type perp = perpDistance(otherPoint);
+            return (de::abs(perp) <= epsilon? 0 : sign(perp));
+        }
+        template <typename PointType>
+        dint side(PointType x, PointType y, ddouble epsilon = EPSILON) const {
+            return side(Vector2<pointType>(pointX, pointY), epsilon);
         }
 
         // Implements ISerializable.
