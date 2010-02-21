@@ -63,7 +63,7 @@ namespace de
         /// Thrown when the set is considered to be convex. @ingroup errors
         DEFINE_ERROR(NoSuitablePartitionError);
 
-        struct BSPartition : Partition
+        struct BSPartition : Node::Partition
         {
             LineDef* lineDef;
             LineDef* sourceLineDef;
@@ -74,7 +74,7 @@ namespace de
             BSPartition(const Vector2d& point, const Vector2d& direction,
                 LineDef* lineDef, LineDef* sourceLineDef, ddouble length,
                 ddouble perp, ddouble para)
-              : Partition(point, direction), lineDef(lineDef),
+              : Node::Partition(point, direction), lineDef(lineDef),
                 sourceLineDef(sourceLineDef), length(length), perp(perp),
                 para(para) {};
         };

@@ -54,6 +54,11 @@ namespace de
     class Polyobj;
     class Decoration;
 
+    struct divline_t {
+        dfixed pos[2];
+        dfixed dX, dY;
+    };
+
     /**
      * Contains everything that makes a map work: sectors, lines, scripts, 
      * objects, etc. The game plugin is responsible for creating concrete
@@ -78,7 +83,7 @@ namespace de
         typedef std::vector<Plane*> Planes;
         typedef std::vector<Sector*> Sectors;
         typedef std::vector<Polyobj*> Polyobjs;
-                
+
     public:
         /**
          * Constructs an empty map.
@@ -580,7 +585,7 @@ namespace de
         // protected
         Seg* createSeg(LineDef* lineDef, bool back, HalfEdge* halfEdge);
         Subsector* createSubsector(Face* face, Sector* sector);
-        Node* createNode(const Partition& partition, const MapRectangle& rightAABB, const MapRectangle& leftAABB);
+        Node* createNode(const Node::Partition& partition, const MapRectangle& rightAABB, const MapRectangle& leftAABB);
 
         void markAllSectorsForLightGridUpdate();
 
