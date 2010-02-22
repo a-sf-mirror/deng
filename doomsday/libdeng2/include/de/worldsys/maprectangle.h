@@ -61,7 +61,7 @@ namespace de
         }
 
         String asText() const { 
-            return "[" + topLeft().asText() + ", " + bottomRight().asText() + "]";
+            return "[" + bottomLeft().asText() + ", " + topRight().asText() + "]";
         }
         Corner topRight() const {
             return Rectangle::bottomRight;
@@ -76,10 +76,10 @@ namespace de
             return Rectangle::topRight();
         }
         Corner midTop() const {
-            return Corner((topLeft.x + bottomRight.x)/2.0, Rectangle::bottomRight.y);
+            return Corner((Rectangle::topLeft.x + Rectangle::bottomRight.x)/2.0, Rectangle::bottomRight.y);
         }
         Corner midBottom() const {
-            return Corner((topLeft.x + bottomRight.x)/2.0, Rectangle::topLeft.y);
+            return Corner((Rectangle::topLeft.x + Rectangle::bottomRight.x)/2.0, Rectangle::topLeft.y);
         }
     };
 
