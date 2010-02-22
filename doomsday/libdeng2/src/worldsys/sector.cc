@@ -189,32 +189,25 @@ void Sector::updateAABounds()
         return;
     }
 
-    _aaBounds[BOXLEFT]   = MAXFLOAT;
-    _aaBounds[BOXRIGHT]  = MINFLOAT;
-    _aaBounds[BOXBOTTOM] = MAXFLOAT;
-    _aaBounds[BOXTOP]    = MINFLOAT;
-
+    bool first = true;
     FOR_EACH(i, lineDefs, LineDefSet::const_iterator)
     {
-        const LineDef& lineDef = *(*i);
-
-        if(lineDef.polyobjOwned)
+        const LineDef* lineDef = (*i);
+        if(lineDef->polyobjOwned)
             continue;
 
-        const Vertex& vtx = lineDef.vtx1();
-        if(vtx.pos.x < _aaBounds[BOXLEFT])
-            _aaBounds[BOXLEFT]   = vtx.pos.x;
-        if(vtx.pos.x > _aaBounds[BOXRIGHT])
-            _aaBounds[BOXRIGHT]  = vtx.pos.x;
-        if(vtx.pos.y < _aaBounds[BOXBOTTOM])
-            _aaBounds[BOXBOTTOM] = vtx.pos.y;
-        if(vtx.pos.y > _aaBounds[BOXTOP])
-            _aaBounds[BOXTOP]    = vtx.pos.y;
+        if(first)
+        {
+            _aaBounds = MapRectangled(lineDef->vtx1().pos, lineDef->vtx1().pos);
+            first = false;
+            continue;
+        }
+
+        _aaBounds.include(lineDef->vtx1().pos);
     }
 
     // This is very rough estimate of sector area.
-    approxArea = ((_aaBounds[BOXRIGHT] - _aaBounds[BOXLEFT]) / 128) *
-                 ((_aaBounds[BOXTOP]   - _aaBounds[BOXBOTTOM]) / 128);
+    approxArea = (_aaBounds.width() / 128) * (_aaBounds.height() / 128);
 }
 
 void Sector::buildSubsectorSet()

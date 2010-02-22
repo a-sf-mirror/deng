@@ -115,7 +115,7 @@ MapRectanglef SuperBlock::aaBounds() const
     bbox[BOXTOP] = bbox[BOXRIGHT] = MINFLOAT;
     bbox[BOXBOTTOM] = bbox[BOXLEFT] = MAXFLOAT;
     findBoundsWorker(this, bbox);
-    return MapRectangle(bbox);
+    return MapRectanglef(bbox);
 }
 
 #if _DEBUG

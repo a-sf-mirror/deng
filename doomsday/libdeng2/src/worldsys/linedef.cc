@@ -35,9 +35,10 @@ dfloat LineDef::lightLevelDelta() const
 
 Vector2f LineDef::unitVector() const
 {
-    dfloat length = M_ApproxDistancef(direction.x, direction.y);
+    Line2f line = Line2f(*this);
+    dfloat length = dfloat(line.direction.length());
     if(length != 0)
-        return Vector2f(direction.x / length, direction.y / length);
+        return Vector2f(line.direction.x / length, line.direction.y / length);
     return Vector2f(0, 0);
 }
 
@@ -47,7 +48,7 @@ void LineDef::updateAABounds()
                               vtx1().pos.max(vtx2().pos));
 
     // Update the lineDef's slopetype.
-    direction = vtx2().pos - vtx1().pos;
+    direction = Line2d(*this).direction;
     if(fequal(direction.x, 0))
     {
         slopeType = ST_VERTICAL;

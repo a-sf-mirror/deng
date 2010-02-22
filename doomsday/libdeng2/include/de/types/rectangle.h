@@ -46,9 +46,25 @@ namespace de
         void setWidth(Type w) { bottomRight.x = topLeft.x + w; }
         void setHeight(Type h) { bottomRight.y = topLeft.y + h; }
         void setSize(const Vector2<Type>& s) { setWidth(s.x); setHeight(s.y); }
+        void move(const Vector2<Type>& delta) {
+            topLeft += delta;
+            bottomRight += delta; 
+        }
         void include(const Corner& point) {
             topLeft = topLeft.min(point);
             bottomRight = bottomRight.max(point);
+        }
+        void include(const Rectangle& other) {
+            include(other.topLeft);
+            include(other.bottomRight);
+        }
+        template <typename VectorTypeArg>
+        Rectangle<VectorTypeArg> intersection(const Rectangle<VectorTypeArg>& other) const {
+            return Rectangle<VectorTypeArg>(topLeft.max(other.topLeft), bottomRight.min(other.bottomRight));
+        }
+        bool intersects(const Rectangle& other) {
+            return (topLeft.x >= other.topLeft.x && topLeft.y >= other.topLeft.y) ||
+                   (bottomRight.x <= other.bottomRight.x && bottomRight.y <= other.bottomRight.y);
         }
         bool contains(const Corner& point) const {
             return point >= topLeft && point <= bottomRight;

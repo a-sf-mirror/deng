@@ -363,9 +363,6 @@ namespace de
 
         duint validCount;
 
-        /// Axis-Aligned Bounding Box.
-        MapRectangled aaBounds;
-
     private:
         /// All sidedefs of the map.
         SideDefs _sideDefs;
@@ -405,6 +402,9 @@ namespace de
         SurfaceSet _movingSurfaces;
         SurfaceSet _decoratedSurfaces;
 
+        /// Axis-Aligned Bounding Box.
+        MapRectangled _aaBounds;
+
     public:
         NodePile* thingNodes, *lineDefNodes; // All kinds of wacky links.
         NodePile::Index* lineDefLinks; // Indices to roots.
@@ -436,9 +436,11 @@ namespace de
         //bool load();
         void precache();
 
-        //const char* ID();
-        //const char* uniqueName();
         void bounds(dfloat* min, dfloat* max);
+
+        /**
+         * Get the ambient light level of the specified map.
+         */
         dint ambientLightLevel();
 
         Polyobjs::size_type numPolyobjs() const { return _polyobjs.size(); }
@@ -447,10 +449,10 @@ namespace de
         Planes::size_type numPlanes() const { return _planes.size(); }
         Sectors::size_type numSectors() const { return _sectors.size(); }
 
-        duint numVertexes();
-        duint numSegs();
-        duint numSubsectors();
-        duint numNodes();
+        HalfEdgeDS::Vertices::size_type numVertexes() const { return _halfEdgeDS->numVertices(); }
+        duint numSegs() const { return _numSegs; }
+        duint numSubsectors() const { return _numSubsectors; }
+        duint numNodes() const { return _numNodes; }
 
         void beginFrame(bool resetNextViewer);
         void endFrame();
@@ -531,16 +533,16 @@ namespace de
         void setSectorPlane(objectrecordid_t sector, uint32_t type, objectrecordid_t plane);
 
         /// Thing iterators:
-        bool iterateThings(const dfloat box[4], bool (*func) (Thing*, void*), void* paramaters = 0);
+        bool iterateThings(const MapRectanglef aaBounds, bool (*func) (Thing*, void*), void* paramaters = 0);
 
         /// LineDef iterators:
-        bool iterateLineDefs(const dfloat box[4], bool (*func) (LineDef*, void*), /*bool retObjRecord,*/ void* paramaters = 0);
+        bool iterateLineDefs(const MapRectanglef aaBounds, bool (*func) (LineDef*, void*), /*bool retObjRecord,*/ void* paramaters = 0);
 
         /// Subsector iterators:
-        bool iterateSubsectors(const dfloat box[4], bool (*func) (Subsector*, void*), /*bool retObjRecord,*/ void* paramaters = 0);
+        bool iterateSubsectors(const MapRectanglef aaBounds, bool (*func) (Subsector*, void*), /*bool retObjRecord,*/ void* paramaters = 0);
 
         //bool pathTraverse(dfloat x1, dfloat y1, dfloat x2, dfloat y2, dint flags, bool (*trav) (intercept_t*));
-        bool checkLineSight(const dfloat from[3], const dfloat to[3], dfloat bottomSlope, dfloat topSlope, dint flags);
+        bool checkLineSight(const Vector3f from, const Vector3f to, dfloat bottomSlope, dfloat topSlope, dint flags);
 
         Subsector& pointInSubsector(dfloat x, dfloat y) const;
         Subsector& pointInSubsector(const Vector2f& point) const { return pointInSubsector(point.x, point.y); }
@@ -569,17 +571,17 @@ namespace de
         Polyobj* polyobj(duint num);
 
         // @todo the following should be Map private:
-        HalfEdgeDS& halfEdgeDS();
-        ThingBlockmap* thingBlockmap();
-        LineDefBlockmap& lineDefBlockmap();
-        SubsectorBlockmap* subsectorBlockmap();
-        ParticleBlockmap* particleBlockmap();
-        LumObjBlockmap* lumobjBlockmap();
-        //lightgrid_t* lightGrid();
+        HalfEdgeDS& halfEdgeDS() { return *_halfEdgeDS; }
+        ThingBlockmap& thingBlockmap() { return *_thingBlockmap; }
+        LineDefBlockmap& lineDefBlockmap() { return *_lineDefBlockmap; }
+        SubsectorBlockmap& subsectorBlockmap() { return *_subsectorBlockmap; }
+        ParticleBlockmap& particleBlockmap() { return *_particleBlockmap; }
+        LumObjBlockmap& lumobjBlockmap() { return *_lumobjBlockmap; }
+        //lightgrid_t& lightGrid() { return _lightGrid; }
 
         // protected
-        Seg* createSeg(LineDef* lineDef, bool back, HalfEdge* halfEdge);
-        Subsector* createSubsector(Face* face, Sector* sector);
+        Seg* createSeg(HalfEdge& halfEdge, LineDef* lineDef, bool back);
+        Subsector* createSubsector(Face& face, Sector* sector);
         Node* createNode(const Node::Partition& partition, const MapRectangled& rightAABB, const MapRectangled& leftAABB);
 
         void markAllSectorsForLightGridUpdate();

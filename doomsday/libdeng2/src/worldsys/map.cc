@@ -619,19 +619,14 @@ static bool PIT_LinkToLineDef(LineDef* lineDef, void* paramaters)
 {
     Map::linelinker_data_t* data = reinterpret_cast<Map::linelinker_data_t*>(paramaters);
 
-    if(data->aaBounds[1][0] <= lineDef->aaBounds().left ||
-       data->aaBounds[0][0] >= lineDef->aaBounds().right ||
-       data->aaBounds[1][1] <= lineDef->aaBounds().bottom ||
-       data->aaBounds[0][1] >= lineDef->aaBounds().top)
-        // Bounding boxes do not overlap.
-        return true;
+    if(!data->aaBounds.intersects(lineDef->aaBounds()))
+        return true; // Bounding boxes do not overlap.
 
     if(lineDef->boxOnSide(data->aaBounds) != -1)
-        // Line does not cross the mobj's bounding box.
-        return true;
+        return true; // Line does not cross the mobj's bounding box.
 
-    // One sided lines will not be linked to because a mobj
-    // can't legally cross one.
+    /// One-sided LineDefs will not be linked to because a Thing can not
+    /// legally cross one.
     if(!lineDef->hasFront() || !lineDef->hasBack())
         return true;
 
@@ -1813,7 +1808,7 @@ void Map::updateAABounds()
         else
         {
             // Expand the bounding box.
-            M_JoinBoxes(aaBounds, sec->aaBounds());
+            aaBounds.include(sec->aaBounds());
         }
     }
 }
@@ -1830,7 +1825,7 @@ void Map::finishLineDefs2()
         ld->direction = ld->vtx2().pos - ld->vtx1().pos;
 
         // Calculate the accurate length of each line.
-        ld->length = ld->direction.length();
+        ld->length = dfloat(ld->direction.length());
         ld->angle = bamsAtan2(dint(ld->direction.y), dint(ld->direction.x)) << FRACBITS;
 
         if(fequal(ld->direction.x, 0))
@@ -1845,27 +1840,9 @@ void Map::finishLineDefs2()
                 ld->slopeType = LineDef::ST_NEGATIVE;
         }
 
-        if(ld->vtx1().pos.x < ld->vtx2().pos.x)
-        {
-            ld->aaBounds.left   = ld->vtx1().pos.x;
-            ld->aaBounds.right  = ld->vtx2().pos.x;
-        }
-        else
-        {
-            ld->aaBounds.left   = ld->vtx2().pos.x;
-            ld->aaBounds.right  = ld->vtx1().pos.x;
-        }
-
-        if(ld->vtx1().pos.y < ld->vtx2().pos.y)
-        {
-            ld->aaBounds.bottom = ld->vtx1().pos.y;
-            ld->aaBounds.top    = ld->vtx2().pos.y;
-        }
-        else
-        {
-            ld->aaBounds.bottom = ld->vtx2().pos.y;
-            ld->aaBounds.top    = ld->vtx1().pos.y;
-        }
+        const Vector2d bottomLeft = ld->vtx1().pos.min(ld->vtx2().pos);
+        const Vector2d topRight = ld->vtx1().pos.max(ld->vtx2().pos);
+        ld->_aaBounds = MapRectangled(bottomLeft, topRight);
     }
 }
 
@@ -2147,7 +2124,7 @@ static bool C_DECL buildSeg(HalfEdge* halfEdge, void* paramaters)
     if(!(info->lineDef &&
         (!info->sector || (info->back && info->lineDef->buildData.windowEffect))))
     {
-        map->createSeg(info->lineDef, info->back, halfEdge);
+        map->createSeg(*halfEdge, info->lineDef, info->back);
     }
 
     return true; // Continue iteration.
@@ -2204,7 +2181,7 @@ static bool C_DECL buildSubsector(BinaryTree<void*>* tree, void* paramaters)
             if(!sector)
                 sector = pickSectorFromHEdges(face->halfEdge, true);
 
-            reinterpret_cast<Map*>(paramaters)->createSubsector(face, sector);
+            reinterpret_cast<Map*>(paramaters)->createSubsector(*face, sector);
         }
 
         child = tree->left();
@@ -2222,7 +2199,7 @@ static bool C_DECL buildSubsector(BinaryTree<void*>* tree, void* paramaters)
             if(!sector)
                 sector = pickSectorFromHEdges(face->halfEdge, true);
 
-            reinterpret_cast<Map*>(paramaters)->createSubsector(face, sector);
+            reinterpret_cast<Map*>(paramaters)->createSubsector(*face, sector);
         }
     }
 
@@ -2406,11 +2383,9 @@ void Map::findSubSectorsAffectingSector(duint secIDX)
     memset(&subsectorOwnerList, 0, sizeof(subsectorOwnerList));
 
     Sector* sec = _sectors[secIDX];
-    MapRectangled affectBounds = sec->aaBounds();
-    affectBounds.left   -= 128;
-    affectBounds.right  += 128;
-    affectBounds.top    += 128;
-    affectBounds.bottom -= 128;
+
+    MapRectangled affectBounds(sec->aaBounds().bottomLeft() - Vector2d(128, 128),
+                               sec->aaBounds().topRight()   + Vector2d(128, 128));
 
     for(duint i = 0; i < _numSubsectors; ++i)
     {
@@ -2418,10 +2393,7 @@ void Map::findSubSectorsAffectingSector(duint secIDX)
 
         // Is this subsector close enough?
         if(&subsector->sector() == sec || // subsector is IN this sector
-           (subsector->midPoint.x > affectBounds.left &&
-            subsector->midPoint.x < affectBounds.right &&
-            subsector->midPoint.y < affectBounds.top &&
-            subsector->midPoint.y > affectBounds.bottom))
+           affectBounds.contains(subsector->midPoint))
         {
             // It will contribute to the reverb settings of this sector.
             setSectorOwner(&subsectorOwnerList, subsector);
@@ -2506,24 +2478,24 @@ bool Map::editEnd()
     {
         Polyobj* po = *i;
 
-        po->originalPts = Z_Malloc(po->numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
-        po->prevPts = Z_Malloc(po->numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
+        po->_originalPts = Z_Malloc(po->_numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
+        po->_prevPts = Z_Malloc(po->_numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
 
-        for(duint j = 0; j < po->numLineDefs; ++j)
+        for(duint j = 0; j < po->_numLineDefs; ++j)
         {
-            linedef_t* lineDef = po->lineDefs[j];
+            LineDef* lineDef = po->lineDefs[j];
             HalfEdge* fHEdge, *bHEdge;
 
             fHEdge = Z_Calloc(sizeof(*fHEdge), PU_STATIC, 0);
             fHEdge->face = NULL;
-            fHEdge->vertex = map->_halfEdgeDS->vertices[
-                ((mvertex_t*) lineDef->buildData.v[0]->data)->index - 1];
+            fHEdge->vertex = _halfEdgeDS->vertices[
+                reinterpret_cast<MVertex*>(lineDef->buildData.v[0]->data)->index - 1];
             fHEdge->vertex->halfEdge = fHEdge;
 
             bHEdge = Z_Calloc(sizeof(*bHEdge), PU_STATIC, 0);
             bHEdge->face = NULL;
-            bHEdge->vertex = map->_halfEdgeDS->vertices[
-                ((mvertex_t*) lineDef->buildData.v[1]->data)->index - 1];
+            bHEdge->vertex = _halfEdgeDS->vertices[
+                reinterpret_cast<MVertex*>(lineDef->buildData.v[1]->data)->index - 1];
             bHEdge->vertex->halfEdge = bHEdge;
 
             fHEdge->twin = bHEdge;
@@ -2533,23 +2505,22 @@ bool Map::editEnd()
 
             // The original Pts are based off the anchor Pt, and are unique
             // to each linedef.
-            po->originalPts[j].pos[0] = lineDef->L_v1->pos[0] - po->pos[0];
-            po->originalPts[j].pos[1] = lineDef->L_v1->pos[1] - po->pos[1];
+            po->_originalPts[j] = lineDef->vtx1().pos - po->origin;
 
-            po->lineDefs[j] = (linedef_t*) P_ObjectRecord(DMU_LINEDEF, lineDef);
+            po->lineDefs[j] = reinterpret_cast<LineDef*>(P_ObjectRecord(DMU_LINEDEF, lineDef));
         }
 
         // Temporary: Create a seg for each line of this polyobj.
-        po->numSegs = po->numLineDefs;
-        po->segs = Z_Calloc(sizeof(seg_t) * po->numSegs, PU_STATIC, 0);
+        po->_numSegs = po->_numLineDefs;
+        po->segs = Z_Calloc(sizeof(Seg) * po->_numSegs, PU_STATIC, 0);
 
-        for(duint j = 0; j < po->numSegs; ++j)
+        for(duint j = 0; j < po->_numSegs; ++j)
         {
-            linedef_t* lineDef = ((objectrecord_t*) po->lineDefs[j])->obj;
-            seg_t* seg = &po->segs[j];
+            LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(po->lineDefs[j])->obj);
+            Seg* seg = &po->segs[j];
 
             lineDef->halfEdges[0]->data = seg;
-            seg->sideDef = map->sideDefs[lineDef->buildData.sideDefs[FRONT]->buildData.index - 1];
+            seg->sideDef = sideDefs[lineDef->buildData.sideDefs[LineDef::FRONT]->buildData.index - 1];
         }
     }
 
@@ -2562,20 +2533,20 @@ bool Map::editEnd()
     initSoundEnvironment();
     findSubsectorMidPoints();
 
-    vertexinfo_t* vertexInfo = std::calloc(1, sizeof(vertexinfo_t) * numVertices());
+    vertexinfo_t* vertexInfo = reinterpret_cast<vertexinfo_t*>(std::calloc(1, sizeof(vertexinfo_t) * halfEdgeDS().numVertices()));
 
     buildVertexOwnerRings(vertexInfo);
 
 #if _DEBUG
-checkVertexOwnerRings(vertexInfo, numVertices());
+checkVertexOwnerRings(vertexInfo, halfEdgeDS().numVertices());
 #endif
 
     // Build the vertex lineowner info.
     // @todo now redundant, rewire fakeradio to use HalfEdgeDS.
-    for(duint i = 0; i < numVertices(); ++i)
+    FOR_EACH(i, halfEdgeDS().vertices, HalfEdgeDS::Vertices::iterator)
     {
-        Vertex* vertex = _halfEdgeDS->vertices[i];
-        vertexinfo_t* vInfo = &vertexInfo[i];
+        Vertex* vertex = *i;
+        vertexinfo_t* vInfo = &vertexInfo[i - halfEdgeDS().vertices.begin()];
 
         reinterpret_cast<MVertex*>(vertex->data)->lineOwners = vInfo->lineOwners;
         reinterpret_cast<MVertex*>(vertex->data)->numLineOwners = vInfo->numLineOwners;
@@ -2586,297 +2557,132 @@ checkVertexOwnerRings(vertexInfo, numVertices());
     return true;
 }
 
-void Map_BeginFrame(map_t* map, boolean resetNextViewer)
+void Map::beginFrame(bool resetNextViewer)
 {
-    assert(map);
+    FOR_EACH(i, _sectors, Sectors::iterator)
+        (*i)->clearFrameFlags();
 
-    clearSectorFlags(map);
-    if(map->_watchedPlaneList)
-        interpolateWatchedPlanes(map, resetNextViewer);
-    if(map->_movingSurfaceList)
-        interpolateMovingSurfaces(map, resetNextViewer);
+    interpolateWatchedPlanes(resetNextViewer);
+    interpolateMovingSurfaces(resetNextViewer);
 
     if(!freezeRLs)
     {
-        clearSubsectorContacts(map);
+        clearSubsectorContacts();
 
-        LightGrid_Update(map->_lightGrid);
-        SB_BeginFrame(map);
-        LO_ClearForFrame(map);
-        Rend_InitDecorationsForFrame(map);
+        LightGrid_Update(this->_lightGrid);
+        SB_BeginFrame(this);
+        LO_ClearForFrame(this);
+        Rend_InitDecorationsForFrame(this);
 
-        ParticleBlockmap_Empty(map->_particleBlockmap);
-        R_CreateParticleLinks(map);
+        _particleBlockmap->empty();
+        R_CreateParticleLinks(this);
 
-        LumobjBlockmap_Empty(map->_lumobjBlockmap);
-        Rend_AddLuminousDecorations(map);
-        LO_AddLuminousMobjs(map);
+        _lumobjBlockmap->empty();
+        Rend_AddLuminousDecorations(this);
+        LO_AddLuminousMobjs(this);
     }
 }
 
-void Map_EndFrame(map_t* map)
+void Map::endFrame()
 {
-    assert(map);
     if(!freezeRLs)
     {
         // Wrap up with Source, Bias lights.
-        SB_EndFrame(map);
+        SB_EndFrame(this);
 
         // Update the bias light editor.
-        SBE_EndFrame(map);
+        SBE_EndFrame(this);
     }
 }
 
-/**
- * This ID is the name of the lump tag that marks the beginning of map
- * data, e.g. "MAP03" or "E2M8".
- */
-const char* Map_ID(map_t* map)
+dint Map::ambientLightLevel()
 {
-    assert(map);
-    return map->mapID;
+    return _ambientLightLevel;
 }
 
-/**
- * @return              The 'unique' identifier of the map.
- */
-const char* Map_UniqueName(map_t* map)
+void Map::markAllSectorsForLightGridUpdate()
 {
-    assert(map);
-    return map->uniqueID;
-}
-
-void Map_Bounds(map_t* map, float* min, float* max)
-{
-    assert(map);
-    min[0] = map->bBox[BOXLEFT];
-    min[1] = map->bBox[BOXBOTTOM];
-
-    max[0] = map->bBox[BOXRIGHT];
-    max[1] = map->bBox[BOXTOP];
-}
-
-/**
- * Get the ambient light level of the specified map.
- */
-int Map_AmbientLightLevel(map_t* map)
-{
-    assert(map);
-    return map->ambientLightLevel;
-}
-
-uint Map_NumSectors(map_t* map)
-{
-    assert(map);
-    return map->numSectors;
-}
-
-uint Map_NumLineDefs(map_t* map)
-{
-    assert(map);
-    return map->numLineDefs;
-}
-
-uint Map_NumSideDefs(map_t* map)
-{
-    assert(map);
-    return map->numSideDefs;
-}
-
-uint Map_NumVertexes(map_t* map)
-{
-    assert(map);
-    return HalfEdgeDS_NumVertices(Map_HalfEdgeDS(map));
-}
-
-uint Map_NumPolyobjs(map_t* map)
-{
-    assert(map);
-    return map->numPolyObjs;
-}
-
-uint Map_NumSegs(map_t* map)
-{
-    assert(map);
-    return map->numSegs;
-}
-
-uint Map_NumSubsectors(map_t* map)
-{
-    assert(map);
-    return map->numSubsectors;
-}
-
-uint Map_NumNodes(map_t* map)
-{
-    assert(map);
-    return map->numNodes;
-}
-
-uint Map_NumPlanes(map_t* map)
-{
-    assert(map);
-    return map->numPlanes;
-}
-
-thinkers_t* Map_Thinkers(map_t* map)
-{
-    assert(map);
-    return map->_thinkers;
-}
-
-halfedgeds_t* Map_HalfEdgeDS(map_t* map)
-{
-    assert(map);
-    return map->_halfEdgeDS;
-}
-
-mobjblockmap_t* Map_MobjBlockmap(map_t* map)
-{
-    assert(map);
-    return map->_thingBlockmap;
-}
-
-linedefblockmap_t* Map_LineDefBlockmap(map_t* map)
-{
-    assert(map);
-    return map->_lineDefBlockmap;
-}
-
-subsectorblockmap_t* Map_SubsectorBlockmap(map_t* map)
-{
-    assert(map);
-    return map->_subsectorBlockmap;
-}
-
-particleblockmap_t* Map_ParticleBlockmap(map_t* map)
-{
-    assert(map);
-    return map->_particleBlockmap;
-}
-
-lumobjblockmap_t* Map_LumobjBlockmap(map_t* map)
-{
-    assert(map);
-    return map->_lumobjBlockmap;
-}
-
-lightgrid_t* Map_LightGrid(map_t* map)
-{
-    assert(map);
-    return map->_lightGrid;
-}
-
-void Map_MarkAllSectorsForLightGridUpdate(map_t* map)
-{
-    assert(map);
+    if(_lightGrid.inited)
     {
-    lightgrid_t* lg = map->_lightGrid;
-
-    if(lg->inited)
-    {
-        uint i;
-
         // Mark all blocks and contributors.
-        for(i = 0; i < map->numSectors; ++i)
+        FOR_EACH(i, _sectors, Sectors::iterator)
         {
-            sector_t* sec = map->sectors[i];
-            LightGrid_MarkForUpdate(map->_lightGrid, sec->blocks, sec->changedBlockCount, sec->blockCount);
+            Sector* sec = *i;
+            LightGrid_MarkForUpdate(_lightGrid, sec->blocks, sec->changedBlockCount, sec->blockCount);
         }
     }
-    }
 }
 
-seg_t* Map_CreateSeg(map_t* map, linedef_t* lineDef, byte side, HalfEdge* halfEdge)
+Seg* Map::createSeg(HalfEdge& halfEdge, LineDef* lineDef, bool back)
 {
-    assert(map);
-    assert(halfEdge);
-    {
-    seg_t* seg = P_CreateSeg();
-
+    Seg* seg = new Seg();
     seg->halfEdge = halfEdge;
-    seg->side = side;
-    seg->sideDef = NULL;
-    if(lineDef && lineDef->buildData.sideDefs[seg->side])
-        seg->sideDef = map->sideDefs[lineDef->buildData.sideDefs[seg->side]->buildData.index - 1];
+    seg->back = back;
+    seg->_sideDef = NULL;
+    if(lineDef && lineDef->buildData.sideDefs[seg->back])
+        seg->_sideDef = _sideDefs[lineDef->buildData.sideDefs[seg->back]->buildData.index - 1];
 
-    if(seg->sideDef)
+    if(seg->hasSideDef())
     {
-        linedef_t* ldef = seg->sideDef->lineDef;
-        vertex_t* vtx = ldef->buildData.v[seg->side];
-
-        seg->offset = P_AccurateDistance(halfEdge->HE_v1->pos[0] - vtx->pos[0],
-                                         halfEdge->HE_v1->pos[1] - vtx->pos[1]);
+        const LineDef& lineDef = seg->sideDef().lineDef();
+        Vertex* vtx = lineDef.buildData.v[seg->back];
+        seg->offset = vtx->pos.distance(halfEdge->vertex->pos);
     }
 
-    seg->angle =
-        bamsAtan2((int) (halfEdge->twin->vertex->pos[1] - halfEdge->vertex->pos[1]),
-                  (int) (halfEdge->twin->vertex->pos[0] - halfEdge->vertex->pos[0])) << FRACBITS;
+    Vector2d diff = halfEdge->twin->vertex->pos - halfEdge->vertex->pos;
+    seg->angle = bamsAtan2(dint(diff.y), dint(diff.x)) << FRACBITS;
 
     // Calculate the length of the segment. We need this for
     // the texture coordinates. -jk
-    seg->length = P_AccurateDistance(halfEdge->HE_v2->pos[0] - halfEdge->HE_v1->pos[0],
-                                     halfEdge->HE_v2->pos[1] - halfEdge->HE_v1->pos[1]);
+    seg->length = diff.length();
 
     if(seg->length == 0)
         seg->length = 0.01f; // Hmm...
 
     // Calculate the surface normals
     // Front first
-    if(seg->sideDef)
+    if(seg->hasSideDef())
     {
-        surface_t* surface = &seg->sideDef->SW_topsurface;
+        MSurface& surface = &seg->sideDef().top();
 
-        surface->normal[1] = (halfEdge->HE_v1->pos[0] - halfEdge->HE_v2->pos[0]) / seg->length;
-        surface->normal[0] = (halfEdge->HE_v2->pos[1] - halfEdge->HE_v1->pos[1]) / seg->length;
-        surface->normal[VZ] = 0;
+        surface.normal.x = (halfEdge->twin->vertex->pos.y - halfEdge->vertex->pos.y) / seg->length;
+        surface.normal.y = (halfEdge->vertex->pos.x - halfEdge->twin->vertex->pos.x) / seg->length;
+        surface.normal.z = 0;
 
         // All surfaces of a sidedef have the same normal.
-        memcpy(seg->sideDef->SW_middlenormal, surface->normal, sizeof(surface->normal));
-        memcpy(seg->sideDef->SW_bottomnormal, surface->normal, sizeof(surface->normal));
+        seg->sideDef().middle().normal = surface.normal;
+        seg->sideDef().bottom().normal = surface.normal;
     }
 
     halfEdge->data = seg;
 
-    P_CreateObjectRecord(DMU_SEG, seg);
-    map->segs = Z_Realloc(map->segs, ++map->numSegs * sizeof(seg_t*), PU_STATIC);
-    map->segs[map->numSegs-1] = seg;
+    segs = std::realloc(segs, ++_numSegs * sizeof(Seg*));
+    segs[_numSegs-1] = seg;
     return seg;
-    }
 }
 
-subsector_t* Map_CreateSubsector(map_t* map, face_t* face, sector_t* sector)
+Subsector* Map::createSubsector(Face& face, Sector* sector)
 {
-    assert(map);
-    assert(face);
-    {
-    subsector_t* subsector = P_CreateSubsector();
-    size_t hEdgeCount;
-    HalfEdge* halfEdge;
-
-    hEdgeCount = 0;
-    halfEdge = face->halfEdge;
+    dsize hEdgeCount = 0;
+    HalfEdge* halfEdge = face.halfEdge;
     do
     {
         hEdgeCount++;
     } while((halfEdge = halfEdge->next) != face->halfEdge);
 
-    subsector->face = face;
-    subsector->hEdgeCount = (uint) hEdgeCount;
+    Subsector* subsector = new Subsector();
+    subsector->face = &face;
+    subsector->hEdgeCount = duint(hEdgeCount);
 
     subsector->sector = sector;
     if(!subsector->sector)
-        Con_Message("Map_CreateSubsector: Warning orphan subsector %p (%i half-edges).\n",
-                    subsector, subsector->hEdgeCount);
+        LOG_WARNING("Orphan subsector #") << _numSubsectors << ".";
 
-    face->data = (void*) subsector;
+    face->data = reinterpret_cast<void*>(subsector);
 
-    P_CreateObjectRecord(DMU_SUBSECTOR, subsector);
-    map->subsectors = Z_Realloc(map->subsectors, ++map->numSubsectors * sizeof(subsector_t*), PU_STATIC);
-    map->subsectors[map->numSubsectors-1] = subsector;
-
+    subsectors = reinterpret_cast<Subsector**>(std::realloc(subsectors, ++_numSubsectors * sizeof(Subsector*)));
+    subsectors[_numSubsectors-1] = subsector;
     return subsector;
-    }
 }
 
 Node* Map::createNode(const Partition& partition, const MapRectangled& rightAABB, const MapRectangle& leftAABB)

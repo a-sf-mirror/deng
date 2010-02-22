@@ -140,7 +140,7 @@ namespace de
         /// Conversion operator to Line2.
         template <typename Type>
         operator Line2<Type> () const {
-            return Line2<Type>(vtx1().pos, delta);
+            return Line2<Type>(vtx1().pos, direction);
         }
 
         /**

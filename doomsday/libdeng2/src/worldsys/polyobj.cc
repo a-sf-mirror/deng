@@ -82,12 +82,12 @@ void Polyobj::changed()
 
 void Polyobj::updateAABounds()
 {
-    const LineDef& lineDef = *reinterpret_cast<LineDef*>(((objectrecord_t*) lineDefs[0])->obj);
+    const LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[0])->obj);
 
     V2_InitBox(box, lineDef.vtx1().pos);
     for(duint i = 0; i < _numLineDefs; ++i)
     {
-        lineDef = *reinterpret_cast<LineDef*>(((objectrecord_t*) po->lineDefs[i])->obj);
+        lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(po->lineDefs[i])->obj);
         V2_AddToBox(box, lineDef.vtx1().pos);
     }
 }
@@ -121,8 +121,8 @@ void Polyobj::initalize()
         avg += lineDef.vtx1().pos;
 
         surface._inFlags[MSurface::NORADIO] = true;
-        surface.normal.y = (lineDef.vtx1().pos.x - lineDef.vtx2().pos.x) / lineDef.length;
         surface.normal.x = (lineDef.vtx2().pos.y - lineDef.vtx1().pos.y) / lineDef.length;
+        surface.normal.y = (lineDef.vtx1().pos.x - lineDef.vtx2().pos.x) / lineDef.length;
         surface.normal.z = 0;
     }
 
@@ -152,14 +152,10 @@ bool Polyobj::translate(const Vector2f& delta)
     {EdgePoints::iterator pointItr = _prevPts.begin();
     for(duint i = 0; i < _numLineDefs; ++i, pointItr++)
     {
-        LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
 
-        lineDef.bBox[BOXTOP]    += delta.y;
-        lineDef.bBox[BOXBOTTOM] += delta.y;
-        lineDef.bBox[BOXLEFT]   += delta.x;
-        lineDef.bBox[BOXRIGHT]  += delta.x;
-
-        lineDef.vtx1().pos += delta;
+        lineDef->_aaBounds.move(delta);
+        lineDef->vtx1().pos += delta;
 
         (*pointItr) += delta; // Previous points are unique for each linedef.
     }}
@@ -179,23 +175,21 @@ bool Polyobj::translate(const Vector2f& delta)
     if(blocked)
     {
         /// Undo the move.
+        Vector2d inverseDelta = -delta;
+
         unlinkInLineDefBlockmap();
         {EdgePoints::iterator pointItr = _prevPts.begin();
         for(duint i = 0; i < _numLineDefs; ++i, pointItr++)
         {
-            LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+            LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
 
-            lineDef.bBox[BOXTOP]    -= delta.y;
-            lineDef.bBox[BOXBOTTOM] -= delta.y;
-            lineDef.bBox[BOXLEFT]   -= delta.x;
-            lineDef.bBox[BOXRIGHT]  -= delta.x;
+            lineDef->_aaBounds.move(inverseDelta);
+            lineDef->vtx1().pos += inverseDelta;
 
-            lineDef.vtx1().pos -= delta;
-
-            (*pointItr) -= delta;
+            (*pointItr) += inverseDelta;
         }
         }
-        origin -= delta;
+        origin += inverseDelta;
         linkInLineDefBlockmap();
         return false;
     }
@@ -281,7 +275,7 @@ void Polyobj::unlinkInLineDefBlockmap()
     // @todo Polyobj should return the map its linked in.
     LineDefBlockmap& lineDefBlockmap = App::currentMap().lineDefBlockmap();
     for(duint i = 0; i < _numLineDefs; ++i)
-        lineDefBlockmap.unlink(reinterpret_cast<LineDef*>reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        lineDefBlockmap.unlink(reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
 }
 
 void Polyobj::linkInLineDefBlockmap()
@@ -289,7 +283,7 @@ void Polyobj::linkInLineDefBlockmap()
     // @todo Polyobj should return the map its linked in.
     LineDefBlockmap& lineDefBlockmap = App::currentMap().lineDefBlockmap();
     for(duint i = 0; i < _numLineDefs; ++i)
-        lineDefBlockmap.link(reinterpret_cast<LineDef*>reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        lineDefBlockmap.link(reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
 }
 
 bool PTR_CheckThingBlocking(Thing* thing, void* paramaters)
@@ -299,19 +293,11 @@ bool PTR_CheckThingBlocking(Thing* thing, void* paramaters)
     if((thing->ddFlags & DDMF_SOLID) ||
        (thing->hasUser() && !(thing->user().flags & DDPF_CAMERA)))
     {
-        dfloat tmbbox[4];
+        const MapRectangled thingBounds = thing->aaBounds();
 
-        tmbbox[BOXTOP]    = thing->origin.y + thing->radius;
-        tmbbox[BOXBOTTOM] = thing->origin.y - thing->radius;
-        tmbbox[BOXLEFT]   = thing->origin.x - thing->radius;
-        tmbbox[BOXRIGHT]  = thing->origin.x + thing->radius;
-
-        if(!(tmbbox[BOXRIGHT]  <= params->lineDef->aaBounds()[BOXLEFT] ||
-             tmbbox[BOXLEFT]   >= params->lineDef->aaBounds()[BOXRIGHT] ||
-             tmbbox[BOXTOP]    <= params->lineDef->aaBounds()[BOXBOTTOM] ||
-             tmbbox[BOXBOTTOM] >= params->lineDef->aaBounds()[BOXTOP]))
+        if(thingBounds().intersects(params->lineDef->aaBounds()))
         {
-            if(params->lineDef->boxOnSide(tmbbox) == -1)
+            if(params->lineDef->boxOnSide(thingBounds) == -1)
             {
 #pragma message("Warning: Polyobj::rotate - Callback not implemented yet.")
                 //if(po_callback)
@@ -327,22 +313,20 @@ bool PTR_CheckThingBlocking(Thing* thing, void* paramaters)
 
 static bool checkThingBlocking(LineDef* lineDef, Polyobj* polyobj)
 {
+    MapRectanglef aaBounds = lineDef->aaBounds();
+    Vector2f border = Vector2f(dfloat(Thing::MAXRADIUS), dfloat(Thing::MAXRADIUS));
+    aaBounds.move(-border);
+    aaBounds.setSize(aaBounds.size() + border * 2);
+
+    // @fixme Polyobj should return the map its linked in.
+    ThingBlockmap& thingBlockmap = App::currentMap().thingBlockmap();
+    duint blockBox[4];
+    thingBlockmap.boxToBlocks(blockBox, aaBounds);
+
     PIT_CheckThingBlockingParams params;
     params.blocked = false;
     params.lineDef = lineDef;
     params.polyobj = polyobj;
-
-    Vector2f bbox[2];
-    bbox[0][0] = lineDef->aaBounds()[BOXLEFT]   - Thing::MAXRADIUS;
-    bbox[0][1] = lineDef->aaBounds()[BOXBOTTOM] - Thing::MAXRADIUS;
-    bbox[1][0] = lineDef->aaBounds()[BOXRIGHT]  + Thing::MAXRADIUS;
-    bbox[1][1] = lineDef->aaBounds()[BOXTOP]    + Thing::MAXRADIUS;
-
-    // @fixme Polyobj should return the map its linked in.
-    ThingBlockmap& thingBlockmap = App::currentMap().thingBlockmap();
-
-    duint blockBox[4];
-    thingBlockmap.boxToBlocks(blockBox, bbox);
     thingBlockmap.iterate(blockBox, PTR_CheckThingBlocking, &params);
 
     return params.blocked;
