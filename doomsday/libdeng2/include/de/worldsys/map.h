@@ -319,7 +319,7 @@ namespace de
         typedef struct {
             Map* map; // @todo should not be necessary.
             Thing* thing;
-            dfloat box[4];
+            MapRectanglef aaBounds;
         } linelinker_data_t;
 
         typedef struct {
@@ -364,7 +364,7 @@ namespace de
         duint validCount;
 
         /// Axis-Aligned Bounding Box.
-        MapRectangle aaBounds;
+        MapRectangled aaBounds;
 
     private:
         /// All sidedefs of the map.
@@ -580,7 +580,7 @@ namespace de
         // protected
         Seg* createSeg(LineDef* lineDef, bool back, HalfEdge* halfEdge);
         Subsector* createSubsector(Face* face, Sector* sector);
-        Node* createNode(const Node::Partition& partition, const MapRectangle& rightAABB, const MapRectangle& leftAABB);
+        Node* createNode(const Node::Partition& partition, const MapRectangled& rightAABB, const MapRectangled& leftAABB);
 
         void markAllSectorsForLightGridUpdate();
 

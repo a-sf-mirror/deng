@@ -82,7 +82,7 @@ namespace de
          * Retrieve the Axis-aligned Bounding box for all HalfEdges in this and
          * all child SuperBlocks.
          */
-        MapRectangle aaBounds() const;
+        MapRectanglef aaBounds() const;
 
         /// LIFO stack of half-edges completely contained by this block.
         /// Uses std::deque internally as friends need the ability to traverse (linearly).

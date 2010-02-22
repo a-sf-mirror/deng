@@ -185,7 +185,7 @@ void Sector::updateAABounds()
 {
     if(!(lineDefs.size() > 0))
     {
-        _aaBounds = MapRectangle(0, 0, 0, 0);
+        _aaBounds = MapRectangled(Vector2d(0, 0), Vector2d(0, 0));
         return;
     }
 

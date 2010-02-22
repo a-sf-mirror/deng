@@ -26,6 +26,7 @@
 #include "de/NodeBuilder"
 #include "de/Sector"
 #include "de/LineDef"
+#include "de/HalfEdgeInfo"
 
 using namespace de;
 
@@ -108,7 +109,7 @@ static void findBoundsWorker(const SuperBlock* block, dfloat* bbox)
         findBoundsWorker(block->leftChild, bbox);
 }
 
-MapRectangle SuperBlock::aaBounds() const
+MapRectanglef SuperBlock::aaBounds() const
 {
     dfloat bbox[4];
     bbox[BOXTOP] = bbox[BOXRIGHT] = MINFLOAT;

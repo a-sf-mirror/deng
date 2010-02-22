@@ -43,15 +43,8 @@ Vector2f LineDef::unitVector() const
 
 void LineDef::updateAABounds()
 {
-    bool edge;
-
-    edge = (vtx1().pos.x < vtx2().pos.x);
-    _aaBounds[BOXLEFT]  = vtx(edge^1).pos.x;
-    _aaBounds[BOXRIGHT] = vtx(edge).pos.x;
-
-    edge = (vtx1().pos.y < vtx2().pos.y);
-    _aaBounds[BOXBOTTOM] = vtx(edge^1).pos.y;
-    _aaBounds[BOXTOP]    = vtx(edge).pos.y;
+    _aaBounds = MapRectangled(vtx1().pos.min(vtx2().pos),
+                              vtx1().pos.max(vtx2().pos));
 
     // Update the lineDef's slopetype.
     direction = vtx2().pos - vtx1().pos;
@@ -76,7 +69,7 @@ void LineDef::updateAABounds()
     }
 }
 
-dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
+dint LineDef::boxOnSide(ddouble xl, ddouble xh, ddouble yl, ddouble yh) const
 {
     dint a = 0, b = 0;
 
@@ -118,11 +111,6 @@ dint LineDef::boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const
         return a;
 
     return -1;
-}
-
-dint LineDef::boxOnSide(const Vector2f& bottomLeft, const Vector2f& topRight) const
-{
-    return boxOnSide(bottomLeft.x, topRight.x, bottomLeft.y, topRight.y);
 }
 
 #if 0

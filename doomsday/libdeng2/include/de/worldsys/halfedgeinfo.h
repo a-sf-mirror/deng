@@ -47,7 +47,7 @@ namespace de
 
         Sector* sector; // Adjacent sector or, NULL if minihedge / twin on single sided linedef.
 
-        /// @c true = this is on the backside of the edge.
+        /// @c true = this is on the backside of the sourceLineDef.
         bool back;
     };
 }

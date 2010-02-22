@@ -192,7 +192,7 @@ bool Polyobj::translate(const Vector2f& delta)
 
             lineDef.vtx1().pos -= delta;
 
-            (*pointItr).pos -= delta.x;
+            (*pointItr) -= delta;
         }
         }
         origin -= delta;

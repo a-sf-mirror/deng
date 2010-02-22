@@ -120,7 +120,7 @@ namespace de
             return hasFront() && hasBack() && &front().sector() == &back().sector();
         }
 
-        const MapRectangle& aaBounds() const { return _aaBounds; }
+        const MapRectangled& aaBounds() const { return _aaBounds; }
 
         /**
          * Does the LineDef qualify as an edge shadow caster?
@@ -155,16 +155,11 @@ namespace de
             return side(Vector2<Type>(x, y));
         }
 
-        dint boxOnSide(const Vector2<dfloat>& bottomLeft, const Vector2<dfloat>& topRight) const;
-
-        /**
-         * Considers the line to be infinite.
-         *
-         * @return              @c  0 = completely in front of the line.
-         *                      @c  1 = completely behind the line.
-         *                      @c -1 = box crosses the line.
-         */
-        dint boxOnSide(dfloat xl, dfloat xh, dfloat yl, dfloat yh) const;
+        dint boxOnSide(const MapRectangled& rectangle) const;
+        dint boxOnSide(const Vector2d& bottomLeft, const Vector2d& topRight) const {
+            return boxOnSide(bottomLeft.x, bottomLeft.y, topRight.x, topRight.y);
+        }
+        dint boxOnSide(ddouble xl, ddouble xh, ddouble yl, ddouble yh) const;
 
         void updateAABounds();
 
@@ -182,7 +177,7 @@ namespace de
 
     private:
         /// Axis-Aligned Bounding box.
-        MapRectangle _aaBounds;
+        MapRectangled _aaBounds;
 
         /// Extra information about this linedef.
         Record _info;

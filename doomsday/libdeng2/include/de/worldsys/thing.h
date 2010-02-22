@@ -67,6 +67,13 @@ namespace de
             return *_user;
         }
 
+        /// Retrieve the Axis-aligned Bounding Box for this thing.
+        MapRectanglef aaBounds() const {
+            Vector2f delta = Vector2f(radius, radius);
+
+            return MapRectanglef(origin - delta, origin + delta);
+        }
+
     // @todo Make private.
         /// LineDefs to which this is linked.
         NodePile::Index lineRoot;

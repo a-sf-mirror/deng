@@ -619,14 +619,14 @@ static bool PIT_LinkToLineDef(LineDef* lineDef, void* paramaters)
 {
     Map::linelinker_data_t* data = reinterpret_cast<Map::linelinker_data_t*>(paramaters);
 
-    if(data->box[1][0] <= lineDef->aaBounds().left ||
-       data->box[0][0] >= lineDef->aaBounds().right ||
-       data->box[1][1] <= lineDef->aaBounds().bottom ||
-       data->box[0][1] >= lineDef->aaBounds().top)
+    if(data->aaBounds[1][0] <= lineDef->aaBounds().left ||
+       data->aaBounds[0][0] >= lineDef->aaBounds().right ||
+       data->aaBounds[1][1] <= lineDef->aaBounds().bottom ||
+       data->aaBounds[0][1] >= lineDef->aaBounds().top)
         // Bounding boxes do not overlap.
         return true;
 
-    if(lineDef->boxOnSide(data->box[0][0], data->box[1][0], data->box[0][1], data->box[1][1]) != -1)
+    if(lineDef->boxOnSide(data->aaBounds) != -1)
         // Line does not cross the mobj's bounding box.
         return true;
 
@@ -653,23 +653,17 @@ void Map::linkToLineDefs(Thing* thing)
     assert(thing);
 
     linelinker_data_t data;
-    Vector2d point;
 
     // Get a new root node.
     thing->lineRoot = thingNodes->newIndex(NP_ROOT_NODE);
 
     // Set up a line iterator for doing the linking.
     data.thing = thing;
+    data.aaBounds = thing->aaBounds();
     data.map = this;
 
-    point = Vector2d(thing->origin.x - thing->radius, thing->origin.y - thing->radius);
-    V2_InitBox(data.box, point);
-
-    point = Vector3d(thing->origin.x + thing->radius, thing->origin.y + thing->radius);
-    V2_AddToBox(data.box, point);
-
     validCount++;
-    iterateLineDefs(data.box, PIT_LinkToLineDef, &data);
+    iterateLineDefs(data.aaBounds, PIT_LinkToLineDef, &data);
 }
 
 bool Map::unlinkFromLineDefs(Thing* thing)
@@ -1803,7 +1797,7 @@ void Map::updateAABounds()
 {
     if(_sectors.size() == 0)
     {
-        aaBounds = MapRectangle(0, 0, 0, 0);
+        aaBounds = MapRectangled(Vector2d(0, 0), Vector2d(0, 0));
         return;
     }
 
@@ -2412,7 +2406,7 @@ void Map::findSubSectorsAffectingSector(duint secIDX)
     memset(&subsectorOwnerList, 0, sizeof(subsectorOwnerList));
 
     Sector* sec = _sectors[secIDX];
-    MapRectangle affectBounds = sec->aaBounds();
+    MapRectangled affectBounds = sec->aaBounds();
     affectBounds.left   -= 128;
     affectBounds.right  += 128;
     affectBounds.top    += 128;
@@ -2885,7 +2879,7 @@ subsector_t* Map_CreateSubsector(map_t* map, face_t* face, sector_t* sector)
     }
 }
 
-Node* Map::createNode(const Partition& partition, const MapRectangle& rightAABB, const MapRectangle& leftAABB)
+Node* Map::createNode(const Partition& partition, const MapRectangled& rightAABB, const MapRectangle& leftAABB)
 {
     Node* node = Node(x, y, dX, dY, rightAABB, leftAABB);
 
