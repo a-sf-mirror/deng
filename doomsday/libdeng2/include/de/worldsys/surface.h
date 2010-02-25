@@ -25,6 +25,7 @@
 
 #include "../App"
 #include "../Flag"
+#include "../Render"
 #include "../Vector"
 
 namespace de
@@ -35,22 +36,50 @@ namespace de
     class MSurface
     {
     public:
+        /** @name Surface Flags */
+        //@{
+        /// Surface glows (drawn fully bright).
+        DEFINE_FLAG(GLOW, 1);
+        /// Material is flipped horizontally.
+        DEFINE_FLAG(MATERIAL_FLIPH, 2);
+        /// Material is flipped vertically.
+        DEFINE_FINAL_FLAG(MATERIAL_FLIPV, 3, Flags);
+        //@}
+
+        /// Maximum speed for a smoothed material offset change (units per tic).
+        static const dint MAX_MATERIAL_SMOOTHSCROLL_DISTANCE = 8;
+
+    public:
         void* owner; // Either @c DMU_SIDEDEF, or @c DMU_PLANE
-        dint flags;
-        dint oldFlags;
 
-        //blendmode_t blendMode;
-        Vector3f normal; // Surface normal
-        Vector3f oldNormal;
+        /// Surface flags.
+        Flags flags;
 
-        dfloat offset[2]; // [X, Y] Planar offset to surface material origin.
-        dfloat oldOffset[2][2];
+        /// Surface normal.
+        Vector3f normal;
 
-        dfloat visOffset[2];
-        dfloat visOffsetDelta[2];
+        /// Offset to material origin.
+        Vector2f offset;
 
-        dfloat rgba[4]; // Surface color tint
+        /// Old material origin offsets (for smoothing).
+        Vector2f oldOffset[2];
 
+        /// Offset to material origin (smoothed).
+        Vector2f visOffset;
+        Vector2f visOffsetDelta;
+
+        /// Surface color tint
+        Vector3f tintColor;
+
+        /// Overall opacity (1.0 = fully opaque, 0.0 = invisible).
+        dfloat opacity;
+
+        Blendmode blendmode;
+
+        MSurface(const Vector3f& normal, Material* material,
+                 const Vector2f& materialOffset = Vector2f(0, 0),
+                 dfloat opacity = 1, Blendmode blendmode = BM_NORMAL,
+                 const Vector3f& tintColor = Vector3f(1, 1, 1));
         ~MSurface();
 
         Material& material() const { return *_material; }
@@ -73,24 +102,37 @@ namespace de
         void resetScroll();
 
         /**
-         * Change Material.
+         * Change material.
          *
          * @param mat           Material to change to.
-         * @param fade          @c true = allow blending
-         * @return              @c true, if changed successfully.
+         * @param smooth        @c true = allow blending.
          */
-        bool setMaterial(Material* mat, bool fade);
+        void setMaterial(Material* mat, bool smooth);
 
-        bool setMaterialOffsetX(dfloat x);
-        bool setMaterialOffsetY(dfloat y);
-        bool setMaterialOffsetXY(dfloat x, dfloat y);
+        /**
+         * Set material offset.
+         */
+        void setMaterialOffsetX(dfloat x);
+        void setMaterialOffsetY(dfloat y);
+        void setMaterialOffset(dfloat x, dfloat y);
 
-        bool setColorR(dfloat r);
-        bool setColorG(dfloat g);
-        bool setColorB(dfloat b);
-        bool setColorA(dfloat a);
-        bool setColorRGBA(dfloat r, dfloat g, dfloat b, dfloat a);
-        //bool setBlendMode(blendmode_t blendMode);
+        /**
+         * Set tint color. Values are clamped in range 0..1
+         */
+        void setTintColorRed(dfloat val);
+        void setTintColorGreen(dfloat val);
+        void setTintColorBlue(dfloat val);
+        void setTintColor(const Vector3f& color);
+        void setTintColor(dfloat red, dfloat green, dfloat blue) {
+            setTintColor(Vector3f(red, green, blue));
+        }
+
+        /**
+         * Set opacity. Value is clamped in range 0..1
+         */
+        void setOpacity(dfloat val);
+
+        void setBlendmode(Blendmode blendmode);
 
         /**
          * Adds a decoration to the surface.
@@ -128,8 +170,9 @@ namespace de
         InternalFlags _inFlags;
 
         typedef std::vector<Decoration*> Decorations;
+
         Decorations _decorations;
-        bool updateDecorations;
+        bool _updateDecorations;
 
         Material* _material;
         Material* _materialB;

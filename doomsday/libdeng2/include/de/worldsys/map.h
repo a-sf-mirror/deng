@@ -37,6 +37,7 @@
 #include "../Thinker"
 #include "../Node"
 #include "../Rectangle"
+#include "../Polyobj"
 
 #include <map>
 #include <vector>
@@ -51,7 +52,6 @@ namespace de
     class Sector;
     class Seg;
     class Subsector;
-    class Polyobj;
     class Decoration;
 
     /**
@@ -78,6 +78,11 @@ namespace de
         typedef std::vector<Plane*> Planes;
         typedef std::vector<Sector*> Sectors;
         typedef std::vector<Polyobj*> Polyobjs;
+
+    private:
+        typedef std::vector<Node*> Nodes;
+        typedef std::vector<Subsector*> Subsectors;
+        typedef std::vector<Seg*> Segs;
 
     public:
         /**
@@ -266,7 +271,7 @@ namespace de
         PendingThinkers _thinkersToDestroy;
 
     public:
-        typedef dint objectrecordid_t;
+        typedef duint objectrecordid_t;
 
         // Runtime map data objects, such as vertices, sectors, and subsectors all
         // have this header as their first member. This makes it possible to treat
@@ -312,9 +317,6 @@ namespace de
         #define PRUNE_PLANES        0x0010
         #define PRUNE_ALL           (PRUNE_LINEDEFS|PRUNE_VERTEXES|PRUNE_SIDEDEFS|PRUNE_SECTORS|PRUNE_PLANES)
         /*}*/
-
-        // $smoothmatoffset: Maximum speed for a smoothed material offset.
-        #define MAX_SMOOTH_MATERIAL_MOVE (8)
 
         typedef struct {
             Map* map; // @todo should not be necessary.
@@ -363,6 +365,8 @@ namespace de
 
         duint validCount;
 
+        lineowner_t* lineOwners;
+
     private:
         /// All sidedefs of the map.
         SideDefs _sideDefs;
@@ -379,19 +383,15 @@ namespace de
         /// All polyobjs of the map.
         Polyobjs _polyobjs;
 
-    public:
-        duint _numNodes;
-        Node** nodes;
+        /// All nodes of the map.
+        Nodes _nodes;
 
-        duint _numSubsectors;
-        Subsector** subsectors;
+        /// All subsectors of the map.
+        Subsectors _subsectors;
 
-        duint _numSegs;
-        Seg** segs;
+        /// All segs of the map.
+        Segs _segs;
 
-        lineowner_t* lineOwners;
-
-    private:
         /// Map editing is in progress.
         bool _editActive;
 
@@ -438,21 +438,17 @@ namespace de
 
         void bounds(dfloat* min, dfloat* max);
 
-        /**
-         * Get the ambient light level of the specified map.
-         */
-        dint ambientLightLevel();
+        HalfEdgeDS::Vertices::size_type numVertexes() const { return _halfEdgeDS->numVertices(); }
 
-        Polyobjs::size_type numPolyobjs() const { return _polyobjs.size(); }
         SideDefs::size_type numSideDefs() const { return _sideDefs.size(); }
         LineDefs::size_type numLineDefs() const { return _lineDefs.size(); }
         Planes::size_type numPlanes() const { return _planes.size(); }
         Sectors::size_type numSectors() const { return _sectors.size(); }
+        Polyobjs::size_type numPolyobjs() const { return _polyobjs.size(); }
 
-        HalfEdgeDS::Vertices::size_type numVertexes() const { return _halfEdgeDS->numVertices(); }
-        duint numSegs() const { return _numSegs; }
-        duint numSubsectors() const { return _numSubsectors; }
-        duint numNodes() const { return _numNodes; }
+        Segs::size_type numSegs() const { return _segs.size(); }
+        Subsectors::size_type numSubsectors() const { return _subsectors.size(); }
+        Nodes::size_type numNodes() const { return _nodes.size(); }
 
         void beginFrame(bool resetNextViewer);
         void endFrame();
@@ -509,8 +505,28 @@ namespace de
         bool editBegin();
         bool editEnd();
 
+        /**
+         * Create a new vertex in currently loaded editable map.
+         *
+         * @param x             X coordinate of the new vertex.
+         * @param y             Y coordinate of the new vertex.
+         *
+         * @return              Index number of the newly created vertex else 0 if
+         *                      the vertex could not be created for some reason.
+         */
         objectrecordid_t createVertex(dfloat x, dfloat y);
+
+        /**
+         * Create many new vertexs in the currently loaded editable map.
+         *
+         * @param num           Number of vertexes to be created.
+         * @param values        Ptr to an array containing the coordinates for the
+         *                      vertexs to create [v0 X, vo Y, v1 X, v1 Y...]
+         * @param indices       If not @c NULL, the indices of the newly created
+         *                      vertexes will be written back here.
+         */
         bool createVertices(dsize num, dfloat* values, objectrecordid_t* indices);
+
         objectrecordid_t createSideDef(objectrecordid_t sector, dshort flags,
             Material* topMaterial,
             dfloat topOffsetX, dfloat topOffsetY, dfloat topRed,
@@ -523,7 +539,21 @@ namespace de
             dfloat bottomOffsetX, dfloat bottomOffsetY,
             dfloat bottomRed, dfloat bottomGreen,
             dfloat bottomBlue);
+
+        /**
+         * Create a new linedef in the editable map.
+         *
+         * @param v1            Idx of the start vertex.
+         * @param v2            Idx of the end vertex.
+         * @param frontSide     Idx of the front sidedef.
+         * @param backSide      Idx of the back sidedef.
+         * @param flags         Currently unused.
+         *
+         * @return              Idx of the newly created linedef else @c 0 if there
+         *                      was an error.
+         */
         objectrecordid_t createLineDef(objectrecordid_t v1, objectrecordid_t v2, duint frontSide, duint backSide, dint flags);
+
         objectrecordid_t createSector(dfloat lightlevel, dfloat red, dfloat green, dfloat blue);
         objectrecordid_t createPlane(dfloat height, Material* material,
             dfloat matOffsetX, dfloat matOffsetY, dfloat r, dfloat g, dfloat b, dfloat a,
@@ -592,11 +622,25 @@ namespace de
 
     private:
         Vertex* createVertex2(dfloat x, dfloat y);
-        LineDef* createLineDef2();
-        SideDef* createSideDef2();
-        Sector* createSector2();
-        Plane* createPlane2();
-        Polyobj* createPolyobj2();
+
+        LineDef* createLineDef2(Vertex* vtx1, Vertex* vtx2, SideDef* front, SideDef* back);
+
+        SideDef* createSideDef2(Sector* sector, dshort flags,
+            Material* middleMaterial, const Vector2f& middleOffset,
+            const Vector3f& middleTintColor, dfloat middleOpacity,
+            Material* topMaterial, const Vector2f& topOffset,
+            const Vector3f& topTintColor, Material* bottomMaterial,
+            const Vector2f& bottomOffset, const Vector3f& bottomTintColor);
+
+        Sector* createSector2(dfloat lightIntensity, const Vector3f& lightColor);
+
+        Plane* createPlane2(dfloat height, const Vector3f& normal,
+            Material* material, const Vector2f& materialOffset,
+            dfloat opacity, Blendmode blendmode, const Vector3f& tintColor,
+            dfloat glowIntensity, const Vector3f& glowColor);
+
+        Polyobj* createPolyobj2(Polyobj::LineDefs lineDefs,
+            dint tag, dint sequenceType, dfloat anchorX, dfloat anchorY);
 
         /**
          * (Re)build nodes for this map.
@@ -624,6 +668,8 @@ namespace de
          *    to the pointer that points back to it (our sprev, just modified).
          */
         bool unlinkFromSector(Thing* thing);
+
+        void findDominantLightSources();
 
         /**
          * Initialize subsector -> obj contact lists.
@@ -694,16 +740,11 @@ namespace de
         void pruneUnusedObjects(dint flags);
 
         /**
-         * Build Subsector sets for all Sectors.
-         */
-        void buildSectorSubsectorSets();
-
-        /**
          * Build LineDef sets for all Sectors.
          */
         void buildSectorLineDefSets();
 
-        void findSubSectorsAffectingSector(duint secIDX);
+        void findSubsectorsAffectingSector(duint secIDX);
 
         /**
          * Called during map init to determine which subsectors affect the reverb

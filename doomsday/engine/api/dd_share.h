@@ -613,26 +613,6 @@ enum /* Do not change the numerical values of the constants! */
     DMU_LAYER2_ANGLE
 };
 
-// LineDef flags:
-// For use with P_Set/Get(DMU_LINEDEF, n, DMU_FLAGS).
-#define DDLF_BLOCKING           0x0001
-#define DDLF_DONTPEGTOP         0x0002
-#define DDLF_DONTPEGBOTTOM      0x0004
-
-// SideDef flags
-// For use with P_Set/Get(DMU_SIDEDEF, n, DMU_FLAGS).
-#define SDF_BLEND_TOPTOMID      0x0001
-#define SDF_BLEND_MIDTOTOP      0x0002
-#define SDF_BLEND_MIDTOBOTTOM   0x0004
-#define SDF_BLEND_BOTTOMTOMID   0x0008
-#define SDF_MIDDLE_STRETCH      0x0010 // Stretch the middle surface to reach from floor to ceiling.
-
-// Surface flags:
-// For use with P_Set/Get(DMU_SURFACE, n, DMU_FLAGS).
-#define DDSUF_GLOW              0x00000001 // Surface glows (fully bright).
-#define DDSUF_MATERIAL_FLIPH    0x00000002 // Surface material is flipped horizontally.
-#define DDSUF_MATERIAL_FLIPV    0x00000004 // Surface material is flipped vertically.
-
 // Map Update status code constants.
 // Sent to the game when various map update events occur.
 enum /* Do NOT change the numerical values of the constants. */

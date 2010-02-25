@@ -27,17 +27,25 @@
 
 using namespace de;
 
-SideDef::SideDef()
+SideDef::SideDef(Sector* sector, dshort flags, Material* middleMaterial,
+    const Vector2f& middleOffset, const Vector3f& middleTintColor,
+    dfloat middleOpacity, Material* topMaterial, const Vector2f& topOffset,
+    const Vector3f& topTintColor, Material* middleMaterial,
+    Material* bottomMaterial, const Vector2f& bottomOffset, const Vector3f& bottomTintColor)
+ : _flags(flags), _lineDef(0), _sector(sector),
+   _middle(Vector3f(0, 0, 0), middleMaterial, middleOffset, middleOpacity, BM_NORMAL, middleTintColor),
+   _top(Vector3f(0, 0, 0), topMaterial, topOffset, 1, BM_NORMAL, topTintColor),
+   _bottom(Vector3f(0, 0, 0), bottomMaterial, bottomOffset, 1, BM_NORMAL, bottomTintColor)
 {
-    _sections[MIDDLE].owner = reinterpret_cast<void*>(this);
-    _sections[BOTTOM].owner = reinterpret_cast<void*>(this);
-    _sections[TOP].owner = reinterpret_cast<void*>(this);
+    middle().owner = reinterpret_cast<void*>(this);
+    top().owner = reinterpret_cast<void*>(this);
+    bottom().owner = reinterpret_cast<void*>(this);
 }
 
 SideDef::~SideDef()
 {}
 
-void SideDef::colorTints(sidesection_t section, const dfloat** topColor, const dfloat** bottomColor)
+void SideDef::colorTints(Section section, const dfloat** topColor, const dfloat** bottomColor)
 {
     // Select the colors for this surface.
     switch(section)

@@ -31,6 +31,8 @@
 
 using namespace de;
 
+namespace
+{
 /// \todo This stuff is obsolete and needs to be removed!
 #define MAPBLOCKUNITS   128
 #define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
@@ -38,433 +40,261 @@ using namespace de;
 #define MAPBMASK        (MAPBLOCKSIZE-1)
 #define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
 
-typedef struct listnode_s {
-    struct listnode_s* next;
-    void*           data;
-} listnode_t;
-
 typedef struct {
-    uint            size;
-    listnode_t*     head;
-} linklist_t;
+    bool          (*callback) (Thing*, void *);
+    dint            localValidCount;
+    void*           paramaters;
+} iteratethings_params_t;
 
-typedef struct {
-    boolean       (*func) (mobj_t*, void *);
-    int             localValidCount;
-    void*           context;
-} iteratemobjs_args_t;
-
-static ThingBlockmap* allocBlockmap(void)
+static bool iterateThings(ThingBlockmap::Things* things, void* paramaters)
 {
-    return Z_Calloc(sizeof(ThingBlockmap), PU_STATIC, 0);
-}
-
-static void freeBlockmap(ThingBlockmap* bmap)
-{
-    Z_Free(bmap);
-}
-
-static listnode_t* allocListNode(void)
-{
-    return Z_Calloc(sizeof(listnode_t), PU_STATIC, 0);
-}
-
-static void freeListNode(listnode_t* node)
-{
-    Z_Free(node);
-}
-
-static linklist_t* allocList(void)
-{
-    return Z_Calloc(sizeof(linklist_t), PU_STATIC, 0);
-}
-
-static void freeList(linklist_t* list)
-{
-    listnode_t* node = list->head;
-
-    while(node)
+    if(things)
     {
-        listnode_t* next = node->next;
-        freeListNode(node);
-        node = next;
-    }
+        const iteratethings_params_t* args = reinterpret_cast<iteratethings_params_t*>(paramaters);
 
-    Z_Free(list);
-}
-
-static void listPushFront(linklist_t* list, mobj_t* mobj)
-{
-    listnode_t* node = allocListNode();
-
-    node->data = mobj;
-
-    node->next = list->head;
-    list->head = node;
-
-    list->size += 1;
-}
-
-static boolean listRemove(linklist_t* list, mobj_t* mobj)
-{
-    if(list->head)
-    {
-        listnode_t** node = &list->head;
-
-        do
+        FOR_EACH(i, things, Things::iterator)
         {
-            listnode_t** next = &(*node)->next;
+            Thing* thing = *i;
 
-            if((*node)->data == mobj)
+            if(thing->validCount != args->localValidCount)
             {
-                freeListNode(*node);
-                *node = *next;
-                list->size -= 1;
-                return true; // Mobj was unlinked.
+                thing->validCount = args->localValidCount;
+
+                if(!args->callback(thing, args->paramaters))
+                    return false;
             }
-
-            node = next;
-        } while(*node);
-    }
-
-    return false; // Mobj was not linked.
-}
-
-static uint listSize(linklist_t* list)
-{
-    return list->size;
-}
-
-static void linkMobjToBlock(ThingBlockmap* blockmap, uint x, uint y, mobj_t* mobj)
-{
-    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
-
-    if(!list)
-        list = Gridmap_SetBlock(blockmap->gridmap, x, y, allocList());
-
-    listPushFront(list, mobj);
-}
-
-static boolean unlinkMobjFromBlock(ThingBlockmap* blockmap, uint x, uint y, mobj_t* mobj)
-{
-    linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
-
-    if(list)
-    {
-        boolean result = listRemove(list, mobj);
-        if(result && !list->head)
-        {
-            freeList(list);
-            Gridmap_SetBlock(blockmap->gridmap, x, y, NULL);
-        }
-
-        return result;
-    }
-
-    return false;
-}
-
-static boolean iterateMobjs(void* ptr, void* context)
-{
-    linklist_t* list = (linklist_t*) ptr;
-    iteratemobjs_args_t* args = (iteratemobjs_args_t*) context;
-
-    if(list)
-    {
-        listnode_t* node = list->head;
-
-        while(node)
-        {
-            listnode_t* next = node->next;
-
-            if(node->data)
-            {
-                mobj_t* mobj = (mobj_t*) node->data;
-
-                if(mobj->validCount != args->localValidCount)
-                {
-                    mobj->validCount = args->localValidCount;
-
-                    if(!args->func(mobj, args->context))
-                        return false;
-                }
-            }
-
-            node = next;
         }
     }
 
     return true;
 }
 
-static boolean freeMobjBlockData(void* data, void* context)
+static bool clearThings(ThingBlockmap::Things* things, void* paramaters)
 {
-    linklist_t* list = (linklist_t*) data;
-
-    if(list)
-        freeList(list);
+    if(things)
+    {
+        things->clear();
+        delete things;
+    }
 
     return true; // Continue iteration.
 }
 
-static void boxToBlocks(ThingBlockmap* bmap, uint blockBox[4], const arvec2_t box)
+static void boxToBlocks(ThingBlockmap* blockmap, duint blockBox[4],
+    const arvec2_t box)
 {
-    uint dimensions[2];
-    vec2_t min, max;
+    Vector2ui dimensions[2];
+    blockmap->_gridmap.dimensions(dimensions);
 
-    Gridmap_Dimensions(bmap->gridmap, dimensions);
+    Vector2f min;
+    V2_Set(min, max(blockmap->aabb[0][0], box[0][0]),
+                max(blockmap->aabb[0][1], box[0][1]));
 
-    V2_Set(min, MAX_OF(bmap->aabb[0][0], box[0][0]),
-                MAX_OF(bmap->aabb[0][1], box[0][1]));
+    Vector2f max;
+    V2_Set(max, min(blockmap->aabb[1][0], box[1][0]),
+                min(blockmap->aabb[1][1], box[1][1]));
 
-    V2_Set(max, MIN_OF(bmap->aabb[1][0], box[1][0]),
-                MIN_OF(bmap->aabb[1][1], box[1][1]));
+    blockBox[BOXLEFT]   = clamp(0, (min[0] - blockmap->aabb[0][0]) / blockmap->_blockSize.x, dimensions[0]);
+    blockBox[BOXBOTTOM] = clamp(0, (min[1] - blockmap->aabb[0][1]) / blockmap->_blockSize.y, dimensions[1]);
 
-    blockBox[BOXLEFT]   = MINMAX_OF(0, (min[0] - bmap->aabb[0][0]) / bmap->blockSize[0], dimensions[0]);
-    blockBox[BOXBOTTOM] = MINMAX_OF(0, (min[1] - bmap->aabb[0][1]) / bmap->blockSize[1], dimensions[1]);
-
-    blockBox[BOXRIGHT]  = MINMAX_OF(0, (max[0] - bmap->aabb[0][0]) / bmap->blockSize[0], dimensions[0]);
-    blockBox[BOXTOP]    = MINMAX_OF(0, (max[1] - bmap->aabb[0][1]) / bmap->blockSize[1], dimensions[1]);
+    blockBox[BOXRIGHT]  = clamp(0, (max[0] - blockmap->aabb[0][0]) / blockmap->_blockSize.x, dimensions[0]);
+    blockBox[BOXTOP]    = clamp(0, (max[1] - blockmap->aabb[0][1]) / blockmap->_blockSize.y, dimensions[1]);
+}
 }
 
-ThingBlockmap* P_CreateMobjBlockmap(const pvec2_t min, const pvec2_t max,
-                                     uint width, uint height)
+ThingBlockmap::ThingBlockmap(const Vector2f& min, const Vector2f& max,
+    duint width, duint height)
+ : _aaBounds(MapRectanglef(min, max), _gridmap(Gridmap(width, height))
 {
-    ThingBlockmap* blockmap;
-
-    assert(min);
-    assert(max);
-
-    blockmap = allocBlockmap();
-    V2_Copy(blockmap->aabb[0], min);
-    V2_Copy(blockmap->aabb[1], max);
-    V2_Set(blockmap->blockSize,
-           (blockmap->aabb[1][0] - blockmap->aabb[0][0]) / width,
-           (blockmap->aabb[1][1] - blockmap->aabb[0][1]) / height);
-
-    blockmap->gridmap = M_CreateGridmap(width, height, PU_STATIC);
-
-    return blockmap;
+    _blockSize = Vector2f(_aaBounds.width() / width, _aaBounds.height() / height);
 }
 
-void P_DestroyMobjBlockmap(ThingBlockmap* blockmap)
+ThingBlockmap::ThingBlockmap()
 {
-    assert(blockmap);
-
-    Gridmap_Iterate(blockmap->gridmap, freeMobjBlockData, NULL);
-
-    M_DestroyGridmap(blockmap->gridmap);
-    Z_Free(blockmap);
+    _gridmap.iterate(clearThings, NULL);
 }
 
-void MobjBlockmap_BoxToBlocks(ThingBlockmap* blockmap, uint blockBox[4],
-                              const arvec2_t box)
+void ThingBlockmap::linkInBlock(duint x, duint y, Thing* thing)
 {
-    assert(blockmap);
-    assert(blockBox);
-    assert(box);
-
-    boxToBlocks(blockmap, blockBox, box);
+    Things* things = _gridmap.block(x, y);
+    if(!things)
+        things = _gridmap.setBlock(x, y, new Things());
+    things->push_front(thing);
 }
 
-/**
- * Given a world coordinate, output the blockmap block[x, y] it resides in.
- */
-boolean MobjBlockmap_Block2f(ThingBlockmap* blockmap, uint dest[2], float x, float y)
+bool ThingBlockmap::unlinkInBlock(duint x, duint y, Thing* thing)
 {
-    assert(blockmap);
-
-    if(!(x < blockmap->aabb[0][0] || x >= blockmap->aabb[1][0] ||
-         y < blockmap->aabb[0][1] || y >= blockmap->aabb[1][1]))
+    Things* things = _gridmap.block(x, y);
+    if(things)
     {
-        dest[0] = (x - blockmap->aabb[0][0]) / blockmap->blockSize[0];
-        dest[1] = (y - blockmap->aabb[0][1]) / blockmap->blockSize[1];
-
-        return true;
+        Things::size_type sizeBefore = things->size();
+        things->remove(thing);
+        if(things->size() == 0)
+        {
+            delete things;
+            _gridmap.setBlock(x, y, NULL);
+        }
+        return sizeBefore != things->size();
     }
-
     return false;
 }
 
-/**
- * Given a world coordinate, output the blockmap block[x, y] it resides in.
- */
-boolean MobjBlockmap_Block2fv(ThingBlockmap* blockmap, uint dest[2], const float pos[2])
+void ThingBlockmap::boxToBlocks(duint blockBox[4], const arvec2_t box)
 {
-    return MobjBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
+    assert(blockBox);
+    assert(box);
+    boxToBlocks(this, blockBox, box);
 }
 
-void MobjBlockmap_Link(ThingBlockmap* blockmap, mobj_t* mobj)
+bool ThingBlockmap::block(Vector2ui& dest, const Vector2f& pos)
 {
-    uint block[2];
-
-    assert(blockmap);
-    assert(mobj);
-
-    MobjBlockmap_Block2fv(blockmap, block, mobj->pos);
-
-    linkMobjToBlock(blockmap, block[0], block[1], mobj);
-}
-
-boolean MobjBlockmap_Unlink(ThingBlockmap* blockmap, mobj_t* mobj)
-{
-    assert(blockmap);
-    assert(mobj);
+    if(_aaBounds.contains(pos))
     {
-    boolean result = false;
-    uint dimensions[2], x, y;
+        Vector2f blockPos = pos - _aaBounds.bottomLeft();
+        dest = Vector2ui(blockPos.x / _blockSize.x, blockPos.y / _blockSize.y);
+        return true;
+    }
+    return false;
+}
 
-    Gridmap_Dimensions(blockmap->gridmap, dimensions);
-    for(y = 0; y < dimensions[1]; ++y)
-        for(x = 0; x < dimensions[0]; ++x)
+void ThingBlockmap::link(Thing* thing)
+{
+    assert(thing);
+
+    Vector2ui block;
+    block(block, thing->origin);
+    linkToBlock(block.x, block.y, thing);
+}
+
+bool ThingBlockmap::unlink(Thing* thing)
+{
+    assert(thing);
+
+    const Vector2ui& dimensions = dimensions();
+
+    bool result = false;
+    for(duint y = 0; y < dimensions.y; ++y)
+        for(duint x = 0; x < dimensions.x; ++x)
         {
-            if(unlinkMobjFromBlock(blockmap, x, y, mobj))
+            if(unlinkFromBlock(x, y, thing))
                 if(!result)
                     result = true;
         }
     return result;
-    }
 }
 
-void MobjBlockmap_Bounds(ThingBlockmap* blockmap, pvec2_t min, pvec2_t max)
+const MapRectanglef ThingBlockmap::aaBounds()
 {
-    assert(blockmap);
-
-    if(min)
-        V2_Copy(min, blockmap->aabb[0]);
-    if(max)
-        V2_Copy(max, blockmap->aabb[1]);
+    return _aaBounds;
 }
 
-void MobjBlockmap_BlockSize(ThingBlockmap* blockmap, pvec2_t blockSize)
+const Vector2f& ThingBlockmap::blockSize()
 {
-    assert(blockmap);
-    assert(blockSize);
-
-    V2_Copy(blockSize, blockmap->blockSize);
+    return _blockSize;
 }
 
-void MobjBlockmap_Dimensions(ThingBlockmap* blockmap, uint v[2])
+const Vector2ui& ThingBlockmap::dimensions()
 {
-    assert(blockmap);
-
-    Gridmap_Dimensions(blockmap->gridmap, v);
+    return _gridmap.dimensions();
 }
 
-uint MobjBlockmap_NumInBlock(ThingBlockmap* blockmap, uint x, uint y)
+dsize ThingBlockmap::numInBlock(duint x, duint y)
 {
-    linklist_t* list;
-
-    assert(blockmap);
-
-    list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
-    if(list)
-        return listSize(list);
-
+    Things* things = _gridmap.block(x, y);
+    if(things)
+        return things->size();
     return 0;
 }
 
-boolean MobjBlockmap_Iterate(ThingBlockmap* blockmap, const uint block[2],
-                             boolean (*func) (mobj_t*, void*),
-                             void* context)
+bool ThingBlockmap::iterate(const Vector2ui& block,
+    bool (*callback) (Thing*, void*), void* paramaters)
 {
-    iteratemobjs_args_t  args;
+    assert(callback);
 
-    assert(blockmap);
-    assert(block);
-    assert(func);
-
-    args.func = func;
-    args.context = context;
+    iteratethings_params_t args;
+    args.callback = callback;
+    args.paramaters = paramaters;
     args.localValidCount = validCount;
 
-    return iterateMobjs(Gridmap_Block(blockmap->gridmap, block[0], block[1]), (void*) &args);
+    return iterateThings(_gridmap.block(block), reinterpret_cast<void*>(&args));
 }
 
-boolean MobjBlockmap_BoxIterate(ThingBlockmap* blockmap, const uint blockBox[4],
-                                boolean (*func) (mobj_t*, void*),
-                                void* context)
+bool ThingBlockmap::iterate(const duint blockBox[4],
+    bool (*callback) (Thing*, void*), void* paramaters)
 {
-    iteratemobjs_args_t args;
-
-    assert(blockmap);
     assert(blockBox);
-    assert(func);
+    assert(callback);
 
-    args.func = func;
-    args.context = context;
+    iteratethings_params_t args;
+    args.callback = callback;
+    args.paramaters = paramaters;
     args.localValidCount = validCount;
 
-    return Gridmap_IterateBoxv(blockmap->gridmap, blockBox, iterateMobjs, (void*) &args);
+    return _gridmap.iterate(blockBox, iterateThings, reinterpret_cast<void*>(&args));
 }
 
-static boolean addMobjIntercepts(mobj_t* mo, void* data)
+static bool addThingIntercepts(Thing* thing, void* paramaters)
 {
-    float x1, y1, x2, y2;
-    int s[2];
-    divline_t dl;
-    float frac;
-
-    if(mo->user() && (mo->user().flags & DDPF_CAMERA))
+    if(thing->object().user() && (thing->object().user().flags & DDPF_CAMERA))
         return true; // $democam: ssshh, keep going, we're not here...
 
-    // Check a corner to corner crosubSectortion for hit.
+    // Check a corner to corner crossubsection for hit.
+    Vector2f from = thing->origin;
+    Vector2f to = thing->origin;
     if((traceLOS.dX ^ traceLOS.dY) > 0)
     {
-        x1 = mo->pos[VX] - mo->radius;
-        y1 = mo->pos[VY] + mo->radius;
+        from.x += -thing->radius;
+        from.y += thing->radius;
 
-        x2 = mo->pos[VX] + mo->radius;
-        y2 = mo->pos[VY] - mo->radius;
+        to.x += thing->radius;
+        to.y += -thing->radius;
     }
     else
     {
-        x1 = mo->pos[VX] - mo->radius;
-        y1 = mo->pos[VY] - mo->radius;
+        from.x += -thing->radius;
+        from.y += -thing->radius;
 
-        x2 = mo->pos[VX] + mo->radius;
-        y2 = mo->pos[VY] + mo->radius;
+        to.x += thing->radius;
+        to.y += thing->radius;
     }
 
-    s[0] = P_PointOnDivlineSide(x1, y1, &traceLOS);
-    s[1] = P_PointOnDivlineSide(x2, y2, &traceLOS);
+    dint s[2];
+    s[0] = P_PointOnDivlineSide(from.x, from.y, &traceLOS);
+    s[1] = P_PointOnDivlineSide(to.x, to.y, &traceLOS);
     if(s[0] == s[1])
         return true; // Line isn't crossed.
 
-    dl.pos[VX] = FLT2FIX(x1);
-    dl.pos[VY] = FLT2FIX(y1);
-    dl.dX = FLT2FIX(x2 - x1);
-    dl.dY = FLT2FIX(y2 - y1);
-
-    frac = P_InterceptVector(&traceLOS, &dl);
+    Line2i dl = Line2i(flt2fix(from.x), flt2fix(from.y), flt2fix(to.x - from.x), flt2fix(to.y - from.y);
+    dfloat frac = P_InterceptVector(&traceLOS, dl);
     if(frac < 0)
         return true; // Behind source.
 
-    P_AddIntercept(frac, false, mo);
+    P_AddIntercept(frac, false, thing);
 
     return true; // Keep going.
 }
 
-boolean MobjBlockmap_PathTraverse(ThingBlockmap* blockmap, const uint originBlock[2],
-                                  const uint destBlock[2], const float origin[2],
-                                  const float dest[2],
-                                  boolean (*func) (intercept_t*))
+bool ThingBlockmap::pathTraverse(const duint originBlock[2],
+    const duint destBlock[2], const dfloat origin[2], const dfloat dest[2],
+    bool (*callback) (intercept_t*))
 {
-    uint count, block[2];
-    float delta[2], partial;
-    dfixed intercept[2], step[2];
-    int stepDir[2];
+    Vector2ui block;
+    Vector2f delta;
+    Vector2i intercept, step;
+    Vector2i stepDir;
+    dfloat partial;
+    duint count;
 
     if(destBlock[0] > originBlock[0])
     {
         stepDir[0] = 1;
-        partial = FIX2FLT(FRACUNIT - ((FLT2FIX(origin[0]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
+        partial = fix2flt(FRACUNIT - ((flt2fix(origin[0]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
         delta[1] = (dest[1] - origin[1]) / fabs(dest[0] - origin[0]);
     }
     else if(destBlock[0] < originBlock[0])
     {
         stepDir[0] = -1;
-        partial = FIX2FLT((FLT2FIX(origin[0]) >> MAPBTOFRAC) & (FRACUNIT - 1));
+        partial = fix2flt((flt2fix(origin[0]) >> MAPBTOFRAC) & (FRACUNIT - 1));
         delta[1] = (dest[1] - origin[1]) / fabs(dest[0] - origin[0]);
     }
     else
@@ -473,19 +303,19 @@ boolean MobjBlockmap_PathTraverse(ThingBlockmap* blockmap, const uint originBloc
         partial = 1;
         delta[1] = 256;
     }
-    intercept[1] = (FLT2FIX(origin[1]) >> MAPBTOFRAC) +
-        FLT2FIX(partial * delta[1]);
+    intercept[1] = (flt2fix(origin[1]) >> MAPBTOFRAC) +
+        flt2fix(partial * delta[1]);
 
     if(destBlock[1] > originBlock[1])
     {
         stepDir[1] = 1;
-        partial = FIX2FLT(FRACUNIT - ((FLT2FIX(origin[1]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
+        partial = fix2flt(FRACUNIT - ((flt2fix(origin[1]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
         delta[0] = (dest[0] - origin[0]) / fabs(dest[1] - origin[1]);
     }
     else if(destBlock[1] < originBlock[1])
     {
         stepDir[1] = -1;
-        partial = FIX2FLT((FLT2FIX(origin[1]) >> MAPBTOFRAC) & (FRACUNIT - 1));
+        partial = fix2flt((flt2fix(origin[1]) >> MAPBTOFRAC) & (FRACUNIT - 1));
         delta[0] = (dest[0] - origin[0]) / fabs(dest[1] - origin[1]);
     }
     else
@@ -494,8 +324,7 @@ boolean MobjBlockmap_PathTraverse(ThingBlockmap* blockmap, const uint originBloc
         partial = 1;
         delta[0] = 256;
     }
-    intercept[0] = (FLT2FIX(origin[0]) >> MAPBTOFRAC) +
-        FLT2FIX(partial * delta[0]);
+    intercept[0] = (flt2fix(origin[0]) >> MAPBTOFRAC) + flt2fix(partial * delta[0]);
 
     /**
      * Step through map blocks.
@@ -508,11 +337,11 @@ boolean MobjBlockmap_PathTraverse(ThingBlockmap* blockmap, const uint originBloc
      */
     block[0] = originBlock[0];
     block[1] = originBlock[1];
-    step[0] = FLT2FIX(delta[0]);
-    step[1] = FLT2FIX(delta[1]);
+    step[0] = flt2fix(delta[0]);
+    step[1] = flt2fix(delta[1]);
     for(count = 0; count < 64; ++count)
     {
-        if(!MobjBlockmap_Iterate(blockmap, block, addMobjIntercepts, 0))
+        if(!iterate(block, addMobjIntercepts, 0))
             return false; // Early out.
 
         if(block[0] == destBlock[0] && block[1] == destBlock[1])

@@ -75,6 +75,9 @@ namespace de
         const Vector2ui& dimensions() const { return _dimensions; }
 
         T block(duint x, duint y) const;
+        T block(const Vector2ui pos) const {
+            return block(pos.x, pos.y)
+        }
 
         T setBlock(duint x, duint y, T data);
 

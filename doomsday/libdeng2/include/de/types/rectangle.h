@@ -62,7 +62,7 @@ namespace de
         Rectangle<VectorTypeArg> intersection(const Rectangle<VectorTypeArg>& other) const {
             return Rectangle<VectorTypeArg>(topLeft.max(other.topLeft), bottomRight.min(other.bottomRight));
         }
-        bool intersects(const Rectangle& other) {
+        bool intersects(const Rectangle& other) const {
             return (topLeft.x >= other.topLeft.x && topLeft.y >= other.topLeft.y) ||
                    (bottomRight.x <= other.bottomRight.x && bottomRight.y <= other.bottomRight.y);
         }

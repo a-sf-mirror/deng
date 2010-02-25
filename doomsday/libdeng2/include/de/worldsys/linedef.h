@@ -46,6 +46,16 @@ namespace de
         /// Attempt to access missing back SideDef @ingroup errors
         DEFINE_ERROR(MissingBackError);
 
+        /** @name LineDef Flags */
+        //@{
+        /// Blocks Thing movement.
+        DEFINE_FLAG(BLOCKING, 1);
+        /// Material on the top sections are unpegged.
+        DEFINE_FLAG(DONTPEGTOP, 2);
+        /// Material on the bottom sections are unpegged.
+        DEFINE_FINAL_FLAG(DONTPEGBOTTOM, 3, Flags);
+        //@}
+
         static const dbyte FRONT = 0;
         static const dbyte BACK = 1;
 
@@ -64,7 +74,9 @@ namespace de
         dfloat length; // Accurate length
         slopetype_t slopeType;
 
-        dint flags; // Public DDLF_* flags.
+        /// LineDef flags.
+        Flags flags;
+
         bool polyobjOwned;
         dint validCount;
 
@@ -87,6 +99,10 @@ namespace de
             // No segs should be created for these overlapping linedefs.
             LineDef* overlap;
         } buildData;
+
+        LineDef(Vertex* vtx1, Vertex* vtx2, SideDef* front, SideDef* back);
+
+        ~LineDef();
 
         dfloat lightLevelDelta() const;
 

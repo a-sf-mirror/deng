@@ -150,6 +150,10 @@ namespace de
         };
 
     public:
+        Material();
+
+        ~Material();
+
         const struct ded_material_s* def;  // Can be NULL.
         bool isAutoMaterial; // Was generated automatically.
 

@@ -47,7 +47,7 @@ bool heightClip(Thing* thing)
     bool onfloor;
 
     // During demo playback the player gets preferential treatment.
-    if(thing->hasUser() && &thing->user() == &ddPlayers[consolePlayer].shared && playback)
+    if(thing->hasObject() && &thing->object().user() == &ddPlayers[consolePlayer].shared && playback)
         return true;
 
     onfloor = (thing->origin.z <= thing->floorZ);
@@ -71,9 +71,9 @@ bool heightClip(Thing* thing)
     // created by the Game, is the one that is visible and modified in this
     // function. We'll need to sync the hidden client mobj (that receives
     // all the changes from the server) to match the changes.
-    if(isClient && thing->hasUser())
+    if(isClient && thing->hasObject())
     {
-        Cl_UpdatePlayerPos(P_GetDDPlayerIdx(thing->user()));
+        Cl_UpdatePlayerPos(P_GetDDPlayerIdx(thing->object().user()));
     }
 
     if(thing->ceilingZ - thing->floorZ < thing->height)
@@ -90,6 +90,15 @@ bool PIT_SectorPlanesChanged(Thing* thing, void* data)
     return true;
 }
 }
+
+Sector::Sector(dfloat lightIntensity, const Vector3f& lightColor)
+ : _floorPlane(0), _ceilingPlane(0), lightSource(0), thingList(0)
+   blockCount(0), changedBlockCount(0), blocks(0),
+   _lightIntensity(clamp(dfloat(0), lightIntensity, dfloat(1))),
+   _lightColor(Vector3f(clamp(dfloat(0), lightColor.x, dfloat(1)),
+                        clamp(dfloat(0), lightColor.y, dfloat(1)),
+                        clamp(dfloat(0), lightColor.z, dfloat(1)))))
+{}
 
 Sector::~Sector()
 {
@@ -208,18 +217,6 @@ void Sector::updateAABounds()
 
     // This is very rough estimate of sector area.
     approxArea = (_aaBounds.width() / 128) * (_aaBounds.height() / 128);
-}
-
-void Sector::buildSubsectorSet()
-{
-    /// @fixme Sector should return the map its linked in.
-    Map& map = App::currentMap();
-    for(duint i = 0; i < map._numSubsectors; ++i)
-    {
-        Subsector* subsector = map.subsectors[i];
-        if(&subsector->sector() == this)
-            subsectors.insert(subsector);
-    }
 }
 
 #if 0

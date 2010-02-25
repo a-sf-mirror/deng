@@ -26,9 +26,26 @@
 
 using namespace de;
 
+Plane::Plane(dfloat height, const Vector3f& normal, Material* material,
+    const Vector2f& materialOffset, dfloat opacity, Blendmode blendmode,
+    const Vector3f& tintColor, dfloat glowIntensity,
+    const Vector3f& glowColor)
+  : height(height), visHeight(height), visHeightDelta(0), momentum(0),
+    target(0), glowIntensity(glowIntensity), glowColor(glowColor),
+    _surface(normal, material, materialOffset, opacity, blendmode, tintColor)
+{
+    oldHeight[0] = oldHeight[1] = height;
+}
+
 Plane::~Plane()
 {
     _surface.destroyDecorations();
+}
+
+void Plane::setNormal(const Vector3f& normal)
+{
+    surface().normal = normal;
+    surface().normal.normalize();
 }
 
 void Plane::resetHeightTracking()

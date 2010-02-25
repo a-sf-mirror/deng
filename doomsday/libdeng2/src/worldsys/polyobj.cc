@@ -42,53 +42,81 @@ void rotatePoint(dangle angle, ddouble* x, ddouble* y, ddouble startSpotX, ddoub
     ddouble curX = *x, curY = *y;
     ddouble gxt, gyt;
 
-    gxt = curX * FIX2FLT(fineCosine[an]);
-    gyt = curY * FIX2FLT(finesine[an]);
+    gxt = curX * fix2flt(fineCosine[an]);
+    gyt = curY * fix2flt(finesine[an]);
     *x = gxt - gyt + startSpotX;
 
-    gxt = curX * FIX2FLT(finesine[an]);
-    gyt = curY * FIX2FLT(fineCosine[an]);
+    gxt = curX * fix2flt(finesine[an]);
+    gyt = curY * fix2flt(fineCosine[an]);
     *y = gyt + gxt + startSpotY;
 }
 }
 
+Polyobj::Polyobj(const LineDefs& lineDefs, dint tag, dint sequenceType,
+    dfloat anchorX, dfloat anchorY)
+ :  idx(0), _lineDefs(lineDefs), tag(tag), seqType(sequenceType),
+    origin(Vector2f(anchorX, anchorY))
+{}
+
 Polyobj::~Polyobj()
 {
-    for(duint i = 0; i < _numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
         delete lineDef->halfEdges[0]->twin;
         delete lineDef->halfEdges[0];
     }
-    Z_Free(lineDefs);
-    Z_Free(segs);
+    _lineDefs.clear();
+    _segs.clear();
     _originalPts.clear();
     _prevPts.clear();
 }
 
 void Polyobj::changed()
 {
+    // Shadow bias must be told.
     // @todo Polyobj should return the map its linked in.
     Map& map = App::currentMap();
-
-    // Shadow bias must be told.
-    for(duint i = 0; i < _numSegs; ++i)
+    FOR_EACH(i, _segs, Segs::iterator)
     {
-        Seg* seg = &segs[i];
-        if(seg->bsuf[SEG_MIDDLE])
-            SB_SurfaceMoved(map, seg->bsuf[SEG_MIDDLE]);
+        Seg& seg = *i;
+        if(seg.bsuf[Seg::MIDDLE])
+            SB_SurfaceMoved(map, seg.bsuf[Seg::MIDDLE]);
     }
 }
 
 void Polyobj::updateAABounds()
 {
-    const LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[0])->obj);
-
-    V2_InitBox(box, lineDef.vtx1().pos);
-    for(duint i = 0; i < _numLineDefs; ++i)
+    bool first = true;
+    FOR_EACH(i, _lineDefs, LineDefs::const_iterator)
     {
-        lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(po->lineDefs[i])->obj);
-        V2_AddToBox(box, lineDef.vtx1().pos);
+        const LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
+        if(first)
+        {
+            _aaBounds = lineDef->aaBounds();
+            first = false;
+            continue;
+        }
+        _aaBounds.include(lineDef->aaBounds());
+    }
+}
+
+void Polyobj::createSegs()
+{
+    _segs.reserve(_lineDefs.size());
+    FOR_EACH(i, _lineDefs, LineDefs::const_iterator)
+    {
+        const LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
+        HalfEdge& halfEdge = *lineDef->halfEdges[0];
+
+        /// @todo Polyobj should return the map its linked in.
+        Map& map = App::app().currentMap();
+        SideDef* sideDef = map.sideDefs()[lineDef->buildData.sideDefs[LineDef::FRONT]->buildData.index - 1];
+
+        _segs.push_back(Seg(halfEdge, sideDef, false));
+
+        Seg* seg = &_segs[i - _lineDefs.begin()];
+        halfEdge.data = reinterpret_cast<void*>(seg);
     }
 }
 
@@ -97,8 +125,10 @@ void Polyobj::initalize()
     // @fixme Polyobj should return the map its linked in.
     Map& map = App::currentMap();
 
-    for(duint i = 0; i < _numSegs; ++i)
+    FOR_EACH(i, _segs, Segs::iterator)
     {
+        Seg& seg = *i;
+
         biassurface_t* bsuf = SB_CreateSurface(map);
         bsuf->size = 4;
         bsuf->illum = Z_Calloc(sizeof(vertexillum_t) * bsuf->size, PU_STATIC, 0);
@@ -106,30 +136,37 @@ void Polyobj::initalize()
         for(duint j = 0; j < bsuf->size; ++j)
             SB_InitVertexIllum(&bsuf->illum[j]);
 
-        Seg* seg = &segs[i];
-        seg->bsuf[SEG_MIDDLE] = bsuf;
+        seg.bsuf[SEG_MIDDLE] = bsuf;
     }
 
-    const LineDef& lineDef = *reinterpret_cast<LineDef*>(((objectrecord_t*) lineDefs[0])->obj);
-    Vector2d avg = lineDef.vtx1().pos;
+    Vector2f average;
 
-    for(duint i = 1; i < _numLineDefs; ++i)
+    {bool first = true;
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        const LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        const LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
+
+        if(first)
+        {
+            average = lineDef.vtx1().pos;
+            first = false;
+        }
+        else
+        {
+            average += lineDef.vtx1().pos;
+        }
+
         MSurface& surface = lineDef.front().middle();
-
-        avg += lineDef.vtx1().pos;
-
         surface._inFlags[MSurface::NORADIO] = true;
         surface.normal.x = (lineDef.vtx2().pos.y - lineDef.vtx1().pos.y) / lineDef.length;
         surface.normal.y = (lineDef.vtx1().pos.x - lineDef.vtx2().pos.x) / lineDef.length;
         surface.normal.z = 0;
-    }
+    }}
 
-    avg.x /= _numLineDefs;
-    avg.y /= _numLineDefs;
+    average.x /= _lineDefs.size();
+    average.y /= _lineDefs.size();
 
-    subsector = &map.pointInSubsector(avg);
+    subsector = &map.pointInSubsector(average);
     if(subsector->polyobj)
     {
         LOG_MESSAGE("Warning: Polyobj::initialize: Multiple Polyobjs in a single Subsector"
@@ -150,14 +187,15 @@ bool Polyobj::translate(const Vector2f& delta)
     /// Move to the new location.
     unlinkInLineDefBlockmap();
     {EdgePoints::iterator pointItr = _prevPts.begin();
-    for(duint i = 0; i < _numLineDefs; ++i, pointItr++)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
 
         lineDef->_aaBounds.move(delta);
         lineDef->vtx1().pos += delta;
 
         (*pointItr) += delta; // Previous points are unique for each linedef.
+        pointItr++;
     }}
     origin += delta;
     linkInLineDefBlockmap();
@@ -165,9 +203,9 @@ bool Polyobj::translate(const Vector2f& delta)
     /// Check if we now in collision with any Thing we shouldn't be.
     bool blocked = false;
     validCount++;
-    for(duint i = 0; i < _numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
         if(checkThingBlocking(lineDef, this))
             blocked = true;
     }
@@ -179,14 +217,15 @@ bool Polyobj::translate(const Vector2f& delta)
 
         unlinkInLineDefBlockmap();
         {EdgePoints::iterator pointItr = _prevPts.begin();
-        for(duint i = 0; i < _numLineDefs; ++i, pointItr++)
+        FOR_EACH(i, _lineDefs, LineDefs::iterator)
         {
-            LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+            LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
 
             lineDef->_aaBounds.move(inverseDelta);
             lineDef->vtx1().pos += inverseDelta;
 
             (*pointItr) += inverseDelta;
+            pointItr++;
         }
         }
         origin += inverseDelta;
@@ -204,9 +243,9 @@ bool Polyobj::rotate(dangle delta)
     unlinkInLineDefBlockmap();
     {EdgePoints::const_iterator origPointItr = _originalPts.begin();
     EdgePoints::iterator pointItr = _prevPts.begin();
-    for(duint i = 0; i < _numLineDefs; ++i, origPointItr++, pointItr++)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
         SideDef& sideDef = lineDef.front();
         MSurface& surface = sideDef.middle();
 
@@ -220,10 +259,13 @@ bool Polyobj::rotate(dangle delta)
 
         surface.normal.x = (lineDef.vtx2().pos.y - lineDef.vtx1().pos.y) / lineDef.length;
         surface.normal.y = (lineDef.vtx1().pos.x - lineDef.vtx2().pos.x) / lineDef.length;
+
+        origPointItr++;
+        pointItr++;
     }}
-    for(duint i = 0; i < _numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
         lineDef->updateAABounds();
     }
     angle += delta;
@@ -232,9 +274,9 @@ bool Polyobj::rotate(dangle delta)
     /// Check if we are now in collision with any Thing we shouldn't be.
     bool blocked = false;
     validCount++;
-    for(duint i = 0; i < _numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
         if(checkThingBlocking(lineDef, this))
             blocked = true;
     }
@@ -244,9 +286,9 @@ bool Polyobj::rotate(dangle delta)
         /// Undo the move.
         unlinkInLineDefBlockmap();
         {EdgePoints::iterator pointItr = _prevPts.begin();
-        for(duint i = 0; i < _numLineDefs; ++i, pointItr++)
+        FOR_EACH(i, _lineDefs, LineDefs::iterator)
         {
-            LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+            LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
             SideDef& sideDef = lineDef.front();
             MSurface& surface = sideDef.middle();
 
@@ -255,10 +297,12 @@ bool Polyobj::rotate(dangle delta)
 
             surface.normal.y = (lineDef.vtx1().pos.x - lineDef.vtx2().pos.x) / lineDef.length;
             surface.normal.x = (lineDef.vtx2().pos.y - lineDef.vtx1().pos.y) / lineDef.length;
+
+            pointItr++;
         }}
-        for(duint i = 0; i < _numLineDefs; ++i)
+        FOR_EACH(i, _lineDefs, LineDefs::iterator)
         {
-            LineDef& lineDef = *reinterpret_cast<LineDef*>(((objectrecord_t*) po->lineDefs[i])->obj);
+            LineDef& lineDef = *reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
             lineDef.updateAABounds();
         }
         angle -= delta;
@@ -274,16 +318,16 @@ void Polyobj::unlinkInLineDefBlockmap()
 {
     // @todo Polyobj should return the map its linked in.
     LineDefBlockmap& lineDefBlockmap = App::currentMap().lineDefBlockmap();
-    for(duint i = 0; i < _numLineDefs; ++i)
-        lineDefBlockmap.unlink(reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
+        lineDefBlockmap.unlink(reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
 }
 
 void Polyobj::linkInLineDefBlockmap()
 {
     // @todo Polyobj should return the map its linked in.
     LineDefBlockmap& lineDefBlockmap = App::currentMap().lineDefBlockmap();
-    for(duint i = 0; i < _numLineDefs; ++i)
-        lineDefBlockmap.link(reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj);
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
+        lineDefBlockmap.link(reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
 }
 
 bool PTR_CheckThingBlocking(Thing* thing, void* paramaters)
@@ -291,11 +335,11 @@ bool PTR_CheckThingBlocking(Thing* thing, void* paramaters)
     PIT_CheckThingBlockingParams* params = reinterpret_cast<PIT_CheckThingBlockingParams*>(paramaters);
 
     if((thing->ddFlags & DDMF_SOLID) ||
-       (thing->hasUser() && !(thing->user().flags & DDPF_CAMERA)))
+       (thing->object().user() && !(thing->object().user()->flags & DDPF_CAMERA)))
     {
-        const MapRectangled thingBounds = thing->aaBounds();
+        const MapRectanglef thingBounds = thing->aaBounds();
 
-        if(thingBounds().intersects(params->lineDef->aaBounds()))
+        if(thingBounds.intersects(params->lineDef->aaBounds()))
         {
             if(params->lineDef->boxOnSide(thingBounds) == -1)
             {
@@ -334,22 +378,22 @@ static bool checkThingBlocking(LineDef* lineDef, Polyobj* polyobj)
 
 bool Polyobj::iterateLineDefs(bool (*callback) (LineDef*, void*), bool retObjRecord, void* paramaters)
 {
-    for(duint i = 0; i < _numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        LineDef* lineDef = reinterpret_cast<objectrecord_t*>(lineDefs[i])->obj;
+        LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*i)->obj);
 
         if(lineDef->validCount == validCount)
             continue;
 
         lineDef->validCount = validCount;
 
-        LineDef* ptr;
+        void* ptr;
         if(retObjRecord)
-            ptr = reinterpret_cast<LineDef*>(lineDefs[i]);
+            ptr = *i;
         else
             ptr = lineDef;
 
-        if(!callback(ptr, paramaters))
+        if(!callback(reinterpret_cast<LineDef*>(ptr), paramaters))
             return false;
     }
     return true;

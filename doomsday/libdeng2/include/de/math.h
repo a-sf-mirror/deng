@@ -111,9 +111,15 @@ namespace de
     static const dfixed FRACBITS = 16;
     static const dfixed FRACUNIT = (1<<FRACBITS);
 
-#define FIX2FLT(x)      ( (x) / (dfloat) FRACUNIT )
-#define Q_FIX2FLT(x)    ( (dfloat)((x)>>FRACBITS) )
-#define FLT2FIX(x)      ( (dfixed) ((x)*FRACUNIT) )
+    /// Convert value from fixed to floating point.
+    inline dfloat fix2flt(dfixed val) {
+        return val / dfloat(FRACUNIT);
+    }
+
+    /// Convert value from floating to fixed point.
+    inline dfixed flt2fix(dfloat val) {
+        return dfixed(val * FRACUNIT);
+    }
 
     typedef duint dangle;
     static const dangle FINEANGLES = 8192;

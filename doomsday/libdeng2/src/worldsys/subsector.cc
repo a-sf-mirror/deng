@@ -193,7 +193,7 @@ static void findContacts(Map::objcontacttype_t type, void* obj)
 
         V3_SetFixed(params.objPos, pt->pos[0], pt->pos[1], pt->pos[VZ]);
         // Use a slightly smaller radius than what the obj really is.
-        params.objRadius = FIX2FLT(pt->gen->stages[pt->stage].radius) * .9f;
+        params.objRadius = fix2flt(pt->gen->stages[pt->stage].radius) * .9f;
         subsector = pt->subsector;
         break;
         }
@@ -317,6 +317,17 @@ static void spreadParticles(const Subsector* subsector)
 }
 #endif
 
+Subsector::Subsector(Face& face, Sector* sector)
+ : _face(face), _sector(sector)
+{
+    hEdgeCount = 0;
+    HalfEdge* halfEdge = _face.halfEdge;
+    do
+    {
+        hEdgeCount++;
+    } while((halfEdge = halfEdge->next) != _face.halfEdge);
+}
+
 Subsector::~Subsector()
 {
     /*shadowlink_t* slink;
@@ -345,17 +356,18 @@ void Subsector::spreadObjs()
 
 void Subsector::updateMidPoint()
 {
-    HalfEdge* halfEdge;
-
     // Find the center point. First calculate the bounding box.
-    if((halfEdge = face->halfEdge))
+    if(_face.halfEdge)
     {
+        const HalfEdge* halfEdge = _face.halfEdge;
         const Vertex& vtx = *halfEdge->vertex;
 
-        bBox[0][0] = bBox[1][0] = midPoint.x = dfloat(vtx.pos.x);
-        bBox[0][1] = bBox[1][1] = midPoint.y = dfloat(vtx.pos.y);
+        midPoint = vtx.pos;
 
-        while((halfEdge = halfEdge->next) != face->halfEdge)
+        bBox[0][0] = bBox[1][0] = dfloat(vtx.pos.x);
+        bBox[0][1] = bBox[1][1] = dfloat(vtx.pos.y);
+
+        while((halfEdge = halfEdge->next) != _face.halfEdge)
         {
             const Vertex& vtx = *halfEdge->vertex;
 
@@ -368,8 +380,7 @@ void Subsector::updateMidPoint()
             if(vtx.pos.y > bBox[1][1])
                 bBox[1][1] = dfloat(vtx.pos.y);
 
-            midPoint.x += dfloat(vtx.pos.x);
-            midPoint.y += dfloat(vtx.pos.y);
+            midPoint += vtx.pos;
         }
 
         midPoint.x /= hEdgeCount; // num vertices.
@@ -377,8 +388,7 @@ void Subsector::updateMidPoint()
     }
 
     // Calculate the worldwide grid offset.
-    worldGridOffset.x = fmod(bBox[0][0], 64);
-    worldGridOffset.y = fmod(bBox[1][1], 64);
+    worldGridOffset = Vector2f(fmod(bBox[0][0], 64), fmod(bBox[1][1], 64));
 }
 
 namespace

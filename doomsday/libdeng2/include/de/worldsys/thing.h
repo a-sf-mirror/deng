@@ -27,7 +27,7 @@
 #include "../Animator"
 #include "../NodePile"
 #include "../Subsector"
-#include "../User"
+#include "../Object"
 
 namespace de
 {
@@ -40,8 +40,8 @@ namespace de
     class Thing
     {
     public:
-        /// Attempt to access user when not present. @ingroup errors
-        DEFINE_ERROR(MissingUserError);
+        /// Attempt to access object when not present. @ingroup errors
+        DEFINE_ERROR(MissingObjectError);
 
         /** @name Thing Link Flags */
         //@{
@@ -56,15 +56,15 @@ namespace de
     public:
         Thing();
 
-        /// Is this thing owned by a user?
-        bool hasUser() const { return _user != 0; }
+        /// Is this thing owned by an object?
+        bool hasObject() const { return _object != 0; }
 
-        /// Retrieve the User of this thing.
-        User& user() {
-            if(!hasUser())
-                /// @throw MissingUserError Attempt to access user when not present.
-                throw MissingUserError("Thing::user", "No user present.");
-            return *_user;
+        /// Retrieve the object of this thing.
+        Object& object() {
+            if(!hasObject())
+                /// @throw MissingObjectError Attempt to access object when not present.
+                throw MissingObjectError("Thing::object", "No object present.");
+            return *_object;
         }
 
         /// Retrieve the Axis-aligned Bounding Box for this thing.
@@ -90,21 +90,24 @@ namespace de
         /// Radius of the thing.
         Animator radius;
 
+        /// Height of the thing.
+        Animator height;
+
     private:
         /// Type identifier.
         String _id;
 
-        /// If the thing represents a User, this is it.
-        User* _user;
+        /// If Thing represents an Object, this is it.
+        Object* _object;
+
+        /// Another Thing this one is resting on.
+        Thing* _onThing;
 
         /// @todo  Appearance: sprite frame, 3D model, etc.
         ///        Behavior: states, scripts, counters, etc.
         
         /// Overall opacity of the thing (1.0 = fully opaque, 0.0 = invisible).
         Animator _opacity;
-
-        /// Height of the thing.
-        Animator _height;
 
         /// Extra information about this linedef.
         Record _info;

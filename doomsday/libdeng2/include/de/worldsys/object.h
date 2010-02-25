@@ -49,7 +49,12 @@ namespace de
 
     public:
         static Thinker* construct();
-        
+
+        /**
+         * Retrieve the User of this object (if set).
+         */
+        User* user() const { return _user; };
+
     private:
         /// Position of the object's origin.
         AnimatorVector3 _pos;
@@ -63,9 +68,6 @@ namespace de
         /// Optional physical representation of the object (modified state).
         /// E.g., a user that is only a spectator doesn't have a Thing.
         Thing* _thing;
-
-        /// @todo Belongs in Thing no? Another object this one is resting on.
-        Object* _onObject;
 
         /// This is set only if this object is the representation of a user.
         User* _user;

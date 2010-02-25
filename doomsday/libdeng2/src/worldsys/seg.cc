@@ -22,10 +22,45 @@
  * Boston, MA  02110-1301  USA
  */
 
-#include "de/Seg"
 #include "de/Log"
+#include "de/Seg"
+#include "de/LineDef"
 
 using namespace de;
+
+Seg::Seg(HalfEdge& _halfEdge, SideDef* sideDef, bool back)
+ :  halfEdge(&_halfEdge), _sideDef(sideDef), onBack(back)
+{
+    if(_sideDef)
+    {
+        const LineDef& lineDef = _sideDef->lineDef();
+        const Vertex* vtx = lineDef.buildData.v[onBack];
+        offset = vtx->pos.distance(halfEdge->vertex->pos);
+    }
+
+    Vector2d diff = halfEdge->twin->vertex->pos - halfEdge->vertex->pos;
+    angle = bamsAtan2(dint(diff.y), dint(diff.x)) << FRACBITS;
+
+    // Calculate the length of the segment. We need this for
+    // the texture coordinates. -jk
+    length = diff.length();
+    if(length == 0)
+        length = 0.01f; // Hmm...
+
+    // Calculate the surface normals.
+    if(_sideDef)
+    {
+        MSurface& surface = _sideDef->middle();
+
+        surface.normal.x = (halfEdge->twin->vertex->pos.y - halfEdge->vertex->pos.y) / length;
+        surface.normal.y = (halfEdge->vertex->pos.x - halfEdge->twin->vertex->pos.x) / length;
+        surface.normal.z = 0;
+
+        // All surfaces of this seg have the same normal.
+        _sideDef->top().normal = surface.normal;
+        _sideDef->bottom().normal = surface.normal;
+    }
+}
 
 #if 0
 bool Seg::setProperty(const setargs_t* args)

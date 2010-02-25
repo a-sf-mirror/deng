@@ -583,10 +583,10 @@ static bool addLineIntercepts(LineDef* ld, void* data)
     }
     else
     {
-        s[0] = LineDef_PointOnSide(ld, FIX2FLT(traceLOS.pos[VX]),
-                                       FIX2FLT(traceLOS.pos[VY]));
-        s[1] = LineDef_PointOnSide(ld, FIX2FLT(traceLOS.pos[VX] + traceLOS.dX),
-                                       FIX2FLT(traceLOS.pos[VY] + traceLOS.dY));
+        s[0] = LineDef_PointOnSide(ld, fix2flt(traceLOS.pos[VX]),
+                                       fix2flt(traceLOS.pos[VY]));
+        s[1] = LineDef_PointOnSide(ld, fix2flt(traceLOS.pos[VX] + traceLOS.dX),
+                                       fix2flt(traceLOS.pos[VY] + traceLOS.dY));
     }
 
     if(s[0] == s[1])
@@ -620,13 +620,13 @@ bool LineDefBlockmap_PathTraverse(LineDefBlockmap* blockmap, const duint originB
     if(destBlock[0] > originBlock[0])
     {
         stepDir[0] = 1;
-        partial = FIX2FLT(FRACUNIT - ((FLT2FIX(origin[0]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
+        partial = fix2flt(FRACUNIT - ((flt2fix(origin[0]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
         delta[1] = (dest[1] - origin[1]) / fabs(dest[0] - origin[0]);
     }
     else if(destBlock[0] < originBlock[0])
     {
         stepDir[0] = -1;
-        partial = FIX2FLT((FLT2FIX(origin[0]) >> MAPBTOFRAC) & (FRACUNIT - 1));
+        partial = fix2flt((flt2fix(origin[0]) >> MAPBTOFRAC) & (FRACUNIT - 1));
         delta[1] = (dest[1] - origin[1]) / fabs(dest[0] - origin[0]);
     }
     else
@@ -635,19 +635,19 @@ bool LineDefBlockmap_PathTraverse(LineDefBlockmap* blockmap, const duint originB
         partial = 1;
         delta[1] = 256;
     }
-    intercept[1] = (FLT2FIX(origin[1]) >> MAPBTOFRAC) +
-        FLT2FIX(partial * delta[1]);
+    intercept[1] = (flt2fix(origin[1]) >> MAPBTOFRAC) +
+        flt2fix(partial * delta[1]);
 
     if(destBlock[1] > originBlock[1])
     {
         stepDir[1] = 1;
-        partial = FIX2FLT(FRACUNIT - ((FLT2FIX(origin[1]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
+        partial = fix2flt(FRACUNIT - ((flt2fix(origin[1]) >> MAPBTOFRAC) & (FRACUNIT - 1)));
         delta[0] = (dest[0] - origin[0]) / fabs(dest[1] - origin[1]);
     }
     else if(destBlock[1] < originBlock[1])
     {
         stepDir[1] = -1;
-        partial = FIX2FLT((FLT2FIX(origin[1]) >> MAPBTOFRAC) & (FRACUNIT - 1));
+        partial = fix2flt((flt2fix(origin[1]) >> MAPBTOFRAC) & (FRACUNIT - 1));
         delta[0] = (dest[0] - origin[0]) / fabs(dest[1] - origin[1]);
     }
     else
@@ -656,8 +656,8 @@ bool LineDefBlockmap_PathTraverse(LineDefBlockmap* blockmap, const duint originB
         partial = 1;
         delta[0] = 256;
     }
-    intercept[0] = (FLT2FIX(origin[0]) >> MAPBTOFRAC) +
-        FLT2FIX(partial * delta[0]);
+    intercept[0] = (flt2fix(origin[0]) >> MAPBTOFRAC) +
+        flt2fix(partial * delta[0]);
 
     /**
      * Step through map blocks.
@@ -670,8 +670,8 @@ bool LineDefBlockmap_PathTraverse(LineDefBlockmap* blockmap, const duint originB
      */
     block[0] = originBlock[0];
     block[1] = originBlock[1];
-    step[0] = FLT2FIX(delta[0]);
-    step[1] = FLT2FIX(delta[1]);
+    step[0] = flt2fix(delta[0]);
+    step[1] = flt2fix(delta[1]);
     for(count = 0; count < 64; ++count)
     {
         if(!LineDefBlockmap_Iterate(blockmap, block, addLineIntercepts, 0, false))

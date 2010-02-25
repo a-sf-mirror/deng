@@ -22,6 +22,7 @@
 #define LIBDENG2_POLYOBJ_H
 
 #include "../Vector"
+#include "../MapRectangle"
 
 #include <vector>
 
@@ -34,13 +35,15 @@ namespace de
     class Polyobj
     {
     public:
+        typedef std::vector<LineDef*> LineDefs;
+        typedef std::vector<Seg> Segs;
         typedef std::vector<Vector2f> EdgePoints;
 
     public:
         /// Thinker node.
         //thinker_t thinker;
 
-        /// Position [x,y,z]
+        /// World position.
         Vector2f origin;
 
         /// Subsector in which this resides.
@@ -54,8 +57,6 @@ namespace de
 
         dint validCount;
 
-        dfloat box[2][2];
-
         /// Destination XY.
         dfloat dest[2];
 
@@ -66,12 +67,6 @@ namespace de
 
         /// Rotation speed.
         dangle angleSpeed;
-
-        duint _numLineDefs;
-        LineDef** lineDefs;
-
-        duint _numSegs;
-        Seg* segs;
 
         /// Used as the base for the rotations.
         EdgePoints _originalPts;
@@ -91,7 +86,20 @@ namespace de
             dint index;
         } buildData;
 
+        Polyobj(const LineDefs& lineDefs, dint tag, dint sequenceType,
+                dfloat anchorX, dfloat anchorY);
+
         ~Polyobj();
+
+        /**
+         * Returns all linedefs of the polyobj.
+         */
+        const LineDefs& lineDefs() const { return _lineDefs; }
+
+        /**
+         * Temporary. Create a seg for each line of this polyobj.
+         */
+        void createSegs();
 
         /**
          * Called at the start of the map after all the structures needed for
@@ -116,6 +124,14 @@ namespace de
         //bool setProperty(const setargs_t *args);
 
     private:
+        /// All linedefs of the polyobj.
+        LineDefs _lineDefs;
+
+        Segs _segs;
+
+        /// Axis-Aligned Bounding box of all linedefs of the polyobj.
+        MapRectanglef _aaBounds;
+
         /// Update the Axis-Aligned Bounding box.
         void updateAABounds();
 

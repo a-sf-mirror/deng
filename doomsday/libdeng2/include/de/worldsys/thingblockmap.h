@@ -29,24 +29,39 @@
 #include "../Vector"
 #include "../Thing"
 
+#include <list>
+
 namespace de
 {
     class ThingBlockmap
     {
     public:
+        /// List of things per block.
+        typedef std::list<Thing*> Things;
+
+    public:
         ThingBlockmap(const Vector2f& min, const Vector2f& max, duint width, duint height);
         ~ThingBlockmap();
 
-        duint numInBlock(duint x, duint y);
+        dsize numInBlock(duint x, duint y) const;
+        dsize numInBlock(const Vector2ui block) const {
+            return numInBlock(block.x, block.y);
+        }
+
         void link(Thing* thing);
         bool unlink(Thing* thing);
 
-        void bounds(Vector2f& min, Vector2f& max) const;
-        void blockSize(Vector2f& blockSize) const;
-        void dimensions(Vector2ui& dimensions) const;
+        const MapRectanglef& aaBounds() const;
+        const Vector2f& blockSize() const;
+        const Vector2ui& dimensions() const;
 
-        bool block(Vector2ui& block, dfloat x, dfloat y) const;
-        bool block(Vector2ui& block, const Vector2f& pos) const;
+        /**
+         * Given a world coordinate, output the blockmap block[x, y] it resides in.
+         */
+        bool block(Vector2ui& dest, const Vector3f& pos) const;
+        bool block(Vector2ui& dest, dfloat x, dfloat y) const {
+            return block(dest, Vector2f(x, y));
+        }
 
         //void boxToBlocks(duint blockBox[4], const arvec2_t box);
         bool iterate(const Vector2ui& block, bool (*func) (Thing*, void*), void* paramaters = 0);
@@ -54,9 +69,17 @@ namespace de
         //bool pathTraverse(const Vector2ui& originBlock, const Vector2ui& block, const Vector2f& origin, const Vector2f& dest, bool (*func) (intercept_t*));
 
     private:
-        Vector2f _aabb[2];
+        void linkInBlock(duint x, duint y, Thing* thing);
+        bool unlinkInBlock(duint x, duint y, Thing* thing);
+
+        /// Axis-Aligned Bounding box, in the map coordinate space.
+        MapRectanglef _aaBounds;
+
+        /// Dimensions of the blocks of the blockmap in map units.
         Vector2f _blockSize;
-        Gridmap<Thing*> _gridmap;
+
+        /// Grid of Thing lists per block.
+        Gridmap<Things*> _gridmap;
     };
 }
 

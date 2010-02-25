@@ -112,6 +112,14 @@ namespace de
         bool operator <= (const Vector2& other) const {
             return x <= other.x && y <= other.y;
         }
+        void normalize() {
+            ddouble len = length();
+            if(len != 0)
+            {
+                x /= len;
+                y /= len;
+            }
+        }
         ddouble length() const { 
             return std::sqrt(ddouble(x*x + y*y)); 
         }
@@ -239,8 +247,24 @@ namespace de
         bool operator <= (const Vector3& other) const {
             return Vector2<Type>::operator <= (other) && z <= other.z;
         }
-        ddouble length() const { return std::sqrt(Vector2<Type>::x*Vector2<Type>::x +
-            Vector2<Type>::y*Vector2<Type>::y + z*z); }
+        void normalize() {
+            ddouble len = length();
+            if(len != 0)
+            {
+                Vector2<Type>::x /= len;
+                Vector2<Type>::y /= len;
+                z /= len;
+            }
+        }
+        ddouble length() const {
+            return std::sqrt(Vector2<Type>::x*Vector2<Type>::x + Vector2<Type>::y*Vector2<Type>::y + z*z);
+        }
+        Type distance(const Vector3& other) const {
+            return Vector3(other.x - Vector2<Type>::x, other.y - Vector2<Type>::y, other.z - z).length();
+        }
+        Type dotProduct(const Vector3& other) const {
+            return Vector2<Type>::x * other.x + Vector2<Type>::y * other.y + z * other.z;
+        }
         String asText() const { 
             std::ostringstream os;
             os << *this;

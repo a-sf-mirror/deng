@@ -28,6 +28,55 @@
 
 using namespace de;
 
+LineDef::LineDef(Vertex* vtx1, Vertex* vtx2, SideDef* front, SideDef* back)
+{
+    buildData.v[0] = vtx1;
+    buildData.v[1] = vtx2;
+
+    reinterpret_cast<MVertex*>(buildData.v[0]->data)->refCount++;
+    reinterpret_cast<MVertex*>(buildData.v[1]->data)->refCount++;
+
+    direction = vtx2->pos - vtx1->pos;
+    length = dfloat(direction.length());
+    angle = bamsAtan2(dint(direction.y), dint(direction.x)) << FRACBITS;
+
+    if(fequal(direction.x, 0))
+        slopeType = LineDef::ST_VERTICAL;
+    else if(fequal(direction.y, 0))
+        slopeType = LineDef::ST_HORIZONTAL;
+    else
+    {
+        if(direction.y / direction.x > 0)
+            slopeType = LineDef::ST_POSITIVE;
+        else
+            slopeType = LineDef::ST_NEGATIVE;
+    }
+
+    const Vector2d bottomLeft = vtx1->pos.min(vtx2->pos);
+    const Vector2d topRight = vtx1->pos.max(vtx2->pos);
+    _aaBounds = MapRectangled(bottomLeft, topRight);
+
+    // Remember the number of unique references.
+    if(front)
+    {
+        front->_lineDef = this;
+        front->buildData.refCount++;
+    }
+
+    if(back)
+    {
+        back->_lineDef = this;
+        back->buildData.refCount++;
+    }
+
+    buildData.sideDefs[LineDef::FRONT] = front;
+    buildData.sideDefs[LineDef::BACK] = back;
+
+    // Determine the default linedef flags.
+    if(!front || !back)
+        flags[BLOCKING] = true;
+}
+
 dfloat LineDef::lightLevelDelta() const
 {
     return dfloat((1.0f / 255) * ((vtx2().pos.y - vtx1().pos.y) / length * 18));

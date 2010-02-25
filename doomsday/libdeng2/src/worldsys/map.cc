@@ -26,6 +26,7 @@
 #include "de/Writer"
 #include "de/Reader"
 #include "de/Object"
+#include "de/User"
 #include "de/Polyobj"
 #include "de/Map"
 #include "de/NodeBuilder"
@@ -46,8 +47,8 @@ struct losdata_t {
     dfloat startZ; // Eye z of looker.
     dfloat topSlope; // Slope to top of target.
     dfloat bottomSlope; // Slope to bottom of target.
-    dfloat bBox[4];
-    dfloat to[3];
+    MapRectanglef aaBounds;
+    Vector3f to;
 };
 
 /*zblockset_t *shadowLinksBlockSet;
@@ -242,11 +243,9 @@ Map::~Map()
         delete *i;
     _planes.clear();
 
-    if(segs) std::free(segs);
-
-    if(subsectors) std::free(subsectors);
-
-    if(nodes) std::free(nodes);
+    _segs.clear();
+    _subsectors.clear();
+    _nodes.clear();
 
     destroyHalfEdgeDS(_halfEdgeDS);
     _halfEdgeDS = NULL;
@@ -264,6 +263,134 @@ Map::~Map()
 
 void Map::load(const String& name)
 {
+    LOG_VERBOSE("Map::load: Attempt ") << name;
+
+    // It would be very cool if  loading happened in another
+    // thread. That way we could be keeping ourselves busy while
+    // the intermission is played...
+
+    // We could even try to divide a HUB up into zones, so that
+    // when a player enters a zone we could begin loading the (s)
+    // reachable through exits in that zone (providing they have
+    // enough free memory of course) so that transitions are
+    // (potentially) seamless :-)
+
+#if 0
+    if(isServer)
+    {
+        // Whenever the  changes, remote players must tell us when
+        // they're ready to begin receiving frames.
+        for(dint i = 0; i < DDMAXPLAYERS; ++i)
+        {
+            User* plr = &ddPlayers[i];
+
+            if(!(plr->shared.flags & DDPF_LOCAL) && clients[i].connected)
+            {
+#ifdef _DEBUG
+                Con_Printf("Cl%i NOT READY ANY MORE!\n", i);
+#endif
+                clients[i].ready = false;
+            }
+        }
+    }
+#endif
+
+    if(!DAM_TryMapConversion(name))
+        return;
+
+    ded_sky_t* skyDef = NULL;
+    ded_mapinfo_t* mapInfo;
+
+    // Initialize The Logical Sound Manager.
+    S_MapChange();
+
+    // Call the game's setup routines.
+    if(gx.SetupForMapData)
+    {
+        gx.SetupForMapData(DMU_LINEDEF);
+        gx.SetupForMapData(DMU_SIDEDEF);
+        gx.SetupForMapData(DMU_SECTOR);
+    }
+
+    // Must be called before any mobjs are spawned.
+    initLinks();
+
+    findDominantLightSources();
+
+    buildThingBlockmap();
+    buildSubsectorBlockmap();
+    buildParticleBlockmap();
+    buildLumobjBlockmap();
+
+    initSubsectorContacts();
+
+    // See what mapinfo says about this .
+    mapInfo = Def_GetMapInfo(name);
+    if(!mapInfo)
+        mapInfo = Def_GetMapInfo("*");
+
+    if(mapInfo)
+    {
+        skyDef = Def_GetSky(mapInfo->skyID);
+        if(!skyDef)
+            skyDef = &mapInfo->sky;
+    }
+
+    R_SetupSky(theSky, skyDef);
+
+    // Setup accordingly.
+    if(mapInfo)
+    {
+        _gravity = mapInfo->gravity;
+        _lightIntensity = mapInfo->ambient * 255;
+    }
+    else
+    {
+        // No info found, so set some basic stuff.
+        _gravity = 1.0f;
+        _lightIntensity = 0;
+    }
+
+    halfEdgeDS().iterateVertices(updateVertexShadowOffsets);
+
+    R_InitSectorShadows();
+
+    initSkyFix();
+
+    // Tell shadow bias to initialize the bias light sources.
+    SB_InitForMap();
+
+    Cl_Reset();
+    RL_DeleteLists();
+    R_CalcLightModRange(NULL);
+
+    // Invalidate old cmds and init player values.
+    for(dint i = 0; i < DDMAXPLAYERS; ++i)
+    {
+        User* user = &ddPlayers[i];
+
+        if(isServer && user->shared.inGame)
+            clients[i].runTime = SECONDS_TO_TICKS(gameTime);
+
+        user->extraLight = user->targetExtraLight = 0;
+        user->extraLightCounter = 0;
+    }
+
+    // Make sure that the next frame doesn't use a filtered viewer.
+    R_ResetViewer();
+
+    // Texture animations should begin from their first step.
+    Materials_RewindAnimationGroups();
+
+    LO_InitForMap(); // Lumobj management.
+    VL_InitForMap(); // Converted vlights (from lumobjs) management.
+
+    initGenerators();
+
+    // Initialize the lighting grid.
+    LightGrid_Init();
+
+    /// Success!
     _name = name;
 }
 
@@ -522,49 +649,66 @@ void Map::operator << (Reader& from)
     }
 }
 
-LineDef* Map::createLineDef2()
+LineDef* Map::createLineDef2(Vertex* vtx1, Vertex* vtx2, SideDef* front, SideDef* back)
 {
-    _lineDefs.push_back(new LineDef());
+    _lineDefs.push_back(new LineDef(vtx1, vtx2, front, back));
     LineDef* lineDef = _lineDefs[_lineDefs.size()-1];
     lineDef->buildData.index = _lineDefs.size(); // 1-based index.
     return lineDef;
 }
 
-SideDef* Map::createSideDef2()
+SideDef* Map::createSideDef2(Sector* sector, dshort flags,
+    Material* middleMaterial, const Vector2f& middleOffset,
+    const Vector3f& middleTintColor, dfloat middleOpacity,
+    Material* topMaterial, const Vector2f& topOffset,
+    const Vector3f& topTintColor, Material* bottomMaterial,
+    const Vector2f& bottomOffset, const Vector3f& bottomTintColor)
 {
-    _sideDefs.push_back(new SideDef());
+    _sideDefs.push_back(
+        new SideDef(sector, flags, middleMaterial, middleOffset,
+                    middleTintColor, middleOpacity,
+                    topMaterial, topOffset, topTintColor,
+                    bottomMaterial, bottomOffset, bottomTintColor));
     SideDef* sideDef = _sideDefs[_sideDefs.size()-1];
     sideDef->buildData.index = _sideDefs.size(); // 1-based index.
     return sideDef;
 }
 
-Sector* Map::createSector2()
+Sector* Map::createSector2(dfloat lightIntensity, const Vector3f& lightColor)
 {
-    _sectors.push_back(new Sector());
+    _sectors.push_back(new Sector(lightIntensity, lightColor));
     Sector* sector = _sectors[_sectors.size()-1];
     sector->buildData.index = _sectors.size(); // 1-based index.
     return sector;
 }
 
-Plane* Map::createPlane2()
+Plane* Map::createPlane2(dfloat height, const Vector3f& normal,
+    Material* material, const Vector2f& materialOffset,
+    dfloat opacity, Blendmode blendmode, const Vector3f& tintColor,
+    dfloat glowIntensity, const Vector3f& glowColor)
 {
-    _planes.push_back(new Plane());
+    _planes.push_back(
+        new Plane(height, normal, material, materialOffset,
+                  opacity, blendmode, tintColor, glowIntensity, glowColor));
     Plane* plane = _planes[_planes.size()-1];
     plane->buildData.index = _planes.size(); // 1-based index.
     return plane;
 }
 
-Polyobj* Map::createPolyobj2()
+Polyobj* Map::createPolyobj2(Polyobj::LineDefs lineDefs,
+    dint tag, dint sequenceType, dfloat anchorX, dfloat anchorY)
 {
-    _polyobjs.push_back(new Polyobj());
+    _polyobjs.push_back(
+        new Polyobj(lineDefs, tag, sequenceType, anchorX, anchorY));
     Polyobj* polyobj = _polyobjs[_polyobjs.size()-1];
+    polyobj->idx = _polyobjs.size()-1; // 0-based index.
     polyobj->buildData.index = _polyobjs.size(); // 1-based index, 0 = NIL.
     return polyobj;
 }
 
 void Map::initSubsectorContacts()
 {
-    _subsectorContacts = reinterpret_cast<objcontactlist_t*>(std::calloc(1, sizeof(*_subsectorContacts) * _numSubsectors));
+    _subsectorContacts = reinterpret_cast<objcontactlist_t*>(std::calloc(1, sizeof(*_subsectorContacts) * numSubsectors()));
 }
 
 void Map::clearSubsectorContacts()
@@ -572,7 +716,7 @@ void Map::clearSubsectorContacts()
     // Start reusing nodes from the first one in the list.
     contCursor = contFirst;
     if(_subsectorContacts)
-        memset(_subsectorContacts, 0, _numSubsectors * sizeof(*_subsectorContacts));
+        memset(_subsectorContacts, 0, numSubsectors() * sizeof(*_subsectorContacts));
 }
 
 /**
@@ -751,15 +895,15 @@ void Map::link(Thing* thing, Thing::LinkFlags flags)
 
     // If this is a user - perform addtional tests to see if they have
     // entered or exited the void.
-    if(thing->hasUser())
+    if(thing->object().user())
     {
-        User& user = thing->user();
+        User* user = thing->object().user();
 
-        user.inVoid = true;
+        user->inVoid = true;
         if(subsector.sector().pointInside2(thing->origin.x, thing->origin.y) &&
            (thing->origin.z < subsector.ceiling().visHeight - 4 &&
             thing->origin.z >= subsector.floor().visHeight))
-            user.inVoid = false;
+            user->inVoid = false;
     }
 }
 
@@ -779,8 +923,8 @@ Thing::LinkFlags Map::unlink(Thing* thing)
 
 Subsector& Map::pointInSubsector(dfloat x, dfloat y) const
 {
-    if(!_numNodes) // Single subsector is a special case.
-        return *subsectors[0];
+    if(numNodes() == 0) // Single subsector is a special case.
+        return *_subsectors[0];
 
     BinaryTree<void*>* tree = _rootNode;
     while(!tree->isLeaf())
@@ -1019,7 +1163,6 @@ void Map::update()
         sector->floor().surface().update();
         sector->ceiling().surface().update();
     }
-
     FOR_EACH(i, _sideDefs, SideDefs::iterator)
     {
         SideDef* sideDef = *i;
@@ -1027,13 +1170,12 @@ void Map::update()
         sideDef->bottom().update();
         sideDef->top().update();
     }
-
     FOR_EACH(i, _polyobjs, Polyobjs::iterator)
     {
         Polyobj* polyobj = *i;
-        for(duint j = 0; j < polyobj->_numLineDefs; ++j)
+        FOR_EACH(lineDefIter, polyobj->lineDefs(), Polyobj::LineDefs::const_iterator)
         {
-            LineDef* lineDef = reinterpret_cast<LineDef*>((reinterpret_cast<objectrecord_t*>(polyobj->lineDefs[j]))->obj);
+            LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(*lineDefIter)->obj);
             lineDef->front().middle().update();
         }
     }
@@ -1115,10 +1257,12 @@ void Map::interpolateWatchedPlanes(dfloat frameTimePos)
         // Reset the plane height trackers.
         FOR_EACH(i, _watchedPlanes, PlaneSet::iterator)
             resetPlaneHeightTracking(*i);
+        return;
     }
+
     // While the game is paused there is no need to calculate any
     // visual plane offsets $smoothplane.
-    else //if(!clientPaused)
+    //if(!clientPaused)
     {
         // Set the visible offsets.
         FOR_EACH(i, _watchedPlanes, PlaneSet::iterator)
@@ -1137,10 +1281,12 @@ void Map::interpolateMovingSurfaces(dfloat frameTimePos)
             suf->resetScroll();
             _movingSurfaces.erase(suf);
         }
+        return;
     }
+
     // While the game is paused there is no need to calculate any
     // visual material offsets.
-    else //if(!clientPaused)
+    //if(!clientPaused)
     {
         // Set the visible material offsets.
         FOR_EACH(i, _movingSurfaces, SurfaceSet::iterator)
@@ -1149,8 +1295,7 @@ void Map::interpolateMovingSurfaces(dfloat frameTimePos)
             suf->interpolateScroll(frameTimePos);
             /// Has this material reached its destination? If so remove it from the
             /// set of moving Surfaces.
-            if(fequal(suf->visOffset[0], suf->offset[0]) &&
-               fequal(suf->visOffset[1], suf->offset[1]))
+            if(suf->visOffset == suf->offset)
                 _movingSurfaces.erase(suf);
         }
     }
@@ -1671,12 +1816,6 @@ void Map::pruneUnusedObjects(dint flags)
 */
 }
 
-void Map::buildSectorSubsectorSets()
-{
-    FOR_EACH(i, _sectors, Sectors::iterator)
-        (*i)->buildSubsectorSet();
-}
-
 void Map::buildSectorLineDefSets()
 {
     typedef struct linelink_s {
@@ -1689,7 +1828,7 @@ void Map::buildSectorLineDefSets()
 
     // build line tables for each sector.
     lineLinksBlockSet = Z_BlockCreate(sizeof(linelink_t), 512, PU_STATIC);
-    sectorLineLinks = reinterpret_cast<linelink_t*>(std::calloc(1, sizeof(linelink_t*) * _sectors.size()));
+    sectorLineLinks = reinterpret_cast<linelink_t**>(std::calloc(1, sizeof(linelink_t*) * _sectors.size()));
 
     FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
@@ -1792,7 +1931,7 @@ void Map::updateAABounds()
 {
     if(_sectors.size() == 0)
     {
-        aaBounds = MapRectangled(Vector2d(0, 0), Vector2d(0, 0));
+        _aaBounds = MapRectangled(Vector2d(0, 0), Vector2d(0, 0));
         return;
     }
 
@@ -1803,12 +1942,12 @@ void Map::updateAABounds()
         if(i == _sectors.begin())
         {
             // The first sector is used as is.
-            aaBounds = sec->aaBounds();
+            _aaBounds = sec->aaBounds();
         }
         else
         {
             // Expand the bounding box.
-            aaBounds.include(sec->aaBounds());
+            _aaBounds.include(sec->aaBounds());
         }
     }
 }
@@ -1848,12 +1987,8 @@ void Map::finishLineDefs2()
 
 void Map::findSubsectorMidPoints()
 {
-    for(duint i = 0; i < _numSubsectors; ++i)
-    {
-        Subsector* subsector = subsectors[i];
-
-        subsector->updateMidPoint();
-    }
+    FOR_EACH(i, _subsectors, Subsectors::iterator)
+        (*i)->updateMidPoint();
 }
 
 /**
@@ -2223,11 +2358,11 @@ bool Map::buildNodes()
         halfEdgeDS().iterateHalfEdges(buildSeg, this);
 
         LOG_VERBOSE("  Built ")
-            << _numNodes << " Nodes, " << _numSubsectors << " Subsectors, "
-            << _numSegs << " Segs.";
+            << numNodes() << " Nodes, " << numSubsectors() << " Subsectors, "
+            << numSegs() << " Segs.";
 
         if(!_rootNode->isLeaf())
-            LOG_VERBOSE("  Balance: r")
+            LOG_VERBOSE("  Balance: ")
                 << (_rootNode->right()? _rootNode->right()->height() : 0) << " | "
                 << (_rootNode->left()? _rootNode->left()->height() : 0) << ".";
     }
@@ -2377,7 +2512,7 @@ static void setSectorOwner(Map::ownerlist_t* ownerList, Subsector* subsector)
     ownerList->head = node;
 }
 
-void Map::findSubSectorsAffectingSector(duint secIDX)
+void Map::findSubsectorsAffectingSector(duint secIDX)
 {
     ownerlist_t subsectorOwnerList;
     memset(&subsectorOwnerList, 0, sizeof(subsectorOwnerList));
@@ -2387,9 +2522,9 @@ void Map::findSubSectorsAffectingSector(duint secIDX)
     MapRectangled affectBounds(sec->aaBounds().bottomLeft() - Vector2d(128, 128),
                                sec->aaBounds().topRight()   + Vector2d(128, 128));
 
-    for(duint i = 0; i < _numSubsectors; ++i)
+    FOR_EACH(i, _subsectors, Subsectors::iterator)
     {
-        Subsector* subsector =  subsectors[i];
+        Subsector* subsector = *i;
 
         // Is this subsector close enough?
         if(&subsector->sector() == sec || // subsector is IN this sector
@@ -2401,22 +2536,15 @@ void Map::findSubSectorsAffectingSector(duint secIDX)
     }
 
     // Now harden the list.
-    sec->numReverbSubsectorAttributors = subsectorOwnerList.count;
-    if(sec->numReverbSubsectorAttributors)
+    if(subsectorOwnerList.count)
     {
-        ownernode_t* node, *p;
-        Subsector** ptr;
-
-        sec->reverbSubsectors =
-            Z_Malloc((sec->numReverbSubsectorAttributors + 1) * sizeof(Subsector*),
-                     PU_STATIC, 0);
-
-        ptr = sec->reverbSubsectors;
-        node = subsectorOwnerList.head;
-        for(duint i = 0; i < sec->numReverbSubsectorAttributors; ++i, ptr++)
+        ownernode_t* node = subsectorOwnerList.head;
+        for(duint i = 0; i < subsectorOwnerList.count; ++i)
         {
-            p = node->next;
-            *ptr = reinterpret_cast<Subsector*>(node->data);
+            ownernode_t* next = node->next;
+
+            Subsector* subsector = reinterpret_cast<Subsector*>(node->data);
+            sec->reverbSubsectors.insert(subsector);
 
             if(i < numSectors() - 1)
             {   // Move this node to the unused list for re-use.
@@ -2427,17 +2555,16 @@ void Map::findSubSectorsAffectingSector(duint secIDX)
             {   // No further use for the nodes.
                 std::free(node);
             }
-            node = p;
+            node = next;
         }
-        *ptr = NULL; // terminate.
     }
 }
 
 void Map::initSoundEnvironment()
 {
-    for(duint i = 0; i < numSectors(); ++i)
+    FOR_EACH(i, _sectors, Sectors::iterator)
     {
-        findSubSectorsAffectingSector(i);
+        findSubsectorsAffectingSector(i - _sectors.begin());
     }
 
     // Free any nodes left in the unused list.
@@ -2474,25 +2601,24 @@ bool Map::editEnd()
 
     /*builtOK =*/ buildNodes();
 
-    FOR_EACH(i, polyobjs, Polyobjs::iterator)
+    FOR_EACH(i, _polyobjs, Polyobjs::iterator)
     {
         Polyobj* po = *i;
 
-        po->_originalPts = Z_Malloc(po->_numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
-        po->_prevPts = Z_Malloc(po->_numLineDefs * sizeof(fvertex_t), PU_STATIC, 0);
+        po->_originalPts.reserve(po->lineDefs.size());
+        po->_prevPts.reserve(po->lineDefs.size());
 
-        for(duint j = 0; j < po->_numLineDefs; ++j)
+        FOR_EACH(lineDefIter, po->lineDefs, Polyobj::LineDefs::iterator)
         {
-            LineDef* lineDef = po->lineDefs[j];
-            HalfEdge* fHEdge, *bHEdge;
+            LineDef* lineDef = *lineDefIter;
 
-            fHEdge = Z_Calloc(sizeof(*fHEdge), PU_STATIC, 0);
+            HalfEdge* fHEdge = new HalfEdge();
             fHEdge->face = NULL;
             fHEdge->vertex = _halfEdgeDS->vertices[
                 reinterpret_cast<MVertex*>(lineDef->buildData.v[0]->data)->index - 1];
             fHEdge->vertex->halfEdge = fHEdge;
 
-            bHEdge = Z_Calloc(sizeof(*bHEdge), PU_STATIC, 0);
+            HalfEdge* bHEdge = new HalfEdge();
             bHEdge->face = NULL;
             bHEdge->vertex = _halfEdgeDS->vertices[
                 reinterpret_cast<MVertex*>(lineDef->buildData.v[1]->data)->index - 1];
@@ -2505,23 +2631,17 @@ bool Map::editEnd()
 
             // The original Pts are based off the anchor Pt, and are unique
             // to each linedef.
-            po->_originalPts[j] = lineDef->vtx1().pos - po->origin;
-
-            po->lineDefs[j] = reinterpret_cast<LineDef*>(P_ObjectRecord(DMU_LINEDEF, lineDef));
+            Vector2f point = lineDef->vtx1().pos - po->origin;
+            po->_originalPts.push_back(point);
+            po->_prevPts.push_back(point);
         }
 
-        // Temporary: Create a seg for each line of this polyobj.
-        po->_numSegs = po->_numLineDefs;
-        po->segs = Z_Calloc(sizeof(Seg) * po->_numSegs, PU_STATIC, 0);
-
-        for(duint j = 0; j < po->_numSegs; ++j)
+        for(duint j = 0; j < po->lineDefs.size(); ++j)
         {
-            LineDef* lineDef = reinterpret_cast<LineDef*>(reinterpret_cast<objectrecord_t*>(po->lineDefs[j])->obj);
-            Seg* seg = &po->segs[j];
-
-            lineDef->halfEdges[0]->data = seg;
-            seg->sideDef = sideDefs[lineDef->buildData.sideDefs[LineDef::FRONT]->buildData.index - 1];
+            po->lineDefs[j] = reinterpret_cast<LineDef*>(P_ObjectRecord(DMU_LINEDEF, po->lineDefs[j]));
         }
+
+        po->createSegs();
     }
 
     buildSectorSubsectorLists();
@@ -2595,11 +2715,6 @@ void Map::endFrame()
     }
 }
 
-dint Map::ambientLightLevel()
-{
-    return _ambientLightLevel;
-}
-
 void Map::markAllSectorsForLightGridUpdate()
 {
     if(_lightGrid.inited)
@@ -2615,94 +2730,47 @@ void Map::markAllSectorsForLightGridUpdate()
 
 Seg* Map::createSeg(HalfEdge& halfEdge, LineDef* lineDef, bool back)
 {
-    Seg* seg = new Seg();
-    seg->halfEdge = halfEdge;
-    seg->back = back;
-    seg->_sideDef = NULL;
-    if(lineDef && lineDef->buildData.sideDefs[seg->back])
-        seg->_sideDef = _sideDefs[lineDef->buildData.sideDefs[seg->back]->buildData.index - 1];
+    SideDef* sideDef = (lineDef && lineDef->buildData.sideDefs[back])?
+        _sideDefs[lineDef->buildData.sideDefs[back]->buildData.index - 1] : 0;
 
-    if(seg->hasSideDef())
-    {
-        const LineDef& lineDef = seg->sideDef().lineDef();
-        Vertex* vtx = lineDef.buildData.v[seg->back];
-        seg->offset = vtx->pos.distance(halfEdge->vertex->pos);
-    }
-
-    Vector2d diff = halfEdge->twin->vertex->pos - halfEdge->vertex->pos;
-    seg->angle = bamsAtan2(dint(diff.y), dint(diff.x)) << FRACBITS;
-
-    // Calculate the length of the segment. We need this for
-    // the texture coordinates. -jk
-    seg->length = diff.length();
-
-    if(seg->length == 0)
-        seg->length = 0.01f; // Hmm...
-
-    // Calculate the surface normals
-    // Front first
-    if(seg->hasSideDef())
-    {
-        MSurface& surface = &seg->sideDef().top();
-
-        surface.normal.x = (halfEdge->twin->vertex->pos.y - halfEdge->vertex->pos.y) / seg->length;
-        surface.normal.y = (halfEdge->vertex->pos.x - halfEdge->twin->vertex->pos.x) / seg->length;
-        surface.normal.z = 0;
-
-        // All surfaces of a sidedef have the same normal.
-        seg->sideDef().middle().normal = surface.normal;
-        seg->sideDef().bottom().normal = surface.normal;
-    }
-
-    halfEdge->data = seg;
-
-    segs = std::realloc(segs, ++_numSegs * sizeof(Seg*));
-    segs[_numSegs-1] = seg;
+    _segs.push_back(new Seg(halfEdge, sideDef, back));
+    Seg* seg = _segs[_segs.size()-1];
+    halfEdge.data = reinterpret_cast<void*>(seg);
     return seg;
 }
 
 Subsector* Map::createSubsector(Face& face, Sector* sector)
 {
-    dsize hEdgeCount = 0;
-    HalfEdge* halfEdge = face.halfEdge;
-    do
+    _subsectors.push_back(new Subsector(face, sector));
+    Subsector* subsector = _subsectors[_subsectors.size()-1];
+
+    if(subsector->hasSector())
     {
-        hEdgeCount++;
-    } while((halfEdge = halfEdge->next) != face->halfEdge);
+        sector->subsectors.insert(subsector);
+    }
+    else
+    {
+        LOG_WARNING("Orphan subsector #") << _subsectors.size()-1 << ".";
+    }
+    face.data = reinterpret_cast<void*>(subsector);
 
-    Subsector* subsector = new Subsector();
-    subsector->face = &face;
-    subsector->hEdgeCount = duint(hEdgeCount);
-
-    subsector->sector = sector;
-    if(!subsector->sector)
-        LOG_WARNING("Orphan subsector #") << _numSubsectors << ".";
-
-    face->data = reinterpret_cast<void*>(subsector);
-
-    subsectors = reinterpret_cast<Subsector**>(std::realloc(subsectors, ++_numSubsectors * sizeof(Subsector*)));
-    subsectors[_numSubsectors-1] = subsector;
     return subsector;
 }
 
-Node* Map::createNode(const Partition& partition, const MapRectangled& rightAABB, const MapRectangle& leftAABB)
+Node* Map::createNode(const Node::Partition& partition, const MapRectangled& rightAABB, const MapRectangled& leftAABB)
 {
-    Node* node = Node(x, y, dX, dY, rightAABB, leftAABB);
-
-    P_CreateObjectRecord(DMU_NODE, node);
-    nodes = reinterpret_cast<Node*>std::realloc(nodes, ++_numNodes * sizeof(Node*)));
-    nodes[_numNodes-1] = node;
-    return node;
+    _nodes.push_back(new Node(partition, rightAABB, leftAABB));
+    return _nodes[_nodes.size()-1];
 }
 
 void Map::initLinks()
 {
-    thingNodes = NodePile(256); // Allocate a small pile.
-    lineDefNodes = NodePile(_numLineDefs + 1000);
+    thingNodes = new NodePile(256); // Allocate a small pile.
+    lineDefNodes = new NodePile(numLineDefs() + 1000);
 
-    lineLinks = reinterpret_cast<NodePile::Index>(std::malloc(sizeof(*lineLinks) * _numLineDefs));
-    for(duint i = 0; i < _numLineDefs; ++i)
-        lineLinks[i] = lineDefNodes->newIndex(NP_ROOT_NODE);
+    lineDefLinks = reinterpret_cast<NodePile::Index*>(std::malloc(sizeof(*lineDefLinks) * numLineDefs()));
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
+        lineDefLinks[i - _lineDefs.begin()] = lineDefNodes->newIndex(NP_ROOT_NODE);
 }
 
 void Map::initSkyFix()
@@ -2711,33 +2779,31 @@ void Map::initSkyFix()
     skyFixCeiling = MINFLOAT;
 
     // Update for sector plane heights and mobjs which intersect the ceiling.
-    for(duint i = 0; i < _numSectors; ++i)
-        updateSkyFixForSector(i);
+    FOR_EACH(i, _sectors, Sectors::iterator)
+        updateSkyFixForSector(i - _sectors.begin());
 }
 
 void Map::updateSkyFixForSector(duint sectorIndex)
 {
-    assert(sectorIndex < _numSectors);
+    assert(sectorIndex < numSectors());
 
-    const Sector& sector = *sectors[sectorIndex];
-    bool skyFloor = sector.floor().surface.isSky();
-    bool skyCeil = sector.ceiling().surface.isSky();
+    const Sector* sector = _sectors[sectorIndex];
+    bool skyFloor = sector->floor().material().isSky();
+    bool skyCeil = sector->ceiling().material().isSky();
 
     if(!skyFloor && !skyCeil)
         return;
 
     if(skyCeil)
     {
-        Thing* thing;
-
         // Adjust for the plane height.
-        if(sector.ceiling().visHeight > skyFixCeiling)
+        if(sector->ceiling().visHeight > skyFixCeiling)
         {   // Must raise the skyfix ceiling.
-            skyFixCeiling = sector.ceiling().visHeight;
+            skyFixCeiling = sector->ceiling().visHeight;
         }
 
         // Check that all the mobjs in the sector fit in.
-        for(Thing* thing = sector.ThingList; thing; thing = thing->sNext)
+        for(Thing* thing = sector->thingList; thing; thing = thing->sNext)
         {
             dfloat extent = thing->origin.z + thing->height;
 
@@ -2751,475 +2817,199 @@ void Map::updateSkyFixForSector(duint sectorIndex)
     if(skyFloor)
     {
         // Adjust for the plane height.
-        if(sector.floor().visHeight < skyFixFloor)
+        if(sector->floor().visHeight < skyFixFloor)
         {   // Must lower the skyfix floor.
-            skyFixFloor = sector.floor().visHeight;
+            skyFixFloor = sector->floor().visHeight;
         }
     }
 
     // Update for middle textures on two sided linedefs which intersect the
     // floor and/or ceiling of their front and/or back sectors.
-    if(sector.lineDefs)
+    FOR_EACH(i, sector->lineDefs, Sector::LineDefSet::const_iterator)
     {
-        LineDef** linePtr = sector.lineDefs;
+        const LineDef* lineDef = *i;
 
-        while(*linePtr)
+        // Must be twosided.
+        if(lineDef->hasFront() && lineDef->hasBack())
         {
-            const LineDef& lineDef = **linePtr;
+            SideDef& sideDef = &lineDef->frontSector() == sector? lineDef->front() : lineDef->back();
 
-            // Must be twosided.
-            if(lineDef.hasFront() && lineDef.hasBack())
+            if(sideDef.middle().material() != NullMaterial)
             {
-                const SideDef& sideDef = &lineDef.frontSector() == sector? lineDef.front() : lineDef.back();
-
-                if(sideDef.middle().material)
+                if(skyCeil)
                 {
-                    if(skyCeil)
-                    {
-                        dfloat top = sector.ceiling().visHeight + sideDef.middle().visOffset[1];
-                        if(top > skyFixCeiling)// Must raise the skyfix ceiling.
-                            skyFixCeiling = top;
-                    }
+                    dfloat top = sector->ceiling().visHeight + sideDef.middle().visOffset[1];
+                    if(top > skyFixCeiling)// Must raise the skyfix ceiling.
+                        skyFixCeiling = top;
+                }
 
-                    if(skyFloor)
-                    {
-                        dfloat bottom = sector.floor().visHeight + sideDef.middle().visOffset[1] - sideDef.middle().material->height;
-                        if(bottom < skyFixFloor) // Must lower the skyfix floor.
-                            skyFixFloor = bottom;
-                    }
+                if(skyFloor)
+                {
+                    dfloat bottom = sector->floor().visHeight + sideDef.middle().visOffset[1] - sideDef.middle().material->height;
+                    if(bottom < skyFixFloor) // Must lower the skyfix floor.
+                        skyFixFloor = bottom;
                 }
             }
-            *linePtr++;
         }
     }
 }
 
 Vertex* Map::createVertex2(dfloat x, dfloat y)
 {
-    Vertex* vtx;
-    if(!editActive)
-        return NULL;
-    vtx = halfEdgeDS().createVertex();
+    Vertex* vtx = &halfEdgeDS().createVertex();
     vtx->pos.x = x;
     vtx->pos.y = y;
     return vtx;
 }
 
-/**
- * Create a new vertex in currently loaded editable map.
- *
- * @param x             X coordinate of the new vertex.
- * @param y             Y coordinate of the new vertex.
- *
- * @return              Index number of the newly created vertex else 0 if
- *                      the vertex could not be created for some reason.
- */
-objectrecordid_t Map_CreateVertex(map_t* map, float x, float y)
+Map::objectrecordid_t Map::createVertex(dfloat x, dfloat y)
 {
-    assert(map);
-    {
-    vertex_t* v;
-    if(!map->editActive)
-        return 0;
-    v = createVertex2(map, x, y);
-    return v ? ((mvertex_t*) v->data)->index : 0;
-    }
+    if(!_editActive)
+        return NULL;
+    Vertex* v = createVertex2(x, y);
+    return v ? reinterpret_cast<MVertex*>(v->data)->index : 0;
 }
 
-/**
- * Create many new vertexs in the currently loaded editable map.
- *
- * @param num           Number of vertexes to be created.
- * @param values        Ptr to an array containing the coordinates for the
- *                      vertexs to create [v0 X, vo Y, v1 X, v1 Y...]
- * @param indices       If not @c NULL, the indices of the newly created
- *                      vertexes will be written back here.
- */
-boolean Map_CreateVertices(map_t* map, size_t num, float* values, objectrecordid_t* indices)
+bool Map::createVertices(dsize num, dfloat* values, objectrecordid_t* indices)
 {
-    assert(map);
-    {
-    uint n;
-
     if(!num || !values)
         return false;
 
-    if(!map->editActive)
+    if(!_editActive)
         return false;
 
     // Create many vertexes.
-    for(n = 0; n < num; ++n)
+    for(duint n = 0; n < num; ++n)
     {
-        vertex_t* v = createVertex(map, values[n * 2], values[n * 2 + 1]);
-
+        Vertex* v = createVertex2(values[n * 2], values[n * 2 + 1]);
         if(indices)
-            indices[n] = ((mvertex_t*) v->data)->index;
+            indices[n] = reinterpret_cast<MVertex*>(v->data)->index;
     }
-
     return true;
-    }
 }
 
-static linedef_t* createLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
-    sidedef_t* front, sidedef_t* back)
+Map::objectrecordid_t Map::createLineDef(objectrecordid_t v1,
+    objectrecordid_t v2, duint frontSide, duint backSide, dint flags)
 {
-    linedef_t* l;
-
-    assert(map);
-
-    if(!map->editActive)
-        return NULL;
-
-    l = createLineDef2(map);
-
-    l->buildData.v[0] = vtx1;
-    l->buildData.v[1] = vtx2;
-
-    ((mvertex_t*) l->buildData.v[0]->data)->refCount++;
-    ((mvertex_t*) l->buildData.v[1]->data)->refCount++;
-
-    l->dX = vtx2->pos[0] - vtx1->pos[0];
-    l->dY = vtx2->pos[1] - vtx1->pos[1];
-    l->length = P_AccurateDistance(l->dX, l->dY);
-
-    l->angle =
-        bamsAtan2((int) (l->buildData.v[1]->pos[1] - l->buildData.v[0]->pos[1]),
-                  (int) (l->buildData.v[1]->pos[0] - l->buildData.v[0]->pos[0])) << FRACBITS;
-
-    if(l->dX == 0)
-        l->slopeType = ST_VERTICAL;
-    else if(l->dY == 0)
-        l->slopeType = ST_HORIZONTAL;
-    else
-    {
-        if(l->dY / l->dX > 0)
-            l->slopeType = ST_POSITIVE;
-        else
-            l->slopeType = ST_NEGATIVE;
-    }
-
-    if(l->buildData.v[0]->pos[0] < l->buildData.v[1]->pos[0])
-    {
-        l->bBox[BOXLEFT]   = l->buildData.v[0]->pos[0];
-        l->bBox[BOXRIGHT]  = l->buildData.v[1]->pos[0];
-    }
-    else
-    {
-        l->bBox[BOXLEFT]   = l->buildData.v[1]->pos[0];
-        l->bBox[BOXRIGHT]  = l->buildData.v[0]->pos[0];
-    }
-
-    if(l->buildData.v[0]->pos[1] < l->buildData.v[1]->pos[1])
-    {
-        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[1];
-        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[1];
-    }
-    else
-    {
-        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[1];
-        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[1];
-    }
-
-    // Remember the number of unique references.
-    if(front)
-    {
-        front->lineDef = l;
-        front->buildData.refCount++;
-    }
-
-    if(back)
-    {
-        back->lineDef = l;
-        back->buildData.refCount++;
-    }
-
-    l->buildData.sideDefs[FRONT] = front;
-    l->buildData.sideDefs[BACK] = back;
-
-    l->inFlags = 0;
-
-    // Determine the default linedef flags.
-    l->flags = 0;
-    if(!front || !back)
-        l->flags |= DDLF_BLOCKING;
-
-    return l;
-}
-
-/**
- * Create a new linedef in the editable map.
- *
- * @param v1            Idx of the start vertex.
- * @param v2            Idx of the end vertex.
- * @param frontSide     Idx of the front sidedef.
- * @param backSide      Idx of the back sidedef.
- * @param flags         Currently unused.
- *
- * @return              Idx of the newly created linedef else @c 0 if there
- *                      was an error.
- */
-objectrecordid_t Map_CreateLineDef(map_t* map, objectrecordid_t v1,
-    objectrecordid_t v2, uint frontSide, uint backSide, int flags)
-{
-    assert(map);
-    {
-    linedef_t* l;
-    sidedef_t* front = NULL, *back = NULL;
-    vertex_t* vtx1, *vtx2;
-    float length, dx, dy;
-
-    if(!map->editActive)
+    if(!_editActive)
         return 0;
-    if(frontSide > map->numSideDefs)
+    if(frontSide > numSideDefs())
         return 0;
-    if(backSide > map->numSideDefs)
+    if(backSide > numSideDefs())
         return 0;
-    if(v1 == 0 || v1 > Map_NumVertexes(map))
+    if(v1 == 0 || v1 > numVertexes())
         return 0;
-    if(v2 == 0 || v2 > Map_NumVertexes(map))
+    if(v2 == 0 || v2 > numVertexes())
         return 0;
     if(v1 == v2)
         return 0;
 
     // First, ensure that the side indices are unique.
-    if(frontSide && map->sideDefs[frontSide - 1]->buildData.refCount)
+    if(frontSide && _sideDefs[frontSide - 1]->buildData.refCount)
         return 0; // Already in use.
-    if(backSide && map->sideDefs[backSide - 1]->buildData.refCount)
+    if(backSide && _sideDefs[backSide - 1]->buildData.refCount)
         return 0; // Already in use.
 
     // Next, check the length is not zero.
-    vtx1 = Map_HalfEdgeDS(map)->vertices[v1 - 1];
-    vtx2 = Map_HalfEdgeDS(map)->vertices[v2 - 1];
-    dx = vtx2->pos[0] - vtx1->pos[0];
-    dy = vtx2->pos[1] - vtx1->pos[1];
-    length = P_AccurateDistance(dx, dy);
-    if(!(length > 0))
+    Vertex* vtx1 = halfEdgeDS().vertices[v1 - 1];
+    Vertex* vtx2 = halfEdgeDS().vertices[v2 - 1];
+
+    Vector2d direction = vtx2->pos - vtx1->pos;
+    if(!(direction.length() > 0))
         return 0;
 
+    SideDef* front = NULL, *back = NULL;
     if(frontSide > 0)
-        front = map->sideDefs[frontSide - 1];
+        front = _sideDefs[frontSide - 1];
     if(backSide > 0)
-        back = map->sideDefs[backSide - 1];
+        back = _sideDefs[backSide - 1];
 
-    l = createLineDef(map, vtx1, vtx2, front, back);
-
+    LineDef* l = createLineDef2(vtx1, vtx2, front, back);
     return l->buildData.index;
-    }
 }
 
-static sidedef_t* createSideDef(map_t* map, sector_t* sector, short flags,
-    Material* topMaterial, float topOffsetX, float topOffsetY, float topRed,
-    float topGreen, float topBlue, Material* middleMaterial, float middleOffsetX,
-    float middleOffsetY, float middleRed, float middleGreen, float middleBlue,
-    float middleAlpha, Material* bottomMaterial, float bottomOffsetX,
-    float bottomOffsetY, float bottomRed, float bottomGreen, float bottomBlue)
+Map::objectrecordid_t Map::createSideDef(objectrecordid_t sector,
+    dshort flags, Material* topMaterial, dfloat topOffsetX, dfloat topOffsetY,
+    dfloat topRed, dfloat topGreen, dfloat topBlue, Material* middleMaterial,
+    dfloat middleOffsetX, dfloat middleOffsetY, dfloat middleRed, dfloat middleGreen,
+    dfloat middleBlue, dfloat middleAlpha, Material* bottomMaterial,
+    dfloat bottomOffsetX, dfloat bottomOffsetY, dfloat bottomRed, dfloat bottomGreen,
+    dfloat bottomBlue)
 {
-    sidedef_t* s = NULL;
-
-    assert(map);
-
-    if(map->editActive)
-    {
-        s = createSideDef2(map);
-        s->flags = flags;
-        s->sector = sector;
-
-        Surface_SetMaterial(&s->SW_topsurface, topMaterial, false);
-        Surface_SetMaterialOffsetXY(&s->SW_topsurface, topOffsetX, topOffsetY);
-        Surface_SetColorRGBA(&s->SW_topsurface, topRed, topGreen, topBlue, 1);
-
-        Surface_SetMaterial(&s->SW_middlesurface, middleMaterial, false);
-        Surface_SetMaterialOffsetXY(&s->SW_middlesurface, middleOffsetX, middleOffsetY);
-        Surface_SetColorRGBA(&s->SW_middlesurface, middleRed, middleGreen, middleBlue, middleAlpha);
-
-        Surface_SetMaterial(&s->SW_bottomsurface, bottomMaterial, false);
-        Surface_SetMaterialOffsetXY(&s->SW_bottomsurface, bottomOffsetX, bottomOffsetY);
-        Surface_SetColorRGBA(&s->SW_bottomsurface, bottomRed, bottomGreen, bottomBlue, 1);
-    }
-
-    return s;
-}
-
-objectrecordid_t Map_CreateSideDef(map_t* map, objectrecordid_t sector,
-    short flags, Material* topMaterial, float topOffsetX, float topOffsetY,
-    float topRed, float topGreen, float topBlue, Material* middleMaterial,
-    float middleOffsetX, float middleOffsetY, float middleRed, float middleGreen,
-    float middleBlue, float middleAlpha, Material* bottomMaterial,
-    float bottomOffsetX, float bottomOffsetY, float bottomRed, float bottomGreen,
-    float bottomBlue)
-{
-    assert(map);
-    {
-    sidedef_t* s;
-    if(!map->editActive)
+    if(!_editActive)
         return 0;
-    if(sector > Map_NumSectors(map))
+    if(sector > numSectors())
         return 0;
 
-    s = createSideDef(map, (sector == 0? NULL: map->sectors[sector-1]), flags,
-                      topMaterial? ((objectrecord_t*) topMaterial)->obj : NULL,
+    SideDef* s = createSideDef2((sector == 0? NULL: _sectors[sector-1]), flags,
+                      topMaterial? reinterpret_cast<Material*>(reinterpret_cast<objectrecord_t*>(topMaterial)->obj) : NULL,
                       topOffsetX, topOffsetY, topRed, topGreen, topBlue,
-                      middleMaterial? ((objectrecord_t*) middleMaterial)->obj : NULL,
+                      middleMaterial? reinterpret_cast<Material*>(reinterpret_cast<objectrecord_t*>(middleMaterial)->obj) : NULL,
                       middleOffsetX, middleOffsetY, middleRed, middleGreen, middleBlue,
-                      middleAlpha, bottomMaterial? ((objectrecord_t*) bottomMaterial)->obj : NULL,
+                      middleAlpha, bottomMaterial? reinterpret_cast<Material*>(reinterpret_cast<objectrecord_t*>(bottomMaterial)->obj) : NULL,
                       bottomOffsetX, bottomOffsetY, bottomRed, bottomGreen, bottomBlue);
 
     return s ? s->buildData.index : 0;
-    }
 }
 
-static sector_t* createSector(map_t* map, float lightLevel, float red, float green, float blue)
+Map::objectrecordid_t Map::createSector(dfloat lightLevel, dfloat red, dfloat green, dfloat blue)
 {
-    sector_t* s;
-
-    assert(map);
-
-    if(!map->editActive)
-        return NULL;
-
-    s = createSector2(map);
-
-    s->planeCount = 0;
-    s->planes = NULL;
-    s->rgb[CR] = MINMAX_OF(0, red, 1);
-    s->rgb[CG] = MINMAX_OF(0, green, 1);
-    s->rgb[CB] = MINMAX_OF(0, blue, 1);
-    s->lightLevel = MINMAX_OF(0, lightLevel, 1);
-
-    return s;
-}
-
-objectrecordid_t Map_CreateSector(map_t* map, float lightLevel, float red, float green, float blue)
-{
-    assert(map);
-    {
-    sector_t* s;
-    if(!map->editActive)
+    if(!_editActive)
         return 0;
-    s = createSector(map, lightLevel, red, green, blue);
+    Sector* s = createSector2(lightLevel, Vector3f(red, green, blue));
     return s ? s->buildData.index : 0;
-    }
 }
 
-static plane_t* createPlane(map_t* map, float height, Material* material,
-                            float matOffsetX, float matOffsetY, float r, float g,
-                            float b, float a, float normalX, float normalY,
-                            float normalZ)
+Map::objectrecordid_t Map::createPlane(dfloat height, Material* material,
+    dfloat matOffsetX, dfloat matOffsetY, dfloat r, dfloat g, dfloat b,
+    dfloat a, dfloat normalX, dfloat normalY, dfloat normalZ)
 {
-    plane_t* pln;
-
-    assert(map);
-
-    if(!map->editActive)
-        return NULL;
-
-    pln = createPlane2(map);
-
-    pln->height = pln->visHeight = pln->oldHeight[0] =
-        pln->oldHeight[1] = height;
-    pln->visHeightDelta = 0;
-    pln->speed = 0;
-    pln->target = 0;
-
-    pln->glowRGB[CR] = pln->glowRGB[CG] = pln->glowRGB[CB] = 1;
-    pln->glow = 0;
-
-    Surface_SetMaterial(&pln->surface, material? ((objectrecord_t*) material)->obj : NULL, false);
-    Surface_SetColorRGBA(&pln->surface, r, g, b, a);
-    Surface_SetBlendMode(&pln->surface, BM_NORMAL);
-    Surface_SetMaterialOffsetXY(&pln->surface, matOffsetX, matOffsetY);
-
-    pln->PS_normal[0] = normalX;
-    pln->PS_normal[1] = normalY;
-    pln->PS_normal[VZ] = normalZ;
-    /*if(pln->PS_normal[VZ] < 0)
-        pln->type = PLN_CEILING;
-    else
-        pln->type = PLN_FLOOR;*/
-    M_Normalize(pln->PS_normal);
-    return pln;
-}
-
-objectrecordid_t Map_CreatePlane(map_t* map, float height, Material* material,
-    float matOffsetX, float matOffsetY, float r, float g, float b, float a,
-    float normalX, float normalY, float normalZ)
-{
-    assert(map);
-    {
-    plane_t* p;
-
-    if(!map->editActive)
+    if(!_editActive)
         return 0;
 
-    p = createPlane(map, height, material, matOffsetX, matOffsetY, r, g, b, a, normalX, normalY, normalZ);
-    return p ? p->buildData.index : 0;
-    }
+    Plane* pln = createPlane2(height, Vector3f(normalX, normalY, normalZ),
+        material? reinterpret_cast<objectrecord_t*>(material)->obj : NULL,
+        Vector2f(matOffsetX, matOffsetY), opactiy, BM_NORMAL,
+        Vector3f(r, g, b), 0, Vector3f(1, 1, 1));
+    return pln ? pln->buildData.index : 0;
 }
 
-static Polyobj* createPolyobj(map_t* map, objectrecordid_t* lines, uint lineCount,
-    int tag, int sequenceType, float anchorX, float anchorY)
+Map::objectrecordid_t Map::createPolyobj(objectrecordid_t* lines,
+    duint lineCount, dint tag, dint sequenceType, dfloat anchorX, dfloat anchorY)
 {
-    Polyobj* po;
-    uint i;
-
-    if(!map->editActive)
-        return NULL;
-
-    po = createPolyobj2(map);
-
-    po->idx = map->numPolyObjs - 1; // 0-based index.
-    po->lineDefs = Z_Calloc(sizeof(linedef_t*) * (lineCount+1), PU_STATIC, 0);
-    for(i = 0; i < lineCount; ++i)
-    {
-        linedef_t* line = map->lineDefs[lines[i] - 1];
-
-        // This line is part of a polyobj.
-        line->inFlags |= LF_POLYOBJ;
-
-        po->lineDefs[i] = line;
-    }
-    po->lineDefs[i] = NULL;
-    po->numLineDefs = lineCount;
-
-    po->tag = tag;
-    po->seqType = sequenceType;
-    po->pos[0] = anchorX;
-    po->pos[1] = anchorY;
-
-    return po;
-}
-
-objectrecordid_t Map_CreatePolyobj(map_t* map, objectrecordid_t* lines, uint lineCount, int tag,
-                                   int sequenceType, float anchorX, float anchorY)
-{
-    assert(map);
-    {
-    uint i;
-    Polyobj* po;
-
-    if(!map->editActive)
+    if(!_editActive)
         return 0;
     if(!lineCount || !lines)
         return 0;
 
     // First check that all the line indices are valid and that they arn't
     // already part of another polyobj.
-    for(i = 0; i < lineCount; ++i)
+    for(duint i = 0; i < lineCount; ++i)
     {
-        linedef_t* line;
+        LineDef* lineDef;
 
-        if(lines[i] == 0 || lines[i] > Map_NumLineDefs(map))
+        if(lines[i] == 0 || lines[i] > numLineDefs())
             return 0;
 
-        line = map->lineDefs[lines[i] - 1];
-        if(line->inFlags & LF_POLYOBJ)
+        lineDef = _lineDefs[lines[i] - 1];
+        if(lineDef->polyobjOwned)
             return 0;
     }
 
-    po = createPolyobj(map, lines, lineCount, tag, sequenceType, anchorX, anchorY);
+    Polyobj::LineDefs poLineDefs;
+    poLineDefs.reserve(lineCount);
+    for(duint i = 0; i < lineCount; ++i)
+    {
+        LineDef* lineDef = _lineDefs[lines[i] - 1];
 
+        // This line is part of a polyobj.
+        lineDef->polyobjOwned = true;
+
+        poLineDefs.push_back(lineDef);
+    }
+
+    Polyobj* po = createPolyobj2(poLineDefs, tag, sequenceType, anchorX, anchorY);
     return po ? po->buildData.index : 0;
-    }
 }
 
 Polyobj* Map::polyobj(duint num)
@@ -3228,14 +3018,14 @@ Polyobj* Map::polyobj(duint num)
     {
         duint idx = num & 0x7fffffff;
 
-        if(idx < _numPolyObjs)
-            return polyobjs[idx];
+        if(idx < numPolyobjs())
+            return _polyobjs[idx];
         return NULL;
     }
 
-    for(duint i = 0; i < _numPolyObjs; ++i)
+    for(duint i = 0; i < numPolyobjs(); ++i)
     {
-        Polyobj* po = polyobjs[i];
+        Polyobj* po = _polyobjs[i];
 
         if(duint(po->tag) == num)
         {
@@ -3245,44 +3035,32 @@ Polyobj* Map::polyobj(duint num)
     return NULL;
 }
 
-static void findDominantLightSources(map_t* map)
+void Map::findDominantLightSources()
 {
-#define DOMINANT_SIZE   1000
+#define DOMINANT_SIZE   1000*1000
 
-    uint i;
-
-    for(i = 0; i < map->numSectors; ++i)
+    FOR_EACH(i, _sectors, Sectors::iterator)
     {
-        sector_t* sec = map->sectors[i];
+        Sector* sec = *i;
 
-        if(!sec->lineDefCount)
+        if(sec->lineDefs.size() == 0)
+            continue;
+        if(sec->lightSource)
             continue;
 
         // Is this sector large enough to be a dominant light source?
-        if(sec->lightSource == NULL && sec->planeCount > 0 &&
-           sec->bBox[BOXRIGHT] - sec->bBox[BOXLEFT]   > DOMINANT_SIZE &&
-           sec->bBox[BOXTOP]   - sec->bBox[BOXBOTTOM] > DOMINANT_SIZE)
+        if(sec->approxArea > DOMINANT_SIZE && sec->hasSkySurface())
         {
-            if(R_SectorContainsSkySurfaces(sec))
+            // All sectors touching this one will be affected.
+            FOR_EACH(lineDefIter, sec->lineDefs, Sector::LineDefSet::iterator)
             {
-                uint k;
+                LineDef* lineDef = *lineDefIter;
 
-                // All sectors touching this one will be affected.
-                for(k = 0; k < sec->lineDefCount; ++k)
-                {
-                    linedef_t* lin = sec->lineDefs[k];
-                    sector_t* other;
+                if(lineDef->hasFrontSector() && &lineDef->frontSector() != sec)
+                    lineDef->frontSector().lightSource = sec;
 
-                    other = LINE_FRONTSECTOR(lin);
-                    if(other == sec)
-                    {
-                        if(LINE_BACKSIDE(lin))
-                            other = LINE_BACKSECTOR(lin);
-                    }
-
-                    if(other && other != sec)
-                        other->lightSource = sec;
-                }
+                if(lineDef->hasBackSector() && &lineDef->backSector() != sec)
+                    lineDef->backSector().lightSource = sec;
             }
         }
     }
@@ -3290,9 +3068,9 @@ static void findDominantLightSources(map_t* map)
 #undef DOMINANT_SIZE
 }
 
-static boolean PIT_LinkObjToSubsector(uint subsectorIdx, void* data)
+static bool PIT_LinkObjToSubsector(duint subsectorIdx, void* paramaters)
 {
-    linkobjtosubsectorparams_t* params = (linkobjtosubsectorparams_t*) data;
+    linkobjtosubsectorparams_t* params = reinterpret_cast<linkobjtosubsectorparams_t*>(paramaters);
     objcontact_t* con = allocObjContact();
 
     con->obj = params->obj;
@@ -3303,55 +3081,39 @@ static boolean PIT_LinkObjToSubsector(uint subsectorIdx, void* data)
     return true; // Continue iteration.
 }
 
-void Map_AddSubsectorContact(map_t* map, uint subsectorIdx, objcontacttype_t type,
-                             void* obj)
+void Map::addSubsectorContact(duint subsectorIdx, objcontacttype_t type, void* obj)
 {
-    linkobjtosubsectorparams_t params;
-
-    assert(map);
-    assert(subsectorIdx < map->numSubsectors);
+    assert(subsectorIdx < numSubsectors());
     assert(type >= OCT_FIRST && type < NUM_OBJCONTACT_TYPES);
     assert(obj);
 
+    linkobjtosubsectorparams_t params;
     params.map = map;
     params.obj = obj;
     params.type = type;
-
     PIT_LinkObjToSubsector(subsectorIdx, &params);
 }
 
-boolean Map_IterateSubsectorContacts(map_t* map, uint subsectorIdx, objcontacttype_t type,
-                                     boolean (*callback) (void*, void*),
-                                     void* data)
+bool Map::iterateSubsectorContacts(duint subsectorIdx, objcontacttype_t type,
+    bool (*callback) (void*, void*), void* paramaters)
 {
     objcontact_t* con;
 
-    assert(map);
-    assert(subsectorIdx < map->numSubsectors);
+    assert(subsectorIdx < numSubsectors());
     assert(callback);
 
-    con = map->_subsectorContacts[subsectorIdx].head[type];
+    con = _subsectorContacts[subsectorIdx].head[type];
     while(con)
     {
-        if(!callback(con->obj, data))
+        if(!callback(con->obj, paramaters))
             return false;
-
         con = con->next;
     }
-
     return true;
 }
 
 void Map::initSectorShadows()
 {
-    duint startTime = Sys_GetRealTime();
-
-    duint i;
-    vec2_t bounds[2], point;
-    vertex_t* vtx0, *vtx1;
-    lineowner_t* vo0, *vo1;
-    shadowlinkerparms_t data;
-
     /**
      * The algorithm:
      *
@@ -3366,213 +3128,29 @@ void Map::initSectorShadows()
      */
     shadowLinksBlockSet = Z_BlockCreate(sizeof(shadowlink_t), 1024, PU_MAP);
 
-    for(i = 0; i < map->numSideDefs; ++i)
+    FOR_EACH(i, _sideDefs, SideDefs::const_iterator)
     {
-        sidedef_t* side = map->sideDefs[i];
-        byte sid;
+        const SideDef* sideDef = *i;
 
-        if(!R_IsShadowingLineDef(side->lineDef))
+        if(!sideDef->hasLineDef())
             continue;
 
-        sid = LINE_BACKSIDE(side->lineDef) == side? BACK : FRONT;
+        const LineDef& = sideDef->lineDef();
+        if(!lineDef.isShadowing())
+            continue;
 
-        vtx0 = LINE_VERTEX(side->lineDef, sid);
-        vtx1 = LINE_VERTEX(side->lineDef, sid^1);
-        vo0 = side->lineDef->L_vo(sid)->next();
-        vo1 = side->lineDef->L_vo(sid^1)->prev();
-
+        MapRectanglef aaBounds = lineDef.aaBounds();
+        dbyte side = &lineDef.back() == sideDef? LineDef::BACK : LineDef::FRONT;
         // Use the extended points, they are wider than inoffsets.
-        V2_Set(point, vtx0->pos[VX], vtx0->pos[VY]);
-        V2_InitBox(bounds, point);
+        aaBounds.include(lineDef.vtx(side  ).pos + lineDef.vo[side  ]->next().shadowOffsets.extended);
+        aaBounds.include(lineDef.vtx(side^1).pos + lineDef.vo[side^1]->prev().shadowOffsets.extended);
 
-        V2_Sum(point, point, vo0->shadowOffsets.extended);
-        V2_AddToBox(bounds, point);
+        shadowlinkerparms_t params;
+        params.lineDef = &sideDef->lineDef();
+        params.side = side;
 
-        V2_Set(point, vtx1->pos[VX], vtx1->pos[VY]);
-        V2_AddToBox(bounds, point);
-
-        V2_Sum(point, point, vo1->shadowOffsets.extended);
-        V2_AddToBox(bounds, point);
-
-        data.lineDef = side->lineDef;
-        data.side = sid;
-
-        Map_SubsectorsBoxIteratorv(map, bounds, side->sector,
-                                   RIT_ShadowSubsectorLinker, &data, false);
+        iterateSubsectors(aaBounds, &side->sector(), RIT_ShadowSubsectorLinker, &params, false);
     }
-
-    // How much time did we spend?
-    VERBOSE(Con_Message
-            ("R_InitSectorShadows: Done in %.2f seconds.\n",
-             (Sys_GetRealTime() - startTime) / 1000.0f));
-}
-
-/**
- * Begin the process of loading a new map.
- *
- * @param levelId       Identifier of the map to be loaded (eg "E1M1").
- *
- * @return              @c true, if the map was loaded successfully.
- */
-boolean Map_Load(map_t* map)
-{
-    assert(map);
-
-    Con_Message("Map_Load: \"%s\"\n", map->mapID);
-
-    // It would be very cool if map loading happened in another
-    // thread. That way we could be keeping ourselves busy while
-    // the intermission is played...
-
-    // We could even try to divide a HUB up into zones, so that
-    // when a player enters a zone we could begin loading the map(s)
-    // reachable through exits in that zone (providing they have
-    // enough free memory of course) so that transitions are
-    // (potentially) seamless :-)
-
-    if(isServer)
-    {
-        int i;
-        // Whenever the map changes, remote players must tell us when
-        // they're ready to begin receiving frames.
-        for(i = 0; i < DDMAXPLAYERS; ++i)
-        {
-            User* plr = &ddPlayers[i];
-
-            if(!(plr->shared.flags & DDPF_LOCAL) && clients[i].connected)
-            {
-#ifdef _DEBUG
-                Con_Printf("Cl%i NOT READY ANY MORE!\n", i);
-#endif
-                clients[i].ready = false;
-            }
-        }
-    }
-
-    if(!DAM_TryMapConversion(map->mapID))
-        return false;
-
-    if(1)//(map = DAM_LoadMap(mapID)))
-    {
-        ded_sky_t* skyDef = NULL;
-        ded_mapinfo_t* mapInfo;
-
-        // Initialize The Logical Sound Manager.
-        S_MapChange();
-
-        // Call the game's setup routines.
-        if(gx.SetupForMapData)
-        {
-            gx.SetupForMapData(map, DMU_LINEDEF);
-            gx.SetupForMapData(map, DMU_SIDEDEF);
-            gx.SetupForMapData(map, DMU_SECTOR);
-        }
-
-        {
-        uint starttime = Sys_GetRealTime();
-
-        // Must be called before any mobjs are spawned.
-        initLinks(map);
-
-        // How much time did we spend?
-        VERBOSE(Con_Message
-                ("initLinks: Allocating line link rings. Done in %.2f seconds.\n",
-                 (Sys_GetRealTime() - starttime) / 1000.0f));
-        }
-
-        findDominantLightSources(map);
-
-        buildMobjBlockmap(map);
-        buildSubsectorBlockmap(map);
-        buildParticleBlockmap(map);
-        buildLumobjBlockmap(map);
-
-        initSubsectorContacts(map);
-
-        // See what mapinfo says about this map.
-        mapInfo = Def_GetMapInfo(map->mapID);
-        if(!mapInfo)
-            mapInfo = Def_GetMapInfo("*");
-
-        if(mapInfo)
-        {
-            skyDef = Def_GetSky(mapInfo->skyID);
-            if(!skyDef)
-                skyDef = &mapInfo->sky;
-        }
-
-        R_SetupSky(theSky, skyDef);
-
-        // Setup accordingly.
-        if(mapInfo)
-        {
-            map->gravity = mapInfo->gravity;
-            map->ambientLightLevel = mapInfo->ambient * 255;
-        }
-        else
-        {
-            // No map info found, so set some basic stuff.
-            map->gravity = 1.0f;
-            map->ambientLightLevel = 0;
-        }
-
-        map->_halfEdgeDS.iterateVertices(updateVertexShadowOffsets);
-
-        R_InitSectorShadows(map);
-
-        {
-        uint startTime = Sys_GetRealTime();
-
-        Map_InitSkyFix(map);
-
-        // How much time did we spend?
-        VERBOSE(Con_Message("  InitialSkyFix: Done in %.2f seconds.\n",
-                            (Sys_GetRealTime() - startTime) / 1000.0f));
-        }
-
-        // Init the thinker lists (public and private).
-        Thinkers_Init(map->_thinkers, 0x1 | 0x2);
-
-        // Tell shadow bias to initialize the bias light sources.
-        SB_InitForMap(map);
-
-        Cl_Reset();
-        RL_DeleteLists();
-        R_CalcLightModRange(NULL);
-
-        // Invalidate old cmds and init player values.
-        {
-        int i;
-        for(i = 0; i < DDMAXPLAYERS; ++i)
-        {
-            User* plr = &ddPlayers[i];
-
-            if(isServer && plr->shared.inGame)
-                clients[i].runTime = SECONDS_TO_TICKS(gameTime);
-
-            plr->extraLight = plr->targetExtraLight = 0;
-            plr->extraLightCounter = 0;
-        }
-        }
-
-        // Make sure that the next frame doesn't use a filtered viewer.
-        R_ResetViewer();
-
-        // Texture animations should begin from their first step.
-        Materials_RewindAnimationGroups();
-
-        LO_InitForMap(map); // Lumobj management.
-        VL_InitForMap(); // Converted vlights (from lumobjs) management.
-
-        initGenerators(map);
-
-        // Initialize the lighting grid.
-        LightGrid_Init(map);
-
-        return true;
-    }
-
-    return false;
 }
 
 boolean Map_MobjsBoxIterator(map_t* map, const float box[4],
@@ -3714,8 +3292,8 @@ static boolean interceptLineDef(const linedef_t* li, losdata_t* los,
 
     LineDef_ConstructDivline(li, dlPtr);
 
-    if(P_PointOnDivlineSide(FIX2FLT(los->trace.pos[VX]),
-                            FIX2FLT(los->trace.pos[VY]), dlPtr) ==
+    if(P_PointOnDivlineSide(fix2flt(los->trace.pos[VX]),
+                            fix2flt(los->trace.pos[VY]), dlPtr) ==
        P_PointOnDivlineSide(los->to[VX], los->to[VY], dlPtr))
         return false; // Not crossed.
 
@@ -3752,8 +3330,8 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
     if(noBack)
     {
         if((los->flags & LS_PASSLEFT) &&
-           side != LineDef_PointOnSide(li, FIX2FLT(los->trace.pos[VX]),
-                                           FIX2FLT(los->trace.pos[VY])))
+           side != LineDef_PointOnSide(li, fix2flt(los->trace.pos[VX]),
+                                           fix2flt(los->trace.pos[VY])))
             return true; // Ray does not intercept seg from left to right.
 
         if(!(los->flags & (LS_PASSOVER | LS_PASSUNDER)))
@@ -3787,8 +3365,8 @@ static boolean crossLineDef(const linedef_t* li, byte side, losdata_t* los)
         if(surface->material && !(surface->blendMode > 0) &&
            !(surface->rgba[CA] < 1.0f) &&
            (!(los->flags & LS_PASSLEFT) ||
-            side == LineDef_PointOnSide(li, FIX2FLT(los->trace.pos[VX]),
-                                        FIX2FLT(los->trace.pos[VY]))))
+            side == LineDef_PointOnSide(li, fix2flt(los->trace.pos[VX]),
+                                        fix2flt(los->trace.pos[VY]))))
         {
             material_snapshot_t ms;
 
@@ -3929,8 +3507,8 @@ static boolean crossBSPNode(map_t* map, binarytree_t* tree, losdata_t* los)
     while(!BinaryTree_IsLeaf(tree))
     {
         const node_t* node = BinaryTree_GetData(tree);
-        byte side = R_PointOnSide(FIX2FLT(los->trace.pos[VX]),
-                                  FIX2FLT(los->trace.pos[VY]),
+        byte side = R_PointOnSide(fix2flt(los->trace.pos[VX]),
+                                  fix2flt(los->trace.pos[VY]),
                                   &node->partition);
 
         // Would the trace completely cross this partition?
@@ -3973,10 +3551,10 @@ boolean Map_CheckLineSight(map_t* map, const float from[3], const float to[3],
     los.startZ = from[VZ];
     los.topSlope = to[VZ] + topSlope - los.startZ;
     los.bottomSlope = to[VZ] + bottomSlope - los.startZ;
-    los.trace.pos[VX] = FLT2FIX(from[VX]);
-    los.trace.pos[VY] = FLT2FIX(from[VY]);
-    los.trace.dX = FLT2FIX(to[VX] - from[VX]);
-    los.trace.dY = FLT2FIX(to[VY] - from[VY]);
+    los.trace.pos[VX] = flt2fix(from[VX]);
+    los.trace.pos[VY] = flt2fix(from[VY]);
+    los.trace.dX = flt2fix(to[VX] - from[VX]);
+    los.trace.dY = flt2fix(to[VY] - from[VY]);
     los.to[VX] = to[VX];
     los.to[VY] = to[VY];
     los.to[VZ] = to[VZ];
