@@ -18,8 +18,6 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cstring>
-#include <cstdlib>
 #include <sstream>
 
 #include <de/Log>
@@ -111,42 +109,17 @@ static void parseAnimGroup(HexenDefParser& parser, material_namespace_t mnamespa
     } while(!done);
 }
 
-/**
- * Parse an ANIMDEFS definition for flat/texture animations.
- */
-void LoadANIMDEFS(wadconverter::lumpnum_t lump)
+void LoadANIMDEFS(const de::File& file)
 {
-    char* script = reinterpret_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
-    HexenDefParser* parser = new HexenDefParser(W_LumpName(lump), script, W_LumpLength(lump));
+    using namespace de;
 
-    while(parser->getString())
+    try
     {
-        try
-        {
-            if(parser->compare("flat"))
-            {
-                parseAnimGroup(MN_FLATS);
-                continue;
-            }
-            if(parser->compare("texture"))
-            {
-                parseAnimGroup(MN_TEXTURES);
-                continue;
-            }
-
-            std::ostringstream os;
-            os << "Unknown token " << parser->string << " in " << parser->scriptName << " at line #" << parser->lineNumber;
-            /// @throw UnknownTokenError An unknown token was encountered.
-            throw UnknownTokenError("WadConverter::LoadANIMDEFS", os.str());
-        }
-        catch(de::Error& err)
-        {
-            // If recoverable, log the error and attempt to continue parsing.
-            de::LOG_WARNING("") << err.asText();
-            parser->skipToStartOfNextLine();
-        }
+        HexenDefParser().parse(file);
     }
-
-    delete parser;
-    Z_Free(script);
+    catch(const HexenDefParser::SyntaxError& err)
+    {
+        /// Announce but otherwise quitely ignore syntax errors.
+        LOG_WARNING("Error reading " + file.name() + (file.source()? " (" + file.source()->name() + "):" : ":") + err.asText());
+    }
 }

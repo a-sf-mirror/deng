@@ -87,8 +87,13 @@ void LoadResources(void)
         /// Ignore, this is not required data.
     }
 
-    {lumpnum_t lumpnum = W_CheckNumForName("ANIMDEFS");
-    if(lumpnum != -1)
-        LoadANIMDEFS(lumpnum);
+    try
+    {
+        const File& file = App::app().fileSystem().findSingle("animdefs.lmp");
+        LoadANIMDEFS(file);
+    }
+    catch(Error & err)
+    {
+        LOG_MESSAGE(err.asText());
     }
 }

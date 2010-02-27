@@ -49,11 +49,16 @@
         LIBWADCONVERTER_PATCHLEVEL)
 #endif
 
+#include <de/File>
+
 namespace wadconverter
 {
     typedef unsigned int lumpnum_t;
 
-    void LoadANIMDEFS(lumpnum_t lump);
+    /**
+     * Parse an ANIMDEFS definition for flat/texture animations.
+     */
+    void LoadANIMDEFS(const de::File& file);
 }
 
 #endif /* LIBWADCONVERTER_H */

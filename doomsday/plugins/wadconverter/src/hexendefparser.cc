@@ -19,90 +19,58 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cstring>
+#include <de/String>
+#include <de/Lex>
 
 #include "wadconverter/HexenDefParser"
 
 using namespace wadconverter;
 
-HexenDefParser::HexenDefParser(const char* name, const char* script, unsigned int size)
- : _scriptSize(size), _alreadyGot(false), _skipCurrentLine(false),
-   _reachedScriptEnd(false)
-{
-    strncpy(scriptName, name, MAX_SCRIPTNAME_LEN);
+HexenDefParser::HexenDefParser()
+{}
 
-    _script = script;
-    _scriptPtr = _script;
-    _scriptEndPtr = _scriptPtr + _scriptSize;
-    lineNumber = 1;
-    string = _stringBuffer;
+HexenDefParser::~HexenDefParser()
+{}
+
+HexenDefParser::parse(const de::String& script)
+{
+    _lex = HexLex(script);
+
+    try
+    {
+        while(getString())
+        {
+            if(!_token.compareWithCase("flat"))
+            {
+                parseAnimGroup(MN_FLATS);
+                continue;
+            }
+            if(!_token.compareWithCase("texture"))
+            {
+                parseAnimGroup(MN_TEXTURES);
+                continue;
+            }
+
+            std::ostringstream os;
+            os << "Unexpected token '" << _token << "' at line #" << _analyzer.lineNumber();
+            /// @throw UnexpectedTokenError An unknown/unexpected token was encountered.
+            throw UnexpectedTokenError("WadConverter::LoadANIMDEFS", os.str());
+        }
+    }
+    catch(const OutOfInputError&)
+    {
+        /// Inevitable, sooner or later.
+    }
 }
 
-void HexenDefParser::skipToStartOfNextLine(void)
+void HexenDefParser::skipToNextLine()
 {
-    _skipCurrentLine = true;
+    _lex.skipToNextLine();
 }
 
 bool HexenDefParser::getString(void)
 {
-    if(_alreadyGot)
-    {
-        _alreadyGot = false;
-        return true;
-    }
-
-    if(_scriptPtr >= _scriptEndPtr)
-    {
-        _reachedScriptEnd = true;
-        return false;
-    }
-
-    bool foundToken = false;
-    while(foundToken == false)
-    {
-        while(*_scriptPtr <= 32)
-        {
-            if(_scriptPtr >= _scriptEndPtr)
-            {
-                _reachedScriptEnd = true;
-                return false;
-            }
-
-            if(*_scriptPtr++ == NEWLINE)
-            {
-                lineNumber++;
-                if(_skipCurrentLine)
-                    _skipCurrentLine = false;
-            }
-        }
-
-        if(_scriptPtr >= _scriptEndPtr)
-        {
-            _reachedScriptEnd = true;
-            return false;
-        }
-
-        if(_skipCurrentLine || *_scriptPtr == BEGIN_LINE_COMMENT)
-        {
-            while(*_scriptPtr++ != NEWLINE)
-            {
-                if(_scriptPtr >= _scriptEndPtr)
-                {
-                    _reachedScriptEnd = true;
-                    return false;
-
-                }
-            }
-
-            lineNumber++;
-            if(_skipCurrentLine)
-                _skipCurrentLine = false;
-        }
-        else
-        {   // Found a token
-            foundToken = true;
-        }
-    }
+    _lex.skipWhite();
 
     char* text = string;
     if(*_scriptPtr == QUOTE)
@@ -111,7 +79,7 @@ bool HexenDefParser::getString(void)
         while(*_scriptPtr != QUOTE)
         {
             *text++ = *_scriptPtr++;
-            if(_scriptPtr == _scriptEndPtr ||
+            if(!(_script.offset() < _script.source().size()) ||
                text == &string[MAX_STRING_SIZE - 1])
             {
                 break;
@@ -125,7 +93,7 @@ bool HexenDefParser::getString(void)
         while(!(*_scriptPtr < '!') && *_scriptPtr != BEGIN_LINE_COMMENT)
         {
             *text++ = *_scriptPtr++;
-            if(_scriptPtr == _scriptEndPtr ||
+            if(!(_script.offset() < _script.source().size()) ||
                text == &string[MAX_STRING_SIZE - 1])
             {
                 break;
@@ -202,22 +170,11 @@ int HexenDefParser::mustMatchString(char** strings)
     return i;
 }
 
-bool HexenDefParser::compare(char* text)
-{
-    assert(text);
-    if(strcasecmp(text, string) == 0)
-    {
-        return true;
-    }
-    return false;
-}
-
 void HexenDefParser::scriptError(char* message)
 {
     if(message == NULL)
     {
         message = "Bad syntax.";
     }
-
     Con_Error("Script error, \"%s\" line %d: %s", scriptName, lineNumber, message);
 }

@@ -22,32 +22,59 @@
 #ifndef LIBWADCONVERTER_HEXENDEFPARSER_H
 #define LIBWADCONVERTER_HEXENDEFPARSER_H
 
+#include <de/String>
+#include <de/Lex>
+
 #include "wadconverter.h"
 
 namespace wadconverter
 {
+    /**
+     * Lexical analyser tailored to reading Hexen text definitions such as
+     * MAPINFO and ANIMDEFS.
+     *
+     * Although implemented using de::Lex, the "loose" analysis behaviour of
+     * the parser in the original game means we need to alter Lex to fit our
+     * needs, hence HexLex :-)
+     */
+    class HexLex : de::Lex
+    {
+    public:
+        HexLex(const de::String& input = "") : de::Lex(input, ';') {}
+
+    public:
+        /// Determines whether a character is whitespace.
+        /// @param c Character to check.
+        static bool isWhite(de::duchar c) { return c <= ' '; }
+    };
+
+    /**
+     * Reads Hexen text definition scripts and translates them into a set of
+     * Doomsday script sources.
+     */
     class HexenDefParser
     {
     public:
-        static const int MAX_SCRIPTNAME_LEN = 32;
-        static const int MAX_STRING_SIZE = 64;
+        /// A syntax error is detected during the parsing. Note that the HexLex classes 
+        /// also define syntax errors. @ingroup errors
+        DEFINE_ERROR(SyntaxError);
+        
+        /// A token is encountered where we don't know what to do with it. @ingroup errors
+        DEFINE_SUB_ERROR(SyntaxError, UnexpectedTokenError);
 
-        static const char BEGIN_LINE_COMMENT = ';';
-        static const char NEWLINE = '\n';
         static const char QUOTE = '"';
 
     public:
-        char* string;
-        int number;
-        int lineNumber;
-        char scriptName[MAX_SCRIPTNAME_LEN+1];
+        HexenDefParser();
+        ~HexenDefParser();
 
-        HexenDefParser(const char* name, const char* script, unsigned int size);
+        void parse(const de::String& input);
 
         bool getString(void);
+        bool getNumber(void);
+
         void mustGetString(void);
         void mustGetStringName(char* name);
-        bool getNumber(void);
         void mustGetNumber(void);
 
         /**
@@ -55,20 +82,14 @@ namespace wadconverter
          */
         void unGet(void);
 
-        void skipToStartOfNextLine(void);
+        void skipToNextLine();
+
         void scriptError(char* message);
-        bool compare(char* text);
 
     private:
-        const char* _script;
-        unsigned int _scriptSize;
-        const char* _scriptPtr;
-        const char* _scriptEndPtr;
+        HexLex _analyzer;
 
-        char _stringBuffer[MAX_STRING_SIZE+1];
-        bool _alreadyGot;
-        bool _reachedScriptEnd;
-        bool _skipCurrentLine;
+        de::String _token;
 
         /**
          * @return              Index of the first match to sc_String from the
