@@ -25,7 +25,7 @@
 
 //#include "r_lumobjs.h"
 
-#include "de/LumObjBlockmap"
+#include "de/LumobjBlockmap"
 
 using namespace de;
 
@@ -51,12 +51,12 @@ typedef struct {
     void*           context;
 } iterateparticles_args_t;
 
-static LumObjBlockmap* allocBlockmap(void)
+static LumobjBlockmap* allocBlockmap(void)
 {
-    return Z_Calloc(sizeof(LumObjBlockmap), PU_STATIC, 0);
+    return Z_Calloc(sizeof(LumobjBlockmap), PU_STATIC, 0);
 }
 
-static void freeBlockmap(LumObjBlockmap* bmap)
+static void freeBlockmap(LumobjBlockmap* bmap)
 {
     Z_Free(bmap);
 }
@@ -132,7 +132,7 @@ static uint listSize(linklist_t* list)
     return list->size;
 }
 
-static void linkLumobjToBlock(LumObjBlockmap* blockmap, uint x, uint y,
+static void linkLumobjToBlock(LumobjBlockmap* blockmap, uint x, uint y,
                                 lumobj_t* lumobj)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
@@ -143,7 +143,7 @@ static void linkLumobjToBlock(LumObjBlockmap* blockmap, uint x, uint y,
     listPushFront(list, lumobj);
 }
 
-static boolean unlinkLumobjFromBlock(LumObjBlockmap* blockmap, uint x, uint y,
+static boolean unlinkLumobjFromBlock(LumobjBlockmap* blockmap, uint x, uint y,
                                        lumobj_t* lumobj)
 {
     linklist_t* list = (linklist_t*) Gridmap_Block(blockmap->gridmap, x, y);
@@ -197,7 +197,7 @@ static boolean freeLumobjBlockData(void* data, void* context)
     return true; // Continue iteration.
 }
 
-static void boxToBlocks(LumObjBlockmap* bmap, uint blockBox[4], const arvec2_t box)
+static void boxToBlocks(LumobjBlockmap* bmap, uint blockBox[4], const arvec2_t box)
 {
     uint dimensions[2];
     vec2_t min, max;
@@ -217,10 +217,10 @@ static void boxToBlocks(LumObjBlockmap* bmap, uint blockBox[4], const arvec2_t b
     blockBox[BOXTOP]    = MINMAX_OF(0, (max[1] - bmap->aabb[0][1]) / bmap->blockSize[1], dimensions[1]);
 }
 
-LumObjBlockmap* P_CreateLumobjBlockmap(const pvec2_t min, const pvec2_t max,
+LumobjBlockmap* P_CreateLumobjBlockmap(const pvec2_t min, const pvec2_t max,
                                              uint width, uint height)
 {
-    LumObjBlockmap* blockmap;
+    LumobjBlockmap* blockmap;
 
     assert(min);
     assert(max);
@@ -237,7 +237,7 @@ LumObjBlockmap* P_CreateLumobjBlockmap(const pvec2_t min, const pvec2_t max,
     return blockmap;
 }
 
-void P_DestroyLumobjBlockmap(LumObjBlockmap* blockmap)
+void P_DestroyLumobjBlockmap(LumobjBlockmap* blockmap)
 {
     assert(blockmap);
 
@@ -247,14 +247,14 @@ void P_DestroyLumobjBlockmap(LumObjBlockmap* blockmap)
     Z_Free(blockmap);
 }
 
-void LumobjBlockmap_Empty(LumObjBlockmap* blockmap)
+void LumobjBlockmap_Empty(LumobjBlockmap* blockmap)
 {
     assert(blockmap);
     Gridmap_Iterate(blockmap->gridmap, freeLumobjBlockData, NULL);
     Gridmap_Empty(blockmap->gridmap);
 }
 
-void LumobjBlockmap_BoxToBlocks(LumObjBlockmap* blockmap, uint blockBox[4],
+void LumobjBlockmap_BoxToBlocks(LumobjBlockmap* blockmap, uint blockBox[4],
                                   const arvec2_t box)
 {
     assert(blockmap);
@@ -267,7 +267,7 @@ void LumobjBlockmap_BoxToBlocks(LumObjBlockmap* blockmap, uint blockBox[4],
 /**
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
-boolean LumobjBlockmap_Block2f(LumObjBlockmap* blockmap, uint dest[2], float x, float y)
+boolean LumobjBlockmap_Block2f(LumobjBlockmap* blockmap, uint dest[2], float x, float y)
 {
     assert(blockmap);
 
@@ -286,12 +286,12 @@ boolean LumobjBlockmap_Block2f(LumObjBlockmap* blockmap, uint dest[2], float x, 
 /**
  * Given a world coordinate, output the blockmap block[x, y] it resides in.
  */
-boolean LumobjBlockmap_Block2fv(LumObjBlockmap* blockmap, uint dest[2], const float pos[2])
+boolean LumobjBlockmap_Block2fv(LumobjBlockmap* blockmap, uint dest[2], const float pos[2])
 {
     return LumobjBlockmap_Block2f(blockmap, dest, pos[0], pos[1]);
 }
 
-void LumobjBlockmap_Link(LumObjBlockmap* blockmap, lumobj_t* lumobj)
+void LumobjBlockmap_Link(LumobjBlockmap* blockmap, lumobj_t* lumobj)
 {
     uint block[2], dimensions[2];
 
@@ -305,7 +305,7 @@ void LumobjBlockmap_Link(LumObjBlockmap* blockmap, lumobj_t* lumobj)
         linkLumobjToBlock(blockmap, block[0], block[1], lumobj);
 }
 
-boolean LumobjBlockmap_Unlink(LumObjBlockmap* blockmap, lumobj_t* lumobj)
+boolean LumobjBlockmap_Unlink(LumobjBlockmap* blockmap, lumobj_t* lumobj)
 {
     uint x, y, dimensions[2];
 
@@ -322,7 +322,7 @@ boolean LumobjBlockmap_Unlink(LumObjBlockmap* blockmap, lumobj_t* lumobj)
     return true;
 }
 
-void LumobjBlockmap_Bounds(LumObjBlockmap* blockmap, pvec2_t min, pvec2_t max)
+void LumobjBlockmap_Bounds(LumobjBlockmap* blockmap, pvec2_t min, pvec2_t max)
 {
     assert(blockmap);
 
@@ -332,7 +332,7 @@ void LumobjBlockmap_Bounds(LumObjBlockmap* blockmap, pvec2_t min, pvec2_t max)
         V2_Copy(max, blockmap->aabb[1]);
 }
 
-void LumobjBlockmap_BlockSize(LumObjBlockmap* blockmap, pvec2_t blockSize)
+void LumobjBlockmap_BlockSize(LumobjBlockmap* blockmap, pvec2_t blockSize)
 {
     assert(blockmap);
     assert(blockSize);
@@ -340,14 +340,14 @@ void LumobjBlockmap_BlockSize(LumObjBlockmap* blockmap, pvec2_t blockSize)
     V2_Copy(blockSize, blockmap->blockSize);
 }
 
-void LumobjBlockmap_Dimensions(LumObjBlockmap* blockmap, uint v[2])
+void LumobjBlockmap_Dimensions(LumobjBlockmap* blockmap, uint v[2])
 {
     assert(blockmap);
 
     Gridmap_Dimensions(blockmap->gridmap, v);
 }
 
-uint LumobjBlockmap_NumInBlock(LumObjBlockmap* blockmap, uint x, uint y)
+uint LumobjBlockmap_NumInBlock(LumobjBlockmap* blockmap, uint x, uint y)
 {
     linklist_t* list;
 
@@ -360,7 +360,7 @@ uint LumobjBlockmap_NumInBlock(LumObjBlockmap* blockmap, uint x, uint y)
     return 0;
 }
 
-boolean LumobjBlockmap_Iterate(LumObjBlockmap* blockmap, const uint block[2],
+boolean LumobjBlockmap_Iterate(LumobjBlockmap* blockmap, const uint block[2],
                                  boolean (*func) (lumobj_t*, void*),
                                  void* context)
 {
@@ -376,7 +376,7 @@ boolean LumobjBlockmap_Iterate(LumObjBlockmap* blockmap, const uint block[2],
     return iterateLumobjs(Gridmap_Block(blockmap->gridmap, block[0], block[1]), &args);
 }
 
-boolean LumobjBlockmap_BoxIterate(LumObjBlockmap* blockmap,
+boolean LumobjBlockmap_BoxIterate(LumobjBlockmap* blockmap,
                                     const uint blockBox[4],
                                     boolean (*func) (lumobj_t*, void*),
                                     void* context)

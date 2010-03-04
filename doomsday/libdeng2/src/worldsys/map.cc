@@ -1307,297 +1307,259 @@ void Map::updateMovingSurfaces()
         (*i)->updateScroll();
 }
 
-#if 0
 typedef struct {
-    arvec2_t        bounds;
-    boolean         inited;
+    MapRectanglef   bounds;
+    bool            inited;
 } findaabbforvertices_params_t;
 
-static int addToAABB(vertex_t* vertex, void* context)
+static bool addToAABB(Vertex* vertex, void* paramaters)
 {
-    findaabbforvertices_params_t* params = (findaabbforvertices_params_t*) context;
-    vec2_t point;
-
-    V2_Set(point, vertex->pos[0], vertex->pos[1]);
+    findaabbforvertices_params_t* params = reinterpret_cast<findaabbforvertices_params_t*>(paramaters);
     if(!params->inited)
     {
-        V2_InitBox(params->bounds, point);
+        params->bounds = MapRectanglef(vertex->pos, vertex->pos);
         params->inited = true;
     }
     else
-        V2_AddToBox(params->bounds, point);
+        params->bounds.include(vertex->pos);
     return true; // Continue iteration.
 }
 
-static void findAABBForVertices(map_t* map, arvec2_t bounds)
+static MapRectanglef findAABBForVertices(Map* map)
 {
     findaabbforvertices_params_t params;
-
-    params.bounds = bounds;
     params.inited = false;
-    HalfEdgeDS_IterateVertices(Map_HalfEdgeDS(map), addToAABB, &params);
+
+    map->halfEdgeDS().iterateVertices(addToAABB, &params);
+    return MapRectanglef(params.bounds);
 }
 
-static void buildLineDefBlockmap(map_t* map)
+void Map::buildLineDefBlockmap()
 {
 #define BLKMARGIN               (8) // size guardband around map
 #define MAPBLOCKUNITS           128
-
-    uint i;
-    uint bMapWidth, bMapHeight; // Blockmap dimensions.
-    vec2_t blockSize; // Size of the blocks.
-    uint numBlocks; // Number of cells = nrows*ncols.
-    vec2_t bounds[2], dims;
-    linedefblockmap_t* blockmap;
-
+  
     // Scan for map limits, which the blockmap must enclose.
-    findAABBForVertices(map, bounds);
+    MapRectanglef bounds = findAABBForVertices(this);
 
     // Setup the blockmap area to enclose the whole map, plus a margin
     // (margin is needed for a map that fits entirely inside one blockmap
     // cell).
-    V2_Set(bounds[0], bounds[0][0] - BLKMARGIN, bounds[0][1] - BLKMARGIN);
-    V2_Set(bounds[1], bounds[1][0] + BLKMARGIN, bounds[1][1] + BLKMARGIN);
+    bounds.move(Vector2f(-BLKMARGIN, -BLKMARGIN));
+    bounds.setSize(Vector2f(bounds.width() + BLKMARGIN * 2,
+                            bounds.height() + BLKMARGIN * 2));
 
     // Select a good size for the blocks.
-    V2_Set(blockSize, MAPBLOCKUNITS, MAPBLOCKUNITS);
-    V2_Subtract(dims, bounds[1], bounds[0]);
+    Vector2f blockSize = Vector2f(MAPBLOCKUNITS, MAPBLOCKUNITS);
 
     // Calculate the dimensions of the blockmap.
-    if(dims[0] <= blockSize[0])
+    duint bMapWidth, bMapHeight; // Blockmap dimensions.
+    if(bounds.width() <= blockSize.x)
         bMapWidth = 1;
     else
-        bMapWidth = ceil(dims[0] / blockSize[0]);
+        bMapWidth = duint(ceil(bounds.width() / blockSize.x));
 
-    if(dims[1] <= blockSize[1])
+    if(bounds.height() <= blockSize.y)
         bMapHeight = 1;
     else
-        bMapHeight = ceil(dims[1] / blockSize[1]);
-    numBlocks = bMapWidth * bMapHeight;
+        bMapHeight = duint(ceil(bounds.height() / blockSize.y));
 
     // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][0] + bMapWidth  * blockSize[0],
-                      bounds[0][1] + bMapHeight * blockSize[1]);
+    bounds.include(bounds.bottomLeft() + Vector2f(bMapWidth * blockSize.x, bMapHeight * blockSize.y));
 
-    blockmap = P_CreateLineDefBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
+    LineDefBlockmap* blockmap = new LineDefBlockmap(bounds.bottomLeft(), bounds.topRight(), bMapWidth, bMapHeight);
 
-    for(i = 0; i < map->numLineDefs; ++i)
+    FOR_EACH(i, _lineDefs, LineDefs::iterator)
     {
-        linedef_t* lineDef = map->lineDefs[i];
-        if(lineDef->inFlags & LF_POLYOBJ)
+        LineDef* lineDef = *i;
+        if(lineDef->polyobjOwned)
             continue;
-        LineDefBlockmap_Link(blockmap, lineDef);
+        blockmap->link(lineDef);
     }
 
-    map->_lineDefBlockmap = blockmap;
+    _lineDefBlockmap = blockmap;
 
 #undef BLKMARGIN
 #undef MAPBLOCKUNITS
 }
 
-static void buildSubsectorBlockmap(map_t* map)
+void Map::buildSubsectorBlockmap()
 {
 #define BLKMARGIN       8
 #define BLOCK_WIDTH     128
 #define BLOCK_HEIGHT    128
 
-    uint i, subMapWidth, subMapHeight;
-    vec2_t bounds[2], blockSize, dims;
-    subsectorblockmap_t* blockmap;
-
-    // @fixme why not use map->bBox?
-    bounds[0][0] = bounds[0][1] = DDMAXFLOAT;
-    bounds[1][0] = bounds[1][1] = DDMINFLOAT;
-    for(i = 0; i < map->numSubsectors; ++i)
+    // Setup the blockmap area to enclose the whole map, plus margin.
+    // Margin is needed for a map that fits entirely inside one cell.
+    MapRectanglef bounds;
+    {bool first = true;
+    FOR_EACH(i, _subsectors, Subsectors::const_iterator)
     {
-        subsector_t* ssec = map->subsectors[i];
-
-        if(ssec->bBox[0][0] < bounds[0][0])
-            bounds[0][0] = ssec->bBox[0][0];
-        if(ssec->bBox[0][1] < bounds[0][1])
-            bounds[0][1] = ssec->bBox[0][1];
-        if(ssec->bBox[1][0] > bounds[1][0])
-            bounds[1][0] = ssec->bBox[1][0];
-        if(ssec->bBox[1][1] > bounds[1][1])
-            bounds[1][1] = ssec->bBox[1][1];
+        Subsector* ssec = *i;
+        if(first)
+        {
+            bounds = ssec->aaBounds();
+            first = false;
+            continue;
+        }
+        bounds.include(ssec->aaBounds());
     }
-    bounds[0][0] -= BLKMARGIN;
-    bounds[0][1] -= BLKMARGIN;
-    bounds[1][0] += BLKMARGIN;
-    bounds[1][1] += BLKMARGIN;
-
-    // Setup the blockmap area to enclose the whole map, plus a margin
-    // (margin is needed for a map that fits entirely inside one blockmap
-    // cell).
-    /*V2_Set(bounds[0], map->bBox[BOXLEFT] - BLKMARGIN,
-                      map->bBox[BOXBOTTOM] - BLKMARGIN);
-    V2_Set(bounds[1], map->bBox[BOXRIGHT] + BLKMARGIN,
-                      map->bBox[BOXTOP] + BLKMARGIN);*/
+    }
+    bounds.move(Vector2f(-BLKMARGIN, -BLKMARGIN));
+    bounds.setSize(Vector2f(bounds.width() + BLKMARGIN * 2, bounds.height() + BLKMARGIN * 2));
 
     // Select a good size for the blocks.
-    V2_Set(blockSize, BLOCK_WIDTH, BLOCK_HEIGHT);
-    V2_Subtract(dims, bounds[1], bounds[0]);
+    Vector2f blockSize = Vector2f(BLOCK_WIDTH, BLOCK_HEIGHT);
 
     // Calculate the dimensions of the blockmap.
-    if(dims[0] <= blockSize[0])
-        subMapWidth = 1;
+    duint bmapWidth;
+    if(bounds.width() <= blockSize.x)
+        bmapWidth = 1;
     else
-        subMapWidth = ceil(dims[0] / blockSize[0]);
+        bmapWidth = duint(ceil(bounds.width() / blockSize.x));
 
-    if(dims[1] <= blockSize[1])
-        subMapHeight = 1;
+    duint bmapHeight;
+    if(bounds.height() <= blockSize.y)
+        bmapHeight = 1;
     else
-        subMapHeight = ceil(dims[1] / blockSize[1]);
+        bmapHeight = duint(ceil(bounds.height() / blockSize.y));
 
     // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][0] + subMapWidth  * blockSize[0],
-                      bounds[0][1] + subMapHeight * blockSize[1]);
+    bounds.include(bounds.bottomLeft() + Vector2f(bmapWidth * blockSize.x, bmapHeight * blockSize.y));
 
-    blockmap = P_CreateSubsectorBlockmap(bounds[0], bounds[1], subMapWidth, subMapHeight);
+    SubsectorBlockmap* blockmap = new SubsectorBlockmap(bounds.bottomLeft(), bounds.topRight(), bmapWidth, bmapHeight);
 
-    // Process all the subsectors in the map.
-    for(i = 0; i < map->numSubsectors; ++i)
+    FOR_EACH(i, _subsectors, Subsectors::iterator)
     {
-        subsector_t* subsector = map->subsectors[i];
-        SubsectorBlockmap_Link(blockmap, subsector);
+        blockmap->link(*i);
     }
 
-    map->_subsectorBlockmap = blockmap;
+    _subsectorBlockmap = blockmap;
 
 #undef BLKMARGIN
 #undef BLOCK_WIDTH
 #undef BLOCK_HEIGHT
 }
 
-static void buildMobjBlockmap(map_t* map)
+void Map::buildThingBlockmap()
 {
-#define BLKMARGIN               (8) // size guardband around map
-#define MAPBLOCKUNITS           128
-
-    uint bMapWidth, bMapHeight; // Blockmap dimensions.
-    vec2_t blockSize; // Size of the blocks.
-    vec2_t bounds[2], dims;
+#define BLKMARGIN       8
+#define BLOCK_WIDTH     128
+#define BLOCK_HEIGHT    128
 
     // Scan for map limits, which the blockmap must enclose.
-    findAABBForVertices(map, bounds);
+    MapRectanglef bounds = findAABBForVertices(this);
 
     // Setup the blockmap area to enclose the whole map, plus a margin
     // (margin is needed for a map that fits entirely inside one blockmap
     // cell).
-    V2_Set(bounds[0], bounds[0][0] - BLKMARGIN, bounds[0][1] - BLKMARGIN);
-    V2_Set(bounds[1], bounds[1][0] + BLKMARGIN, bounds[1][1] + BLKMARGIN);
+    bounds.move(Vector2f(-BLKMARGIN, -BLKMARGIN));
+    bounds.setSize(Vector2f(bounds.width() + BLKMARGIN * 2, bounds.height() + BLKMARGIN * 2));
 
     // Select a good size for the blocks.
-    V2_Set(blockSize, MAPBLOCKUNITS, MAPBLOCKUNITS);
-    V2_Subtract(dims, bounds[1], bounds[0]);
+    Vector2f blockSize = Vector2f(BLOCK_WIDTH, BLOCK_HEIGHT);
 
     // Calculate the dimensions of the blockmap.
-    if(dims[0] <= blockSize[0])
-        bMapWidth = 1;
+    duint bmapWidth;
+    if(bounds.width() <= blockSize.x)
+        bmapWidth = 1;
     else
-        bMapWidth = ceil(dims[0] / blockSize[0]);
+        bmapWidth = duint(ceil(bounds.width() / blockSize.x));
 
-    if(dims[1] <= blockSize[1])
-        bMapHeight = 1;
+    duint bmapHeight;
+    if(bounds.height() <= blockSize.y)
+        bmapHeight = 1;
     else
-        bMapHeight = ceil(dims[1] / blockSize[1]);
+        bmapHeight = duint(ceil(bounds.height() / blockSize.y));
 
     // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][0] + bMapWidth  * blockSize[0],
-                      bounds[0][1] + bMapHeight * blockSize[1]);
+    bounds.include(bounds.bottomLeft() + Vector2f(bmapWidth * blockSize.x, bmapHeight * blockSize.y));
 
-    map->_thingBlockmap = P_CreateMobjBlockmap(bounds[0], bounds[1], bMapWidth, bMapHeight);
-
-#undef BLKMARGIN
-#undef MAPBLOCKUNITS
-}
-
-static void buildParticleBlockmap(map_t* map)
-{
-#define BLKMARGIN       8
-#define BLOCK_WIDTH     128
-#define BLOCK_HEIGHT    128
-
-    uint mapWidth, mapHeight;
-    vec2_t bounds[2], blockSize, dims;
-
-    // Setup the blockmap area to enclose the whole map, plus a margin
-    // (margin is needed for a map that fits entirely inside one blockmap
-    // cell).
-    V2_Set(bounds[0], map->bBox[BOXLEFT] - BLKMARGIN,
-                      map->bBox[BOXBOTTOM] - BLKMARGIN);
-    V2_Set(bounds[1], map->bBox[BOXRIGHT] + BLKMARGIN,
-                      map->bBox[BOXTOP] + BLKMARGIN);
-
-    // Select a good size for the blocks.
-    V2_Set(blockSize, BLOCK_WIDTH, BLOCK_HEIGHT);
-    V2_Subtract(dims, bounds[1], bounds[0]);
-
-    // Calculate the dimensions of the blockmap.
-    if(dims[0] <= blockSize[0])
-        mapWidth = 1;
-    else
-        mapWidth = ceil(dims[0] / blockSize[0]);
-
-    if(dims[1] <= blockSize[1])
-        mapHeight = 1;
-    else
-        mapHeight = ceil(dims[1] / blockSize[1]);
-
-    // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][0] + mapWidth  * blockSize[0],
-                      bounds[0][1] + mapHeight * blockSize[1]);
-
-    map->_particleBlockmap = P_CreateParticleBlockmap(bounds[0], bounds[1], mapWidth, mapHeight);
+    _thingBlockmap = new ThingBlockmap(bounds.bottomLeft(), bounds.topRight(), bmapWidth, bmapHeight);
 
 #undef BLKMARGIN
 #undef BLOCK_WIDTH
 #undef BLOCK_HEIGHT
 }
 
-static void buildLumobjBlockmap(map_t* map)
+void Map::buildParticleBlockmap()
 {
 #define BLKMARGIN       8
 #define BLOCK_WIDTH     128
 #define BLOCK_HEIGHT    128
 
-    uint mapWidth, mapHeight;
-    vec2_t bounds[2], blockSize, dims;
-
     // Setup the blockmap area to enclose the whole map, plus a margin
     // (margin is needed for a map that fits entirely inside one blockmap
     // cell).
-    V2_Set(bounds[0], map->bBox[BOXLEFT] - BLKMARGIN,
-                      map->bBox[BOXBOTTOM] - BLKMARGIN);
-    V2_Set(bounds[1], map->bBox[BOXRIGHT] + BLKMARGIN,
-                      map->bBox[BOXTOP] + BLKMARGIN);
+    MapRectanglef bounds = _aaBounds;
+    bounds.move(Vector2f(-BLKMARGIN, -BLKMARGIN));
+    bounds.setSize(Vector2f(bounds.width() + BLKMARGIN * 2, bounds.height() + BLKMARGIN * 2));
 
     // Select a good size for the blocks.
-    V2_Set(blockSize, BLOCK_WIDTH, BLOCK_HEIGHT);
-    V2_Subtract(dims, bounds[1], bounds[0]);
+    Vector2f blockSize = Vector2f(BLOCK_WIDTH, BLOCK_HEIGHT);
 
     // Calculate the dimensions of the blockmap.
-    if(dims[0] <= blockSize[0])
-        mapWidth = 1;
+    duint bmapWidth;
+    if(bounds.width() <= blockSize.x)
+        bmapWidth = 1;
     else
-        mapWidth = ceil(dims[0] / blockSize[0]);
+        bmapWidth = duint(ceil(bounds.width() / blockSize.x));
 
-    if(dims[1] <= blockSize[1])
-        mapHeight = 1;
+    duint bmapHeight;
+    if(bounds.height() <= blockSize.y)
+        bmapHeight = 1;
     else
-        mapHeight = ceil(dims[1] / blockSize[1]);
+        bmapHeight = duint(ceil(bounds.height() / blockSize.y));
 
     // Adjust the max bound so we have whole blocks.
-    V2_Set(bounds[1], bounds[0][0] + mapWidth  * blockSize[0],
-                      bounds[0][1] + mapHeight * blockSize[1]);
+    bounds.include(bounds.bottomLeft() + Vector2f(bmapWidth * blockSize.x, bmapHeight * blockSize.y));
 
-    map->_lumobjBlockmap = P_CreateLumobjBlockmap(bounds[0], bounds[1], mapWidth, mapHeight);
+    _particleBlockmap = new ParticleBlockmap(bounds.bottomLeft(), bounds.topRight(), bmapWidth, bmapHeight);
 
 #undef BLKMARGIN
 #undef BLOCK_WIDTH
 #undef BLOCK_HEIGHT
 }
-#endif
+
+void Map::buildLumobjBlockmap()
+{
+#define BLKMARGIN       8
+#define BLOCK_WIDTH     128
+#define BLOCK_HEIGHT    128
+
+    // Setup the blockmap area to enclose the whole map, plus a margin
+    // (margin is needed for a map that fits entirely inside one blockmap
+    // cell).
+    MapRectanglef bounds = _aaBounds;
+    bounds.move(Vector2f(-BLKMARGIN, -BLKMARGIN));
+    bounds.setSize(Vector2f(bounds.width() + BLKMARGIN * 2, bounds.height() + BLKMARGIN * 2));
+
+    // Select a good size for the blocks.
+    Vector2f blockSize = Vector2f(BLOCK_WIDTH, BLOCK_HEIGHT);
+
+    // Calculate the dimensions of the blockmap.
+    duint bmapWidth;
+    if(bounds.width() <= blockSize.x)
+        bmapWidth = 1;
+    else
+        bmapWidth = duint(ceil(bounds.width() / blockSize.x));
+
+    duint bmapHeight;
+    if(bounds.height() <= blockSize.y)
+        bmapHeight = 1;
+    else
+        bmapHeight = duint(ceil(bounds.height() / blockSize.y));
+
+    // Adjust the max bound so we have whole blocks.
+    bounds.include(bounds.bottomLeft() + Vector2f(bmapWidth * blockSize.x, bmapHeight * blockSize.y));
+
+
+    _lumobjBlockmap = new LumobjBlockmap(bounds.bottomLeft(), bounds.topRight(), bmapWidth, bmapHeight);
+
+#undef BLKMARGIN
+#undef BLOCK_WIDTH
+#undef BLOCK_HEIGHT
+}
 
 static dint C_DECL vertexCompare(const void* p1, const void* p2)
 {

@@ -32,7 +32,7 @@
 #include "../ThingBlockmap"
 #include "../LineDefBlockmap"
 #include "../SubsectorBlockmap"
-#include "../LumObjBlockmap"
+#include "../LumobjBlockmap"
 #include "../ParticleBlockmap"
 #include "../Thinker"
 #include "../Node"
@@ -355,7 +355,7 @@ namespace de
 
         /// Following blockmaps are emptied each render frame.
         ParticleBlockmap* _particleBlockmap;
-        LumObjBlockmap* _lumobjBlockmap;
+        LumobjBlockmap* _lumobjBlockmap;
 
         /// List of obj contacts for each subsector.
         objcontactlist_t* _subsectorContacts;
@@ -403,7 +403,7 @@ namespace de
         SurfaceSet _decoratedSurfaces;
 
         /// Axis-Aligned Bounding Box.
-        MapRectangled _aaBounds;
+        MapRectanglef _aaBounds;
 
     public:
         NodePile* thingNodes, *lineDefNodes; // All kinds of wacky links.
@@ -606,7 +606,7 @@ namespace de
         LineDefBlockmap& lineDefBlockmap() { return *_lineDefBlockmap; }
         SubsectorBlockmap& subsectorBlockmap() { return *_subsectorBlockmap; }
         ParticleBlockmap& particleBlockmap() { return *_particleBlockmap; }
-        LumObjBlockmap& lumobjBlockmap() { return *_lumobjBlockmap; }
+        LumobjBlockmap& lumobjBlockmap() { return *_lumobjBlockmap; }
         //lightgrid_t& lightGrid() { return _lightGrid; }
 
         // protected
@@ -641,6 +641,12 @@ namespace de
 
         Polyobj* createPolyobj2(Polyobj::LineDefs lineDefs,
             dint tag, dint sequenceType, dfloat anchorX, dfloat anchorY);
+
+        void buildThingBlockmap();
+        void buildLineDefBlockmap();
+        void buildSubsectorBlockmap();
+        void buildParticleBlockmap();
+        void buildLumobjBlockmap();
 
         /**
          * (Re)build nodes for this map.

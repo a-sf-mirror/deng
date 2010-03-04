@@ -45,6 +45,11 @@ SideDef::SideDef(Sector* sector, dshort flags, Material* middleMaterial,
 SideDef::~SideDef()
 {}
 
+SideDef::setLineDef(LineDef* lineDef)
+{
+    _lineDef = lineDef;
+}
+
 void SideDef::colorTints(Section section, const dfloat** topColor, const dfloat** bottomColor)
 {
     // Select the colors for this surface.

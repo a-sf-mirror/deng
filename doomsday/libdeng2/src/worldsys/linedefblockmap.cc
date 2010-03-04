@@ -32,7 +32,17 @@
 
 using namespace de;
 
-LineDefBlockmap::LineDefBlockmap(const Rectangle<Vector2f>& aaBB, duint width, duint height)
+namespace
+{
+    //// \todo This stuff is obsolete and needs to be removed!
+    #define MAPBLOCKUNITS   128
+    #define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
+    #define MAPBLOCKSHIFT   (FRACBITS+7)
+    #define MAPBMASK        (MAPBLOCKSIZE-1)
+    #define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
+}
+
+LineDefBlockmap::LineDefBlockmap(const MapRectanglef& aaBB, duint width, duint height)
   : _gridmap(width, height),
     _aaBB(aaBB)
 {
@@ -227,7 +237,7 @@ static bool iterateLineDefs(linklist_t* list, void* context)
  * that bottomLeft is the left lowermost block and topRight is the right
  * uppermost block in the same coordinate space.
  */
-Rectangleui LineDefBlockmap::boxToBlocks(const Rectanglef& box) const
+Rectangleui LineDefBlockmap::boxToBlocks(const MapRectanglef& box) const
 {
     Vector2f bottomLeft = _aaBB.bottomLeft().max(box.bottomLeft());
     bottomLeft -= _aaBB.bottomLeft();
@@ -245,7 +255,7 @@ Rectangleui LineDefBlockmap::boxToBlocks(const Rectanglef& box) const
     return Rectangleui(Vector2ui(temp.x, temp2.y), Vector2ui(temp2.x, temp.y));
 }
 
-bool LineDefBlockmap::block(Vector2<duint>& dest, dfloat x, dfloat y) const
+bool LineDefBlockmap::block(Vector2ui& dest, dfloat x, dfloat y) const
 {
     if(!(x < _bottomLeft.x || x >= _topRight.x ||
          y < _bottomLeft.y || y >= _topRight.y))
@@ -265,7 +275,7 @@ void LineDefBlockmap::tryLinkLineDefToBlock(duint x, duint y, LineDef* lineDef)
     linkLineDefToBlock(x, y, lineDef);
 }
 
-void LineDefBlockmap::linkLineDef(LineDef* lineDef, const Vector2<dint>& vtx1, const Vector2<dint>& vtx2)
+void LineDefBlockmap::linkLineDef(LineDef* lineDef, const Vector2i& vtx1, const Vector2i& vtx2)
 {
 #define BLKSHIFT                7 // places to shift rel position for cell num
 #define BLKMASK                 ((1<<BLKSHIFT)-1) // mask for rel position within cell

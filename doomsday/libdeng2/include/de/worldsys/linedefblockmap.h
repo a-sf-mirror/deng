@@ -32,23 +32,6 @@
 
 namespace de
 {
-    //// \todo This stuff is obsolete and needs to be removed!
-    #define MAPBLOCKUNITS   128
-    #define MAPBLOCKSIZE    (MAPBLOCKUNITS*FRACUNIT)
-    #define MAPBLOCKSHIFT   (FRACBITS+7)
-    #define MAPBMASK        (MAPBLOCKSIZE-1)
-    #define MAPBTOFRAC      (MAPBLOCKSHIFT-FRACBITS)
-
-    typedef struct listnode_s {
-        struct listnode_s* next;
-        void* data;
-    } listnode_t;
-
-    typedef struct {
-        duint size;
-        listnode_t* head;
-    } linklist_t;
-
     typedef struct {
         bool (*func) (LineDef*, void*);
         bool retObjRecord;
@@ -59,20 +42,23 @@ namespace de
     class LineDefBlockmap
     {
     public:
-        LineDefBlockmap(const Rectangle<Vector2f>& aaBB, duint width, duint height);
+        LineDefBlockmap(const Vector2f& min, const Vector2f& max, duint width, duint height);
         ~LineDefBlockmap();
 
         void clear();
 
-        duint numInBlock(duint x, duint y) const;
+        dsize numInBlock(duint x, duint y) const;
+        dsize numInBlock(const Vector2ui block) const {
+            return numInBlock(block.x, block.y);
+        }
 
         void link(LineDef* lineDef);
         void link2(LineDef* lineDef);
         bool unlink(LineDef* lineDef);
 
-        void bounds(Vector2f& min, Vector2f& max) const;
-        void blockSize(Vector2f& blockSize) const;
-        void dimensions(Vector2ui& dimensions) const;
+        const MapRectanglef& aaBounds() const;
+        const Vector2f& blockSize() const;
+        const Vector2ui& dimensions() const;
 
         /**
          * Given a world coordinate, output the blockmap block[x, y] it resides in.
@@ -83,15 +69,30 @@ namespace de
             return block(block, pos.x, pos.y);
         }*/
 
-        void boxToBlocks(Rectangle<Vector2ui>& blocks, const Rectangle<Vector2f>& box) const;
+        void boxToBlocks(Rectangleui& blocks, const Rectangle<Vector2f>& box) const;
 
         bool iterate(const Vector2ui& block, bool (*func) (LineDef*, void*), void* data, bool retObjRecord);
         bool iterate(const Rectangle<Vector2ui>& blocks, bool (*func) (LineDef*, void*), void* data, bool retObjRecord);
         //bool pathTraverse(const Vector2ui& originBlock, const Vector2ui& block, const Vector2f& origin, const Vector2f& dest, bool (*func) (intercept_t*));
 
     private:
-        Rectangle<Vector2f> _aaBB;
+        typedef struct listnode_s {
+            struct listnode_s* next;
+            void* data;
+        } listnode_t;
+
+        typedef struct {
+            duint size;
+            listnode_t* head;
+        } linklist_t;
+
+        /// Axis-Aligned Bounding box, in the map coordinate space.
+        MapRectanglef _aaBounds;
+
+        /// Dimensions of the blocks of the blockmap in map units.
         Vector2f _blockSize;
+
+        /// Grid of LineDef lists per block.
         Gridmap<linklist_t*> _gridmap;
 
     private:

@@ -59,13 +59,13 @@ LineDef::LineDef(Vertex* vtx1, Vertex* vtx2, SideDef* front, SideDef* back)
     // Remember the number of unique references.
     if(front)
     {
-        front->_lineDef = this;
+        front->setLineDef(this);
         front->buildData.refCount++;
     }
 
     if(back)
     {
-        back->_lineDef = this;
+        back->setLineDef(this);
         back->buildData.refCount++;
     }
 

@@ -30,33 +30,44 @@
 
 namespace de
 {
-    class LumObjBlockmap
+    struct lumobj_t;
+
+    class LumobjBlockmap
     {
     public:
-        LumObjBlockmap(const Vector2<dfloat>& min, const Vector2<dfloat>& max, duint width, duint height);
-        ~LumObjBlockmap();
+        LumobjBlockmap(const Vector2f& min, const Vector2f& max, duint width, duint height);
+        ~LumobjBlockmap();
 
         void empty();
 
-        duint numInBlock(duint x, duint y) const;
-        void link(struct lumobj_s* lum);
-        bool unlink(struct lumobj_s* lum);
+        dsize numInBlock(duint x, duint y) const;
+        dsize numInBlock(const Vector2ui block) const {
+            return numInBlock(block.x, block.y);
+        }
 
-        void bounds(Vector2<dfloat>& min, Vector2<dfloat>& max) const;
-        void blockSize(Vector2<dfloat>& blockSize) const;
-        void dimensions(Vector2<duint>& dimensions) const;
+        void link(lumobj_t* lum);
+        bool unlink(lumobj_t* lum);
 
-        bool block(Vector2<duint>& block, dfloat x, dfloat y) const;
-        bool block(Vector2<duint>& block, const Vector2<dfloat>& pos) const;
+        const MapRectanglef& aaBounds() const;
+        const Vector2f& blockSize() const;
+        const Vector2ui& dimensions() const;
+
+        bool block(Vector2ui& block, dfloat x, dfloat y) const;
+        bool block(Vector2ui& block, const Vector2f& pos) const;
         //void boxToBlocks(duint blockBox[4], const arvec2_t box);
 
-        bool iterate(const Vector2<duint>& block, bool (*func) (struct lumobj_s*, void*), void* data);
-        //bool boxIterate(const duint blockBox[4], bool (*func) (struct lumobj_s*, void*), void* data);
+        bool iterate(const Vector2ui& block, bool (*func) (lumobj_t*, void*), void* paramaters = 0);
+        bool iterate(const Rectangleui& blocks, bool (*func) (lumobj_t*, void*), void* paramaters = 0);
 
     private:
-        Vector2<dfloat> _aabb[2];
-        Vector2<dfloat> _blockSize;
-        Gridmap<struct lumobj_s*> _gridmap;
+        /// Axis-Aligned Bounding box, in the map coordinate space.
+        MapRectanglef _aaBounds;
+
+        /// Dimensions of the blocks of the blockmap in map units.
+        Vector2f _blockSize;
+
+        /// Grid of Lumobj lists per block.
+        Gridmap<lumobj_t*> _gridmap;
     };
 }
 

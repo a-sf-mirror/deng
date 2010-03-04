@@ -27,34 +27,40 @@
 
 #include "../Gridmap"
 #include "../Vector"
-#include "../Subsector"
 
 namespace de
 {
+    class Subsector;
+
     class SubsectorBlockmap
     {
     public: 
-        SubsectorBlockmap(const Vector2<dfloat>& min, const Vector2<dfloat>& max, duint width, duint height);
+        SubsectorBlockmap(const Vector2f& min, const Vector2f& max, duint width, duint height);
         ~SubsectorBlockmap();
 
         duint numInBlock(duint x, duint y) const;
         void link(Subsector* subsector);
         bool unlink(Subsector* subsector);
 
-        void bounds(Vector2<dfloat>& min, Vector2<dfloat>& max) const;
-        void blockSize(Vector2<dfloat>& blockSize) const;
-        void dimensions(Vector2<duint>& dimensions) const;
+        void bounds(Vector2f& min, Vector2f& max) const;
+        void blockSize(Vector2f& blockSize) const;
+        void dimensions(Vector2ui& dimensions) const;
 
-        bool block(Vector2<duint>& block, dfloat x, dfloat y);
-        bool block(Vector2<duint>& block, const Vector2<dfloat>& pos);
+        bool block(Vector2ui& block, dfloat x, dfloat y);
+        bool block(Vector2ui& block, const Vector2f& pos);
 
         //void boxToBlocks(duint blockBox[4], const arvec2_t box);
-        //bool iterate(const Vector2<duint>& block, Sector* sector, const arvec2_t box, dint localValidCount, bool (*func) (Subsector*, void*), void* data);
+        //bool iterate(const Vector2ui& block, Sector* sector, const arvec2_t box, dint localValidCount, bool (*func) (Subsector*, void*), void* data);
         //bool boxIterate(const duint blockBox[4], Sector* sector, const arvec2_t box, dint localValidCount, bool (*func) (Subsector*, void*), void* data, bool retObjRecord);
 
     private:
-        Vector2<dfloat> _aabb[2];
-        Vector2<dfloat> _blockSize;
+        /// Axis-Aligned Bounding box, in the map coordinate space.
+        MapRectanglef _aaBounds;
+
+        /// Dimensions of the blocks of the blockmap in map units.
+        Vector2f _blockSize;
+
+        /// Grid of Subsector lists per block.
         Gridmap<Subsector*> _gridmap;
     };
 }

@@ -282,7 +282,7 @@ static void spreadMobjs(const Subsector* subsector)
 static void spreadLumobjs(const Subsector* subsector)
 {
     // @todo Subsector should return the map its linked to.
-    LumObjBlockmap* bmap = Map_LumobjBlockmap(P_CurrentMap());
+    LumobjBlockmap* bmap = Map_LumobjBlockmap(P_CurrentMap());
     objcontacttype_t type = OCT_LUMOBJ;
     uint blockBox[4];
     vec2_t bbox[2];

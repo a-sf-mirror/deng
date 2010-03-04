@@ -136,7 +136,7 @@ namespace de
             return hasFront() && hasBack() && &front().sector() == &back().sector();
         }
 
-        const MapRectangled& aaBounds() const { return _aaBounds; }
+        const MapRectanglef& aaBounds() const { return _aaBounds; }
 
         /**
          * Does the LineDef qualify as an edge shadow caster?
@@ -193,7 +193,7 @@ namespace de
 
     private:
         /// Axis-Aligned Bounding box.
-        MapRectangled _aaBounds;
+        MapRectanglef _aaBounds;
 
         /// Extra information about this linedef.
         Record _info;
