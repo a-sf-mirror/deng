@@ -71,7 +71,4 @@ void            P_RegisterMapObjs(void);
 
 int             P_HandleMapObjectStatusReport(int code, uint id, int dtype,
                                               void* data);
-
-boolean         P_MapExists(int episode, int map);
-
 #endif

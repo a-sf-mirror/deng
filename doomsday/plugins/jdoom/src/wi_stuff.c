@@ -329,9 +329,9 @@ void WI_drawLF(void)
     char               *mapName;
 
     if(gameMode == commercial)
-        mapNum = wbs->last;
+        mapNum = wbs->currentMap;
     else
-        mapNum = ((gameEpisode -1) * 9) + wbs->last;
+        mapNum = (wbs->episode * 8) + wbs->currentMap;
 
     mapName = (char *) DD_GetVariable(DD_MAP_NAME);
     // Skip the E#M# or Map #.
@@ -363,15 +363,13 @@ void WI_drawLF(void)
  */
 void WI_drawEL(void)
 {
-    int y = WI_TITLEY, mapNum;
+    int y = WI_TITLEY;
     char* mapName = NULL;
     ddmapinfo_t minfo;
     char mapID[9];
 
-    mapNum = G_GetMapNumber(gameEpisode, wbs->next);
-
     // See if there is a map name.
-    P_GetMapLumpName(mapID, gameEpisode, wbs->next+1);
+    P_GetMapLumpName(mapID, wbs->episode, wbs->nextMap);
     if(Def_Get(DD_DEF_MAP_INFO, mapID, &minfo) && minfo.name)
     {
         if(Def_Get(DD_DEF_TEXT, minfo.name, &mapName) == -1)
@@ -396,10 +394,10 @@ void WI_drawEL(void)
                  NULL, false, ALIGN_CENTER);
 
     // Draw map.
-    y += (5 * mapNamePatches[wbs->next].height) / 4;
+    y += (5 * mapNamePatches[wbs->nextMap].height) / 4;
 
     WI_DrawPatch(SCREENWIDTH / 2, y, 1, 1, 1, 1,
-                 &mapNamePatches[((gameEpisode -1) * 9) + wbs->next],
+                 &mapNamePatches[(wbs->episode * 8) + wbs->nextMap],
                  mapName, false, ALIGN_CENTER);
 }
 
@@ -411,8 +409,8 @@ void WI_DrawOnMapNode(int n, dpatch_t* c)
     i = 0;
     do
     {
-        left = mapPoints[wbs->epsd][n].x - c[i].leftOffset;
-        top = mapPoints[wbs->epsd][n].y - c[i].topOffset;
+        left = mapPoints[wbs->episode][n].x - c[i].leftOffset;
+        top = mapPoints[wbs->episode][n].y - c[i].topOffset;
         right = left + c[i].width;
         bottom = top + c[i].height;
         if(left >= 0 && right < SCREENWIDTH && top >= 0 &&
@@ -424,7 +422,7 @@ void WI_DrawOnMapNode(int n, dpatch_t* c)
 
     if(fits && i < 2)
     {
-        WI_DrawPatch(mapPoints[wbs->epsd][n].x, mapPoints[wbs->epsd][n].y,
+        WI_DrawPatch(mapPoints[wbs->episode][n].x, mapPoints[wbs->episode][n].y,
                      1, 1, 1, 1,
                      &c[i], NULL, false, ALIGN_LEFT);
     }
@@ -441,12 +439,12 @@ void WI_initAnimatedBack(void)
 
     if(gameMode == commercial)
         return;
-    if(wbs->epsd > 2)
+    if(wbs->episode > 2)
         return;
 
-    for(i = 0; i < NUMANIMS[wbs->epsd]; ++i)
+    for(i = 0; i < NUMANIMS[wbs->episode]; ++i)
     {
-        a = &anims[wbs->epsd][i];
+        a = &anims[wbs->episode][i];
 
         a->ctr = -1;
 
@@ -467,12 +465,12 @@ void WI_updateAnimatedBack(void)
 
     if(gameMode == commercial)
         return;
-    if(wbs->epsd > 2)
+    if(wbs->episode > 2)
         return;
 
-    for(i = 0; i < NUMANIMS[wbs->epsd]; ++i)
+    for(i = 0; i < NUMANIMS[wbs->episode]; ++i)
     {
-        a = &anims[wbs->epsd][i];
+        a = &anims[wbs->episode][i];
 
         if(bcnt == a->nextTic)
         {
@@ -497,7 +495,7 @@ void WI_updateAnimatedBack(void)
 
             case ANIM_MAP:
                 // Gawd-awful hack for map anims.
-                if(!(state == ILS_SHOW_STATS && i == 7) && wbs->next == a->data1)
+                if(!(state == ILS_SHOW_STATS && i == 7) && wbs->nextMap == a->data1)
                 {
                     a->ctr++;
                     if(a->ctr == a->numAnimFrames)
@@ -517,12 +515,12 @@ void WI_drawAnimatedBack(void)
 
     if(gameMode == commercial)
         return;
-    if(wbs->epsd > 2)
+    if(wbs->episode > 2)
         return;
 
-    for(i = 0; i < NUMANIMS[wbs->epsd]; ++i)
+    for(i = 0; i < NUMANIMS[wbs->episode]; ++i)
     {
-        a = &anims[wbs->epsd][i];
+        a = &anims[wbs->episode][i];
         if(a->ctr >= 0)
             WI_DrawPatch(a->loc.x, a->loc.y, 1, 1, 1, 1, &a->p[a->ctr],
                          NULL, false, ALIGN_LEFT);
@@ -685,13 +683,13 @@ void WI_drawShowNextLoc(void)
 
     if(gameMode != commercial)
     {
-        if(wbs->epsd > 2)
+        if(wbs->episode > 2)
         {
             WI_drawEL();
             return;
         }
 
-        last = (wbs->last == 8) ? wbs->next - 1 : wbs->last;
+        last = (wbs->currentMap == 8) ? wbs->nextMap-1 : wbs->currentMap;
 
         // Draw a splat on taken cities.
         for(i = 0; i <= last; ++i)
@@ -703,11 +701,11 @@ void WI_drawShowNextLoc(void)
 
         // Draw flashing ptr.
         if(snlPointerOn)
-            WI_DrawOnMapNode(wbs->next, yah);
+            WI_DrawOnMapNode(wbs->nextMap, yah);
     }
 
     // Draws which map you are entering..
-    if((gameMode != commercial) || wbs->next != 30)
+    if((gameMode != commercial) || wbs->nextMap != 30)
         WI_drawEL();
 }
 
@@ -1171,10 +1169,9 @@ void WI_updateStats(void)
         cntKills[0] = (plrs[me].kills * 100) / wbs->maxKills;
         cntItems[0] = (plrs[me].items * 100) / wbs->maxItems;
         cntSecret[0] = (plrs[me].secret * 100) / wbs->maxSecret;
-        cntTime = plrs[me].time / TICRATE;
+        cntTime = plrs[me].time;
         if(wbs->parTime != -1)
-            cntPar = wbs->parTime / TICRATE;
-
+            cntPar = wbs->parTime;
         S_LocalSound(SFX_BAREXP, 0);
         spState = 10;
     }
@@ -1226,28 +1223,28 @@ void WI_updateStats(void)
         if(!(bcnt & 3))
             S_LocalSound(SFX_PISTOL, 0);
 
-        cntTime += 3;
+        if(cntTime == -1)
+            cntTime = 0;
+        cntTime += TICRATE * 3;
 
-        if(cntTime >= plrs[me].time / TICRATE)
-            cntTime = plrs[me].time / TICRATE;
-
-        if(cntPar != -1)
+        // Par time might not be defined so count up and stop on play time instead.
+        if(cntTime >= plrs[me].time)
         {
-            cntPar += 3;
-
-            if(cntPar >= wbs->parTime / TICRATE)
-            {
-                cntPar = wbs->parTime / TICRATE;
-
-                if(cntTime >= plrs[me].time / TICRATE)
-                {
-                    S_LocalSound(SFX_BAREXP, 0);
-                    spState++;
-                }
-            }
-        }
-        else
+            cntTime = plrs[me].time;
+            cntPar = wbs->parTime;
+            S_LocalSound(SFX_BAREXP, 0);
             spState++;
+        }
+
+        if(wbs->parTime != -1)
+        {
+            if(cntPar == -1)
+                cntPar = 0;
+            cntPar += TICRATE * 3;
+
+            if(cntPar >= wbs->parTime)
+                cntPar = wbs->parTime;
+        }
     }
     else if(spState == 10)
     {
@@ -1298,13 +1295,16 @@ void WI_drawStats(void)
 
     WI_DrawPatch(SP_TIMEX, SP_TIMEY, 1, 1, 1, 1, &time, NULL, false,
                  ALIGN_LEFT);
-    WI_drawTime(SCREENWIDTH / 2 - SP_TIMEX, SP_TIMEY, cntTime);
 
-    if(wbs->epsd < 3 && wbs->parTime != -1)
+    if(cntTime >= 0)
+        WI_drawTime(SCREENWIDTH / 2 - SP_TIMEX, SP_TIMEY, cntTime / TICRATE);
+
+    if(wbs->parTime != -1)
     {
         WI_DrawPatch(SCREENWIDTH / 2 + SP_TIMEX, SP_TIMEY, 1, 1, 1, 1, &par,
                      NULL, false, ALIGN_LEFT);
-        WI_drawTime(SCREENWIDTH - SP_TIMEX, SP_TIMEY, cntPar);
+        if(cntPar >= 0)
+            WI_drawTime(SCREENWIDTH - SP_TIMEX, SP_TIMEY, cntPar / TICRATE);
     }
 }
 
@@ -1351,15 +1351,6 @@ void WI_Ticker(void)
     // Counter for general background animation.
     bcnt++;
 
-    if(bcnt == 1)
-    {
-        // Intermission music.
-        if(gameMode == commercial)
-            S_StartMusic("dm2int", true);
-        else
-            S_StartMusic("inter", true);
-    }
-
     WI_checkForAccelerate();
 
     switch(state)
@@ -1393,19 +1384,15 @@ void WI_loadData(void)
     if(gameMode == commercial)
         strcpy(name, "INTERPIC");
     else
-        sprintf(name, "WIMAP%d", wbs->epsd);
+        sprintf(name, "WIMAP%u", wbs->episode);
 
     if(gameMode == retail)
     {
-        if(wbs->epsd == 3)
+        if(wbs->episode > 2)
             strcpy(name, "INTERPIC");
     }
 
-    if(!Get(DD_NOVIDEO))
-    {
-        R_CachePatch(&bg, name);
-        GL_DrawPatch(0, 0, bg.lump);
-    }
+    R_CachePatch(&bg, name);
 
     if(gameMode != commercial)
     {
@@ -1418,18 +1405,18 @@ void WI_loadData(void)
         // Splat.
         R_CachePatch(&splat, "WISPLAT");
 
-        if(wbs->epsd < 3)
+        if(wbs->episode < 3)
         {
-            for(j = 0; j < NUMANIMS[wbs->epsd]; ++j)
+            for(j = 0; j < NUMANIMS[wbs->episode]; ++j)
             {
-                a = &anims[wbs->epsd][j];
+                a = &anims[wbs->episode][j];
                 for(i = 0; i < a->numAnimFrames; ++i)
                 {
                     //// \kludge >
-                    if(wbs->epsd != 1 || j != 8)
+                    if(wbs->episode != 1 || j != 8)
                     {
                         // Animations
-                        sprintf(name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+                        sprintf(name, "WIA%u%.2d%.2d", wbs->episode, j, i);
                         R_CachePatch(&a->p[i], name);
                     }
                     else
@@ -1572,18 +1559,13 @@ void WI_initVariables(wbstartstruct_t * wbstartstruct)
         wbs->maxItems = 1;
     if(!wbs->maxSecret)
         wbs->maxSecret = 1;
-
-    if(gameMode != retail)
-        if(wbs->epsd > 2)
-            wbs->epsd -= 3;
 }
 
-void WI_Start(wbstartstruct_t *wbstartstruct)
+void WI_Init(wbstartstruct_t* wbstartstruct)
 {
-    int                 i, j, k;
-    teaminfo_t         *tin;
+    int i, j, k;
+    teaminfo_t* tin;
 
-    GL_SetFilter(false);
     WI_initVariables(wbstartstruct);
     WI_loadData();
 

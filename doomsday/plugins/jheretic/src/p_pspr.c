@@ -1871,9 +1871,9 @@ void C_DECL A_Light2(player_t *player, pspdef_t *psp)
 /**
  * Called at start of level for each player.
  */
-void P_SetupPsprites(player_t *player)
+void P_SetupPsprites(player_t* player)
 {
-    int                 i;
+    int i;
 
     // Remove all psprites.
     for(i = 0; i < NUMPSPRITES; ++i)

@@ -518,7 +518,7 @@ void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 52:
         // EXIT!
-        G_LeaveMap(thing->player? thing->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, false), 0, false);
         break;
 
     case 53:
@@ -601,7 +601,7 @@ void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 124:
         // Secret EXIT
-        G_LeaveMap(thing->player? thing->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, true);
+        G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, true), 0, true);
         break;
 
     case 125:
@@ -1351,7 +1351,7 @@ boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
 
         P_ToggleSwitch(DMU_GetPtrp(line, DMU_SIDEDEF0), SFX_SWTCHX, false, 0);
         xline->special = 0;
-        G_LeaveMap(mo->player? mo->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, false), 0, false);
         break;
 
     case 14:
@@ -1467,7 +1467,7 @@ boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
 
         P_ToggleSwitch(DMU_GetPtrp(line, DMU_SIDEDEF0), SFX_NONE, false, 0);
         xline->special = 0;
-        G_LeaveMap(mo->player? mo->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, true);
+        G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, true), 0, true);
         break;
 
     case 55:

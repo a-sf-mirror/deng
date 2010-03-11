@@ -25,8 +25,6 @@
 
 /**
  * p_acs.c:
- *
- * @fixme Not 64bit clean: In function 'ActionScriptInterpreter_Load': cast from pointer to integer of different size, cast to pointer from integer of different size
  */
 
 // HEADER FILES ------------------------------------------------------------
@@ -92,7 +90,7 @@ typedef struct script_info_s {
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 static void scriptFinished(actionscriptinterpreter_t* asi, actionscriptid_t scriptId);
-static boolean addToScriptStore(actionscriptinterpreter_t* asi, actionscriptid_t scriptId, int map,  byte* args);
+static boolean addToScriptStore(actionscriptinterpreter_t* asi, actionscriptid_t scriptId, uint map,  byte* args);
 static int indexForScriptId(actionscriptinterpreter_t* asi, actionscriptid_t scriptId);
 
 static boolean tagBusy(int tag);
@@ -272,7 +270,7 @@ static actionscript_thinker_t* createActionScriptThinker(map_t* map,
 }
 
 static boolean startScript(actionscriptinterpreter_t* asi,
-    actionscriptid_t scriptId, int mapId, byte* args, mobj_t* activator,
+    actionscriptid_t scriptId, uint map, byte* args, mobj_t* activator,
     linedef_t* lineDef, int lineSide, actionscript_thinker_t** newScript)
 {
     actionscript_thinker_t* script;
@@ -282,9 +280,9 @@ static boolean startScript(actionscriptinterpreter_t* asi,
     if(newScript)
         *newScript = NULL;
 
-    if(mapId && mapId != gameMap)
+    if(map && map-1 != gameMap)
     {   // Add to the script store.
-        return addToScriptStore(asi, scriptId, mapId, args);
+        return addToScriptStore(asi, scriptId, map, args);
     }
 
     infoIndex = indexForScriptId(asi, scriptId);
@@ -376,6 +374,8 @@ void P_DestroyActionScriptInterpreter(actionscriptinterpreter_t* asi)
 {
     assert(asi);
     unloadBytecode(asi);
+    if(asi->scriptStore)
+        free(asi->scriptStore);
     Z_Free(asi);
     // Only one instance (i.e., Singleton pattern).
     ActionScriptInterpreter = NULL;
@@ -385,7 +385,7 @@ static boolean isValidACSBytecode(lumpnum_t lumpNum, int* numScripts, int* numSt
 {
     size_t lumpLength, infoOffset;
     byte buff[12];
- 
+
     if(lumpNum == -1)
         return false;
 
@@ -418,7 +418,7 @@ static boolean isValidACSBytecode(lumpnum_t lumpNum, int* numScripts, int* numSt
     return true;
 }
 
-void ActionScriptInterpreter_Load(actionscriptinterpreter_t* asi, int map, lumpnum_t lumpNum)
+void ActionScriptInterpreter_Load(actionscriptinterpreter_t* asi, uint map, lumpnum_t lumpNum)
 {
     assert(asi);
     {
@@ -510,17 +510,18 @@ void ActionScriptInterpreter_WriteWorldState(actionscriptinterpreter_t* asi)
     {
     int i;
 
-    SV_WriteByte(2); // version byte
+    SV_WriteByte(3); // version byte
 
     for(i = 0; i < MAX_WORLD_VARS; ++i)
         SV_WriteLong(asi->worldVars[i]);
 
-    for(i = 0; i < MAX_SCRIPT_STORE; ++i)
+    SV_WriteLong(asi->scriptStoreSize);
+    for(i = 0; i < asi->scriptStoreSize; ++i)
     {
         const script_store_t* store = &asi->scriptStore[i];
         int j;
 
-        SV_WriteLong(store->mapId);
+        SV_WriteLong(store->map);
         SV_WriteLong((int) store->scriptId);
         for(j = 0; j < 4; ++j)
             SV_WriteByte(store->args[j]);
@@ -542,21 +543,64 @@ void ActionScriptInterpreter_ReadWorldState(actionscriptinterpreter_t* asi)
     for(i = 0; i < MAX_WORLD_VARS; ++i)
         asi->worldVars[i] = SV_ReadLong();
 
-    for(i = 0; i < MAX_SCRIPT_STORE; ++i)
+    if(ver >= 3)
     {
-        script_store_t* store = &asi->scriptStore[i];
-        int j;
+        asi->scriptStoreSize = SV_ReadLong();
+        if(asi->scriptStoreSize)
+        {
+            if(asi->scriptStore)
+                asi->scriptStore = realloc(asi->scriptStore, sizeof(script_store_t) * asi->scriptStoreSize);
+            else
+                asi->scriptStore = malloc(sizeof(script_store_t) * asi->scriptStoreSize);
 
-        store->mapId = SV_ReadLong();
-        store->scriptId = (actionscriptid_t) SV_ReadLong();
-        for(j = 0; j < 4; ++j)
-            store->args[j] = SV_ReadByte();
+            for(i = 0; i < asi->scriptStoreSize; ++i)
+            {
+                script_store_t* store = &asi->scriptStore[i];
+                int j;
+
+                store->map = SV_ReadLong();
+                store->scriptId = SV_ReadLong();
+                for(j = 0; j < 4; ++j)
+                    store->args[j] = SV_ReadByte();
+            }
+        }
+    }
+    else
+    {   // Old format.
+        script_store_t tempStore[20];
+
+        asi->scriptStoreSize = 0;
+        for(i = 0; i < 20; ++i)
+        {
+            int map = SV_ReadLong();
+            script_store_t* store = &tempStore[map < 0? 19 : asi->scriptStoreSize++];
+            int j;
+
+            store->map = map < 0? 0 : map-1;
+            store->scriptId = SV_ReadLong();
+            for(j = 0; j < 4; ++j)
+                store->args[j] = SV_ReadByte();
+        }
+
+        if(saveVersion < 7)
+        {
+            byte junk[2];
+            SV_Read(junk, 12);
+        }
+
+        if(asi->scriptStoreSize)
+        {
+            if(asi->scriptStore)
+                asi->scriptStore = realloc(asi->scriptStore, sizeof(script_store_t) * asi->scriptStoreSize);
+            else
+                asi->scriptStore = malloc(sizeof(script_store_t) * asi->scriptStoreSize);
+            memcpy(asi->scriptStore, tempStore, sizeof(script_store_t) * asi->scriptStoreSize);
+        }
     }
 
-    if(saveVersion < 7)
+    if(!asi->scriptStoreSize && asi->scriptStore)
     {
-        byte junk[2];
-        SV_Read(junk, 12);
+        free(asi->scriptStore); asi->scriptStore = NULL;
     }
     }
 }
@@ -692,34 +736,48 @@ int ActionScriptThinker_Read(thinker_t* thinker)
 }
 
 /**
- * Scans the ACS store and executes all scripts belonging to the current map.
+ * Scans the ACS store and executes all scripts belonging to the specified map.
  */
-void ActionScriptInterpreter_StartAll(actionscriptinterpreter_t* asi, int map)
+void ActionScriptInterpreter_StartAll(actionscriptinterpreter_t* asi, uint map)
 {
     assert(asi);
     {
-    script_store_t* store;
-
-    for(store = asi->scriptStore; store->mapId != 0; store++)
+    int i = 0, origSize = asi->scriptStoreSize;
+    while(i < asi->scriptStoreSize)
     {
-        if(store->mapId == map)
+        script_store_t* store = &asi->scriptStore[i];
+        actionscript_thinker_t* newScript;
+
+        if(store->map != map)
         {
-            actionscript_thinker_t* newScript;
-
-            startScript(asi, store->scriptId, 0,store->args, NULL, NULL, 0, &newScript);
-            if(newScript)
-            {
-                newScript->delayCount = TICSPERSEC;
-            }
-
-            store->mapId = -1;
+            i++;
+            continue;
         }
+
+        startScript(asi, store->scriptId, 0, store->args, NULL, NULL, 0, &newScript);
+        if(newScript)
+        {
+            newScript->delayCount = TICSPERSEC;
+        }
+
+        asi->scriptStoreSize -= 1;
+        if(i == asi->scriptStoreSize)
+            break;
+        memmove(&asi->scriptStore[i], &asi->scriptStore[i+1], sizeof(script_store_t) * (asi->scriptStoreSize-i));
+    }
+
+    if(asi->scriptStoreSize != origSize)
+    {
+        if(asi->scriptStoreSize)
+            asi->scriptStore = realloc(asi->scriptStore, sizeof(script_store_t) * asi->scriptStoreSize);
+        else
+            free(asi->scriptStore); asi->scriptStore = NULL;
     }
     }
 }
 
 boolean ActionScriptInterpreter_Start(actionscriptinterpreter_t* asi,
-    actionscriptid_t scriptId, int map, byte* args, mobj_t* activator,
+    actionscriptid_t scriptId, uint map, byte* args, mobj_t* activator,
     linedef_t* lineDef, int side)
 {
     assert(asi);
@@ -727,42 +785,43 @@ boolean ActionScriptInterpreter_Start(actionscriptinterpreter_t* asi,
 }
 
 static boolean addToScriptStore(actionscriptinterpreter_t* asi,
-    actionscriptid_t scriptId, int mapId, byte* args)
+    actionscriptid_t scriptId, uint map, byte* args)
 {
-    int i, index;
+    script_store_t* store;
 
-    index = -1;
-    for(i = 0; asi->scriptStore[i].mapId != 0; ++i)
+    if(asi->scriptStoreSize)
     {
-        script_store_t* slot = &asi->scriptStore[i];
-
+        int i;
         // Don't allow duplicates.
-        if(slot->scriptId == scriptId && slot->mapId == mapId)
-            return false;
-
-        if(index == -1 && slot->mapId == -1)
-        {   // Remember first free slot.
-            index = i;
+        for(i = 0; i < asi->scriptStoreSize; ++i)
+        {
+            store = &asi->scriptStore[i];
+            if(store->scriptId == scriptId && store->map == map)
+                return false;
         }
+
+        asi->scriptStore = realloc(asi->scriptStore, ++asi->scriptStoreSize * sizeof(script_store_t));
+    }
+    else
+    {
+        asi->scriptStore = malloc(sizeof(script_store_t));
+        asi->scriptStoreSize = 1;
     }
 
-    if(index == -1)
-    {   // Append required
-        if(i == MAX_SCRIPT_STORE)
-            Con_Error("addToScriptStore: MAX_SCRIPT_STORE (%d) exceeded.", MAX_SCRIPT_STORE);
+    store = &asi->scriptStore[asi->scriptStoreSize-1];
 
-        index = i;
-        asi->scriptStore[index + 1].mapId = 0;
-    }
+    store->map = map;
+    store->scriptId = scriptId;
+    store->args[0] = args[0];
+    store->args[1] = args[1];
+    store->args[2] = args[2];
+    store->args[3] = args[3];
 
-    asi->scriptStore[index].mapId = mapId;
-    asi->scriptStore[index].scriptId = scriptId;
-    *((int*) asi->scriptStore[index].args) = *((int*) args);
     return true;
 }
 
 boolean ActionScriptInterpreter_Stop(actionscriptinterpreter_t* asi,
-    actionscriptid_t scriptId, int mapId)
+    actionscriptid_t scriptId, uint map)
 {
     assert(asi);
     {
@@ -788,7 +847,7 @@ boolean ActionScriptInterpreter_Stop(actionscriptinterpreter_t* asi,
 }
 
 boolean ActionScriptInterpreter_Suspend(actionscriptinterpreter_t* asi,
-    actionscriptid_t scriptId, int mapId)
+    actionscriptid_t scriptId, uint map)
 {
     assert(asi);
     {

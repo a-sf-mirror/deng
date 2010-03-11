@@ -199,7 +199,7 @@ boolean PIT_StompThing(mobj_t* mo, void* data)
         return false;
 #elif __JDOOM__
     // Monsters don't stomp things except on a boss map.
-    if(!map->tmThing->player && gameMap != 30)
+    if(!map->tmThing->player && gameMap != 29)
         return false;
 #endif
 
@@ -1123,6 +1123,11 @@ if(thing->onMobj)
 
     map->blockingMobj = NULL;
 #endif
+
+    box[BOXLEFT]   = map->tmBBox[BOXLEFT];
+    box[BOXRIGHT]  = map->tmBBox[BOXRIGHT];
+    box[BOXBOTTOM] = map->tmBBox[BOXBOTTOM];
+    box[BOXTOP]    = map->tmBBox[BOXTOP];
 
     return Map_LineDefsBoxIterator(map, box, PIT_CheckLine, 0);
 }
@@ -2064,7 +2069,7 @@ boolean PIT_RadiusAttack(mobj_t* thing, void* data)
 
     dx = fabs(thing->pos[VX] - map->bombSpot->pos[VX]);
     dy = fabs(thing->pos[VY] - map->bombSpot->pos[VY]);
-    dz = fabs(thing->pos[VZ] - map->bombSpot->pos[VZ]);
+    dz = fabs((thing->pos[VZ] + thing->height / 2) - map->bombSpot->pos[VZ]);
 
     dist = (dx > dy? dx : dy);
 

@@ -52,7 +52,7 @@ typedef struct rendseg_s {
     float               sectorLightLevel;
     const float*        sectorLightColor;
 
-    float               surfaceLightLevelDelta;
+    float               surfaceLightLevelDeltaL, surfaceLightLevelDeltaR;
     const float*        surfaceColorTint, *surfaceColorTint2;
     float               surfaceMaterialOffset[2];
     float               surfaceMaterialScale[2];

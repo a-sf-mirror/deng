@@ -32,7 +32,7 @@
 #include "r_data.h"
 #include "p_dmu.h"
 
-float           LineDef_LightLevelDelta(const linedef_t* lineDef);
+void            Linedef_LightLevelDelta(const linedef_t* lineDef, byte side, float* deltaL, float* deltaR);
 void            LineDef_UnitVector(const linedef_t* lineDef, float* unitvec);
 
 int             LineDef_PointOnSide(const linedef_t* lineDef, float x, float y);

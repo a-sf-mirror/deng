@@ -197,7 +197,7 @@ static void constructor(rendseg_t* rseg, float from[2], float to[2],
                         float bottom, float top,
                         pvec3_t normal, subsector_t* subsector, sidedef_t* frontSideDef, segsection_t section,
                         float sectorLightLevel, const float* sectorLightColor,
-                        float surfaceLightLevelDelta, const float* surfaceColorTint,
+                        float surfaceLightLevelDeltaL, float surfaceLightLevelDeltaR, const float* surfaceColorTint,
                         const float* surfaceColorTint2, float alpha,
                         biassurface_t* biasSurface,
                         const float materialOffset[2], const float materialScale[2],
@@ -211,7 +211,8 @@ static void constructor(rendseg_t* rseg, float from[2], float to[2],
     rseg->sectorLightLevel = sectorLightLevel;
     rseg->sectorLightColor = sectorLightColor;
 
-    rseg->surfaceLightLevelDelta = surfaceLightLevelDelta;
+    rseg->surfaceLightLevelDeltaL = surfaceLightLevelDeltaL;
+    rseg->surfaceLightLevelDeltaR = surfaceLightLevelDeltaR;
     rseg->surfaceColorTint = surfaceColorTint;
     rseg->surfaceColorTint2 = surfaceColorTint2;
     rseg->biasSurface = biasSurface;
@@ -321,7 +322,7 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
 
     seg_t* seg = (seg_t*) hEdge->data;
     const surface_t* surface = &HE_FRONTSIDEDEF(hEdge)->SW_surface(section);
-    float alpha, sectorLightLevel, surfaceLightLevelDelta;
+    float alpha, sectorLightLevel, surfaceLightLevelDeltaL, surfaceLightLevelDeltaR, diff;
     const float* sectorLightColor, *surfaceColorTint, *surfaceColorTint2;
 
     if(surface->material && (surface->material->flags & MATF_NO_DRAW))
@@ -343,7 +344,13 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
      */
     sectorLightLevel = HE_FRONTSIDEDEF(hEdge)->sector->lightLevel;
     sectorLightColor = R_GetSectorLightColor(HE_FRONTSIDEDEF(hEdge)->sector);
-    surfaceLightLevelDelta = R_WallAngleLightLevelDelta(HE_FRONTSIDEDEF(hEdge)->lineDef, seg->side);
+
+    Linedef_LightLevelDelta(HE_FRONTSIDEDEF(hEdge)->lineDef, seg->side, &surfaceLightLevelDeltaL, &surfaceLightLevelDeltaR);
+
+    // Linear interpolation of the linedef light deltas to the edges of the seg.
+    diff = surfaceLightLevelDeltaR - surfaceLightLevelDeltaL;
+    surfaceLightLevelDeltaR = surfaceLightLevelDeltaL + ((seg->offset + seg->length) / HE_FRONTSIDEDEF(hEdge)->lineDef->length) * diff;
+    surfaceLightLevelDeltaL += (seg->offset / HE_FRONTSIDEDEF(hEdge)->lineDef->length) * diff;
 
     // @todo is this still necessary at this time? try to postpone
     // until geometry creation.
@@ -353,7 +360,7 @@ rendseg_t* RendSeg_staticConstructFromHEdgeSection(rendseg_t* newRendSeg, hedge_
                 HE_FRONTSIDEDEF(hEdge)->SW_middlenormal,
                 (subsector_t*) hEdge->face->data, HE_FRONTSIDEDEF(hEdge), section,
                 sectorLightLevel, sectorLightColor,
-                surfaceLightLevelDelta, surfaceColorTint, surfaceColorTint2, alpha,
+                surfaceLightLevelDeltaL, surfaceLightLevelDeltaR, surfaceColorTint, surfaceColorTint2, alpha,
                 seg->bsuf[section],
                 materialOffset, materialScale, true);
 
@@ -398,7 +405,7 @@ rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg,
 {
     rendseg_t* rseg = newRendSeg; // allocate.
 
-    float materialOffset[2], materialScale[2], offset = 0;
+    float materialOffset[2], materialScale[2], offset = 0, surfaceLightLevelDeltaL, surfaceLightLevelDeltaR;
     const float* surfaceColorTint, *surfaceColorTint2;
     sector_t* frontSec = subsector->sector;
     float ffloor = frontSec->SP_floorvisheight, fceil = frontSec->SP_ceilvisheight;
@@ -421,10 +428,12 @@ rendseg_t* RendSeg_staticConstructFromPolyobjSideDef(rendseg_t* newRendSeg,
     SideDef_ColorTints(sideDef, SEG_MIDDLE, &surfaceColorTint,
                        &surfaceColorTint2);
 
+    Linedef_LightLevelDelta(sideDef->lineDef, FRONT, &surfaceLightLevelDeltaL, &surfaceLightLevelDeltaR);
+
     constructor(rseg, from, to, bottom, top,
                 sideDef->SW_middlenormal, subsector, sideDef, SEG_MIDDLE,
                 frontSec->lightLevel, R_GetSectorLightColor(frontSec),
-                R_WallAngleLightLevelDelta(sideDef->lineDef, FRONT), surfaceColorTint, surfaceColorTint2, 1,
+                surfaceLightLevelDeltaL, surfaceLightLevelDeltaR, surfaceColorTint, surfaceColorTint2, 1,
                 poSeg->bsuf[SEG_MIDDLE],
                 materialOffset, materialScale, true);
 

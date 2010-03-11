@@ -588,7 +588,7 @@ static void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 
     case 52:
         // EXIT!
-        G_LeaveMap(thing->player? thing->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, false), 0, false);
         break;
 
     case 53:
@@ -674,7 +674,7 @@ static void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
   //case 124: // DJS - In Heretic, the secret exit is 105
     case 105:
         // Secret EXIT
-        G_LeaveMap(thing->player? thing->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, true);
+        G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, true), 0, true);
         break;
 
     // DJS - Heretic has an additional stair build special
@@ -1519,7 +1519,7 @@ boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
         if(cyclingMaps && mapCycleNoExit)
             break;
 
-        G_LeaveMap(mo->player? mo->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, false), 0, false);
         P_ToggleSwitch(DMU_GetPtrp(line, DMU_SIDEDEF0), SFX_NONE, false, 0);
         xline->special = 0;
         break;
@@ -1616,7 +1616,7 @@ boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
         if(cyclingMaps && mapCycleNoExit)
             break;
 
-        G_LeaveMap(mo->player? mo->player - players : CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, true);
+        G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, true), 0, true);
         P_ToggleSwitch(DMU_GetPtrp(line, DMU_SIDEDEF0), SFX_NONE, false, 0);
         xline->special = 0;
         break;

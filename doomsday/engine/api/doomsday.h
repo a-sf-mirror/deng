@@ -490,6 +490,7 @@ typedef struct material_s { int type; } material_t;
     int             S_StartMusic(const char* musicID, boolean looped);
     int             S_StartMusicNum(int id, boolean looped);
     void            S_StopMusic(void);
+    void            S_PauseMusic(boolean doPause);
 
     // Miscellaneous.
     size_t          M_ReadFile(const char* name, byte** buffer);

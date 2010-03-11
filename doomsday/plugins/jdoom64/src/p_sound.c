@@ -49,13 +49,18 @@
 // CODE --------------------------------------------------------------------
 
 /**
- * Starts playing the music for the current map.
+ * Starts playing the music for the specified map.
  */
-void S_MapMusic(void)
+void S_MapMusic(uint episode, uint map)
 {
-    if(G_GetGameState() != GS_MAP)
-        return;
-    S_StartMusicNum(Get(DD_MAP_MUSIC), true);
+    ddmapinfo_t mapInfo;
+    char mapId[9];
+
+    P_GetMapLumpName(mapId, episode, map);
+    if(Def_Get(DD_DEF_MAP_INFO, mapId, &mapInfo))
+    {
+        S_StartMusicNum(mapInfo.music, true);
+    }
 }
 
 /**

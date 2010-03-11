@@ -37,11 +37,14 @@
 
 extern int debugSound; // debug flag for displaying sound info
 
-extern int gameEpisode;
-extern int gameMap;
+extern uint gameEpisode;
+extern uint gameMap;
 extern skillmode_t gameSkill;
 extern boolean deathmatch;
 extern boolean userGame;
+
+extern uint nextMap;
+extern uint nextMapEntryPoint;
 
 void            R_InitRefresh(void);
 void            R_GetTranslation(int plrClass, int plrColor, int* tclass,
@@ -52,5 +55,9 @@ void            G_PrintMapList(void);
 void            G_PlayerReborn(int player);
 void            G_SaveGame(int slot, const char* description);
 
-void            P_GetMapLumpName(char lumpName[9], int episode, int map);
+uint            G_GetNextMap(uint episode, uint map, boolean secretExit);
+
+boolean         P_MapExists(uint episode, uint map);
+
+void            P_GetMapLumpName(char lumpName[9], uint episode, uint map);
 #endif

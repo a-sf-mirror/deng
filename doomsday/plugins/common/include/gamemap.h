@@ -230,7 +230,7 @@ typedef struct xlinedef_s {
 typedef struct map_s {
     // Defined in dd_share.h; required map elements.
     DD_BASE_MAP_ELEMENTS()
-    int             episodeNum, mapNum;
+    uint            episodeNum, mapNum;
     boolean         inSetup; // @c true = we are in the process of setting up this map.
 
     int             time;
@@ -418,7 +418,7 @@ typedef struct map_s {
 #endif
 } map_t;
 
-map_t*              P_CreateGameMap(const char mapID[9], int episodeNum, int mapNum);
+map_t*              P_CreateGameMap(const char mapID[9], uint episodeNum, uint mapNum);
 void                P_DestroyGameMap(map_t* map);
 
 boolean             GameMap_Load(map_t* map, skillmode_t skill);
@@ -445,14 +445,14 @@ void                GameMap_PurgeDeferredSpawns(map_t* map);
 void                GameMap_RunTick(map_t* map);
 void                GameMap_UpdateSpecials(map_t* map);
 
-void                GameMap_AddPlayerStart(map_t* map, int defaultPlrNum, byte entryPoint,
+void                GameMap_AddPlayerStart(map_t* map, int defaultPlrNum, uint entryPoint,
                                            boolean deathmatch, float x, float y,
                                            float z, angle_t angle, int spawnFlags);
 uint                GameMap_NumPlayerStarts(map_t* map, boolean deathmatch);
-const playerstart_t* GameMap_PlayerStart(map_t* map, byte entryPoint, int pnum, boolean deathmatch);
+const playerstart_t* GameMap_PlayerStart(map_t* map, uint entryPoint, int pnum, boolean deathmatch);
 
 void                GameMap_ClearPlayerStarts(map_t* map);
-void                GameMap_DealPlayerStarts(map_t* map, byte entryPoint);
+void                GameMap_DealPlayerStarts(map_t* map, uint entryPoint);
 
 #if __JHERETIC__
 void                GameMap_AddMaceSpot(map_t* map, float x, float y, angle_t angle);

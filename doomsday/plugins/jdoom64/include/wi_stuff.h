@@ -34,7 +34,7 @@
 #  error "Using jDoom64 headers without __JDOOM64__"
 #endif
 
-// Structure passed e.g. to WI_Start(wb)
+// Structure passed e.g. to WI_Init(wb)
 typedef struct {
     boolean         inGame; // Whether the player is in game.
 
@@ -48,8 +48,9 @@ typedef struct {
 } wbplayerstruct_t;
 
 typedef struct {
+    uint            episode;
     boolean         didSecret; // If true, splash the secret level.
-    int             last, next; // Previous and next levels, origin 0.
+    uint            currentMap, nextMap; // This and next maps.
     int             maxKills;
     int             maxItems;
     int             maxSecret;
@@ -75,7 +76,7 @@ void            WI_Ticker(void);
 void            WI_Drawer(void);
 
 // Setup for an intermission screen.
-void            WI_Start(wbstartstruct_t *wbstartstruct);
+void            WI_Init(wbstartstruct_t *wbstartstruct);
 
 void            WI_SetState(interludestate_t st);
 void            WI_End(void);

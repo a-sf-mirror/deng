@@ -141,10 +141,10 @@ extern classinfo_t classInfo[NUM_PLAYER_CLASSES];
  * intermission screen, the game final animation, or a demo.
  */
 typedef enum {
+    GS_STARTUP,
     GS_MAP,
     GS_INTERMISSION,
     GS_FINALE,
-    GS_DEMOSCREEN,
     GS_WAITING,
     GS_INFINE,
     NUM_GAME_STATES
@@ -337,8 +337,6 @@ void            R_InitTranslationTables(void);
 //MISC
 //----
 void            strcatQuoted(char *dest, char *src);
-
-boolean         M_ValidEpisodeMap(int episode, int map);
 
 // returns true if the episode/map combo is valid for the current
 // game configuration

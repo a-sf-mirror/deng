@@ -156,7 +156,7 @@ boolean P_IsInVoid(player_t* player)
     // above/below ceiling/floor).
     if(ddpl->flags & DDPF_CAMERA)
     {
-        if(ddpl->mo->subsector)
+        if(ddpl->mo && ddpl->mo->subsector)
         {
             map_t* map = Thinker_Map((thinker_t*) ddpl->mo);
             sector_t* sec = ((const subsector_t*) ((objectrecord_t*) ddpl->mo->subsector)->obj)->sector;

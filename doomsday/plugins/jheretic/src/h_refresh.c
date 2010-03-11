@@ -70,6 +70,8 @@ extern const float defFontRGB2[];
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
+float quitDarkenOpacity = 0;
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
@@ -179,7 +181,7 @@ void R_SetViewSize(int blocks)
 static void rendPlayerView(int player)
 {
     player_t* plr = &players[player];
-    float viewPos[3], viewPitch;
+    float viewPos[3], viewPitch, pspriteOffsetY;
     angle_t viewAngle;
     boolean isFullBright = (plr->powers[PT_INVULNERABILITY] > BLINKTHRESHOLD) ||
                             (plr->powers[PT_INVULNERABILITY] & 8);
@@ -201,6 +203,9 @@ static void rendPlayerView(int player)
     DD_SetVariable(DD_VIEW_Z, &viewPos[VZ]);
     DD_SetVariable(DD_VIEW_ANGLE, &viewAngle);
     DD_SetVariable(DD_VIEW_PITCH, &viewPitch);
+
+    pspriteOffsetY = HU_PSpriteYOffset(plr);
+    DD_SetVariable(DD_PSPRITE_OFFSET_Y, &pspriteOffsetY);
 
     // $democam
     GL_SetFilter((plr->plr->flags & DDPF_VIEW_FILTER)? true : false);
@@ -267,49 +272,49 @@ static void rendHUD(int player)
  */
 void H_Display(int layer)
 {
-    int                 player = DISPLAYPLAYER;
-    player_t*           plr = &players[player];
-    float               x, y, w, h;
+    int player = DISPLAYPLAYER;
+    player_t* plr = &players[player];
+    float x, y, w, h;
 
-    if(layer == 0)
+    if(layer != 0)
     {
-        if(G_GetGameState() == GS_MAP)
+        rendHUD(player);
+        return;
+    }
+
+    if(G_GetGameState() == GS_MAP)
+    {
+        // $democam: can be set on every frame.
+        if(cfg.setBlocks > 10 || (P_MobjIsCamera(plr->plr->mo) && Get(DD_PLAYBACK)))
         {
-            // $democam: can be set on every frame.
-            if(cfg.setBlocks > 10 || (P_MobjIsCamera(plr->plr->mo) && Get(DD_PLAYBACK)))
-            {
-                // Full screen.
-                R_SetViewWindowTarget(0, 0, 320, 200);
-            }
-            else
-            {
-                int                 w = cfg.setBlocks * 32;
-                int                 h = cfg.setBlocks *
-                    (200 - SBARHEIGHT * cfg.statusbarScale / 20) / 10;
-
-                R_SetViewWindowTarget(160 - (w / 2),
-                                      (200 - SBARHEIGHT * cfg.statusbarScale / 20 - h) / 2,
-                                      w, h);
-            }
-
-            R_GetViewWindow(&x, &y, &w, &h);
+            // Full screen.
+            R_SetViewWindowTarget(0, 0, SCREENWIDTH, SCREENHEIGHT);
         }
         else
         {
-            x = 0;
-            y = 0;
-            w = SCREENWIDTH;
-            h = SCREENHEIGHT;
+            int w = cfg.setBlocks * 32;
+            int h = cfg.setBlocks * (SCREENHEIGHT - SBARHEIGHT * cfg.statusbarScale / 20) / 10;
+            R_SetViewWindowTarget(SCREENWIDTH/2 - w/2, (SCREENHEIGHT - SBARHEIGHT * cfg.statusbarScale / 20 - h) / 2, w, h);
         }
 
-        R_SetViewWindow((int) x, (int) y, (int) w, (int) h);
+        R_GetViewWindow(&x, &y, &w, &h);
+    }
+    else
+    {
+        x = 0;
+        y = 0;
+        w = SCREENWIDTH;
+        h = SCREENHEIGHT;
+    }
 
+    R_SetViewWindow((int) x, (int) y, (int) w, (int) h);
+
+    switch(G_GetGameState())
+    {
+    case GS_MAP:
         if(!(MN_CurrentMenuHasBackground() && Hu_MenuAlpha() >= 1) &&
            !R_MapObscures(player, (int) x, (int) y, (int) w, (int) h))
         {
-            if(G_GetGameState() != GS_MAP)
-                return;
-
             if(IS_CLIENT && (!Get(DD_GAME_READY) || !Get(DD_GOTFRAME)))
                 return;
 
@@ -324,10 +329,14 @@ void H_Display(int layer)
 
         // Draw the automap?
         AM_Drawer(player);
-    }
-    else if(layer == 1)
-    {
-        rendHUD(player);
+        break;
+    case GS_STARTUP:
+        DGL_Disable(DGL_TEXTURING);
+        DGL_DrawRect(x, y, w, h, 0, 0, 0, 1);
+        DGL_Enable(DGL_TEXTURING);
+        break;
+    default:
+        break;
     }
 }
 
@@ -373,16 +382,6 @@ void H_Display2(void)
         //gl.Clear(DGL_COLOR_BUFFER_BIT);
         break;
 
-    case GS_INFINE:
-        if(!fiCmdExecuted)
-        {   // A (de)briefing is in process but the script hasn't started yet.
-            // Just clear the screen, then.
-            DGL_Disable(DGL_TEXTURING);
-            DGL_DrawRect(0, 0, 320, 200, 0, 0, 0, 1);
-            DGL_Enable(DGL_TEXTURING);
-        }
-        break;
-
     default:
         break;
     }
@@ -398,6 +397,13 @@ void H_Display2(void)
 
     // Draw HUD displays; menu, messages.
     Hu_Drawer();
+
+    if(G_GetGameAction() == GA_QUIT)
+    {
+        DGL_Disable(DGL_TEXTURING);
+        DGL_DrawRect(0, 0, 320, 200, 0, 0, 0, quitDarkenOpacity);
+        DGL_Enable(DGL_TEXTURING);
+    }
 }
 
 /**

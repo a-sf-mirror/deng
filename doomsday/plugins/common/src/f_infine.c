@@ -596,9 +596,13 @@ void FI_Start(char *finalescript, infinemode_t mode)
         // conditions.
 #if __JHEXEN__
         fi->conditions[FICOND_SECRET] = false;
-        fi->conditions[FICOND_LEAVEHUB] = (P_GetMapCluster(gameMap) != P_GetMapCluster(players[CONSOLEPLAYER].leaveMap));
+
+        // Current hub has been completed?
+        fi->conditions[FICOND_LEAVEHUB] =
+            (P_GetMapCluster(gameMap) != P_GetMapCluster(nextMap));
 #else
-        fi->conditions[FICOND_SECRET] = (players[CONSOLEPLAYER].secretExit != 0);
+        fi->conditions[FICOND_SECRET] = secretExit;
+        // Only Hexen has hubs.
         fi->conditions[FICOND_LEAVEHUB] = false;
 #endif
     }
@@ -667,7 +671,7 @@ void FI_End(void)
 #endif
                 return;
             }
-            G_SetGameAction(GA_COMPLETED);
+            G_SetGameAction(GA_MAPCOMPLETED);
 
             // Don't play the debriefing again.
             briefDisabled = true;
@@ -678,7 +682,7 @@ void FI_End(void)
 
             // Enter the map, this was a briefing.
             G_ChangeGameState(GS_MAP);
-            S_MapMusic();
+            S_MapMusic(gameEpisode, gameMap);
             map->startTic = (int) GAMETIC;
             map->time = map->actualTime = 0;
         }
@@ -733,13 +737,12 @@ DEFCC(CCmdStopInFine)
 }
 
 /**
- * Check if there is a finale before the map and play it.
- * Returns true if a finale was begun.
+ * Check if there is a finale before the map.
+ * Returns true if a finale was found.
  */
-int FI_Briefing(int episode, int map)
+int FI_Briefing(uint episode, uint map, ddfinale_t* fin)
 {
     char mapID[9];
-    ddfinale_t fin;
 
     // If we're already in the INFINE state, don't start a finale.
     if(briefDisabled || G_GetGameState() == GS_INFINE || IS_CLIENT ||
@@ -749,29 +752,32 @@ int FI_Briefing(int episode, int map)
     // Is there such a finale definition?
     P_GetMapLumpName(mapID, episode, map);
 
-    if(!Def_Get(DD_DEF_FINALE_BEFORE, mapID, &fin))
-        return false;
-
-    FI_Start(fin.script, FIMODE_BEFORE);
-    return true;
+    return Def_Get(DD_DEF_FINALE_BEFORE, mapID, fin);
 }
 
 /**
- * Check if there is a finale after the map and play it.
- * Returns true if a finale was begun.
+ * Check if there is a finale after the map.
+ * Returns true if a finale was found.
  */
-int FI_Debriefing(int episode, int map)
+int FI_Debriefing(uint episode, uint map, ddfinale_t* fin)
 {
     char mapID[9];
-    ddfinale_t fin;
+
+    // If we're already in the INFINE state, don't start a finale.
+    if(briefDisabled)
+        return false;
+#if __JHEXEN__
+    if(cfg.overrideHubMsg && G_GetGameState() == GS_MAP &&
+       !(nextMap == DDMAXINT && nextMapEntryPoint == DDMAXINT) &&
+       P_GetMapCluster(map) != P_GetMapCluster(nextMap))
+        return false;
+#endif
+    if(G_GetGameState() == GS_INFINE || IS_CLIENT || Get(DD_PLAYBACK))
+        return false;
 
     // Is there such a finale definition?
     P_GetMapLumpName(mapID, episode, map);
-    if(!Def_Get(DD_DEF_FINALE_AFTER, mapID, &fin))
-        return false;
-
-    FI_Start(fin.script, FIMODE_AFTER);
-    return true;
+    return Def_Get(DD_DEF_FINALE_AFTER, mapID, fin);
 }
 
 void FI_DemoEnds(void)

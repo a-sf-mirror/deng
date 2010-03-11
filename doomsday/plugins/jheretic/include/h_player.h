@@ -168,7 +168,7 @@ typedef struct player_s {
 
 //
 // INTERMISSION
-// Structure passed e.g. to IN_Start(wb)
+// Structure passed e.g. to IN_Init(wb)
 //
 /*typedef struct {
     boolean         inGame; // Whether the player is in game.
@@ -183,9 +183,9 @@ typedef struct player_s {
 } wbplayerstruct_t;*/
 
 typedef struct {
-/*    int             epsd; // Episode # (0-2)*/
+    uint            episode;
     boolean         didSecret; // If true, splash the secret level.
-    int             last, next; // Previous and next levels, origin 0.
+    uint            currentMap, nextMap; // This and next maps.
 /*    int             maxKills;
     int             maxItems;
     int             maxSecret;

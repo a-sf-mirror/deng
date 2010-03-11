@@ -35,7 +35,7 @@
 extern boolean  intermission;
 extern int interState;
 
-void            IN_Start(void);
+void            IN_Init(void);
 void            IN_Stop(void);
 void            IN_Ticker(void);
 void            IN_Drawer(void);

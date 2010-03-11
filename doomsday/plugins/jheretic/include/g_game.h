@@ -43,9 +43,10 @@ extern boolean respawnMonsters;
 extern boolean userGame;
 extern player_t players[MAXPLAYERS];
 extern skillmode_t gameSkill;
-extern int gameEpisode;
-extern int gameMap;
-extern int nextMap;
+extern uint gameEpisode;
+extern uint gameMap;
+extern uint nextMap;
+extern boolean secretExit;
 extern wbstartstruct_t wmInfo; // Params for world map / intermission.
 
 void            G_Register(void);
@@ -54,14 +55,14 @@ void            G_CommonPostInit(void);
 void            R_InitRefresh(void);
 
 void            G_PrintMapList(void);
-boolean         G_ValidateMap(int* episode, int* map);
-int             G_GetMapNumber(int episode, int map);
+boolean         G_ValidateMap(uint* episode, uint* map);
+uint            G_GetMapNumber(uint episode, uint map);
 
-void            G_InitNew(skillmode_t skill, int episode, int map);
+void            G_InitNew(skillmode_t skill, uint episode, uint map);
 
 // Can be called by the startup code or Hu_MenuResponder.
 // A normal game starts at map 1, but a warp test can start elsewhere.
-void            G_DeferedInitNew(skillmode_t skill, int episode, int map);
+void            G_DeferedInitNew(skillmode_t skill, uint episode, uint map);
 
 void            G_DeferedPlayDemo(char* demo);
 
@@ -80,7 +81,11 @@ void            G_DemoAborted(void);
 
 void            G_DoReborn(int playernum);
 void            G_PlayerReborn(int player);
-void            G_LeaveMap(int player, int map, int position, boolean secret);
+void            G_LeaveMap(uint newMap, uint entryPoint, boolean secretExit);
+
+uint            G_GetNextMap(uint episode, uint map, boolean secretExit);
+
+boolean         P_MapExists(uint episode, uint map);
 
 void            G_WorldDone(void);
 
@@ -89,5 +94,5 @@ boolean         G_Responder(event_t* ev);
 
 void            G_ScreenShot(void);
 
-void            P_GetMapLumpName(char lumpName[9], int episode, int map);
+void            P_GetMapLumpName(char lumpName[9], uint episode, uint map);
 #endif

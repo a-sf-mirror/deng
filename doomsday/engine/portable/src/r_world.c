@@ -58,7 +58,8 @@
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
 int rendSkyLight = 1; // cvar.
-float rendLightWallAngle = 1; // Intensity of angle-based wall lighting.
+float rendLightWallAngle = 1.2f; // Intensity of angle-based wall lighting.
+byte rendLightWallAngleSmooth = true;
 float rendMaterialFadeSeconds = .6f;
 
 // Ambient lighting, rAmbient is used within the renderer, ambientLight is
@@ -2272,24 +2273,6 @@ float R_DistAttenuateLightLevel(float distToViewer, float lightLevel)
     }
 
     return lightLevel;
-}
-
-/**
- * The DOOM lighting model applies a sector light level delta when drawing
- * segs based on their 2D world angle.
- *
- * @param l             LineDef to calculate the delta for.
- * @param side          Side of the linedef we are interested in.
- * @return              Calculated delta.
- */
-float R_WallAngleLightLevelDelta(const linedef_t* l, byte side)
-{
-    if(!(rendLightWallAngle > 0))
-        return 0;
-
-    // Do a lighting adjustment based on orientation.
-    return LineDef_LightLevelDelta(l) * (side? -1 : 1) *
-        rendLightWallAngle;
 }
 
 /**

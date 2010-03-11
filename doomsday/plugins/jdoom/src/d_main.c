@@ -414,8 +414,8 @@ void G_PreInit(void)
     cfg.slidingCorpses = false;
     cfg.fastMonsters = false;
     cfg.netJumping = true;
-    cfg.netEpisode = 1;
-    cfg.netMap = 1;
+    cfg.netEpisode = 0;
+    cfg.netMap = 0;
     cfg.netSkill = SM_MEDIUM;
     cfg.netColor = 4;
     cfg.netBFGFreeLook = 0;    // allow free-aim 0=none 1=not BFG 2=All
@@ -513,6 +513,9 @@ void G_PreInit(void)
     cfg.weaponOrder[8] = WT_FIRST;
 
     cfg.berserkAutoSwitch = true;
+
+    // Use the DOOM transition by default.
+    Con_SetInteger("con-transition", 1, 0);
 
     // Do the common pre init routine;
     G_CommonPreInit();

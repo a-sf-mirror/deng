@@ -80,6 +80,6 @@ boolean     EV_ThingDeactivate(struct map_s* map, int tid);
 boolean     EV_ThingRemove(struct map_s* map, int tid);
 boolean     EV_ThingDestroy(struct map_s* map, int tid);
 
-void        P_InitSky(int map);
+void        P_InitSky(uint map);
 
 #endif

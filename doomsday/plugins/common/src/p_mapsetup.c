@@ -52,6 +52,7 @@
 #include "am_map.h"
 #include "p_tick.h"
 #include "p_start.h"
+#include "hu_pspr.h"
 #include "hu_stuff.h"
 
 // MACROS ------------------------------------------------------------------
@@ -74,7 +75,7 @@ typedef struct {
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 static void     P_FinalizeMap(map_t* map);
-static void     P_PrintMapBanner(int episode, int map);
+static void     P_PrintMapBanner(uint episode, uint map);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -562,9 +563,9 @@ Con_Message("spawning x:[%g, %g, %g] angle:%i ednum:%i flags:%i\n",
         case 4:
             {
 #if __JHEXEN__
-            byte entryPoint = spot->arg1;
+            uint entryPoint = spot->arg1;
 #else
-            byte entryPoint = 0;
+            uint entryPoint = 0;
 #endif
 
             GameMap_AddPlayerStart(map, spot->doomEdNum, entryPoint, false,
@@ -792,6 +793,10 @@ int P_SetupMapWorker(void* ptr)
     }
 
     Map_InitThinkers(map);
+#if __JHERETIC__
+    GameMap_InitAmbientSfx(map);
+#endif
+
     P_LoadMapObjs(map);
 
 #if __JDOOM__
@@ -821,15 +826,12 @@ int P_SetupMapWorker(void* ptr)
 
     interpretLinedefFlags(map);
 
-#if __JHERETIC__
-    GameMap_InitAmbientSfx(map);
-#endif
-
     // @fixme Should be handled by the map converter.
     loadRejectMatrix(map);
 
     GameMap_DealPlayerStarts(map, 0);
     GameMap_SpawnPlayers(map);
+    HU_UpdatePsprites();
 
     // Set up world state.
     GameMap_SpawnSpecials(map);
@@ -838,6 +840,9 @@ int P_SetupMapWorker(void* ptr)
         GameMap_Precache(map);
 
     P_FinalizeMap(map);
+
+    if(IS_SERVER)
+        R_SetAllDoomsdayFlags();
 
     // Someone may want to do something special now that the map has been
     // fully set up.
@@ -906,7 +911,7 @@ boolean GameMap_Load(map_t* map, skillmode_t skill)
     p.skill = skill;
 
     // @todo Use progress bar mode and update progress during the setup.
-    result = Con_Busy(BUSYF_ACTIVITY | /*BUSYF_PROGRESS_BAR |*/ (verbose? BUSYF_CONSOLE_OUTPUT : 0),
+    result = Con_Busy(BUSYF_ACTIVITY | BUSYF_TRANSITION | /*BUSYF_PROGRESS_BAR |*/ (verbose? BUSYF_CONSOLE_OUTPUT : 0),
                       "Loading map...", P_SetupMapWorker, &p);
 
     R_SetupMap(map, DDSMM_AFTER_BUSY, 0);
@@ -975,8 +980,6 @@ void P_SetupMap(map_t* map, skillmode_t skill)
         player_t* plr = &players[i];
 
         plr->killCount = plr->secretCount = plr->itemCount = 0;
-        // Initial height of PointOfView; will be set by player think.
-        plr->viewZ = 1;
 
         AM_SetCheatLevel(am, 0);
         AM_RevealMap(am, false);
@@ -1126,7 +1129,7 @@ const char* P_GetMapAuthor(boolean surpressIWADAuthors)
 }
 
 #if !__JHEXEN__
-static boolean isIWADMap(int episode, int map)
+static boolean isIWADMap(uint episode, uint map)
 {
     char lumpName[9];
 
@@ -1139,7 +1142,7 @@ static boolean isIWADMap(int episode, int map)
  * Prints a banner to the console containing information pertinent to the
  * current map (e.g. map name, author...).
  */
-static void P_PrintMapBanner(int episode, int map)
+static void P_PrintMapBanner(uint episode, uint map)
 {
     const char* lname;
 
@@ -1150,10 +1153,10 @@ static void P_PrintMapBanner(int episode, int map)
         char name[64];
 
 #if __JHEXEN__
-        dd_snprintf(name, 64, "Map %d (%d): %s", P_GetMapWarpTrans(map),
-                    map, lname);
+        dd_snprintf(name, 64, "Map %u (%u): %s", P_GetMapWarpTrans(map)+1,
+                    map+1, lname);
 #else
-        dd_snprintf(name, 64, "Map %d: %s", map, lname);
+        dd_snprintf(name, 64, "Map %u: %s", map+1, lname);
 #endif
 
         Con_FPrintf(CBLF_LIGHT | CBLF_BLUE, "%s\n", name);

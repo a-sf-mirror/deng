@@ -33,6 +33,8 @@ D_CMD(UpdateSurfaces);
 #endif
 
 extern int rendSkyLight; // cvar
+extern float rendLightWallAngle;
+extern byte rendLightWallAngleSmooth;
 extern float rendMaterialFadeSeconds; // cvar
 extern boolean ddMapSetup;
 extern int rAmbient, ambientLight;
@@ -57,7 +59,6 @@ float           R_CheckSectorLight(float lightlevel, float min, float max);
 void            R_PickSubsectorFanBase(subsector_t* subsector);
 boolean         R_SectorContainsSkySurfaces(const sector_t* sec);
 void            R_MarkAllSectorsForLightGridUpdate(cvar_t* unused);
-float           R_WallAngleLightLevelDelta(const linedef_t* l, byte side);
 void            R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid);
 
 void            R_OrderVertices(const linedef_t* line, const sector_t* sector,
