@@ -55,7 +55,6 @@ extern int renderTextures;
 extern int renderWireframe;
 extern int useMultiTexLights;
 extern int useMultiTexDetails;
-extern float rendLightWallAngle;
 extern float detailFactor, detailScale;
 
 void            RL_Register(void);

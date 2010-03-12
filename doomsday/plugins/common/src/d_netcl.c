@@ -138,8 +138,8 @@ void NetCl_UpdateGameState(byte* data)
 
     gsGameMode = data[0];
     gsFlags = data[1];
-    gsEpisode = data[2];
-    gsMap = data[3];
+    gsEpisode = data[2]-1;
+    gsMap = data[3]-1;
     gsDeathmatch = data[4] & 0x3;
     gsMonsters = (data[4] & 0x4? true : false);
     gsRespawn = (data[4] & 0x8? true : false);
@@ -175,12 +175,12 @@ void NetCl_UpdateGameState(byte* data)
 
     // Some statistics.
 #if __JHEXEN__
-    Con_Message("Game state: Map=%i Skill=%i %s\n", gsMap, gsSkill,
+    Con_Message("Game state: Map=%u Skill=%i %s\n", gsMap+1, gsSkill,
                 deathmatch == 1 ? "Deathmatch" : deathmatch ==
                 2 ? "Deathmatch2" : "Co-op");
 #else
-    Con_Message("Game state: Map=%i Episode=%i Skill=%i %s\n", gsMap,
-                gsEpisode, gsSkill,
+    Con_Message("Game state: Map=%u Episode=%u Skill=%i %s\n", gsMap+1,
+                gsEpisode+1, gsSkill,
                 deathmatch == 1 ? "Deathmatch" : deathmatch ==
                 2 ? "Deathmatch2" : "Co-op");
 #endif
@@ -621,34 +621,43 @@ void NetCl_Intermission(byte* data)
         wmInfo.maxKills = NetCl_ReadShort();
         wmInfo.maxItems = NetCl_ReadShort();
         wmInfo.maxSecret = NetCl_ReadShort();
-        wmInfo.next = NetCl_ReadByte();
-        wmInfo.last = NetCl_ReadByte();
+        wmInfo.nextMap = NetCl_ReadByte();
+        wmInfo.currentMap = NetCl_ReadByte();
         wmInfo.didSecret = NetCl_ReadByte();
+        wmInfo.episode = gameEpisode;
 
         G_PrepareWIData();
+#elif __JHERETIC__
+        wmInfo.episode = gameEpisode;
 #elif __JHEXEN__
-        {
-        int leaveMap = NetCl_ReadByte();
-        int leavePosition = NetCl_ReadByte();
+        nextMap = NetCl_ReadByte();
+        nextMapEntryPoint = NetCl_ReadByte();
 
         for(i = 0; i < MAXPLAYERS; ++i)
         {
             player_t* plr = &players[i];
-            plr->leaveMap = leaveMap;
-            plr->leavePosition = leavePosition;
-        }
+            plr->leaveMap = nextMap;
+            plr->leavePosition = nextMapEntryPoint;
         }
 #endif
-
-        G_ChangeGameState(GS_INTERMISSION);
 
 #if __JDOOM__ || __JDOOM64__
-        WI_Start(&wmInfo);
+        WI_Init(&wmInfo);
 #elif __JHERETIC__
-        IN_Start(&wmInfo);
+        IN_Init(&wmInfo);
 #elif __JHEXEN__
-        IN_Start();
+        IN_Init();
 #endif
+#if __JDOOM64__
+        S_StartMusic("dm2int", true);
+#elif __JDOOM__
+        S_StartMusic(gameMode == commercial? "dm2int" : "inter", true);
+#elif __JHERETIC__
+        S_StartMusic("intr", true);
+#elif __JHEXEN__
+        S_StartMusic("hub", true);
+#endif
+        G_ChangeGameState(GS_INTERMISSION);
     }
 
     if(flags & IMF_END)

@@ -206,7 +206,7 @@ void WI_initVariables(wbstartstruct_t * wbstartstruct)
     oldInterTime = 0;
 }
 
-void IN_Start(wbstartstruct_t * wbstartstruct)
+void IN_Init(wbstartstruct_t * wbstartstruct)
 {
     WI_initVariables(wbstartstruct);
     IN_LoadPics();
@@ -368,15 +368,15 @@ void IN_InitStats(void)
 
 void IN_LoadPics(void)
 {
-    switch(gameEpisode)
+    switch(wbs->episode)
     {
-    case 1:
+    case 0:
         interPic = W_GetNumForName("MAPE1");
         break;
-    case 2:
+    case 1:
         interPic = W_GetNumForName("MAPE2");
         break;
-    case 3:
+    case 2:
         interPic = W_GetNumForName("MAPE3");
         break;
     default:
@@ -415,17 +415,11 @@ void IN_Ticker(void)
     // Counter for general background animation.
     bcnt++;
 
-    if(bcnt == 1)
-    {
-        // Intermission music.
-        S_StartMusic("intr", true);
-    }
-
     interTime++;
     if(oldInterTime < interTime)
     {
         interState++;
-        if(gameEpisode > 3 && interState >= 1)
+        if(wbs->episode > 2 && interState >= 1)
         {
             // Extended Wad levels:  skip directly to the next level
             interState = 3;
@@ -435,7 +429,7 @@ void IN_Ticker(void)
         {
         case 0:
             oldInterTime = interTime + 300;
-            if(gameEpisode > 3)
+            if(wbs->episode > 2)
             {
                 oldInterTime = interTime + 1200;
             }
@@ -467,7 +461,7 @@ void IN_Ticker(void)
             NetSv_Intermission(IMF_TIME, 0, interTime);
             return;
         }
-        else if(interState < 2 && gameEpisode < 4)
+        else if(interState < 2 && wbs->episode < 3)
         {
             interState = 2;
             skipIntermission = false;
@@ -533,7 +527,7 @@ void IN_Drawer(void)
 {
     static int          oldInterState;
 
-    if(!intermission || interState < 0 || interState > 3)
+    if(!intermission || interState > 3)
     {
         return;
     }
@@ -547,12 +541,15 @@ void IN_Drawer(void)
         S_LocalSound(SFX_PSTOP, NULL);
     }
 
-    oldInterState = interState;
+    if(interState != -1)
+        oldInterState = interState;
+
     switch(interState)
     {
+    case -1:
     case 0: // Draw stats.
         IN_DrawStatBack();
-        switch (gameType)
+        switch(gameType)
         {
         case SINGLE:
             IN_DrawSingleStats();
@@ -567,7 +564,7 @@ void IN_Drawer(void)
         break;
 
     case 1: // Leaving old level.
-        if(gameEpisode < 4)
+        if(wbs->episode < 3)
         {
             GL_DrawPatch(0, 0, interPic);
             IN_DrawOldLevel();
@@ -575,7 +572,7 @@ void IN_Drawer(void)
         break;
 
     case 2: // Going to the next level.
-        if(gameEpisode < 4)
+        if(wbs->episode < 3)
         {
             GL_DrawPatch(0, 0, interPic);
             IN_DrawYAH();
@@ -583,7 +580,7 @@ void IN_Drawer(void)
         break;
 
     case 3: // Waiting before going to the next level.
-        if(gameEpisode < 4)
+        if(wbs->episode < 3)
         {
             GL_DrawPatch(0, 0, interPic);
         }
@@ -604,10 +601,10 @@ void IN_DrawStatBack(void)
 
 void IN_DrawOldLevel(void)
 {
-    int i, x;
-    char* levelname;
+    int x;
+    const char* levelname;
 
-    levelname = P_GetShortMapName(gameEpisode, gameMap);
+    levelname = P_GetShortMapName(wbs->episode, wbs->currentMap);
 
     x = 160 - M_StringWidth(levelname, GF_FONTB) / 2;
     M_WriteText2(x, 3, levelname, GF_FONTB, defFontRGB[0], defFontRGB[1], defFontRGB[2], 1);
@@ -615,48 +612,51 @@ void IN_DrawOldLevel(void)
     x = 160 - M_StringWidth("FINISHED", GF_FONTA) / 2;
     M_WriteText2(x, 25, "FINISHED", GF_FONTA, defFontRGB2[0], defFontRGB2[1],defFontRGB2[2], 1);
 
-    if(gameMap == 9)
+    if(wbs->currentMap == 8)
     {
-        for(i = 0; i < wbs->next; ++i)
+        uint i;
+        for(i = 0; i < wbs->nextMap; ++i)
         {
-            GL_DrawPatch(YAHspot[gameEpisode - 1][i].x,
-                         YAHspot[gameEpisode - 1][i].y, beenThere);
+            GL_DrawPatch(YAHspot[wbs->episode][i].x,
+                         YAHspot[wbs->episode][i].y, beenThere);
         }
 
         if(!(interTime & 16))
         {
-            GL_DrawPatch(YAHspot[gameEpisode - 1][8].x,
-                         YAHspot[gameEpisode - 1][8].y, beenThere);
+            GL_DrawPatch(YAHspot[wbs->episode][8].x,
+                         YAHspot[wbs->episode][8].y, beenThere);
         }
     }
     else
     {
-        for(i = 0; i < gameMap - 1; ++i)
+        uint i;
+        for(i = 0; i < wbs->currentMap; ++i)
         {
-            GL_DrawPatch(YAHspot[gameEpisode - 1][i].x,
-                         YAHspot[gameEpisode - 1][i].y, beenThere);
+            GL_DrawPatch(YAHspot[wbs->episode][i].x,
+                         YAHspot[wbs->episode][i].y, beenThere);
         }
 
         if(players[CONSOLEPLAYER].didSecret)
         {
-            GL_DrawPatch(YAHspot[gameEpisode - 1][8].x,
-                         YAHspot[gameEpisode - 1][8].y, beenThere);
+            GL_DrawPatch(YAHspot[wbs->episode][8].x,
+                         YAHspot[wbs->episode][8].y, beenThere);
         }
 
         if(!(interTime & 16))
         {
-            GL_DrawPatch(YAHspot[gameEpisode - 1][gameMap - 1].x,
-                         YAHspot[gameEpisode - 1][gameMap - 1].y, beenThere);
+            GL_DrawPatch(YAHspot[wbs->episode][wbs->currentMap].x,
+                         YAHspot[wbs->episode][wbs->currentMap].y, beenThere);
         }
     }
 }
 
 void IN_DrawYAH(void)
 {
-    int i, x;
-    char* levelname;
+    uint i;
+    int x;
+    const char* levelname;
 
-    levelname = P_GetShortMapName(gameEpisode, wbs->next + 1);
+    levelname = P_GetShortMapName(wbs->episode, wbs->nextMap);
 
     x = 160 - M_StringWidth("NOW ENTERING:", GF_FONTA) / 2;
     M_WriteText2(x, 10, "NOW ENTERING:", GF_FONTA, defFontRGB2[0], defFontRGB2[1], defFontRGB2[2], 1);
@@ -664,22 +664,22 @@ void IN_DrawYAH(void)
     x = 160 - M_StringWidth(levelname, GF_FONTB) / 2;
     M_WriteText2(x, 20, levelname, GF_FONTB, defFontRGB[0], defFontRGB[1], defFontRGB[2], 1);
 
-    for(i = 0; i < gameMap; ++i)
+    for(i = 0; i < wbs->nextMap; ++i)
     {
-        GL_DrawPatch(YAHspot[gameEpisode - 1][i].x,
-                     YAHspot[gameEpisode - 1][i].y, beenThere);
+        GL_DrawPatch(YAHspot[wbs->episode][i].x,
+                     YAHspot[wbs->episode][i].y, beenThere);
     }
 
     if(players[CONSOLEPLAYER].didSecret)
     {
-        GL_DrawPatch(YAHspot[gameEpisode - 1][8].x,
-                     YAHspot[gameEpisode - 1][8].y, beenThere);
+        GL_DrawPatch(YAHspot[wbs->episode][8].x,
+                     YAHspot[wbs->episode][8].y, beenThere);
     }
 
     if(!(interTime & 16) || interState == 3)
     {   // Draw the destination 'X'
-        GL_DrawPatch(YAHspot[gameEpisode - 1][wbs->next].x,
-                     YAHspot[gameEpisode - 1][wbs->next].y, goingThere);
+        GL_DrawPatch(YAHspot[wbs->episode][wbs->nextMap].x,
+                     YAHspot[wbs->episode][wbs->nextMap].y, goingThere);
     }
 }
 
@@ -688,10 +688,10 @@ void IN_DrawSingleStats(void)
     static int sounds;
 
     map_t* map = P_CurrentMap();
-    char* levelname;
+    const char* levelname;
     int x;
 
-    levelname = P_GetShortMapName(gameEpisode, gameMap);
+    levelname = P_GetShortMapName(wbs->episode, wbs->currentMap);
 
     M_WriteText2(50, 65, "KILLS", GF_FONTB, defFontRGB[0], defFontRGB[1],
                  defFontRGB[2], 1);
@@ -767,7 +767,7 @@ void IN_DrawSingleStats(void)
         sounds++;
     }
 
-    if(gameMode != extended || gameEpisode < 4)
+    if(gameMode != extended || wbs->episode < 3)
     {
         M_WriteText2(85, 160, "TIME", GF_FONTB, defFontRGB[0],
                      defFontRGB[1], defFontRGB[2], 1);
@@ -780,7 +780,7 @@ void IN_DrawSingleStats(void)
         M_WriteText2(x, 160, "NOW ENTERING:", GF_FONTA, defFontRGB2[0],
                      defFontRGB2[1], defFontRGB2[2], 1);
 
-        levelname = P_GetShortMapName(gameEpisode, wbs->next + 1);
+        levelname = P_GetShortMapName(wbs->episode, wbs->nextMap);
 
         x = 160 - M_StringWidth(levelname, GF_FONTB) / 2;
         M_WriteText2(x, 170, levelname, GF_FONTB, defFontRGB[0],
@@ -795,9 +795,9 @@ void IN_DrawCoopStats(void)
     static int sounds;
 
     int i, x, ypos;
-    char* levelname;
+    const char* levelname;
 
-    levelname = P_GetShortMapName(gameEpisode, gameMap);
+    levelname = P_GetShortMapName(wbs->episode, wbs->currentMap);
 
     M_WriteText2(95, 35, "KILLS", GF_FONTB, defFontRGB[0], defFontRGB[1],
                  defFontRGB[2], 1);

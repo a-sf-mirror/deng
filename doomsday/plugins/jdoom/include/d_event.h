@@ -42,10 +42,11 @@ typedef enum {
     GA_NEWGAME,
     GA_LOADGAME,
     GA_SAVEGAME,
-    GA_COMPLETED,
+    GA_MAPCOMPLETED,
     GA_VICTORY,
     GA_LEAVEMAP,
-    GA_SCREENSHOT
+    GA_SCREENSHOT,
+    GA_QUIT
 } gameaction_t;
 
 /*

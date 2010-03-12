@@ -204,7 +204,7 @@ void P_Init(void)
 #endif
 }
 
-void GameMap_AddPlayerStart(map_t* map, int defaultPlrNum, byte entryPoint,
+void GameMap_AddPlayerStart(map_t* map, int defaultPlrNum, uint entryPoint,
                          boolean deathmatch, float x, float y, float z,
                          angle_t angle, int spawnFlags)
 {
@@ -255,7 +255,7 @@ void GameMap_ClearPlayerStarts(map_t* map)
  * @return              The correct start for the player. The start is in
  *                      the given group for specified entry point.
  */
-const playerstart_t* GameMap_PlayerStart(map_t* map, byte entryPoint, int pnum, boolean deathmatch)
+const playerstart_t* GameMap_PlayerStart(map_t* map, uint entryPoint, int pnum, boolean deathmatch)
 {
     assert(map);
     {
@@ -282,7 +282,7 @@ const playerstart_t* GameMap_PlayerStart(map_t* map, byte entryPoint, int pnum, 
     {
         const playerstart_t* start = &map->_playerStarts[i];
 
-        if(start->entryPoint == entryPoint && start->plrNum - 1 == pnum)
+        if(start->entryPoint == nextMapEntryPoint && start->plrNum - 1 == pnum)
             return start;
         if(!start->entryPoint && start->plrNum - 1 == pnum)
             def = start;
@@ -308,7 +308,7 @@ uint GameMap_NumPlayerStarts(map_t* map, boolean deathmatch)
  * Gives all the players in the game a playerstart.
  * Only needed in co-op games (start spots are random in deathmatch).
  */
-void GameMap_DealPlayerStarts(map_t* map, byte entryPoint)
+void GameMap_DealPlayerStarts(map_t* map, uint entryPoint)
 {
     assert(map);
     {
@@ -463,15 +463,16 @@ void GameMap_SpawnPlayer(map_t* map, int plrNum, playerclass_t pClass,
     p->plr->fixedColorMap = 0;
 
     if(makeCamera)
-        p->plr->flags |= DDPF_CAMERA;
-
-    if(p->plr->flags & DDPF_CAMERA)
     {
+        p->plr->flags |= DDPF_CAMERA;
         p->plr->mo->pos[VZ] += (float) cfg.plrViewHeight;
         p->viewHeight = 0;
     }
     else
+    {
+        p->plr->flags &= ~DDPF_CAMERA;
         p->viewHeight = (float) cfg.plrViewHeight;
+    }
 
     p->viewZ = p->plr->mo->pos[VZ] + p->viewHeight;
 
@@ -632,9 +633,9 @@ void P_RebornPlayer(int plrNum)
     else
     {
 #if __JHEXEN__
-        byte entryPoint = p->rebornPosition;
+        uint entryPoint = p->rebornPosition;
 #else
-        byte entryPoint = 0;
+        uint entryPoint = 0;
 #endif
         boolean foundSpot = false;
         const playerstart_t* assigned = GameMap_PlayerStart(map, entryPoint, plrNum, false);

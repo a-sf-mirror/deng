@@ -46,6 +46,7 @@
 #include "p_user.h"
 #include "hu_menu.h"
 #include "hu_msg.h"
+#include "d_netsv.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -147,11 +148,7 @@ void P_DoTick(void)
     {
         if(!--timerGame)
         {
-#if __JHEXEN__
-            G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, P_GetMapNextMap(gameMap)), 0, false);
-#else
-            G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
-#endif
+            G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, false), 0, false);
         }
     }
 

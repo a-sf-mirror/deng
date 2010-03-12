@@ -4725,7 +4725,7 @@ int SV_SaveGameWorker(void* ptr)
     SV_BeginSegment(ASEG_GAME_HEADER);
 
     // Write current map and difficulty
-    SV_WriteByte(gameMap);
+    SV_WriteByte(gameMap+1);
     SV_WriteByte(gameSkill);
     SV_WriteByte(deathmatch);
     SV_WriteByte(noMonstersParm);
@@ -4750,8 +4750,8 @@ int SV_SaveGameWorker(void* ptr)
     hdr.skill = gameSkill;
     if(fastParm)
         hdr.skill |= 0x80;      // Set high byte.
-    hdr.episode = gameEpisode;
-    hdr.map = gameMap;
+    hdr.episode = gameEpisode+1;
+    hdr.map = gameMap+1;
     hdr.deathmatch = deathmatch;
     hdr.noMonsters = noMonstersParm;
     hdr.respawnMonsters = respawnMonsters;
@@ -4788,8 +4788,8 @@ int SV_SaveGameWorker(void* ptr)
         filename_t          fileName;
 
         // Open the output file
-        dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02d.hxs", savePath,
-                 gameMap);
+        dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02u.hxs", savePath,
+                 gameMap+1);
         M_TranslatePath(fileName, fileName, FILENAME_T_MAXLEN);
         OpenStreamOut(fileName);
 
@@ -4891,8 +4891,8 @@ static boolean readSaveHeader(saveheader_t *hdr, LZFILE *savefile)
 
     AssertSegment(ASEG_GAME_HEADER);
 
-    gameEpisode = 1;
-    gameMap = SV_ReadByte();
+    gameEpisode = 0;
+    gameMap = SV_ReadByte() - 1;
     gameSkill = SV_ReadByte();
     deathmatch = SV_ReadByte();
     noMonstersParm = SV_ReadByte();
@@ -4924,8 +4924,8 @@ static boolean readSaveHeader(saveheader_t *hdr, LZFILE *savefile)
 
     gameSkill = hdr->skill & 0x7f;
     fastParm = (hdr->skill & 0x80) != 0;
-    gameEpisode = hdr->episode;
-    gameMap = hdr->map;
+    gameEpisode = hdr->episode - 1;
+    gameMap = hdr->map - 1;
     deathmatch = hdr->deathmatch;
     noMonstersParm = hdr->noMonsters;
     respawnMonsters = hdr->respawnMonsters;
@@ -5157,8 +5157,8 @@ void SV_SaveClient(unsigned int gameID)
     hdr.magic = MY_CLIENT_SAVE_MAGIC;
     hdr.version = MY_SAVE_VERSION;
     hdr.skill = gameSkill;
-    hdr.episode = gameEpisode;
-    hdr.map = gameMap;
+    hdr.episode = gameEpisode+1;
+    hdr.map = gameMap+1;
     hdr.deathmatch = deathmatch;
     hdr.noMonsters = noMonstersParm;
     hdr.respawnMonsters = respawnMonsters;
@@ -5221,10 +5221,10 @@ void SV_LoadClient(unsigned int gameid)
     noMonstersParm = hdr.noMonsters;
     respawnMonsters = hdr.respawnMonsters;
     // Do we need to change the map?
-    if(gameMap != hdr.map || gameEpisode != hdr.episode)
+    if(gameMap != hdr.map - 1 || gameEpisode != hdr.episode - 1)
     {
-        gameMap = hdr.map;
-        gameEpisode = hdr.episode;
+        gameMap = hdr.map - 1;
+        gameEpisode = hdr.episode - 1;
         G_InitNew(gameSkill, gameEpisode, gameMap);
     }
     map->time = hdr.mapTime;
@@ -5254,8 +5254,8 @@ static void unarchiveMap(map_t* map)
     filename_t fileName;
 
     // Create the name
-    dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02d.hxs", savePath,
-             gameMap);
+    dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02u.hxs", savePath,
+             gameMap+1);
     M_TranslatePath(fileName, fileName, FILENAME_T_MAXLEN);
 
 #ifdef _DEBUG
@@ -5280,7 +5280,7 @@ static void unarchiveMap(map_t* map)
 }
 
 #if __JHEXEN__
-void SV_MapTeleport(int map, int position)
+void SV_MapTeleport(uint map, uint position)
 {
     int                 i, oldKeys = 0, oldPieces = 0, bestWeapon;
     filename_t          fileName;
@@ -5297,7 +5297,7 @@ void SV_MapTeleport(int map, int position)
      * First, determine whether we've been to this map previously and if so,
      * whether we need to load the archived map state.
      */
-    dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02d.hxs", savePath, map);
+    dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02u.hxs", savePath, map+1);
     M_TranslatePath(fileName, fileName, FILENAME_T_MAXLEN);
 
     if(!deathmatch && ExistingFile(fileName))
@@ -5308,15 +5308,15 @@ void SV_MapTeleport(int map, int position)
     if(!deathmatch)
     {
         if(P_GetMapCluster(gameMap) == P_GetMapCluster(map))
-        {   // Same cluster - save map without saving player mobjs
+        {   // Same cluster - save current map without saving player mobjs.
             filename_t fileName;
 
             // Set the mobj archive numbers
             SV_InitThingArchive(P_CurrentMap(), false, false);
 
             // Open the output file
-            dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02d.hxs",
-                     savePath, gameMap);
+            dd_snprintf(fileName, FILENAME_T_MAXLEN, "%shex6%02u.hxs",
+                     savePath, gameMap+1);
             M_TranslatePath(fileName, fileName, FILENAME_T_MAXLEN);
             OpenStreamOut(fileName);
 

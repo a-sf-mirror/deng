@@ -85,7 +85,7 @@ void GameMap_InitLava(map_t* map)
     map->lavaInflictor.flags2 = MF2_FIREDAMAGE | MF2_NODMGTHRUST;
 }
 
-void P_InitSky(int map)
+void P_InitSky(uint map)
 {
     const char* layer1TextureName = P_GetMapSkyLayer1Texture(map);
     const char* layer2TextureName = P_GetMapSkyLayer2Texture(map);
@@ -467,7 +467,7 @@ boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
             // Players must be alive to teleport
             if(!(mo && mo->player && mo->player->playerState == PST_DEAD))
             {
-                G_LeaveMap(mo->player - players, args[0], args[1], false);
+                G_LeaveMap((args[0]!= 0? args[0]-1 : 0), args[1], false);
                 success = true;
             }
         }
@@ -483,12 +483,12 @@ boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
                 if(deathmatch)
                 {
                     // Winning in deathmatch just goes back to map 1
-                    G_LeaveMap(mo->player - players, 1, 0, false);
+                    G_LeaveMap(0, 0, false);
                 }
                 else
                 {
-                    // Passing -1, -1 to G_LeaveMap() starts the Finale
-                    G_LeaveMap(mo->player - players, -1, -1, false);
+                    // Passing DDMAXINT, DDMAXINT to G_LeaveMap() starts the Finale
+                    G_LeaveMap(DDMAXINT, DDMAXINT, false);
                 }
             }
         }

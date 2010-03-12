@@ -76,8 +76,8 @@ float turboMul; // multiplier for turbo
 boolean monsterInfight;
 
 skillmode_t startSkill;
-int startEpisode;
-int startMap;
+uint startEpisode;
+uint startMap;
 boolean autoStart;
 FILE *debugFile;
 
@@ -300,7 +300,7 @@ void G_PreInit(void)
     cfg.slidingCorpses = false;
     cfg.fastMonsters = false;
     cfg.netJumping = true;
-    cfg.netMap = 1;
+    cfg.netMap = 0;
     cfg.netSkill = SM_MEDIUM;
     cfg.netColor = 4;
     cfg.netBFGFreeLook = 0; // Allow free-aim 0=none 1=not BFG 2=All.

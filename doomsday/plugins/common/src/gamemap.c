@@ -214,7 +214,7 @@ static void doDeferredSpawns(map_t* map)
     while(doDeferredSpawn(map));
 }
 
-map_t* P_CreateGameMap(const char mapID[9], int episodeNum, int mapNum)
+map_t* P_CreateGameMap(const char mapID[9], uint episodeNum, uint mapNum)
 {
     map_t* map = P_CreateMap(mapID); // Call base class constructor.
 

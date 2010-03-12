@@ -162,7 +162,7 @@ void WI_initVariables(void /* wbstartstruct_t* wbstartstruct */)
     interTime = 0;
 }
 
-void IN_Start(void)
+void IN_Init(void)
 {
     assert(deathmatch);
 
@@ -280,12 +280,6 @@ void IN_Ticker(void)
 
     // Counter for general background animation.
     bcnt++;
-
-    if(bcnt == 1)
-    {
-        // Intermission music.
-        S_StartMusic("hub", true);
-    }
 
     interTime++;
     if(skipIntermission || (gameType == SINGLE && !hubCount))

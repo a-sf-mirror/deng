@@ -58,11 +58,11 @@ typedef struct {
 
 // These constants are used as the type of vissprite_s.
 typedef enum {
-    VSPR_HIDDEN,
     VSPR_SPRITE,
     VSPR_MASKED_WALL,
     VSPR_TEXPARTICLE,
     VSPR_MODEL,
+    VSPR_FLARE,
     VSPR_LINE
 } visspritetype_t;
 
@@ -110,6 +110,27 @@ typedef struct rendspriteparams_s {
     struct subsector_s* subsector;
 } rendspriteparams_t;
 
+/** @name rendFlareFlags */
+//@{
+/// Do not draw a primary flare (aka halo).
+#define RFF_NO_PRIMARY 0x1
+/// Flares do not turn in response to viewangle/viewdir
+#define RFF_NO_TURN 0x2
+//@}
+
+typedef struct rendflareparams_s {
+    byte            flags; // @see rendFlareFlags.
+    int             size;
+    float           color[3];
+    byte            factor;
+    float           xOff;
+    DGLuint         tex; // Flaremap if flareCustom ELSE (flaretexName id.
+                         // Zero = automatical)
+    float           mul; // Flare brightness factor.
+    boolean         isDecoration;
+    uint            lumIdx;
+} rendflareparams_t;
+
 typedef struct rendtexparticleparams_s {
     float           radius;
     boolean         flatOnPlane, flatOnWall;
@@ -135,8 +156,6 @@ typedef struct vissprite_s {
     visspritetype_t type; // VSPR_* type of vissprite.
     float           distance; // Vissprites are sorted by distance.
     float           center[3];
-    uint            lumIdx; // For the halo (NULL if no halo).
-    boolean         isDecoration;
 
     // An anonymous union for the data.
     union vissprite_data_u {
@@ -144,6 +163,7 @@ typedef struct vissprite_s {
         rendmaskedwallparams_t wall;
         rendtexparticleparams_t texpt;
         rendmodelparams_t model;
+        rendflareparams_t flare;
         rendlineparams_t line;
     } data;
 } vissprite_t;

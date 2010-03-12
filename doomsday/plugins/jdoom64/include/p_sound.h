@@ -34,7 +34,7 @@
 
 #include "doomsday.h"
 
-void            S_MapMusic(void);
+void            S_MapMusic(uint episode, uint map);
 void            S_SectorSound(sector_t* sec, int id);
 void            S_PlaneSound(sector_t* sec, int plane, int id);
 #endif

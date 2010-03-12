@@ -710,13 +710,11 @@ void C_DECL A_BFGsound(player_t* player, pspdef_t* psp)
  */
 void P_SetupPsprites(player_t* player)
 {
-    int                 i;
+    int i;
 
     // Remove all psprites.
     for(i = 0; i < NUMPSPRITES; ++i)
-    {
         player->pSprites[i].state = NULL;
-    }
 
     // Bring up the new weapon.
     if(player->pendingWeapon == WT_NOCHANGE)

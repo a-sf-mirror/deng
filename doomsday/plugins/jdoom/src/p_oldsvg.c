@@ -888,8 +888,8 @@ boolean SV_v19_LoadGame(const char* savename)
     savePtr += VERSIONSIZE;
 
     gameSkill = *savePtr++;
-    gameEpisode = *savePtr++;
-    gameMap = *savePtr++;
+    gameEpisode = (*savePtr++) - 1;
+    gameMap = (*savePtr++) - 1;
     for(i = 0; i < 4; ++i)
         players[i].plr->inGame = *savePtr++;
 

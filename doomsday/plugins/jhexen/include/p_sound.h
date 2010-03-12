@@ -37,7 +37,7 @@
 #define MAX_CHANNELS        (16)
 
 int             S_GetSoundID(const char* name);
-void            S_MapMusic(void);
+void            S_MapMusic(uint episode, uint map);
 
 void            S_ParseSndInfoLump(void);
 

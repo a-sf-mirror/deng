@@ -2057,7 +2057,7 @@ void C_DECL A_CyberDeath(mobj_t* actor)
     if(map->bossKilled)
         return;
 
-    if((gameMap != 32) && (gameMap != 33) && (gameMap != 35))
+    if((gameMap != 31) && (gameMap != 32) && (gameMap != 34))
         return;
 
     // Make sure there is a player alive for victory.
@@ -2078,7 +2078,7 @@ void C_DECL A_CyberDeath(mobj_t* actor)
         return;
     }
 
-    if(gameMap == 32 || gameMap == 33)
+    if(gameMap == 31 || gameMap == 32)
     {
         dummyLine = P_AllocDummyLine();
         P_ToXLine(dummyLine)->tag = 666;
@@ -2087,9 +2087,9 @@ void C_DECL A_CyberDeath(mobj_t* actor)
         P_FreeDummyLine(dummyLine);
         return;
     }
-    else if(gameMap == 35)
+    else if(gameMap == 34)
     {
-        G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
+        G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, false), 0, false);
     }
     }
 }
@@ -2150,7 +2150,7 @@ void C_DECL A_BarrelExplode(mobj_t* actor)
     if(map->bossKilled)
         return;
 
-    if(gameMap != 1)
+    if(gameMap != 0)
         return;
 
     if(actor->type != MT_BARREL)
@@ -2200,7 +2200,7 @@ void C_DECL A_BossDeath(mobj_t* mo)
     if(map->bossKilled)
         return;
 
-    if(gameMap != 30)
+    if(gameMap != 29)
         return;
 
     if(mo->type != MT_BITCH)
@@ -2224,7 +2224,7 @@ void C_DECL A_BossDeath(mobj_t* mo)
         return;
     }
 
-    G_LeaveMap(CONSOLEPLAYER, G_GetMapNumber(gameEpisode, gameMap), 0, false);
+    G_LeaveMap(G_GetNextMap(gameEpisode, gameMap, false), 0, false);
     }
 }
 
@@ -2236,7 +2236,7 @@ void C_DECL A_Hoof(mobj_t *mo)
      */
     S_StartSound(SFX_HOOF |
                  (gameMode != commercial &&
-                  gameMap == 8 ? DDSF_NO_ATTENUATION : 0), mo);
+                  gameMap == 7 ? DDSF_NO_ATTENUATION : 0), mo);
     A_Chase(mo);
 }
 
@@ -2248,7 +2248,7 @@ void C_DECL A_Metal(mobj_t *mo)
      */
     S_StartSound(SFX_MEAL |
                  (gameMode != commercial &&
-                  gameMap == 8 ? DDSF_NO_ATTENUATION : 0), mo);
+                  gameMap == 7 ? DDSF_NO_ATTENUATION : 0), mo);
     A_Chase(mo);
 }
 

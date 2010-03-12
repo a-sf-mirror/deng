@@ -77,9 +77,96 @@ LineDef::LineDef(Vertex* vtx1, Vertex* vtx2, SideDef* front, SideDef* back)
         flags[BLOCKING] = true;
 }
 
-dfloat LineDef::lightLevelDelta() const
+static void calcNormal(const linedef_t* l, byte side, pvec2_t normal)
 {
-    return dfloat((1.0f / 255) * ((vtx2().pos.y - vtx1().pos.y) / length * 18));
+    V2_Set(normal, (LINE_VERTEX(l, side^1)->pos[VY] - LINE_VERTEX(l, side)->pos[VY])   / l->length,
+                   (LINE_VERTEX(l, side)->pos[VX]   - LINE_VERTEX(l, side^1)->pos[VX]) / l->length);
+}
+
+static float lightLevelDelta(const pvec2_t normal)
+{
+    return (1.0f / 255) * (normal[VX] * 18) * rendLightWallAngle;
+}
+
+static linedef_t* findBlendNeighbor(const linedef_t* l, byte side, byte right,
+    binangle_t* diff)
+{
+    if(!LINE_BACKSIDE(l) ||
+       LINE_BACKSECTOR(l)->SP_ceilvisheight <= LINE_FRONTSECTOR(l)->SP_floorvisheight ||
+       LINE_BACKSECTOR(l)->SP_floorvisheight >= LINE_FRONTSECTOR(l)->SP_ceilvisheight)
+    {
+        return R_FindSolidLineNeighbor(LINE_SECTOR(l, side), l, l->L_vo(right^side), right, diff);
+    }
+
+    return R_FindLineNeighbor(LINE_SECTOR(l, side), l, l->L_vo(right^side), right, diff);
+}
+
+void LineDef::lightLevelDelta(byte side, float* deltaL, float* deltaR) const
+{
+    vec2_t normal;
+    float delta;
+
+    // Disabled?
+    if(!(rendLightWallAngle > 0))
+    {
+        *deltaL = *deltaR = 0;
+        return;
+    }
+
+    calcNormal(l, side, normal);
+    delta = lightLevelDelta(normal);
+
+    // If smoothing is disabled use this delta for left and right edges.
+    // Must forcibly disable smoothing for polyobj linedefs as they have
+    // no owner rings.
+    if(!rendLightWallAngleSmooth || polyobjOwned)
+    {
+        *deltaL = *deltaR = delta;
+        return;
+    }
+
+    // Find the left neighbour linedef for which we will calculate the
+    // lightlevel delta and then blend with this to produce the value for
+    // the left edge. Blend iff the angle between the two linedefs is less
+    // than 45 degrees.
+    {
+    binangle_t diff = 0;
+    linedef_t* other = findBlendNeighbor(l, side, 0, &diff);
+    if(other && INRANGE_OF(diff, BANG_180, BANG_45))
+    {
+        vec2_t otherNormal;
+
+        calcNormal(other, other->L_v2 != LINE_VERTEX(l, side), otherNormal);
+
+        // Average normals.
+        V2_Sum(otherNormal, otherNormal, normal);
+        otherNormal[VX] /= 2; otherNormal[VY] /= 2;
+
+        *deltaL = lightLevelDelta(otherNormal);
+    }
+    else
+        *deltaL = delta;
+    }
+
+    // Do the same for the right edge but with the right neighbour linedef.
+    {
+    binangle_t diff = 0;
+    linedef_t* other = findBlendNeighbor(l, side, 1, &diff);
+    if(other && INRANGE_OF(diff, BANG_180, BANG_45))
+    {
+        vec2_t otherNormal;
+
+        calcNormal(other, other->L_v1 != LINE_VERTEX(l, side^1), otherNormal);
+
+        // Average normals.
+        V2_Sum(otherNormal, otherNormal, normal);
+        otherNormal[VX] /= 2; otherNormal[VY] /= 2;
+
+        *deltaR = lightLevelDelta(otherNormal);
+    }
+    else
+        *deltaR = delta;
+    }
 }
 
 Vector2f LineDef::unitVector() const

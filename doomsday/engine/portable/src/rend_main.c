@@ -135,6 +135,7 @@ void Rend_Register(void)
     C_VAR_INT2("rend-light-ambient", &ambientLight, 0, 0, 255, R_CalcLightModRange);
     C_VAR_INT2("rend-light-sky", &rendSkyLight, 0, 0, 1, R_MarkAllSectorsForLightGridUpdate);
     C_VAR_FLOAT("rend-light-wall-angle", &rendLightWallAngle, CVF_NO_MAX, 0, 0);
+    C_VAR_BYTE("rend-light-wall-angle-smooth", &rendLightWallAngleSmooth, 0, 0, 1);
     C_VAR_FLOAT("rend-light-attenuation", &rendLightDistanceAttentuation, CVF_NO_MAX, 0, 0);
 
     C_VAR_INT("rend-dev-sky", &devRendSkyMode, CVF_NO_ARCHIVE, 0, 2);
@@ -540,14 +541,13 @@ void Rend_SetupRTU2(rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
 }
 
 static void lightPolygon(rcolor_t* rcolors, size_t numVertices,
-                         const rvertex_t* rvertices,
-                         float sectorLightLevel, const float* sectorLightColor,
-                         biassurface_t* biasSurface, float surfaceLightLevelDelta,
-                         const float* surfaceColorTint, const float* surfaceColorTint2,
-                         float alpha, boolean isSkyMasked, boolean isGlowing,
-                         const float* surfaceNormal,
-
-                         const float* pointInPlane, const float* from, const float* to)
+    const rvertex_t* rvertices, float sectorLightLevel,
+    const float* sectorLightColor, biassurface_t* biasSurface,
+    float surfaceLightLevelDeltaL, float surfaceLightLevelDeltaR,
+    const float* surfaceColorTint, const float* surfaceColorTint2,
+    float alpha, boolean isSkyMasked, boolean isGlowing,
+    const float* surfaceNormal, const float* pointInPlane,
+    const float* from, const float* to)
 {
     boolean isPlane = (pointInPlane != NULL? true : false);
 
@@ -582,43 +582,56 @@ static void lightPolygon(rcolor_t* rcolors, size_t numVertices,
         }
         else
         {
-            float ll = sectorLightLevel + surfaceLightLevelDelta;
-            uint i;
+            float blendedColor[4];
+            const float* finalColor;
 
-            // Calculate the color for each vertex, blended with surface color tint?
+            // Blended with surface color tint?
             if(surfaceColorTint &&
                (surfaceColorTint[CR] < 1 || surfaceColorTint[CG] < 1 || surfaceColorTint[CB] < 1))
+            {   // Blend sector light+color+surfacecolor
+                blendedColor[CR] = surfaceColorTint[CR] * sectorLightColor[CR];
+                blendedColor[CG] = surfaceColorTint[CG] * sectorLightColor[CG];
+                blendedColor[CB] = surfaceColorTint[CB] * sectorLightColor[CB];
+                blendedColor[CA] = 1;
+                finalColor = &blendedColor[0];
+            }
+            else
+            {   // Use sector light+color only
+                finalColor = sectorLightColor;
+            }
+
+            if(isPlane)
             {
-                float vColor[4];
+                float ll = sectorLightLevel + surfaceLightLevelDeltaL;
+                uint i;
 
-                // Blend sector light+color+surfacecolor
-                vColor[CR] = surfaceColorTint[CR] * sectorLightColor[CR];
-                vColor[CG] = surfaceColorTint[CG] * sectorLightColor[CG];
-                vColor[CB] = surfaceColorTint[CB] * sectorLightColor[CB];
-                vColor[CA] = 1;
-
+                // Use sector light+color only
                 for(i = 0; i < numVertices; ++i)
-                    R_VertexColorsApplyAmbientLight(&rcolors[i], &rvertices[i], ll, vColor);
+                    R_VertexColorsApplyAmbientLight(&rcolors[i], &rvertices[i], ll, finalColor);
             }
             else
             {
-                // Use sector light+color only
-                for(i = 0; i < numVertices; ++i)
-                    R_VertexColorsApplyAmbientLight(&rcolors[i], &rvertices[i], ll, sectorLightColor);
-            }
+                float lightLevelL = sectorLightLevel + surfaceLightLevelDeltaL;
+                float lightLevelR = sectorLightLevel + surfaceLightLevelDeltaR;
 
-            // Bottom color (if different from top)?
-            if(!isPlane && surfaceColorTint2)
-            {
-                float vColor[3];
+                R_VertexColorsApplyAmbientLight(&rcolors[0], &rvertices[0], lightLevelL, finalColor);
+                R_VertexColorsApplyAmbientLight(&rcolors[1], &rvertices[1], lightLevelL, finalColor);
+                R_VertexColorsApplyAmbientLight(&rcolors[2], &rvertices[2], lightLevelR, finalColor);
+                R_VertexColorsApplyAmbientLight(&rcolors[3], &rvertices[3], lightLevelR, finalColor);
 
-                // Blend sector light+color+surfacecolor
-                vColor[CR] = surfaceColorTint2[CR] * sectorLightColor[CR];
-                vColor[CG] = surfaceColorTint2[CG] * sectorLightColor[CG];
-                vColor[CB] = surfaceColorTint2[CB] * sectorLightColor[CB];
+                // Bottom color (if different from top)?
+                if(surfaceColorTint2)
+                {
+                    float vColor[3];
 
-                R_VertexColorsApplyAmbientLight(&rcolors[0], &rvertices[0], ll, vColor);
-                R_VertexColorsApplyAmbientLight(&rcolors[2], &rvertices[2], ll, vColor);
+                    // Blend sector light+color+surfacecolor
+                    vColor[CR] = surfaceColorTint2[CR] * sectorLightColor[CR];
+                    vColor[CG] = surfaceColorTint2[CG] * sectorLightColor[CG];
+                    vColor[CB] = surfaceColorTint2[CB] * sectorLightColor[CB];
+
+                    R_VertexColorsApplyAmbientLight(&rcolors[0], &rvertices[0], lightLevelL, vColor);
+                    R_VertexColorsApplyAmbientLight(&rcolors[2], &rvertices[2], lightLevelR, vColor);
+                }
             }
         }
 
@@ -895,11 +908,9 @@ void Rend_AddMaskedPoly(const rvertex_t* rvertices,
     midpoint[VZ] = (rvertices[0].pos[VZ] + rvertices[3].pos[VZ]) / 2;
 
     vis->type = VSPR_MASKED_WALL;
-    vis->lumIdx = 0;
     vis->center[VX] = midpoint[VX];
     vis->center[VY] = midpoint[VY];
     vis->center[VZ] = midpoint[VZ];
-    vis->isDecoration = false;
     vis->distance = R_PointDist2D(midpoint);
     vis->data.wall.tex = rTU[TU_PRIMARY].tex;
     vis->data.wall.magMode = rTU[TU_PRIMARY].magMode;
@@ -964,7 +975,7 @@ static void renderWorldSegAsVisSprite(rendseg_t* rseg, rvertex_t* rvertices,
 
     lightPolygon(rcolors, 4, rvertices,
                  rseg->sectorLightLevel, rseg->sectorLightColor,
-                 rseg->biasSurface, rseg->surfaceLightLevelDelta,
+                 rseg->biasSurface, rseg->surfaceLightLevelDeltaL, rseg->surfaceLightLevelDeltaR,
                  rseg->surfaceColorTint, rseg->surfaceColorTint2, alpha,
                  RendSeg_SkyMasked(rseg), (rseg->flags & RSF_GLOW) != 0,
                  rseg->normal, NULL, rseg->from, rseg->to);
@@ -1310,7 +1321,7 @@ static void renderWorldSeg(rendseg_t* rseg, uint numVertices, rvertex_t* rvertic
 
     lightPolygon(rcolors + colorIndices[COLOR_PRIMARY], 4, rvertices,
                  rseg->sectorLightLevel, rseg->sectorLightColor,
-                 rseg->biasSurface, rseg->surfaceLightLevelDelta,
+                 rseg->biasSurface, rseg->surfaceLightLevelDeltaL, rseg->surfaceLightLevelDeltaR,
                  rseg->surfaceColorTint, rseg->surfaceColorTint2, 1.0f,
                  RendSeg_SkyMasked(rseg), (rseg->flags & RSF_GLOW) != 0,
                  rseg->normal, NULL, rseg->from, rseg->to);
@@ -1405,7 +1416,7 @@ static void renderWorldPlane(rendplane_t* rplane, uint numVertices, rvertex_t* r
 
     lightPolygon(rcolors + colorIndices[COLOR_PRIMARY], numVertices, rvertices,
                  rplane->sectorLightLevel, rplane->sectorLightColor,
-                 rplane->biasSurface, rplane->surfaceLightLevelDelta,
+                 rplane->biasSurface, rplane->surfaceLightLevelDelta, rplane->surfaceLightLevelDelta,
                  rplane->surfaceColorTint, NULL, 1.0f,
                  RendPlane_SkyMasked(rplane), (rplane->flags & RPF_GLOW) != 0,
                  rplane->normal, pointInPlane, NULL, NULL);
@@ -2090,9 +2101,15 @@ static void Rend_RenderSubsector(face_t* face)
         LO_ClipInSubsectorBySight(subsector);
     }
 
-    // Sprites for this subsector have to be drawn. This must be done before
-    // the segments of this subsector are added to the clipper. Otherwise
-    // the sprites would get clipped by them, and that wouldn't be right.
+    /**
+     * Sprites for this subsector have to be drawn.
+     * @note
+     * Must be done BEFORE the segments of this subsector are added to the
+     * clipper. Otherwise the sprites would get clipped by them, and that
+     * wouldn't be right.
+     * Must be done AFTER the lumobjs have been clipped as this affects the
+     * projection of flares.
+     */
     R_ProjectVisSprites(subsector);
 
     // Draw the various skyfixes for all front facing segs in this subsector
