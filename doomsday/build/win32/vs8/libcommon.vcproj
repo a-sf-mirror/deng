@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\libcommon\include"
+				AdditionalIncludeDirectories="..\..\..\libdeng2\include;..\..\..\libcommon\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;LIBCOMMON_EXPORTS;LIBCOMMON_RELEASE_LABEL=\&quot;Dev\&quot;;LIBCOMMON_MAJOR_VERSION=1;LIBCOMMON_MINOR_VERSION=0;LIBCOMMON_PATCHLEVEL=0"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies=""
+				AdditionalDependencies="libdeng2.lib"
 				OutputFile="$(OutDir)$(ProjectName).dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;"
