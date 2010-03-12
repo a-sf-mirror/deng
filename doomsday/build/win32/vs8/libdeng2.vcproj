@@ -598,11 +598,87 @@
 				Name="worldsys"
 				>
 				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\halfedgeds.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\linedef.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\linedefblockmap.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\lumobjblockmap.cc"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\libdeng2\src\worldsys\map.cc"
 					>
 				</File>
 				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\material.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\node.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\nodebuilder.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\nodepile.cc"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\libdeng2\src\worldsys\object.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\particleblockmap.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\plane.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\polyobj.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\sector.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\seg.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\sidedef.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\subsector.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\subsectorblockmap.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\superblock.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\surface.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\thingblockmap.cc"
 					>
 				</File>
 				<File
@@ -611,6 +687,10 @@
 				</File>
 				<File
 					RelativePath="..\..\..\libdeng2\src\worldsys\user.cc"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\src\worldsys\vertex.cc"
 					>
 				</File>
 				<File
@@ -1184,7 +1264,35 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\halfedgeds.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\halfedgeinfo.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\linedef.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\linedefblockmap.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\lumobjblockmap.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\libdeng2\include\de\worldsys\map.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\maprectangle.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\material.h"
 					>
 				</File>
 				<File
@@ -1192,11 +1300,27 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\nodebuilder.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\nodepile.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\libdeng2\include\de\worldsys\object.h"
 					>
 				</File>
 				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\particleblockmap.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\libdeng2\include\de\worldsys\plane.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\polyobj.h"
 					>
 				</File>
 				<File
@@ -1216,7 +1340,23 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\subsectorblockmap.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\superblock.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\surface.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\libdeng2\include\de\worldsys\thing.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\libdeng2\include\de\worldsys\thingblockmap.h"
 					>
 				</File>
 				<File
