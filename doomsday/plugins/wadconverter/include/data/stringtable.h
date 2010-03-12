@@ -24,8 +24,7 @@
 #ifndef STRINGTABLE_H
 #define STRINGTABLE_H
 
-#include "de/String"
-
+#include <string>
 #include <vector>
 
 namespace de
@@ -37,7 +36,7 @@ namespace de
     {
     private:
         /// The string table itself.
-        typedef std::vector<String> Strings;
+        typedef std::vector<std::string> Strings;
         Strings _strings;
 
     public:
@@ -55,7 +54,7 @@ namespace de
          *
          * @return          Identifier of the inserted string.
          */
-        StringId insert(const String& name);
+        StringId insert(const std::string& name);
         StringId insert(const char* name);
 
         /**
@@ -63,7 +62,7 @@ namespace de
          *
          * @return          Identifier of the located string else @c NONINDEX if not found.
          */
-        StringId find(const String& name);
+        StringId find(const std::string& name);
         StringId find(const char* name);
 
         /**
@@ -74,9 +73,9 @@ namespace de
         /**
          * Locate a string in the table by its identifier.
          *
-         * @return          String associated with the specified identifier.
+         * @return          std::string associated with the specified identifier.
          */
-        const String& get(StringId Id);
+        const std::string& get(StringId Id);
     };
 }
 

@@ -37,7 +37,7 @@ StringTable::~StringTable()
     clear();
 }
 
-StringTable::StringId StringTable::find(const String& name)
+StringTable::StringId StringTable::find(const std::string& name)
 {
     Strings::iterator it = std::find(_strings.begin(), _strings.end(), name);
     if(it != _strings.end())
@@ -48,11 +48,11 @@ StringTable::StringId StringTable::find(const String& name)
 StringTable::StringId StringTable::find(const char* name)
 {
     assert(name && name[0]);
-    String s = name;
+    std::string s = name;
     return find(s);
 }
 
-StringTable::StringId StringTable::insert(const String& name)
+StringTable::StringId StringTable::insert(const std::string& name)
 {
     StringId Id;
     if((Id = find(name)) != StringTable::NONINDEX)
@@ -64,11 +64,11 @@ StringTable::StringId StringTable::insert(const String& name)
 StringTable::StringId StringTable::insert(const char* name)
 {
     assert(name && name[0]);
-    String s = name;
+    std::string s = name;
     return insert(s);
 }
 
-const String& StringTable::get(StringTable::StringId Id)
+const std::string& StringTable::get(StringTable::StringId Id)
 {
     assert(Id != StringTable::NONINDEX);
     if(Id - 1 > _strings.size())

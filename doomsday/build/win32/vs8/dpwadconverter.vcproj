@@ -51,7 +51,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\libdeng2\include;..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
+				AdditionalIncludeDirectories="..\..\..\engine\api;..\..\..\plugins\wadconverter\include;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;EXAMPLE_PLUGIN;WIN32;_DEBUG;_WINDOWS;_USRDLL;DPWADCONVERTER_EXPORTS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -80,7 +80,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Doomsday.lib libdeng2.lib"
+				AdditionalDependencies="Doomsday.lib"
 				OutputFile="$(OutDir)$(ProjectName).dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
