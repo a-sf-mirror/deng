@@ -901,10 +901,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\common\include\p_iterlist.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\plugins\common\include\p_map.h"
 				>
 			</File>
@@ -1094,10 +1090,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\common\src\p_inventory.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\plugins\common\src\p_iterlist.c"
 				>
 			</File>
 			<File

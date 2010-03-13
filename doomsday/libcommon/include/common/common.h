@@ -1,7 +1,8 @@
 /**
  * @mainpage The Doomsday Engine Project: libcommon
  *
- * Copyright &copy; 2009 Jaakko Ker&auml;nen <jaakko.keranen@iki.fi>
+ * Copyright &copy; 2009-2010 Jaakko Ker&auml;nen <jaakko.keranen@iki.fi>
+ * Copyright &copy; 2005-2010 Daniel Swanson <danij@dengine.net>
  *
  * <p>This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

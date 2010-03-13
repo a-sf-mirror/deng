@@ -909,10 +909,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\common\include\p_iterlist.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\plugins\common\include\p_map.h"
 				>
 			</File>
@@ -1109,10 +1105,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\common\src\p_iterlist.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\plugins\common\src\p_map.c"
 				>
 			</File>
@@ -1250,10 +1242,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\jhexen\include\mn_def.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\plugins\jhexen\include\p_acs.h"
 				>
 			</File>
 			<File
@@ -1434,10 +1422,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\jhexen\src\m_random.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\plugins\jhexen\src\p_acs.c"
 				>
 			</File>
 			<File

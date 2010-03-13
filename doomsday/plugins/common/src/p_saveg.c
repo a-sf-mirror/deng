@@ -380,7 +380,7 @@ static thinkerinfo_t thinkerInfo[] = {
      0,
      ActionScriptThinker_Write,
      ActionScriptThinker_Read,
-     sizeof(actionscript_thinker_t)
+     sizeof(ActionScriptThinker)
     },
     {
      TC_FLOOR_WAGGLE,

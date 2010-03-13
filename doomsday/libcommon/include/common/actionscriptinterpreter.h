@@ -19,36 +19,14 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBCOMMON_ACTIONSCRIPTINTERPRETER_H
-#define LIBCOMMON_ACTIONSCRIPTINTERPRETER_H
+#ifndef LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H
+#define LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H
 
-/**
- * Action Script Thinker.
- */
-struct actionscript_thinker_t {
-    static const dint AST_MAX_VARS = 10;
-    static const dint AST_STACK_DEPTH = 32;
+#include "common.h"
 
-    thinker_t thinker;
-    dint delayCount;
-    actionscriptid_t scriptId;
-    const dint* bytecodePos;
-    dint infoIndex;
-    dint stack[AST_STACK_DEPTH];
-    dint stackDepth;
-    dint vars[AST_MAX_VARS];
-    Thing* activator;
-    LineDef* lineDef;
-    dint lineSide;
+#include "common/GameMap"
 
-    void think();
-
-    void write() const;
-
-    dint read();
-};
-
-typedef dint actionscriptid_t;
+typedef de::dint actionscriptid_t;
 
 /**
  * Interpreter for Hexen format ACS bytecode.
@@ -56,36 +34,36 @@ typedef dint actionscriptid_t;
 class ActionScriptInterpreter
 {
 private:
-    static const dint MAX_MAP_VARS = 32;
-    static const dint MAX_WORLD_VARS = 64;
+    static const de::dint MAX_MAP_VARS = 32;
+    static const de::dint MAX_WORLD_VARS = 64;
 
-    static const dint PRINT_BUFFER_SIZE = 256;
+    static const de::dint PRINT_BUFFER_SIZE = 256;
 
     struct Bytecode {
-        const dbyte* base;
-        dint numScripts;
+        const de::dbyte* base;
+        de::dint numScripts;
         struct script_info_s* scriptInfo;
 
-        dint numStrings;
-        char const** strings;
+        de::dint numStrings;
+        de::dchar const** strings;
     };
 
     struct script_store_t {
         /// Target map.
-        duint map;
+        de::duint map;
 
         /// Script number on target map.
         actionscriptid_t scriptId;
 
         /// Arguments passed to script (padded to 4 for alignment).
-        dbyte args[4];
+        de::dbyte args[4];
     };
 
 public:
     ActionScriptInterpreter();
     ~ActionScriptInterpreter();
 
-    void load(duint map, lumpnum_t lumpNum);
+    void load(de::duint map, lumpnum_t lumpNum);
 
     void writeWorldState() const;
 
@@ -98,17 +76,17 @@ public:
     /**
      * Executes all deferred script start commands belonging to the specified map.
      */
-    void startAll(duint map);
+    void startAll(de::duint map);
 
-    bool start(actionscriptid_t scriptId, duint map, dbyte* args, Thing* activator, LineDef* lineDef, dint side);
+    bool start(actionscriptid_t scriptId, de::duint map, de::dbyte* args, Thing* activator, LineDef* lineDef, de::dint side);
 
-    bool stop(actionscriptid_t scriptId, duint map);
+    bool stop(actionscriptid_t scriptId, de::duint map);
 
-    bool suspend(actionscriptid_t scriptId, duint map);
+    bool suspend(actionscriptid_t scriptId, de::duint map);
 
-    void tagFinished(dint tag) const;
+    void tagFinished(de::dint tag) const;
 
-    void polyobjFinished(dint po) const;
+    void polyobjFinished(de::dint po) const;
 
     void printScriptInfo(actionscriptid_t scriptId);
 
@@ -117,35 +95,35 @@ private:
     Bytecode _bytecode;
 
     /// List of deferred script start commands.
-    dint _scriptStoreSize;
+    de::dint _scriptStoreSize;
     script_store_t* _scriptStore;
 
-    dint _worldVars[MAX_WORLD_VARS];
-    dbyte _specArgs[8];
-    dint _mapVars[MAX_MAP_VARS];
+    de::dint _worldVars[MAX_WORLD_VARS];
+    de::dbyte _specArgs[8];
+    de::dint _mapVars[MAX_MAP_VARS];
 
-    dchar _printBuffer[PRINT_BUFFER_SIZE];
+    de::dchar _printBuffer[PRINT_BUFFER_SIZE];
 
     void unloadBytecode();
 
     actionscript_thinker_t* createActionScriptThinker(GameMap* map,
-        actionscriptid_t scriptId, const dint* bytecodePos, dint delayCount,
-        dint infoIndex, Thing* activator, LineDef* lineDef, dint lineSide,
-        const dbyte* args, dint numArgs);
+        actionscriptid_t scriptId, const de::dint* bytecodePos, de::dint delayCount,
+        de::dint infoIndex, Thing* activator, LineDef* lineDef, de::dint lineSide,
+        const de::dbyte* args, de::dint numArgs);
 
-    bool startScript(actionscriptid_t scriptId, duint map, dbyte* args, Thing* activator,
-        LineDef* lineDef, dint lineSide, actionscript_thinker_t** newScript);
+    bool startScript(actionscriptid_t scriptId, de::duint map, de::dbyte* args, Thing* activator,
+        LineDef* lineDef, de::dint lineSide, actionscript_thinker_t** newScript);
 
     void scriptFinished(actionscriptid_t scriptId);
 
-    bool addToScriptStore(actionscriptid_t scriptId, duint map, dbyte* args);
+    bool addToScriptStore(actionscriptid_t scriptId, de::duint map, de::dbyte* args);
 
-    dint indexForScriptId(actionscriptid_t scriptId);
+    de::dint indexForScriptId(actionscriptid_t scriptId);
 
-    bool tagBusy(dint tag);
+    bool tagBusy(de::dint tag);
 
     /// @todo Does not belong in this class.
-    dint countThingsOfType(GameMap* map, dint type, dint tid);
+    de::dint countThingsOfType(GameMap* map, de::dint type, de::dint tid);
 };
 
-#endif /* LIBCOMMON_ACTIONSCRIPTINTERPRETER_H */
+#endif /* LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H */

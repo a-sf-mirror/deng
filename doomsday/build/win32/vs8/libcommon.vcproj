@@ -183,6 +183,14 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\..\..\libcommon\src\actionscriptinterpreter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\libcommon\src\actionscriptthinker.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\libcommon\src\gamemap.cc"
 				>
 			</File>
@@ -194,12 +202,24 @@
 				RelativePath="..\..\..\libcommon\src\gameworld.cc"
 				>
 			</File>
+			<File
+				RelativePath="..\..\..\libcommon\src\iterlist.cc"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\..\..\libcommon\include\common\actionscriptinterpreter.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\libcommon\include\common\actionscriptthinker.h"
+				>
+			</File>
 			<File
 				RelativePath="..\..\..\libcommon\include\common\common.h"
 				>
@@ -218,6 +238,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\libcommon\include\common\gameworld.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\libcommon\include\common\iterlist.h"
 				>
 			</File>
 		</Filter>
