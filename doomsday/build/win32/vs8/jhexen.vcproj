@@ -849,10 +849,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\plugins\common\include\gamemap.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\plugins\common\include\hu_inventory.h"
 				>
 			</File>
@@ -1046,10 +1042,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\plugins\common\src\g_update.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\plugins\common\src\gamemap.c"
 				>
 			</File>
 			<File
