@@ -138,7 +138,7 @@ de::String AnimatedInterpreter::interpretFlatAnimationDef(const AnimationDef& de
 
 de::String AnimatedInterpreter::interpretAnimationDef(const AnimationDef& def)
 {
-    if(def.isTexture)
+    if(def.flags[AnimationDef::ISTEXTURE])
     {
         return interpretTextureAnimationDef(def);
     }

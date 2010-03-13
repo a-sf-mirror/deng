@@ -70,15 +70,27 @@ namespace wadconverter
 
         /// Intermediate representation of ANIMATED definitions.
         struct AnimationDef {
-            bool isTexture; // @c false = it is a flat.
+            /// Definition defines a texture animation.
+            DEFINE_FLAG(ISTEXTURE, 1);
+            /// ZDoom extension - No decals allowed on surfaces drawn with this.
+            DEFINE_FLAG(NODECALS, 2);
+            /// Eternity extension - A "warped texture/flat animation".
+            DEFINE_FINAL_FLAG(WARP, 3, Flags);
+
+            Flags flags;
             de::String endName;
             de::String startName;
             int32_t speed;
 
             void operator << (de::Reader& from) {
-                int8_t _isTexture;
-                from >> _isTexture;
-                isTexture = _isTexture != 0;
+                int8_t _flags;
+                from >> _flags;
+
+                /// Acknowledge the ZDoom extension for "no decals".
+                if(_flags & 0x1 || _flags & 0x4)
+                    flags[ISTEXTURE] = true;
+                if(_flags & 0x4 || _flags & 0x8)
+                    flags[NODECALS] = true;
 
                 de::FixedByteArray byteSeq(endName, 0, 8);
                 from >> byteSeq; from.seek(1);
@@ -86,7 +98,13 @@ namespace wadconverter
                 de::FixedByteArray byteSeq2(startName, 0, 8);
                 from >> byteSeq2; from.seek(1);
 
-                from >> speed;        
+                from >> speed;
+                /// Acknowledge the Eternity extension for "warped animations".
+                if(speed == 65535)
+                {
+                    flags[WARP] = true;
+                    speed = 8;
+                }
             }
         };
 
