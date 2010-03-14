@@ -299,7 +299,7 @@ int destroyXSThinker(void* p, void* context)
 
 void XS_SetSectorType(sector_t* sec, int special)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     XSector* xsec = P_ToXSector(sec);
     xgsector_t* xg;
     sectortype_t* info;
@@ -404,7 +404,7 @@ void XS_SetSectorType(sector_t* sec, int special)
     }
 }
 
-void XS_Init(map_t* map)
+void XS_Init(GameMap* map)
 {
     assert(map);
     if(Map_NumSectors(map) > 0)
@@ -646,7 +646,7 @@ static int stopPlaneMover(void* p, void* context)
  */
 xgplanemover_t* XS_GetPlaneMover(sector_t* sec, boolean ceiling)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     xgplanemover_t* mover;
     stopplanemoverparams_t params;
 
@@ -859,7 +859,7 @@ int XS_TextureHeight(linedef_t* line, int part)
  *
  * NOTE2: Re-above, obviously that is bad design and should be addressed.
  */
-sector_t* XS_FindTagged(map_t* map, int tag)
+sector_t* XS_FindTagged(GameMap* map, int tag)
 {
     assert(map);
     {
@@ -907,7 +907,7 @@ sector_t* XS_FindTagged(map_t* map, int tag)
 /**
  * Returns a pointer to the first sector with the specified act tag.
  */
-sector_t* XS_FindActTagged(map_t* map, int tag)
+sector_t* XS_FindActTagged(GameMap* map, int tag)
 {
     assert(map);
     {
@@ -995,7 +995,7 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
                     uint* refdata, float* height, material_t** mat,
                     sector_t** planeSector)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     material_t* otherMat;
     float otherHeight;
     sector_t* otherSec = NULL, *iter;
@@ -1396,7 +1396,7 @@ void XS_InitMovePlane(linedef_t* line)
 int C_DECL XSTrav_MovePlane(sector_t* sector, boolean ceiling, void* context,
                             void* context2, mobj_t* activator)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     linedef_t* line = (linedef_t*) context;
     linetype_t* info = (linetype_t*) context2;
     xgplanemover_t* mover;
@@ -1529,7 +1529,7 @@ int C_DECL XSTrav_MovePlane(sector_t* sector, boolean ceiling, void* context,
 
 void XS_InitStairBuilder(linedef_t* line)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     uint i;
 
     for(i = 0; i < Map_NumSectors(map); ++i)
@@ -1661,7 +1661,7 @@ int spreadBuild(void *ptr, void *context)
     return 1; // Continue iteration.
 }
 
-static void markBuiltSectors(map_t* map)
+static void markBuiltSectors(GameMap* map)
 {
     uint i;
 
@@ -1682,7 +1682,7 @@ static boolean spreadBuildToNeighborAll(linedef_t* origin, linetype_t* info,
                                         boolean picstop, boolean ceiling,
                                         material_t* myMat, int stepCount)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     spreadbuildparams_t params;
     boolean result = false;
     uint i;
@@ -1788,7 +1788,7 @@ boolean spreadBuildToNeighborLowestIDX(linedef_t* origin, linetype_t* info,
                                        material_t* myMat, int stepcount,
                                        sector_t* foundSec)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     findbuildneighborparams_t params;
     boolean result = false;
     uint i;
@@ -1839,7 +1839,7 @@ int C_DECL XSTrav_BuildStairs(sector_t* sector, boolean ceiling,
 {
     assert(sector);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     uint stepCount = 0;
     linedef_t* origin = (linedef_t *) context;
     linetype_t* info = context2;
@@ -2162,7 +2162,7 @@ int C_DECL XSTrav_Teleport(sector_t* sector, boolean ceiling, void* context,
     assert(sector);
     assert(thing);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     mobj_t* mo = NULL;
     boolean ok = false;
     linetype_t* info = context2;
@@ -2633,7 +2633,7 @@ void XS_UpdateLight(sector_t* sec)
 
 void XS_DoChain(sector_t* sec, int ch, int activating, void* actThing)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     xgsector_t* xg;
     sectortype_t* info;
     float flevtime = TIC2FLT(map->time);
@@ -3070,7 +3070,7 @@ float XS_ThrustMul(struct sector_s *sector)
  * updated. However, this is a bit messy operation, prone to errors.
  * Instead, we just disable XG...
  */
-void XS_Update(map_t* map)
+void XS_Update(GameMap* map)
 {
     assert(map);
     {
@@ -3130,7 +3130,7 @@ DEFCC(CCmdMovePlane)
     int p = 0;
     float floorheight, ceilingheight;
     xgplanemover_t* mover;
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     if(argc < 2)
     {

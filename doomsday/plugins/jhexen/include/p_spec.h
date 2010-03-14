@@ -36,7 +36,7 @@
 
 #define MO_TELEPORTMAN          14
 
-void        GameMap_InitLava(struct map_s* map);
+void        GameMap_InitLava(GameMap* map);
 
 boolean     P_ExecuteLineSpecial(int special, byte* args, linedef_t* line, int side, mobj_t* mo);
 boolean     P_StartLockedACS(linedef_t* line, byte* args, mobj_t* mo, int side);
@@ -45,7 +45,7 @@ boolean     P_ActivateLine(linedef_t* ld, mobj_t* mo, int side, int activationTy
 void        P_PlayerInSpecialSector(player_t* plr);
 void        P_PlayerOnSpecialFloor(player_t* plr);
 
-void        P_InitLightning(struct map_s* map);
+void        P_InitLightning(GameMap* map);
 void        P_ForceLightning(void);
 
 typedef enum {
@@ -73,12 +73,12 @@ void        P_ArtiTele(player_t* player);
 
 mobjtype_t  P_MapScriptThingIdToMobjType(int thingId);
 
-boolean     EV_ThingProjectile(struct map_s* map, byte* args, boolean gravity);
-boolean     EV_ThingSpawn(struct map_s* map, byte* args, boolean fog);
-boolean     EV_ThingActivate(struct map_s* map, int tid);
-boolean     EV_ThingDeactivate(struct map_s* map, int tid);
-boolean     EV_ThingRemove(struct map_s* map, int tid);
-boolean     EV_ThingDestroy(struct map_s* map, int tid);
+boolean     EV_ThingProjectile(GameMap* map, byte* args, boolean gravity);
+boolean     EV_ThingSpawn(GameMap* map, byte* args, boolean fog);
+boolean     EV_ThingActivate(GameMap* map, int tid);
+boolean     EV_ThingDeactivate(GameMap* map, int tid);
+boolean     EV_ThingRemove(GameMap* map, int tid);
+boolean     EV_ThingDestroy(GameMap* map, int tid);
 
 void        P_InitSky(uint map);
 

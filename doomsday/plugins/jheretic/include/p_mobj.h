@@ -218,14 +218,14 @@ typedef struct polyobj_s {
     // Heretic-specific data:
 } polyobj_t;
 
-void        P_SpawnPuff(struct map_s* map, float x, float y, float z, angle_t angle);
-void        P_SpawnBlood(struct map_s* map, float x, float y, float z, int damage,
+void        P_SpawnPuff(GameMap* map, float x, float y, float z, angle_t angle);
+void        P_SpawnBlood(GameMap* map, float x, float y, float z, int damage,
                          angle_t angle);
 mobj_t*     P_SpawnMissile(mobjtype_t type, mobj_t* source, mobj_t* dest,
                            boolean checkSpawn);
 mobj_t*     P_SpawnMissileAngle(mobjtype_t type, mobj_t *source,
                                 angle_t angle, float momz);
-mobj_t*     P_SpawnTeleFog(struct map_s* map, float x, float y, angle_t angle);
+mobj_t*     P_SpawnTeleFog(GameMap* map, float x, float y, angle_t angle);
 
 const terraintype_t* P_MobjGetFloorTerrainType(mobj_t *thing);
 float       P_MobjGetFriction(mobj_t *mo);

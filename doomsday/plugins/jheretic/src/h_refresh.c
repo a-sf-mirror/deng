@@ -350,7 +350,7 @@ void H_Display2(void)
 
         if(DD_GetInteger(DD_GAME_DRAW_HUD_HINT))
         {
-            map_t* map = P_CurrentMap();
+            GameMap* map = P_CurrentMap();
 
             // Level information is shown for a few seconds in the
             // beginning of a level.
@@ -475,7 +475,7 @@ void R_SetDoomsdayFlags(mobj_t* mo)
  */
 void R_SetAllDoomsdayFlags(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     if(map)
     {
         uint i;

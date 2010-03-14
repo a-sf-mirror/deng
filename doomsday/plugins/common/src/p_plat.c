@@ -110,7 +110,7 @@ static void stopPlat(plat_t* plat)
 void T_PlatRaise(plat_t* plat)
 {
     result_e res;
-    map_t* map = Thinker_Map((thinker_t*) plat);
+    GameMap* map = Thinker_Map((thinker_t*) plat);
 
     switch(plat->state)
     {
@@ -257,7 +257,7 @@ static int doPlat(linedef_t* line, int tag, plattype_e type, int amount)
 #endif
     XSector* xsec;
     IterList* list;
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)
@@ -516,7 +516,7 @@ static int activatePlat(void* p, void* context)
  *
  * @param tag           Tag of plats that should be reactivated.
  */
-int P_PlatActivate(map_t* map, short tag)
+int P_PlatActivate(GameMap* map, short tag)
 {
     assert(map);
     {
@@ -571,7 +571,7 @@ static int deactivatePlat(void* p, void* context)
  *
  * @return              Number of plats put into stasis.
  */
-int P_PlatDeactivate(map_t* map, short tag)
+int P_PlatDeactivate(GameMap* map, short tag)
 {
     assert(map);
     {

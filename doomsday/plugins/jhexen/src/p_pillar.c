@@ -81,7 +81,7 @@ int EV_BuildPillar(linedef_t* line, byte* args, boolean crush)
 {
     assert(args);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int rtn = 0;
     float newHeight;
     sector_t* sec = NULL;
@@ -160,7 +160,7 @@ int EV_OpenPillar(linedef_t* line, byte* args)
 {
     assert(args);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int rtn = 0;
     sector_t* sec = NULL;
     pillar_t* pillar;

@@ -195,7 +195,7 @@ static boolean checkMissileRange(mobj_t *actor)
  */
 static boolean moveMobj(mobj_t* actor, boolean dropoff)
 {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float pos[3], step[3];
     linedef_t* ld;
     boolean good;
@@ -369,7 +369,7 @@ static void doNewChaseDir(mobj_t *actor, float deltaX, float deltaY)
  */
 static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     sector_t* backsector = DMU_GetPtrp(line, DMU_BACK_SECTOR);
     float* bbox = DMU_GetPtrp(line, DMU_BOUNDING_BOX);
 
@@ -536,7 +536,7 @@ static int massacreMobj(void* p, void* context)
     return true; // Continue iteration.
 }
 
-int P_Massacre(map_t* map)
+int P_Massacre(GameMap* map)
 {
     assert(map);
     {
@@ -577,7 +577,7 @@ void C_DECL A_RectSpecial(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     countmobjoftypeparams_t params;
     int sound;
     mobj_t* mo;
@@ -1476,7 +1476,7 @@ void C_DECL A_MotherBallExplode(mobj_t* spread)
 {
     assert(spread);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int i;
 
     for(i = 0; i < 8; ++i)
@@ -1625,7 +1625,7 @@ void C_DECL A_Tracer(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     angle_t exact;
     float dist, slope;
     mobj_t* dest, *th;
@@ -1822,7 +1822,7 @@ void C_DECL A_PainShootSkull(mobj_t* actor, angle_t angle)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float pos[3];
     mobj_t* newmobj;
     uint an;
@@ -1942,7 +1942,7 @@ void A_Rocketshootpuff(mobj_t* actor, angle_t angle)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     uint an;
     float prestep, pos[3];
     mobj_t* mo;
@@ -2025,7 +2025,7 @@ void C_DECL A_CyberDeath(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     countmobjoftypeparams_t params;
     linedef_t* dummyLine;
     mobj_t* mo;
@@ -2138,7 +2138,7 @@ void C_DECL A_BarrelExplode(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     countmobjoftypeparams_t params;
     linedef_t* dummyLine;
     int i;
@@ -2192,7 +2192,7 @@ void C_DECL A_BossDeath(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     countmobjoftypeparams_t params;
     int i;
 

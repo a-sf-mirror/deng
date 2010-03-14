@@ -287,7 +287,7 @@ result_e T_MovePlane(sector_t* sector, float speed, float dest,
  */
 void T_MoveFloor(floor_t* floor)
 {
-    map_t* map = Thinker_Map((thinker_t*) floor);
+    GameMap* map = Thinker_Map((thinker_t*) floor);
     result_e res;
 
 #if __JHEXEN__
@@ -557,7 +557,7 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
 #else
     int tag = P_ToXLine(line)->tag;
 #endif
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
 #if __JDOOM64__
     // jd64 > bitmip? wha?
@@ -929,7 +929,7 @@ typedef struct {
 static int findSectorNeighborsForStairBuild(void* ptr, void* context)
 {
     linedef_t* li = (linedef_t*) ptr;
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     findsectorneighborsforstairbuildparams_t* params =
         (findsectorneighborsforstairbuildparams_t*) context;
     sector_t* frontSec, *backSec;
@@ -1029,7 +1029,7 @@ int EV_BuildStairs(linedef_t* line, stair_e type)
     float height = 0, stairsize = 0, speed = 0;
     IterList* list;
     spreadsectorparams_t params;
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(!list)
@@ -1124,7 +1124,7 @@ int EV_BuildStairs(linedef_t* line, stair_e type)
 #if __JHEXEN__
 static void enqueueStairSector(sector_t* sec, int type, float height)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     if((map->stairQueueTail + 1) % STAIR_QUEUE_SIZE == map->stairQueueHead)
     {
@@ -1137,7 +1137,7 @@ static void enqueueStairSector(sector_t* sec, int type, float height)
     map->stairQueueTail = (map->stairQueueTail + 1) % STAIR_QUEUE_SIZE;
 }
 
-static sector_t* dequeueStairSector(map_t* map, int* type, float* height)
+static sector_t* dequeueStairSector(GameMap* map, int* type, float* height)
 {
     sector_t* sec;
 
@@ -1159,7 +1159,7 @@ static void processStairSector(sector_t* sec, int type, float height,
                                stairs_e stairsType, int delay, int resetDelay)
 {
     findsectorneighborsforstairbuildparams_t params;
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     floor_t* floor;
 
     height += map->stairData.stepDelta;
@@ -1220,7 +1220,7 @@ int EV_BuildStairs(linedef_t* line, byte* args, int direction, stairs_e stairsTy
     assert(line);
     assert(args);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     float height;
     int delay, type, resetDelay;
     sector_t* sec = NULL, *qSec;
@@ -1301,7 +1301,7 @@ int EV_DoDonut(linedef_t* line)
     int rtn = 0;
     sector_t* sec, *outer, *ring;
     IterList* list;
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(!list)
@@ -1395,7 +1395,7 @@ static int stopFloorCrush(void* p, void* context)
 
 int EV_FloorCrushStop(linedef_t* line, byte* args)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     boolean found = false;
     Map_IterateThinkers(map, T_MoveFloor, stopFloorCrush, &found);
     return (found? 1 : 0);
@@ -1409,7 +1409,7 @@ int EV_DoFloorAndCeiling(linedef_t* line, byte *args, int ftype, int ctype)
 int EV_DoFloorAndCeiling(linedef_t* line, int ftype, int ctype)
 # endif
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 # if __JHEXEN__
     int tag = (int) args[0];
 # else

@@ -844,7 +844,7 @@ void HU_Start(int player)
 
 void HU_Drawer(int player)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     // Don't draw the message log while the map title is up.
     if(!(cfg.mapTitle && map->actualTime < 6 * 35))
@@ -1487,7 +1487,7 @@ void HU_DrawMapCounters(void)
         // Kills.
         if(cfg.counterCheat & (CCH_KILLS | CCH_KILLS_PRCNT))
         {
-            map_t* map = P_CurrentMap();
+            GameMap* map = P_CurrentMap();
 
             strcpy(buf, "Kills: ");
             if(cfg.counterCheat & CCH_KILLS)
@@ -1511,7 +1511,7 @@ void HU_DrawMapCounters(void)
         // Items.
         if(cfg.counterCheat & (CCH_ITEMS | CCH_ITEMS_PRCNT))
         {
-            map_t* map = P_CurrentMap();
+            GameMap* map = P_CurrentMap();
 
             strcpy(buf, "Items: ");
             if(cfg.counterCheat & CCH_ITEMS)
@@ -1535,7 +1535,7 @@ void HU_DrawMapCounters(void)
         // Secrets.
         if(cfg.counterCheat & (CCH_SECRET | CCH_SECRET_PRCNT))
         {
-            map_t* map = P_CurrentMap();
+            GameMap* map = P_CurrentMap();
 
             strcpy(buf, "Secret: ");
             if(cfg.counterCheat & CCH_SECRET)

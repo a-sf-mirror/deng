@@ -375,7 +375,7 @@ void P_v19_UnArchivePlayers(void)
 
 void P_v19_UnArchiveWorld(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     uint i, j;
     float matOffset[2];
     short* get;
@@ -455,7 +455,7 @@ enum thinkerclass_e {
     TC_MOBJ
 };
 
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     byte tClass;
 
     // Remove all the current thinkers.
@@ -765,7 +765,7 @@ void P_v19_UnArchiveSpecials(void)
         tc_endspecials
     };
 
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     byte tClass;
     ceiling_t* ceiling;
     door_t* door;
@@ -856,7 +856,7 @@ void P_v19_UnArchiveSpecials(void)
 
 boolean SV_v19_LoadGame(const char* savename)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int i, a, b, c;
     size_t length;
     char vcheck[VERSIONSIZE];

@@ -32,7 +32,7 @@
 #  error "Using jHeretic headers without __JHERETIC__"
 #endif
 
-int         P_Massacre(struct map_s* map);
+int         P_Massacre(GameMap* map);
 void        P_NoiseAlert(mobj_t* target, mobj_t* emmiter);
 void        P_DSparilTeleport(mobj_t* actor);
 

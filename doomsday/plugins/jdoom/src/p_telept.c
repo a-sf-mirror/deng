@@ -56,7 +56,7 @@
 
 // CODE --------------------------------------------------------------------
 
-mobj_t* P_SpawnTeleFog(map_t* map, float x, float y, angle_t angle)
+mobj_t* P_SpawnTeleFog(GameMap* map, float x, float y, angle_t angle)
 {
     return GameMap_SpawnMobj3f(map, MT_TFOG, x, y, 0, angle, MSF_Z_FLOOR);
 }
@@ -86,7 +86,7 @@ static int findMobj(void* p, void* context)
     return false; // Stop iteration.
 }
 
-static mobj_t* getTeleportDestination(map_t* map, short tag)
+static mobj_t* getTeleportDestination(GameMap* map, short tag)
 {
     IterList* list;
 
@@ -118,7 +118,7 @@ int EV_Teleport(linedef_t* line, int side, mobj_t* mo, boolean spawnFog)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     mobj_t* dest;
 
     if(mo->flags2 & MF2_NOTELEPORT)

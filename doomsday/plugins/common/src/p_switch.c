@@ -313,7 +313,7 @@ void P_SpawnMaterialChanger(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
 {
     assert(side);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     materialchanger_t* mchanger;
 
     mchanger = Z_Calloc(sizeof(*mchanger), PU_MAP, 0);
@@ -350,7 +350,7 @@ void P_StartButton(sidedef_t* side, sidedefsurfaceid_t ssurfaceID,
 {
     assert(side);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     findmaterialchangerparams_t params;
 
     params.side = side;

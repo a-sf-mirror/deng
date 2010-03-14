@@ -410,7 +410,7 @@ boolean         G_Responder(event_t* ev);
 
 void            P_Init(void);
 
-void            P_SetupMap(struct map_s* map, skillmode_t skill);
+void            P_SetupMap(GameMap* map, skillmode_t skill);
 
 byte            P_Random(void);
 void            M_ResetRandom(void);

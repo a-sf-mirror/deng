@@ -81,8 +81,8 @@ int         EV_DoCeiling(linedef_t* line, byte* args, ceilingtype_e type);
 int         EV_DoCeiling(linedef_t* li, ceilingtype_e type);
 #endif
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
-int         P_CeilingActivate(map_t* map, short tag);
+int         P_CeilingActivate(GameMap* map, short tag);
 #endif
-int         P_CeilingDeactivate(map_t* map, short tag);
+int         P_CeilingDeactivate(GameMap* map, short tag);
 
 #endif

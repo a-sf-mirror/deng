@@ -101,7 +101,7 @@ static void stopCeiling(ceiling_t* ceiling)
 
 void T_MoveCeiling(ceiling_t* ceiling)
 {
-    map_t* map = Thinker_Map((thinker_t*) ceiling);
+    GameMap* map = Thinker_Map((thinker_t*) ceiling);
     result_e res;
 
     switch(ceiling->state)
@@ -266,11 +266,11 @@ void T_MoveCeiling(ceiling_t* ceiling)
 }
 
 #if __JDOOM64__
-static int EV_DoCeiling2(map_t* map, linedef_t* line, int tag, float basespeed, ceilingtype_e type)
+static int EV_DoCeiling2(GameMap* map, linedef_t* line, int tag, float basespeed, ceilingtype_e type)
 #elif __JHEXEN__
-static int EV_DoCeiling2(map_t* map, byte* arg, int tag, float basespeed, ceilingtype_e type)
+static int EV_DoCeiling2(GameMap* map, byte* arg, int tag, float basespeed, ceilingtype_e type)
 #else
-static int EV_DoCeiling2(map_t* map, int tag, float basespeed, ceilingtype_e type)
+static int EV_DoCeiling2(GameMap* map, int tag, float basespeed, ceilingtype_e type)
 #endif
 {
     int rtn = 0;
@@ -453,12 +453,12 @@ int EV_DoCeiling(linedef_t* line, ceilingtype_e type)
 #if __JHEXEN__
     assert(args);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     return EV_DoCeiling2(map, args, (int) args[0], (float) args[1] * (1.0 / 8), type);
     }
 #else
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int rtn = 0;
 
     // Reactivate in-stasis ceilings...for certain types.
@@ -512,7 +512,7 @@ static int activateCeiling(void* p, void* context)
  *
  * @return              @c true, if a ceiling is activated.
  */
-int P_CeilingActivate(map_t* map, short tag)
+int P_CeilingActivate(GameMap* map, short tag)
 {
     assert(map);
     {
@@ -564,7 +564,7 @@ static int deactivateCeiling(void* p, void* context)
  *
  * @return              @c true, if a ceiling put in stasis.
  */
-int P_CeilingDeactivate(map_t* map, short tag)
+int P_CeilingDeactivate(GameMap* map, short tag)
 {
     assert(map);
     {

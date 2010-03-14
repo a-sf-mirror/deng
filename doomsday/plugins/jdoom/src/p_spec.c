@@ -788,7 +788,7 @@ static void shootSpecialLine(mobj_t *thing, linedef_t *line)
 void P_PlayerInSpecialSector(player_t* player)
 {
     mobj_t* mo = player->plr->mo;
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     sector_t* sector = DMU_GetPtrp(mo->subsector, DMU_SECTOR);
 
     // Falling, not all the way down yet?
@@ -857,7 +857,7 @@ void P_PlayerInSpecialSector(player_t* player)
 /**
  * Animate planes, scroll walls, etc.
  */
-void GameMap_UpdateSpecials(map_t* map)
+void GameMap_UpdateSpecials(GameMap* map)
 {
     assert(map);
 
@@ -905,7 +905,7 @@ void GameMap_UpdateSpecials(map_t* map)
 /**
  * After the map has been loaded, scan for specials that spawn thinkers.
  */
-void GameMap_SpawnSpecials(map_t* map)
+void GameMap_SpawnSpecials(GameMap* map)
 {
     assert(map);
     {

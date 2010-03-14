@@ -451,7 +451,7 @@ static itemtype_t getItemTypeBySprite(spritetype_e sprite)
  */
 static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
 {
-    map_t* map;
+    GameMap* map;
     if(!plr)
         return false;
     map = Thinker_Map((thinker_t*) plr->plr->mo);
@@ -846,7 +846,7 @@ void P_TouchSpecialMobj(mobj_t* special, mobj_t* toucher)
     assert(special);
     assert(toucher);
     {
-    map_t* map = Thinker_Map((thinker_t*) toucher);
+    GameMap* map = Thinker_Map((thinker_t*) toucher);
     player_t* player;
     float delta;
     itemtype_t item;
@@ -889,7 +889,7 @@ void P_KillMobj(mobj_t* source, mobj_t* target, boolean stomping)
 {
     assert(target);
     {
-    map_t* map = Thinker_Map((thinker_t*) target);
+    GameMap* map = Thinker_Map((thinker_t*) target);
     mobjtype_t item;
     mobj_t* mo;
     unsigned int an;

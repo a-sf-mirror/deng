@@ -161,7 +161,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
  */
 void R_DrawMapTitle(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     float alpha;
     int y = 12, mapnum;
     const char* lname, *lauthor;
@@ -513,7 +513,7 @@ void P_SetDoomsdayFlags(mobj_t* mo)
  */
 void R_SetAllDoomsdayFlags(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     if(map)
     {
         uint i;

@@ -367,7 +367,7 @@ void P_MobjMoveXY(mobj_t* mo)
     {
     static const int windTab[3] = { 2048 * 5, 2048 * 10, 2048 * 25 };
 
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     float posTry[2];
     player_t* player;
     float move[2];
@@ -720,7 +720,7 @@ void P_MonsterFallingDamage(mobj_t* mo)
 
 void P_MobjMoveZ(mobj_t* mo)
 {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     float gravity, dist, delta;
 
     // $democam: cameramen get special z movement
@@ -1012,7 +1012,7 @@ void P_MobjThinker(mobj_t* mobj)
 {
     assert(mobj);
     {
-    map_t* map = Thinker_Map((thinker_t*) mobj);
+    GameMap* map = Thinker_Map((thinker_t*) mobj);
 
     if(mobj->ddFlags & DDMF_REMOTE) // Remote mobjs are handled separately.
         return;
@@ -1204,7 +1204,7 @@ void P_MobjThinker(mobj_t* mobj)
     }
 }
 
-mobj_t* GameMap_SpawnMobj3f(map_t* map, mobjtype_t type, float x,
+mobj_t* GameMap_SpawnMobj3f(GameMap* map, mobjtype_t type, float x,
     float y, float z, angle_t angle, int spawnFlags)
 {
     assert(map);
@@ -1326,7 +1326,7 @@ mobj_t* GameMap_SpawnMobj3f(map_t* map, mobjtype_t type, float x,
     }
 }
 
-mobj_t* GameMap_SpawnMobj3fv(map_t* map, mobjtype_t type,
+mobj_t* GameMap_SpawnMobj3fv(GameMap* map, mobjtype_t type,
     const float pos[3], angle_t angle, int spawnFlags)
 {
     assert(map);
@@ -1336,7 +1336,7 @@ mobj_t* GameMap_SpawnMobj3fv(map_t* map, mobjtype_t type,
 static int addToTIDList(void* p, void* context)
 {
     mobj_t* mo = (mobj_t*) p;
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     size_t* count = (size_t*) context;
 
     if(mo->tid != 0)
@@ -1352,7 +1352,7 @@ static int addToTIDList(void* p, void* context)
     return true; // Continue iteration.
 }
 
-void P_CreateTIDList(map_t* map)
+void P_CreateTIDList(GameMap* map)
 {
     assert(map);
     {
@@ -1367,7 +1367,7 @@ void P_MobjInsertIntoTIDList(mobj_t* mo, int tid)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int i, index;
 
     index = -1;
@@ -1399,7 +1399,7 @@ void P_MobjRemoveFromTIDList(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int i;
 
     if(!mo->tid)
@@ -1420,7 +1420,7 @@ void P_MobjRemoveFromTIDList(mobj_t* mo)
     }
 }
 
-mobj_t* P_FindMobjFromTID(map_t* map, int tid, int* searchPosition)
+mobj_t* P_FindMobjFromTID(GameMap* map, int tid, int* searchPosition)
 {
     assert(map);
     assert(searchPosition);
@@ -1441,7 +1441,7 @@ mobj_t* P_FindMobjFromTID(map_t* map, int tid, int* searchPosition)
     }
 }
 
-void P_SpawnPuff(map_t* map, float x, float y, float z, angle_t angle)
+void P_SpawnPuff(GameMap* map, float x, float y, float z, angle_t angle)
 {
     assert(map);
     {
@@ -1478,7 +1478,7 @@ void P_SpawnPuff(map_t* map, float x, float y, float z, angle_t angle)
     }
 }
 
-void P_SpawnBloodSplatter(map_t* map, float x, float y, float z, mobj_t* originator)
+void P_SpawnBloodSplatter(GameMap* map, float x, float y, float z, mobj_t* originator)
 {
     assert(map);
     {
@@ -1494,7 +1494,7 @@ void P_SpawnBloodSplatter(map_t* map, float x, float y, float z, mobj_t* origina
     }
 }
 
-void P_SpawnBloodSplatter2(map_t* map, float x, float y, float z, mobj_t* originator)
+void P_SpawnBloodSplatter2(GameMap* map, float x, float y, float z, mobj_t* originator)
 {
     assert(map);
     {
@@ -1514,7 +1514,7 @@ void P_SpawnBloodSplatter2(map_t* map, float x, float y, float z, mobj_t* origin
 
 boolean P_HitFloor(mobj_t* thing)
 {
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
     mobj_t* mo;
     int smallsplash = false;
     const terraintype_t* tt;
@@ -1662,7 +1662,7 @@ void P_BlastMobj(mobj_t* source, mobj_t* victim, float strength)
     assert(source);
     assert(victim);
     {
-    map_t* map = Thinker_Map((thinker_t*) victim);
+    GameMap* map = Thinker_Map((thinker_t*) victim);
     uint an;
     angle_t angle;
     mobj_t* mo;
@@ -1928,7 +1928,7 @@ boolean P_HealRadius(player_t* player)
     assert(player);
     {
     mobj_t* pmo = player->plr->mo;
-    map_t* map = Thinker_Map((thinker_t*) pmo);
+    GameMap* map = Thinker_Map((thinker_t*) pmo);
     radiusgiveparams_t  params;
 
     params.effective = false;
@@ -1989,7 +1989,7 @@ mobj_t* P_SpawnMissile(mobjtype_t type, mobj_t* source, mobj_t* dest)
     assert(source);
     assert(dest);
     {
-    map_t* map = Thinker_Map((thinker_t*) source);
+    GameMap* map = Thinker_Map((thinker_t*) source);
     uint an;
     float z;
     mobj_t* th;
@@ -2076,7 +2076,7 @@ mobj_t* P_SpawnMissileXYZ(mobjtype_t type, float x, float y, float z,
     assert(source);
     assert(dest);
     {
-    map_t* map = Thinker_Map((thinker_t*) source);
+    GameMap* map = Thinker_Map((thinker_t*) source);
     uint an;
     mobj_t* th;
     angle_t angle;
@@ -2125,7 +2125,7 @@ mobj_t* P_SpawnMissileAngle(mobjtype_t type, mobj_t* source, angle_t angle,
 {
     assert(source);
     {
-    map_t* map = Thinker_Map((thinker_t*) source);
+    GameMap* map = Thinker_Map((thinker_t*) source);
     unsigned int an;
     float pos[3], spawnZOff = 0;
     mobj_t* mo;
@@ -2199,7 +2199,7 @@ mobj_t* P_SpawnMissileAngleSpeed(mobjtype_t type, mobj_t* source,
 {
     assert(source);
     {
-    map_t* map = Thinker_Map((thinker_t*) source);
+    GameMap* map = Thinker_Map((thinker_t*) source);
     unsigned int an;
     float z;
     mobj_t* mo;
@@ -2230,7 +2230,7 @@ mobj_t* P_SpawnPlayerMissile(mobjtype_t type, mobj_t* source)
 {
     assert(source);
     {
-    map_t* map = Thinker_Map((thinker_t*) source);
+    GameMap* map = Thinker_Map((thinker_t*) source);
     uint an;
     angle_t angle;
     float pos[3], slope;
@@ -2322,7 +2322,7 @@ mobj_t* P_SPMAngle(mobjtype_t type, mobj_t* source, angle_t origAngle)
 {
     assert(source);
     {
-    map_t* map = Thinker_Map((thinker_t*) source);
+    GameMap* map = Thinker_Map((thinker_t*) source);
     uint an;
     angle_t angle;
     mobj_t* th;
@@ -2380,7 +2380,7 @@ mobj_t* P_SPMAngleXYZ(mobjtype_t type, float x, float y, float z,
 {
     assert(source);
     {
-    map_t* map = Thinker_Map((thinker_t*) source);
+    GameMap* map = Thinker_Map((thinker_t*) source);
     uint an;
     mobj_t* th;
     angle_t angle;
@@ -2435,7 +2435,7 @@ mobj_t* P_SpawnKoraxMissile(mobjtype_t type, float x, float y, float z,
     assert(source);
     assert(dest);
     {
-    map_t* map = Thinker_Map((thinker_t*) source);
+    GameMap* map = Thinker_Map((thinker_t*) source);
     uint an;
     mobj_t* th;
     angle_t angle;

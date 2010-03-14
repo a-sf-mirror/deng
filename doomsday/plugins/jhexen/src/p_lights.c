@@ -149,7 +149,7 @@ boolean EV_SpawnLight(linedef_t* line, byte* arg, lighttype_t type)
 {
     assert(arg);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int arg1, arg2, arg3, arg4;
     boolean think = false;
     boolean rtn = false;
@@ -274,7 +274,7 @@ void P_SpawnPhasedLight(sector_t* sector, float base, int index)
 {
     assert(sector);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     phase_t* phase;
 
     phase = Z_Calloc(sizeof(*phase), PU_MAP, 0);

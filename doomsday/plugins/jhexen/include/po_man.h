@@ -69,7 +69,7 @@ enum {
     PO_SPAWNCRUSH_DOOMEDNUM
 };
 
-boolean     PO_Busy(struct map_s* map, int polyobj);
+boolean     PO_Busy(GameMap* map, int polyobj);
 
 boolean     PO_FindAndCreatePolyobj(int tag, boolean crush, float startX,
                                     float startY);

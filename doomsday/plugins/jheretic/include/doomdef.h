@@ -326,7 +326,7 @@ void            D_QuitNetGame(void);
 // can call G_PlayerExited
 // carries out all thinking of monsters and players
 
-void            P_SetupMap(struct map_s* map, skillmode_t skill);
+void            P_SetupMap(GameMap* map, skillmode_t skill);
 // called by W_Ticker
 void            P_Init(void);
 

@@ -65,7 +65,7 @@
 
 // CODE --------------------------------------------------------------------
 
-void GameMap_DestroyLineTagLists(map_t* map)
+void GameMap_DestroyLineTagLists(GameMap* map)
 {
     assert(map);
     {
@@ -86,7 +86,7 @@ void GameMap_DestroyLineTagLists(map_t* map)
     }
 }
 
-IterList* GameMap_IterListForTag(map_t* map, int tag, boolean createNewList)
+IterList* GameMap_IterListForTag(GameMap* map, int tag, boolean createNewList)
 {
     assert(map);
     {
@@ -111,7 +111,7 @@ IterList* GameMap_IterListForTag(map_t* map, int tag, boolean createNewList)
     }
 }
 
-void GameMap_DestroySectorTagLists(map_t* map)
+void GameMap_DestroySectorTagLists(GameMap* map)
 {
     assert(map);
     {
@@ -132,7 +132,7 @@ void GameMap_DestroySectorTagLists(map_t* map)
     }
 }
 
-IterList* GameMap_SectorIterListForTag(map_t* map, int tag, boolean createNewList)
+IterList* GameMap_SectorIterListForTag(GameMap* map, int tag, boolean createNewList)
 {
     assert(map);
     {
@@ -157,7 +157,7 @@ IterList* GameMap_SectorIterListForTag(map_t* map, int tag, boolean createNewLis
     }
 }
 
-IterList* GameMap_SpecHits(map_t* map)
+IterList* GameMap_SpecHits(GameMap* map)
 {
     assert(map);
     return map->_spechit;

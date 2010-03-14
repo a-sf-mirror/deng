@@ -283,7 +283,7 @@ static void CopyFile(char *sourceName, char *destName);
 static boolean ExistingFile(char *name);
 #endif
 
-static void unarchiveMap(map_t* map);
+static void unarchiveMap(GameMap* map);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -574,7 +574,7 @@ static int countMobjs(void* p, void* context)
 /**
  * Must be called before saving or loading any data.
  */
-static uint SV_InitThingArchive(map_t* map, boolean load, boolean savePlayers)
+static uint SV_InitThingArchive(GameMap* map, boolean load, boolean savePlayers)
 {
     countmobjsparams_t params;
 
@@ -759,7 +759,7 @@ static playerheader_t* getPlayerHeader(void)
 
 unsigned int SV_GameID(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     return Sys_GetRealTime() + (map->time << 24);
 }
 
@@ -2758,7 +2758,7 @@ static int SV_ReadPolyObj(void)
  */
 static void P_ArchiveWorld(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     uint i;
 
     SV_BeginSegment(ASEG_MATERIAL_ARCHIVE);
@@ -2781,7 +2781,7 @@ static void P_ArchiveWorld(void)
 
 static void P_UnArchiveWorld(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int matArchiveVer = -1;
     uint i;
 
@@ -4019,7 +4019,7 @@ assert(thInfo->Write);
  *
  * @note Some thinker classes are NEVER saved by clients.
  */
-static void P_ArchiveThinkers(map_t* map, boolean savePlayers)
+static void P_ArchiveThinkers(GameMap* map, boolean savePlayers)
 {
     boolean localSavePlayers = savePlayers;
 
@@ -4103,7 +4103,7 @@ static int restoreMobjLinks(void* p, void* context)
 /**
  * Un-Archives thinkers for both client and server.
  */
-static void P_UnArchiveThinkers(map_t* map)
+static void P_UnArchiveThinkers(GameMap* map)
 {
     uint i;
     byte tClass;
@@ -4268,7 +4268,7 @@ static void P_UnArchiveThinkers(map_t* map)
 }
 
 #if __JDOOM__
-static void P_ArchiveBrain(map_t* map)
+static void P_ArchiveBrain(GameMap* map)
 {
     int i;
 
@@ -4279,7 +4279,7 @@ static void P_ArchiveBrain(map_t* map)
         SV_WriteShort(SV_ThingArchiveNum(map->brain.targets[i]));
 }
 
-static void P_UnArchiveBrain(map_t* map)
+static void P_UnArchiveBrain(GameMap* map)
 {
     int i;
 
@@ -4302,7 +4302,7 @@ static void P_UnArchiveBrain(map_t* map)
 #if !__JHEXEN__
 static void P_ArchiveSoundTargets(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     XSector* xsec;
     uint i;
 
@@ -4324,7 +4324,7 @@ static void P_ArchiveSoundTargets(void)
 
 static void P_UnArchiveSoundTargets(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     uint i, secid, numsoundtargets;
     XSector* xsec;
 
@@ -4354,7 +4354,7 @@ static void P_UnArchiveSoundTargets(void)
 #if __JHEXEN__
 static void P_ArchiveSounds(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     uint i;
     int difference;
     seqnode_t* node;
@@ -4401,7 +4401,7 @@ static void P_ArchiveSounds(void)
     }
 }
 
-static void P_UnArchiveSounds(map_t* map)
+static void P_UnArchiveSounds(GameMap* map)
 {
     int i;
     int numSequences, sequence, seqOffset;
@@ -4459,7 +4459,7 @@ static void P_UnArchiveMisc(void)
 
 static void P_ArchiveMap(boolean savePlayers)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     // Place a header marker
     SV_BeginSegment(ASEG_MAP_HEADER2);
@@ -4505,7 +4505,7 @@ static void P_ArchiveMap(boolean savePlayers)
     SV_BeginSegment(ASEG_END);
 }
 
-static void P_UnArchiveMap(map_t* map)
+static void P_UnArchiveMap(GameMap* map)
 {
 #if __JHEXEN__
     int segType = SV_ReadLong();
@@ -4692,7 +4692,7 @@ typedef struct savegameparam_s {
 
 int SV_SaveGameWorker(void* ptr)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     savegameparam_t* param = ptr;
 #if __JHEXEN__
     char versionText[HXS_VERSION_TEXT_LENGTH];
@@ -4936,7 +4936,7 @@ static boolean readSaveHeader(saveheader_t *hdr, LZFILE *savefile)
 
 static boolean SV_LoadGame2(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int i;
     char buf[80];
     boolean loaded[MAXPLAYERS], infile[MAXPLAYERS];
@@ -5133,7 +5133,7 @@ boolean SV_LoadGame(const char* fileName)
 void SV_SaveClient(unsigned int gameID)
 {
 #if !__JHEXEN__ // unsupported in jHexen
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     filename_t name;
     player_t* pl = &players[CONSOLEPLAYER];
     mobj_t* mo = pl->plr->mo;
@@ -5188,7 +5188,7 @@ void SV_SaveClient(unsigned int gameID)
 void SV_LoadClient(unsigned int gameid)
 {
 #if !__JHEXEN__ // unsupported in jHexen
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     filename_t name;
     player_t* cpl = players + CONSOLEPLAYER;
     mobj_t* mo = cpl->plr->mo;
@@ -5248,7 +5248,7 @@ void SV_LoadClient(unsigned int gameid)
 #endif
 }
 
-static void unarchiveMap(map_t* map)
+static void unarchiveMap(GameMap* map)
 {
 #if __JHEXEN__
     filename_t fileName;
@@ -5375,7 +5375,7 @@ void SV_MapTeleport(uint map, uint position)
     targetPlayerMobj = NULL;
     for(i = 0; i < MAXPLAYERS; ++i)
     {
-        map_t* map = P_CurrentMap();
+        GameMap* map = P_CurrentMap();
         uint j;
 
         if(!players[i].plr->inGame)

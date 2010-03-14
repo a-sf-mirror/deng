@@ -87,7 +87,7 @@ static void  checkForPushSpecial(linedef_t* line, int side, mobj_t* mobj);
 
 // CODE --------------------------------------------------------------------
 
-float GameMap_Gravity(map_t* map)
+float GameMap_Gravity(GameMap* map)
 {
     assert(map);
     if(IS_NETGAME && cfg.netGravity != -1)
@@ -99,7 +99,7 @@ float GameMap_Gravity(map_t* map)
  * Checks the reject matrix to find out if the two sectors are visible
  * from each other.
  */
-static boolean checkReject(map_t* map, subsector_t* a, subsector_t* b)
+static boolean checkReject(GameMap* map, subsector_t* a, subsector_t* b)
 {
     if(map->_rejectMatrix != NULL)
     {
@@ -139,7 +139,7 @@ boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
     assert(from);
     assert(to);
     {
-    map_t* map = Thinker_Map((thinker_t*) from);
+    GameMap* map = Thinker_Map((thinker_t*) from);
     float fPos[3];
 
     if(map != Thinker_Map((thinker_t*) to))
@@ -169,7 +169,7 @@ boolean P_CheckSight(const mobj_t* from, const mobj_t* to)
 
 boolean PIT_StompThing(mobj_t* mo, void* data)
 {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int stompAnyway;
     float blockdist;
 
@@ -220,7 +220,7 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
     int stomping;
     subsector_t* newSSec;
     float box[4];
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
 
     // Kill anything occupying the position.
     map->tmThing = thing;
@@ -298,7 +298,7 @@ boolean P_TeleportMove(mobj_t* thing, float x, float y, boolean alwaysStomp)
  */
 boolean PIT_CrossLine(linedef_t* ld, void* data)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int flags = DMU_GetIntp(ld, DMU_FLAGS);
 
     if((flags & DDLF_BLOCKING) ||
@@ -342,7 +342,7 @@ boolean P_CheckSides(mobj_t* actor, float x, float y)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
 
     map->startPos[VX] = actor->pos[VX];
     map->startPos[VY] = actor->pos[VY];
@@ -370,7 +370,7 @@ boolean P_CheckSides(mobj_t* actor, float x, float y)
  */
 static int untouched(linedef_t* ld)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     float x, y, box[4], bbox[4], radius;
 
     DMU_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
@@ -392,7 +392,7 @@ static int untouched(linedef_t* ld)
 
 boolean PIT_CheckThing(mobj_t* thing, void* data)
 {
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
     int damage;
     float blockdist;
     boolean solid;
@@ -870,7 +870,7 @@ boolean PIT_CheckLine(linedef_t* ld, void* data)
 {
     float bbox[4];
     XLineDef* xline;
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     DMU_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
 
@@ -1042,7 +1042,7 @@ boolean P_CheckPosition3f(mobj_t* thing, float x, float y, float z)
 {
     sector_t* newSec;
     float box[4];
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
 
     map->tmThing = thing;
 
@@ -1155,7 +1155,7 @@ static boolean P_TryMove2(mobj_t* thing, float x, float y, boolean dropoff)
     float oldpos[3];
     int side, oldSide;
     linedef_t* ld;
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
 
     // $dropoff_fix: fellDown.
     map->floatOk = false;
@@ -1459,7 +1459,7 @@ boolean P_TryMove(mobj_t* thing, float x, float y, boolean dropoff,
     return P_TryMove2(thing, x, y);
 #else
     // $dropoff_fix
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
     boolean res = P_TryMove2(thing, x, y, dropoff);
 
     if(!res && map->tmHitLine)
@@ -1483,7 +1483,7 @@ boolean P_TryMove(mobj_t* thing, float x, float y, boolean dropoff,
  */
 boolean PTR_ShootTraverse(intercept_t* in)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int divisor;
     float pos[3], frac, slope, dist, thingTopSlope, thingBottomSlope, cTop,
         cBottom, d[3], step, stepv[3], tracePos[3], cFloor, cCeil;
@@ -1780,7 +1780,7 @@ if(lineWasHit)
  */
 boolean PTR_AimTraverse(intercept_t* in)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     float slope, thingTopSlope, thingBottomSlope, dist;
     sector_t* backSec, *frontSec;
     mobj_t* th;
@@ -1911,7 +1911,7 @@ float P_AimLineAttack(mobj_t* t1, angle_t angle, float distance)
 {
     assert(t1);
     {
-    map_t* map = Thinker_Map((thinker_t*) t1);
+    GameMap* map = Thinker_Map((thinker_t*) t1);
     uint an;
     float pos[2];
 
@@ -1976,7 +1976,7 @@ void P_LineAttack(mobj_t* t1, angle_t angle, float distance, float slope,
 {
     assert(t1);
     {
-    map_t* map = Thinker_Map((thinker_t*) t1);
+    GameMap* map = Thinker_Map((thinker_t*) t1);
     uint an;
     float targetPos[2];
 
@@ -2042,7 +2042,7 @@ void P_LineAttack(mobj_t* t1, angle_t angle, float distance, float slope,
  */
 boolean PIT_RadiusAttack(mobj_t* thing, void* data)
 {
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
     float dx, dy, dz, dist;
 
     if(!(thing->flags & MF_SHOOTABLE))
@@ -2114,7 +2114,7 @@ void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage, int distance,
 void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage, int distance)
 #endif
 {
-    map_t* map = Thinker_Map((thinker_t*) spot);
+    GameMap* map = Thinker_Map((thinker_t*) spot);
     float dist, box[4];
 
     dist = distance + MAXRADIUS;
@@ -2144,7 +2144,7 @@ void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage, int distance)
 
 boolean PTR_UseTraverse(intercept_t* in)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     XLineDef* xline;
     int side;
 
@@ -2206,7 +2206,7 @@ void P_UseLines(player_t* player)
 {
     assert(player);
     {
-    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
+    GameMap* map = Thinker_Map((thinker_t*) player->plr->mo);
     uint an;
     float pos[3];
     mobj_t* mo;
@@ -2250,7 +2250,7 @@ void P_UseLines(player_t* player)
  */
 static boolean P_ThingHeightClip(mobj_t* thing)
 {
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
     boolean onfloor;
 
     if(P_MobjIsCamera(thing))
@@ -2303,7 +2303,7 @@ static boolean P_ThingHeightClip(mobj_t* thing)
  */
 static void P_HitSlideLine(linedef_t* ld)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int side;
     unsigned int an;
     angle_t lineAngle, moveAngle, deltaAngle;
@@ -2343,7 +2343,7 @@ static void P_HitSlideLine(linedef_t* ld)
 
 boolean PTR_SlideTraverse(intercept_t* in)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     linedef_t* li;
 
     if(in->type != ICPT_LINE)
@@ -2403,7 +2403,7 @@ void P_SlideMove(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int hitcount = 3;
 
     map->slideMo = mo;
@@ -2565,7 +2565,7 @@ void P_SlideMove(mobj_t* mo)
 int PIT_ChangeSector(void* ptr, void* data)
 {
     mobj_t* thing = (mobj_t*) ptr;
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
     mobj_t* mo;
 
     if(P_ThingHeightClip(thing))
@@ -2657,7 +2657,7 @@ boolean P_ChangeSector(sector_t* sector, boolean crunch)
 {
     assert(sector);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     map->noFit = false;
     map->crushChange = crunch;
@@ -2706,7 +2706,7 @@ boolean P_TestMobjLocation(mobj_t* mobj)
 #if __JDOOM64__ || __JHERETIC__
 static void CheckMissileImpact(mobj_t* mobj)
 {
-    map_t* map = Thinker_Map((thinker_t*) mobj);
+    GameMap* map = Thinker_Map((thinker_t*) mobj);
     int size;
     linedef_t* ld;
 
@@ -2726,7 +2726,7 @@ static void CheckMissileImpact(mobj_t* mobj)
 #if __JHEXEN__
 boolean PIT_ThrustStompThing(mobj_t* thing, void* data)
 {
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
     float blockdist;
 
     if(!(thing->flags & MF_SHOOTABLE))
@@ -2748,7 +2748,7 @@ boolean PIT_ThrustStompThing(mobj_t* thing, void* data)
 
 void PIT_ThrustSpike(mobj_t* actor)
 {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float bbox[4], radius;
 
     map->tsThing = actor;
@@ -2769,7 +2769,7 @@ void PIT_ThrustSpike(mobj_t* actor)
 
 boolean PIT_CheckOnmobjZ(mobj_t* thing, void* data)
 {
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
     float blockdist;
 
     if(!(thing->flags & (MF_SOLID | MF_SPECIAL | MF_SHOOTABLE)))
@@ -2798,7 +2798,7 @@ mobj_t* P_CheckOnMobj(mobj_t* thing)
 {
     assert(thing);
     {
-    map_t* map = Thinker_Map((thinker_t*) thing);
+    GameMap* map = Thinker_Map((thinker_t*) thing);
     subsector_t* newSSec;
     float pos[3], box[4];
     mobj_t oldMo;
@@ -2866,7 +2866,7 @@ mobj_t* P_CheckOnMobj(mobj_t* thing)
  */
 static void P_FakeZMovement(mobj_t* mo)
 {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     float dist, delta;
 
     if(P_MobjIsCamera(mo))
@@ -2953,7 +2953,7 @@ static void checkForPushSpecial(linedef_t* line, int side, mobj_t* mobj)
 
 boolean PTR_BounceTraverse(intercept_t* in)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     linedef_t* li;
 
     if(in->type != ICPT_LINE)
@@ -2996,7 +2996,7 @@ void P_BounceWall(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int side;
     unsigned int an;
     float moveLen, leadPos[3], d1[2];
@@ -3054,7 +3054,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
     {
     case ICPT_LINE: // Linedef.
         {
-        map_t* map = P_CurrentMap();
+        GameMap* map = P_CurrentMap();
         linedef_t* line = in->d.lineDef;
         XLineDef* xline = P_ToXLine(line);
 
@@ -3112,7 +3112,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
     case ICPT_MOBJ: // Mobj.
         {
         mobj_t* mo = in->d.mo;
-        map_t* map = Thinker_Map((thinker_t*) mo);
+        GameMap* map = Thinker_Map((thinker_t*) mo);
 
         if(mo->special != USE_PUZZLE_ITEM_SPECIAL)
             return true; // Wrong special...
@@ -3146,7 +3146,7 @@ boolean P_UsePuzzleItem(player_t* player, int itemType)
 {
     assert(player);
     {
-    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
+    GameMap* map = Thinker_Map((thinker_t*) player->plr->mo);
     int angle;
     float pos1[3], pos2[3];
 

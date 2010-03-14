@@ -519,7 +519,7 @@ void ST_Ticker(void)
     {
         player_t* plr = &players[i];
         hudstate_t* hud = &hudStates[i];
-        map_t* map = P_CurrentMap();
+        GameMap* map = P_CurrentMap();
 
         if(!(plr->plr->inGame && (plr->plr->flags & DDPF_LOCAL)))
             continue;
@@ -778,7 +778,7 @@ static void drawIcons(int player)
     float textAlpha = cfg.hudColor[3];
     hudstate_t* hud = &hudStates[player];
     player_t* plr = &players[player];
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     Draw_BeginZoom(cfg.hudScale, 2, 2);
 

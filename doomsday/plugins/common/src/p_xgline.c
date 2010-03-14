@@ -429,7 +429,7 @@ void XG_Dev(const char* format, ...)
 /**
  * Init XG data for the map.
  */
-void XG_Init(map_t* map)
+void XG_Init(GameMap* map)
 {
     assert(map);
     XL_Init(map); // Init lines.
@@ -452,7 +452,7 @@ void XG_Update(void)
 
     XG_ReadTypes();
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     XS_Update(map);
     XL_Update(map);
     }
@@ -608,7 +608,7 @@ void XL_SetLineType(linedef_t* line, int id)
 {
     assert(line);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     XLineDef* xline = P_ToXLine(line);
 
     if(XL_GetType(id))
@@ -654,7 +654,7 @@ void XL_SetLineType(linedef_t* line, int id)
 /**
  * Initialize extended lines for the map.
  */
-void XL_Init(map_t* map)
+void XL_Init(GameMap* map)
 {
     assert(map);
     {
@@ -683,7 +683,7 @@ void XL_Init(map_t* map)
  *
  * @return              @c true, iff all callbacks return @c true.
  */
-int XL_TraversePlanes(map_t* map, linedef_t* line, int refType, int ref,
+int XL_TraversePlanes(GameMap* map, linedef_t* line, int refType, int ref,
                       void* data, void* context, boolean travsectors,
                       mobj_t* activator, int (C_DECL *func)())
 {
@@ -876,7 +876,7 @@ int XL_TraversePlanes(map_t* map, linedef_t* line, int refType, int ref,
  * @return              @c false if 'func' returns @c false, otherwise
  *                      @c true. Stops checking when false is returned.
  */
-int XL_TraverseLines(map_t* map, linedef_t* line, int rtype, int ref,
+int XL_TraverseLines(GameMap* map, linedef_t* line, int rtype, int ref,
                      void* data, void* context, mobj_t* activator,
                      int (C_DECL *func)())
 {
@@ -1143,7 +1143,7 @@ int XL_ValidateLineRef(linedef_t* line, int reftype, void* context,
 void XL_DoFunction(linetype_t* info, linedef_t* line, int sideNum,
                    mobj_t* actThing, int evType)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     xgclass_t* xgClass = &xgClasses[info->lineClass];
 
     XG_Dev("XL_DoFunction: Line %i, side %i, activator id %i, event %s",
@@ -1590,7 +1590,7 @@ int C_DECL XLTrav_LineTeleport(linedef_t* newLine, boolean dummy,
 // Maximum units to move object to avoid hiccups.
 #define FUDGEFACTOR         10
 
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int fudge = FUDGEFACTOR;
     int side = 0, stepDown;
     unsigned int an;
@@ -1909,7 +1909,7 @@ int C_DECL XLTrav_EnableLine(linedef_t* line, boolean dummy, void* context,
 boolean XL_CheckLineStatus(linedef_t* line, int reftype, int ref, int active,
                            mobj_t* activator)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     return XL_TraverseLines(map, line, reftype, ref, &active, 0, activator,
                             XLTrav_CheckLine);
 }
@@ -2052,7 +2052,7 @@ void XL_Message(mobj_t* act, char* msg, boolean global)
 void XL_ActivateLine(boolean activating, linetype_t* info, linedef_t* line,
                      int sidenum, mobj_t* data, int evtype)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     byte rgba[4] = { 0, 0, 0, 0 };
     xgline_t* xg;
     sector_t* frontsector;
@@ -2237,7 +2237,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
 {
     assert(line);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int i;
     XLineDef* xline;
     xgline_t* xg;
@@ -2590,7 +2590,7 @@ void XL_DoChain(linedef_t* line, int chain, boolean activating,
  */
 void XL_Thinker(xlthinker_t* xl)
 {
-    map_t* map = Thinker_Map((thinker_t*) xl);
+    GameMap* map = Thinker_Map((thinker_t*) xl);
     float levtime;
     linedef_t* line = xl->line;
     XLineDef* xline;
@@ -2783,7 +2783,7 @@ void XL_Thinker(xlthinker_t* xl)
  * updated. However, this is a bit messy operation, prone to errors.
  * Instead, we just disable XG...
  */
-void XL_Update(map_t* map)
+void XL_Update(GameMap* map)
 {
     assert(map);
     {

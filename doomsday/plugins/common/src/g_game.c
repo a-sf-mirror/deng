@@ -657,7 +657,7 @@ void G_DoLoadMap(void)
     static int firstFragReset = 1;
 #endif
 
-    map_t* map = NULL;
+    GameMap* map = NULL;
     char mapID[9];
     int i;
 
@@ -1323,7 +1323,7 @@ void G_QueueBody(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
 
     // Flush an old corpse if needed.
     if(map->bodyQueueSlot >= BODYQUEUESIZE)
@@ -1472,7 +1472,7 @@ static int prepareIntermission(void* paramaters)
 
 # if __JDOOM__ || __JDOOM64__
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     wmInfo.maxKills = map->totalKills;
     wmInfo.maxItems = map->totalItems;
     wmInfo.maxSecret = map->totalSecret;
@@ -1614,7 +1614,7 @@ void G_PrepareWIData(void)
     for(i = 0; i < MAXPLAYERS; ++i)
     {
         player_t* p = &players[i];
-        map_t* map = P_CurrentMap();
+        GameMap* map = P_CurrentMap();
         wbplayerstruct_t* pStats = &info->plyr[i];
 
         pStats->inGame = p->plr->inGame;

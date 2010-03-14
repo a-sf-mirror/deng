@@ -58,7 +58,7 @@
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static void P_LightningFlash(map_t* map);
+static void P_LightningFlash(GameMap* map);
 static boolean CheckedLockedDoor(mobj_t* mo, byte lock);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -77,7 +77,7 @@ static float* lightningLightLevels;
 
 // CODE --------------------------------------------------------------------
 
-void GameMap_InitLava(map_t* map)
+void GameMap_InitLava(GameMap* map)
 {
     assert(map);
     memset(&map->lavaInflictor, 0, sizeof(map->lavaInflictor));
@@ -123,7 +123,7 @@ void P_InitSky(uint map)
     DMU_SetPtr(DMU_SKY, 0, DMU_MATERIAL, mat);
 }
 
-boolean EV_SectorSoundChange(map_t* map, byte* args)
+boolean EV_SectorSoundChange(GameMap* map, byte* args)
 {
     assert(map);
     assert(args);
@@ -773,7 +773,7 @@ void P_PlayerInSpecialSector(player_t* player)
 
 void P_PlayerOnSpecialFloor(player_t* player)
 {
-    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
+    GameMap* map = Thinker_Map((thinker_t*) player->plr->mo);
     const terraintype_t* tt = P_MobjGetFloorTerrainType(player->plr->mo);
 
     if(!(tt->flags & TTF_DAMAGING))
@@ -792,7 +792,7 @@ void P_PlayerOnSpecialFloor(player_t* player)
     }
 }
 
-void GameMap_UpdateSpecials(map_t* map)
+void GameMap_UpdateSpecials(GameMap* map)
 {
     // Stub.
 }
@@ -800,7 +800,7 @@ void GameMap_UpdateSpecials(map_t* map)
 /**
  * After the map has been loaded, scan for specials that spawn thinkers.
  */
-void GameMap_SpawnSpecials(map_t* map)
+void GameMap_SpawnSpecials(GameMap* map)
 {
     assert(map);
     {
@@ -875,7 +875,7 @@ void GameMap_SpawnSpecials(map_t* map)
     }
 }
 
-void GameMap_AnimateSurfaces(map_t* map)
+void GameMap_AnimateSurfaces(GameMap* map)
 {
     assert(map);
     {
@@ -1047,7 +1047,7 @@ static boolean isLightningSector(sector_t* sec)
     return false;
 }
 
-static void P_LightningFlash(map_t* map)
+static void P_LightningFlash(GameMap* map)
 {
     uint i;
     float* tempLight;
@@ -1189,7 +1189,7 @@ void P_ForceLightning(void)
     nextLightningFlash = 0;
 }
 
-void P_InitLightning(map_t* map)
+void P_InitLightning(GameMap* map)
 {
     assert(map);
     {

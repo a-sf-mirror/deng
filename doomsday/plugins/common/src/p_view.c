@@ -75,7 +75,7 @@
  */
 void P_CalcHeight(player_t* plr)
 {
-    map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
+    GameMap* map = Thinker_Map((thinker_t*) plr->plr->mo);
     boolean airborne, morphed = false;
     ddplayer_t* ddplr = plr->plr;
     mobj_t* pmo = ddplr->mo;

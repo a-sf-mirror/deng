@@ -218,7 +218,7 @@ boolean P_Move(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     float tryPos[2], step[2];
     linedef_t* ld;
     boolean good;
@@ -782,7 +782,7 @@ boolean P_UpdateMorphedMonster(mobj_t* actor, int tics)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* fog;
     float pos[3];
     mobjtype_t moType;
@@ -964,7 +964,7 @@ void C_DECL A_MinotaurFade2(mobj_t *actor)
 
 void C_DECL A_MinotaurRoam(mobj_t* actor)
 {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     unsigned int* startTime = (unsigned int*) actor->args;
 
     actor->flags &= ~MF_SHADOW; // In case pain caused him to
@@ -1122,7 +1122,7 @@ void C_DECL A_MinotaurLook(mobj_t* actor)
 
 void C_DECL A_MinotaurChase(mobj_t* actor)
 {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     unsigned int* startTime = (unsigned int *) actor->args;
     statenum_t state;
 
@@ -1253,7 +1253,7 @@ void C_DECL A_MinotaurCharge(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* puff;
 
     if(!actor->target)
@@ -1346,7 +1346,7 @@ void C_DECL A_MntrFloorFire(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float pos[3];
     angle_t angle;
@@ -1593,7 +1593,7 @@ static int massacreMobj(void* p, void* context)
 /**
  * Kills all monsters.
  */
-int P_Massacre(map_t* map)
+int P_Massacre(GameMap* map)
 {
     assert(map);
     {
@@ -1607,7 +1607,7 @@ void C_DECL A_SkullPop(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     player_t* plr;
 
@@ -1687,7 +1687,7 @@ void C_DECL A_QueueCorpse(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* corpse;
 
     if(map->corpseQueueSlot >= CORPSEQUEUESIZE)
@@ -1708,7 +1708,7 @@ void C_DECL A_DeQueueCorpse(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     int slot;
 
     for(slot = 0; slot < CORPSEQUEUESIZE; ++slot)
@@ -1770,7 +1770,7 @@ static int addMobjToCorpseQueue(void* p, void* context)
     return true; // Continue iteration.
 }
 
-void P_InitCreatureCorpseQueue(map_t* map)
+void P_InitCreatureCorpseQueue(GameMap* map)
 {
     assert(map);
     map->corpseQueueSlot = 0;
@@ -1780,7 +1780,7 @@ void P_InitCreatureCorpseQueue(map_t* map)
 /**
  * Search the thinker list for corpses and place them in this queue.
  */
-void P_AddCreaturesToCorpseQueue(map_t* map)
+void P_AddCreaturesToCorpseQueue(GameMap* map)
 {
     assert(map);
     Map_IterateThinkers(map, P_MobjThinker, addMobjToCorpseQueue, NULL);
@@ -1790,7 +1790,7 @@ void C_DECL A_AddPlayerCorpse(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     if(map->bodyQueueSlot >= BODYQUEUESIZE)
     {   // Too many player corpses - remove an old one.
         P_MobjRemove(map->bodyQueue[map->bodyQueueSlot % BODYQUEUESIZE], true);
@@ -2159,7 +2159,7 @@ void C_DECL A_SerpentHeadPop(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     GameMap_SpawnMobj3f(map, MT_SERPENT_HEAD, actor->pos[VX],
         actor->pos[VY], actor->pos[VZ] + 45, actor->angle, 0);
     }
@@ -2167,7 +2167,7 @@ void C_DECL A_SerpentHeadPop(mobj_t* actor)
 
 static void spawnSerpentGib(mobjtype_t type, mobj_t* mo)
 {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     mobj_t* pmo;
     float pos[3];
 
@@ -2251,7 +2251,7 @@ void C_DECL A_CentaurAttack2(mobj_t *actor)
 
 static void spawnCentaurStuff(mobjtype_t type, angle_t angle, mobj_t* mo)
 {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     mobj_t* pmo;
     unsigned int an;
     byte momRand[3];
@@ -2403,7 +2403,7 @@ void C_DECL A_BishopSpawnBlur(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
 
     if(!--mo->special1)
     {
@@ -2434,7 +2434,7 @@ void C_DECL A_BishopPuff(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     mobj_t* pmo;
 
     if((pmo = GameMap_SpawnMobj3f(map, MT_BISHOP_PUFF, mo->pos[VX], mo->pos[VY], mo->pos[VZ] + 40, P_Random() << 24, 0)))
@@ -2448,7 +2448,7 @@ void C_DECL A_BishopPainBlur(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float pos[3];
 
     if(P_Random() < 64)
@@ -2471,7 +2471,7 @@ void C_DECL A_BishopPainBlur(mobj_t* actor)
 
 static void dragonSeek(mobj_t* actor, angle_t thresh, angle_t turnMax)
 {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     angle_t delta, bestAngle, angleToSpot, angleToTarget;
     int i, search, dir, bestArg;
     mobj_t* target, *mo;
@@ -2598,7 +2598,7 @@ void C_DECL A_DragonInitFlight(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     int search = -1;
     do
     {   // find the first tid identical to the dragon's tid
@@ -2674,7 +2674,7 @@ void C_DECL A_DragonFX2(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int i, delay;
 
     delay = 16 + (P_Random() >> 3);
@@ -2760,7 +2760,7 @@ void C_DECL A_DemonAttack2(mobj_t* mo)
 
 static mobj_t* spawnDemonChunk(mobjtype_t type, angle_t angle, mobj_t* mo)
 {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     mobj_t* pmo;
     unsigned int an;
 
@@ -2924,7 +2924,7 @@ void C_DECL A_WraithFX2(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int i;
 
     for(i = 0; i < 2; ++i)
@@ -2966,7 +2966,7 @@ void C_DECL A_WraithFX3(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int i, numdropped = P_Random() % 15;
 
     for(i = 0; i < numdropped; ++i)
@@ -2997,7 +2997,7 @@ void C_DECL A_WraithFX4(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     int spawn4, spawn5, chance = P_Random();
 
     if(chance < 10)
@@ -3093,7 +3093,7 @@ void C_DECL A_DropMace(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3f(map, MT_ETTIN_MACE, actor->pos[VX], actor->pos[VY],
@@ -3118,7 +3118,7 @@ void C_DECL A_FiredSpawnRock(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float pos[3];
     int mobjType;
@@ -3289,7 +3289,7 @@ void C_DECL A_FiredSplotch(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3fv(map, MT_FIREDEMON_SPLOTCH1, actor->pos, P_Random() << 24, 0)))
@@ -3312,7 +3312,7 @@ void C_DECL A_IceGuyLook(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
 
     A_Look(mo);
     if(P_Random() < 64)
@@ -3339,7 +3339,7 @@ void C_DECL A_IceGuyChase(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
 
     A_Chase(actor);
     if(P_Random() < 128)
@@ -3409,7 +3409,7 @@ void C_DECL A_IceGuyMissilePuff(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     GameMap_SpawnMobj3f(map, MT_ICEFX_PUFF, mo->pos[VX], mo->pos[VY], mo->pos[VZ] + 2, P_Random() << 24, 0);
     }
 }
@@ -3466,7 +3466,7 @@ void C_DECL A_SorcSpinBalls(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float z;
     angle_t angle;
@@ -3756,7 +3756,7 @@ void C_DECL A_CastSorcererSpell(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float z;
     mobj_t* mo;
     int spell = actor->type;
@@ -3818,7 +3818,7 @@ void C_DECL A_SorcOffense1(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     angle_t ang1, ang2;
     mobj_t* parent = actor->target;
@@ -3892,7 +3892,7 @@ void C_DECL A_SpawnFizzle(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     unsigned int an;
     float pos[3], dist = 5, speed = actor->info->speed;
     int i;
@@ -3948,7 +3948,7 @@ void C_DECL A_SorcFX2Split(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3fv(map, MT_SORCFX2, actor->pos, actor->angle, 0)))
@@ -3978,7 +3978,7 @@ void C_DECL A_SorcFX2Orbit(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     unsigned int an;
     angle_t angle;
     float pos[3];
@@ -4038,7 +4038,7 @@ void C_DECL A_SpawnBishop(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3fv(map, MT_BISHOP, actor->pos, actor->angle, 0)))
@@ -4057,7 +4057,7 @@ void C_DECL A_SmokePuffExit(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     GameMap_SpawnMobj3fv(map, MT_MNTRSMOKEEXIT, actor->pos, actor->angle, 0);
     }
 }
@@ -4066,7 +4066,7 @@ void C_DECL A_SorcererBishopEntry(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     GameMap_SpawnMobj3fv(map, MT_SORCFX3_EXPLOSION, actor->pos, actor->angle, 0);
     S_StartSound(actor->info->seeSound, actor);
     }
@@ -4366,7 +4366,7 @@ void C_DECL A_FreezeDeathChunks(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float pos[3];
     int i;
@@ -4487,7 +4487,7 @@ void C_DECL A_KoraxChase(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* spot;
     byte args[3] = { 0, 0, 0 };
 
@@ -4590,7 +4590,7 @@ void KSpiritInit(mobj_t* spirit, mobj_t* korax)
     assert(spirit);
     assert(korax);
     {
-    map_t* map = Thinker_Map((thinker_t*) spirit);
+    GameMap* map = Thinker_Map((thinker_t*) spirit);
     mobj_t* tail;
 
     spirit->health = KORAX_SPIRIT_LIFETIME;
@@ -4738,7 +4738,7 @@ void C_DECL A_KoraxCommand(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     byte args[5];
     float pos[3];
     unsigned int an;
@@ -4817,7 +4817,7 @@ void C_DECL A_KSpiritSeeker(mobj_t* mo, angle_t thresh, angle_t turnMax)
     uint an;
     mobj_t* target;
     float newZ, deltaZ;
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
 
     target = mo->tracer;
     if(target == NULL)
@@ -4913,7 +4913,7 @@ void C_DECL A_KBoltRaise(mobj_t* actor)
 #define KORAX_BOLT_HEIGHT       (48)
 #define KORAX_BOLT_LIFETIME     (3)
         
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float z;
     mobj_t* mo;
 

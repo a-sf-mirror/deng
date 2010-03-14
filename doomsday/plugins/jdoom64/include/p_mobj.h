@@ -313,11 +313,11 @@ void            P_ExplodeMissile(mobj_t* mo);
 float           P_MobjGetFriction(mobj_t* mo);
 mobj_t*         P_SPMAngle(mobjtype_t type, mobj_t* source, angle_t angle);
 
-void            P_SpawnPuff(struct map_s* map, float x, float y, float z, angle_t angle);
-mobj_t*         P_SpawnCustomPuff(struct map_s* map, mobjtype_t type, float x, float y, float z, angle_t angle);
-void            P_SpawnBlood(struct map_s* map, float x, float y, float z, int damage, angle_t angle);
+void            P_SpawnPuff(GameMap* map, float x, float y, float z, angle_t angle);
+mobj_t*         P_SpawnCustomPuff(GameMap* map, mobjtype_t type, float x, float y, float z, angle_t angle);
+void            P_SpawnBlood(GameMap* map, float x, float y, float z, int damage, angle_t angle);
 mobj_t*         P_SpawnMissile(mobjtype_t type, mobj_t* source, mobj_t* dest);
-mobj_t*         P_SpawnTeleFog(struct map_s* map, float x, float y, angle_t angle);
+mobj_t*         P_SpawnTeleFog(GameMap* map, float x, float y, angle_t angle);
 mobj_t*         P_SpawnMotherMissile(mobjtype_t type, float x, float y, float z, mobj_t* source, mobj_t* dest);
 
 boolean         P_MobjChangeState(mobj_t* mo, statenum_t state);

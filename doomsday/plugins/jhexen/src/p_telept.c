@@ -70,7 +70,7 @@ void P_TeleportToPlayerStarts(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     const playerstart_t* start;
 
     // Get a random player start.
@@ -85,7 +85,7 @@ void P_TeleportToDeathmatchStarts(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     const playerstart_t* start;
 
     // First, try a random deathmatch start.
@@ -100,7 +100,7 @@ void P_TeleportToDeathmatchStarts(mobj_t* mo)
     }
 }
 
-mobj_t* P_SpawnTeleFog(map_t* map, float x, float y, angle_t angle)
+mobj_t* P_SpawnTeleFog(GameMap* map, float x, float y, angle_t angle)
 {
     assert(map);
     return GameMap_SpawnMobj3f(map, MT_TFOG, x, y, TELEFOGHEIGHT, angle, MSF_Z_FLOOR);
@@ -111,7 +111,7 @@ boolean P_Teleport(mobj_t* mo, float x, float y, angle_t angle,
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     float oldpos[3], aboveFloor, fogDelta;
     player_t* player;
     unsigned int an;
@@ -221,7 +221,7 @@ boolean EV_Teleport(int tid, mobj_t* mo, boolean fog)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int i, count, searcher;
     mobj_t* dest = 0;
 
@@ -253,7 +253,7 @@ boolean EV_Teleport(int tid, mobj_t* mo, boolean fog)
 #if __JHERETIC__ || __JHEXEN__
 void P_ArtiTele(player_t* player)
 {
-    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
+    GameMap* map = Thinker_Map((thinker_t*) player->plr->mo);
     const playerstart_t* start;
 
     if((start = GameMap_PlayerStart(map, 0, deathmatch? -1 : 0, deathmatch)))

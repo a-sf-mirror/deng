@@ -31,7 +31,7 @@
 
 #define MATERIAL_ARCHIVE_VERSION (1)
 
-void            SV_InitMaterialArchives(map_t* map);
+void            SV_InitMaterialArchives(GameMap* map);
 
 unsigned short  SV_MaterialArchiveNum(material_t* mat);
 material_t*     SV_GetArchiveMaterial(int archiveID, int group);

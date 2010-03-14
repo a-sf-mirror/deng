@@ -70,7 +70,7 @@
  */
 static boolean PIT_ApplyTorque(linedef_t* ld, void* data)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     mobj_t* mo = map->tmThing;
     float dist;
     sector_t* frontsec, *backsec;
@@ -153,7 +153,7 @@ void P_ApplyTorque(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int flags = mo->intFlags; // Remember the current state, for gear-change.
 
     // Corpse sliding anomalies, made configurable.

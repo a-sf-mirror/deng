@@ -385,7 +385,7 @@ void P_v13_UnArchivePlayers(void)
 
 void P_v13_UnArchiveWorld(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     uint i, j;
     fixed_t offx, offy;
     short* get;
@@ -471,7 +471,7 @@ typedef enum
     TC_MOBJ
 } thinkerclass_t;
 
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     byte tclass;
 
     // Remove all the current thinkers.
@@ -786,7 +786,7 @@ enum {
     tc_endspecials
 };
 
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     byte tclass;
     ceiling_t* ceiling;
     door_t* door;
@@ -872,7 +872,7 @@ boolean SV_v13_LoadGame(const char* savename)
     size_t length;
     int i, a, b, c;
     char vcheck[VERSIONSIZE];
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     if(!(length = M_ReadFile(savename, &savebuffer)))
         return false;

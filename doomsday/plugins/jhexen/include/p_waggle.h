@@ -54,6 +54,6 @@ typedef struct {
 } waggle_t;
 
 void        T_FloorWaggle(waggle_t* waggle);
-boolean     EV_StartFloorWaggle(struct map_s* map, int tag, int height, int speed, int offset,
+boolean     EV_StartFloorWaggle(GameMap* map, int tag, int height, int speed, int offset,
                                 int timer);
 #endif

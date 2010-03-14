@@ -44,7 +44,7 @@
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
-static int getPolyobjMirror(struct map_s* map, uint polyNum);
+static int getPolyobjMirror(GameMap* map, uint polyNum);
 static void thrustMobj(struct mobj_s* mo, void* segp, void* pop);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
@@ -109,7 +109,7 @@ void T_RotatePoly(polyevent_t* pe)
 
 boolean EV_RotatePoly(linedef_t* line, byte* args, int direction, boolean overRide)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int mirror, polyNum;
     polyevent_t* pe;
     polyobj_t* po;
@@ -242,7 +242,7 @@ void T_MovePoly(polyevent_t* pe)
 
 boolean EV_MovePoly(linedef_t* line, byte* args, boolean timesEight, boolean overRide)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int mirror, polyNum;
     polyevent_t* pe;
     polyobj_t* po;
@@ -445,7 +445,7 @@ void T_PolyDoor(polydoor_t* pd)
 
 boolean EV_OpenPolyDoor(linedef_t* line, byte* args, podoortype_t type)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     int mirror, polyNum;
     polydoor_t* pd;
     polyobj_t* po;
@@ -541,7 +541,7 @@ boolean EV_OpenPolyDoor(linedef_t* line, byte* args, podoortype_t type)
 
 // ===== Higher Level Poly Interface code =====
 
-static int getPolyobjMirror(map_t* map, uint poly)
+static int getPolyobjMirror(GameMap* map, uint poly)
 {
     uint i;
 
@@ -618,7 +618,7 @@ void PO_ThrustMobj(struct mobj_s* mo, void* lineDefPtr, void* pop)
     }
 }
 
-boolean PO_Busy(map_t* map, int polyobj)
+boolean PO_Busy(GameMap* map, int polyobj)
 {
     assert(map);
     {

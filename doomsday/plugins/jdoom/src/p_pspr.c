@@ -74,7 +74,7 @@ static float bulletSlope;
 
 void R_GetWeaponBob(int player, float* x, float* y)
 {
-    map_t* map = Thinker_Map((thinker_t*) players[player].plr->mo);
+    GameMap* map = Thinker_Map((thinker_t*) players[player].plr->mo);
 
     if(x)
     {
@@ -357,7 +357,7 @@ void C_DECL A_Punch(player_t* player, pspdef_t* psp)
     assert(player);
     assert(psp);
     {
-    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
+    GameMap* map = Thinker_Map((thinker_t*) player->plr->mo);
     angle_t angle;
     int damage;
     float slope;
@@ -397,7 +397,7 @@ void C_DECL A_Saw(player_t* player, pspdef_t* psp)
     assert(player);
     assert(psp);
     {
-    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
+    GameMap* map = Thinker_Map((thinker_t*) player->plr->mo);
     angle_t angle;
     int damage;
     float slope;
@@ -495,7 +495,7 @@ void P_BulletSlope(mobj_t* mo)
     bulletSlope = P_AimLineAttack(mo, angle, 16 * 64);
     if(!cfg.noAutoAim)
     {
-        map_t* map = Thinker_Map((thinker_t*) mo);
+        GameMap* map = Thinker_Map((thinker_t*) mo);
 
         if(!map->lineTarget)
         {
@@ -671,7 +671,7 @@ void C_DECL A_BFGSpray(mobj_t* mo)
 {
     assert(mo);
     {
-    map_t* map = Thinker_Map((thinker_t*) mo);
+    GameMap* map = Thinker_Map((thinker_t*) mo);
     int i, j, damage;
     angle_t angle;
 

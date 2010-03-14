@@ -172,7 +172,7 @@ boolean P_Move(mobj_t* actor, boolean dropoff)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float pos[2], step[2];
     linedef_t* ld;
     boolean good;
@@ -347,7 +347,7 @@ static void newChaseDir(mobj_t* actor, float deltaX, float deltaY)
  */
 static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     sector_t* backsector = DMU_GetPtrp(line, DMU_BACK_SECTOR);
     float* bbox = DMU_GetPtrp(line, DMU_BOUNDING_BOX);
 
@@ -393,7 +393,7 @@ static boolean PIT_AvoidDropoff(linedef_t* line, void* data)
  */
 static float P_AvoidDropoff(mobj_t* actor)
 {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
 
     map->floorZ = actor->pos[VZ]; // Remember floor height.
     map->dropoffDelta[VX] = map->dropoffDelta[VY] = 0;
@@ -411,7 +411,7 @@ void P_NewChaseDir(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float delta[2];
 
     if(!actor->target)
@@ -802,7 +802,7 @@ void C_DECL A_DripBlood(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float pos[3];
 
@@ -849,7 +849,7 @@ void C_DECL A_ImpExplode(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3fv(map, MT_IMPCHUNK1, actor->pos, P_Random() << 24, 0)))
@@ -875,7 +875,7 @@ void C_DECL A_BeastPuff(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
 
     if(P_Random() > 64)
     {
@@ -987,7 +987,7 @@ boolean P_UpdateChicken(mobj_t* actor, int tics)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* fog;
     float pos[3];
     mobjtype_t moType;
@@ -1078,7 +1078,7 @@ void C_DECL A_Feathers(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     int i, count;
     mobj_t* mo;
 
@@ -1154,7 +1154,7 @@ void C_DECL A_MummySoul(mobj_t* mummy)
 {
     assert(mummy);
     {
-    map_t* map = Thinker_Map((thinker_t*) mummy);
+    GameMap* map = Thinker_Map((thinker_t*) mummy);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3f(map, MT_MUMMYSOUL,
@@ -1245,7 +1245,7 @@ void C_DECL A_SorcererRise(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     actor->flags &= ~MF_SOLID;
@@ -1261,7 +1261,7 @@ void P_DSparilTeleport(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
 
     // No spots?
     if(map->bossSpotCount > 0)
@@ -1308,7 +1308,7 @@ void P_DSparilTeleport(mobj_t* actor)
 void C_DECL A_Srcr2Decide(mobj_t* actor)
 {
     static int chance[] = { 192, 120, 120, 120, 64, 64, 32, 16, 0 };
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
 
     // No spots?
     if(!map->bossSpotCount)
@@ -1353,7 +1353,7 @@ void C_DECL A_BlueSpark(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     int i;
 
     for(i = 0; i < 2; ++i)
@@ -1374,7 +1374,7 @@ void C_DECL A_GenWizard(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo, *fog;
 
     if(!(mo = GameMap_SpawnMobj3f(map, MT_WIZARD, actor->pos[VX], actor->pos[VY],
@@ -1528,7 +1528,7 @@ void C_DECL A_MinotaurCharge(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* puff;
 
     if(actor->special1)
@@ -1657,7 +1657,7 @@ void C_DECL A_MntrFloorFire(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
     float pos[3];
     angle_t angle;
@@ -1707,7 +1707,7 @@ void C_DECL A_HeadAttack(mobj_t* actor)
     static const int atkResolve1[] = { 50, 150 };
     static const int atkResolve2[] = { 150, 200 };
 
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* fire, *baseFire, *mo, *target;
     int randAttack;
     float dist;
@@ -1810,7 +1810,7 @@ void C_DECL A_HeadIceImpact(mobj_t* ice)
 {
     assert(ice);
     {
-    map_t* map = Thinker_Map((thinker_t*) ice);
+    GameMap* map = Thinker_Map((thinker_t*) ice);
     int i;
 
     for(i = 0; i < 8; ++i)
@@ -1978,7 +1978,7 @@ mobj_t* P_DropItem(mobjtype_t type, mobj_t* source, int special, int chance)
 {
     assert(source);
     {
-    map_t* map = Thinker_Map((thinker_t*) source);
+    GameMap* map = Thinker_Map((thinker_t*) source);
     mobj_t* mo;
 
     if(P_Random() > chance)
@@ -2087,7 +2087,7 @@ void C_DECL A_PodPain(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     int i, count, chance;
 
     chance = P_Random();
@@ -2133,7 +2133,7 @@ void C_DECL A_MakePod(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     // Too many generated pods?
@@ -2181,7 +2181,7 @@ static int massacreMobj(void* p, void* context)
 /**
  * Kills all monsters.
  */
-int P_Massacre(map_t* map)
+int P_Massacre(GameMap* map)
 {
     assert(map);
     {
@@ -2277,7 +2277,7 @@ void C_DECL A_SpawnTeleGlitter(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float pos[3];
     mobj_t* mo;
 
@@ -2297,7 +2297,7 @@ void C_DECL A_SpawnTeleGlitter2(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     float pos[3];
     mobj_t* mo;
 
@@ -2324,7 +2324,7 @@ void C_DECL A_InitKeyGizmo(mobj_t* gizmo)
 {
     assert(gizmo);
     {
-    map_t* map = Thinker_Map((thinker_t*) gizmo);
+    GameMap* map = Thinker_Map((thinker_t*) gizmo);
     statenum_t state;
     mobj_t* mo;
 
@@ -2365,7 +2365,7 @@ void C_DECL A_VolcanoBlast(mobj_t* volcano)
 {
     assert(volcano);
     {
-    map_t* map = Thinker_Map((thinker_t*) volcano);
+    GameMap* map = Thinker_Map((thinker_t*) volcano);
     int i, count;
 
     count = 1 + (P_Random() % 3);
@@ -2396,7 +2396,7 @@ void C_DECL A_VolcBallImpact(mobj_t* ball)
 {
     assert(ball);
     {
-    map_t* map = Thinker_Map((thinker_t*) ball);
+    GameMap* map = Thinker_Map((thinker_t*) ball);
     int i;
 
     if(ball->pos[VZ] <= ball->floorZ)
@@ -2430,7 +2430,7 @@ void C_DECL A_SkullPop(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* mo;
 
     if((mo = GameMap_SpawnMobj3f(map, MT_BLOODYSKULL, actor->pos[VX], actor->pos[VY],
@@ -2498,7 +2498,7 @@ void C_DECL A_AddPlayerCorpse(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
 
     // Too many player corpses?
     if(map->bodyQueueSlot >= BODYQUEUESIZE)

@@ -252,7 +252,7 @@ static void drawAnimatedIcons(hudstate_t* hud)
     float iconalpha = (hud->statusbarActive? 1: hud->alpha) - (1 - cfg.hudIconAlpha);
     int player = hud - hudStates;
     player_t* plr = &players[player];
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     // If the fullscreen mana is drawn, we need to move the icons on the left
     // a bit to the right.

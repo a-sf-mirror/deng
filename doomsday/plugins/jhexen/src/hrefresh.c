@@ -94,7 +94,7 @@ void R_DrawMapTitle(void)
     float alpha;
     int y = 12;
     const char* lname, *lauthor;
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
 
     if(!cfg.mapTitle || map->actualTime > 6 * 35)
         return;
@@ -447,7 +447,7 @@ boolean R_GetFilterColor(float rgba[4], int filter)
  */
 void R_SetAllDoomsdayFlags(void)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     if(map)
     {
         uint i;

@@ -86,7 +86,7 @@ void P_SpawnLightFlash(sector_t* sector)
 {
     assert(sector);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     float lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
     float otherLevel = DDMAXFLOAT;
     lightflash_t* flash;
@@ -143,7 +143,7 @@ void P_SpawnStrobeFlash(sector_t* sector, int fastOrSlow, int inSync)
 {
     assert(sector);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     float lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
     float otherLevel = DDMAXFLOAT;
     strobe_t* flash;
@@ -182,7 +182,7 @@ void EV_StartLightStrobing(linedef_t* line)
 {
     assert(line);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     sector_t* sec = NULL;
     IterList* list;
 
@@ -205,7 +205,7 @@ void EV_TurnTagLightsOff(linedef_t* line)
 {
     assert(line);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     sector_t* sec = NULL;
     IterList* list;
     float lightLevel, otherLevel;
@@ -232,7 +232,7 @@ void EV_LightTurnOn(linedef_t* line, float max)
 {
     assert(line);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     sector_t* sec = NULL;
     IterList* list;
     float lightLevel, otherLevel;
@@ -296,7 +296,7 @@ void P_SpawnGlowingLight(sector_t* sector)
 {
     assert(sector);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     float lightLevel = DMU_GetFloatp(sector, DMU_LIGHT_LEVEL);
     float otherLevel = DDMAXFLOAT;
     glow_t* g;

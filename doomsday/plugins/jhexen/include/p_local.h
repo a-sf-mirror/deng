@@ -108,14 +108,14 @@ boolean     P_SeekerMissile(mobj_t* mo, angle_t thresh, angle_t turnMax);
 void        P_MobjThinker(mobj_t* mo);
 boolean     P_HealRadius(player_t* plr);
 void        P_BlastRadius(player_t* plr);
-void        P_SpawnBloodSplatter(struct map_s* map, float x, float y, float z, mobj_t* origin);
-void        P_SpawnBloodSplatter2(struct map_s* map, float x, float y, float z, mobj_t* origin);
+void        P_SpawnBloodSplatter(GameMap* map, float x, float y, float z, mobj_t* origin);
+void        P_SpawnBloodSplatter2(GameMap* map, float x, float y, float z, mobj_t* origin);
 
 boolean     P_MobjChangeState(mobj_t* mo, statenum_t state);
 boolean     P_SetMobjStateNF(mobj_t* mo, statenum_t state);
 
-void        P_CreateTIDList(struct map_s* map);
-mobj_t*     P_FindMobjFromTID(struct map_s* map, int tid, int* searchPosition);
+void        P_CreateTIDList(GameMap* map);
+mobj_t*     P_FindMobjFromTID(GameMap* map, int tid, int* searchPosition);
 void        P_MobjRemoveFromTIDList(mobj_t* mo);
 void        P_MobjInsertIntoTIDList(mobj_t* mo, int tid);
 
@@ -126,11 +126,11 @@ const terraintype_t* P_MobjGetFloorTerrainType(mobj_t* mo);
 boolean     P_HitFloor(mobj_t* mo);
 
 void        P_NoiseAlert(mobj_t* target, mobj_t* emmiter);
-int         P_Massacre(struct map_s* map);
+int         P_Massacre(GameMap* map);
 boolean     P_LookForMonsters(mobj_t* mo);
 
-void        P_InitCreatureCorpseQueue(struct map_s* map);
-void        P_AddCreaturesToCorpseQueue(struct map_s* map);
+void        P_InitCreatureCorpseQueue(GameMap* map);
+void        P_AddCreaturesToCorpseQueue(GameMap* map);
 
 mobj_t*     P_RoughMonsterSearch(mobj_t* mo, int distance);
 

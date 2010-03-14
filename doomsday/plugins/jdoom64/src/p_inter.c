@@ -799,7 +799,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
     case IT_DEMONKEY1:
         if(P_InventoryCount(plr - players, IIT_DEMONKEY1))
         {
-            map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
+            GameMap* map = Thinker_Map((thinker_t*) plr->plr->mo);
             if(!(map->time & 0x1f))
                 P_SetMessage(plr, NGOTPOWERUP1, false);
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
@@ -817,7 +817,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
     case IT_DEMONKEY2:
         if(P_InventoryCount(plr - players, IIT_DEMONKEY2))
         {
-            map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
+            GameMap* map = Thinker_Map((thinker_t*) plr->plr->mo);
             if(!(map->time & 0x1f))
                 P_SetMessage(plr, NGOTPOWERUP2, false);
             S_ConsoleSound(SFX_ITEMUP, NULL, plr - players);
@@ -835,7 +835,7 @@ static boolean giveItem(player_t* plr, itemtype_t item, boolean dropped)
     case IT_DEMONKEY3:
         if(P_InventoryCount(plr - players, IIT_DEMONKEY3))
         {
-            map_t* map = Thinker_Map((thinker_t*) plr->plr->mo);
+            GameMap* map = Thinker_Map((thinker_t*) plr->plr->mo);
             if(!(map->time & 0x1f))
                 P_SetMessage(plr, NGOTPOWERUP3, false);
 
@@ -898,7 +898,7 @@ void P_KillMobj(mobj_t* source, mobj_t* target, boolean stomping)
 {
     assert(target);
     {
-    map_t* map = Thinker_Map((thinker_t*) target);
+    GameMap* map = Thinker_Map((thinker_t*) target);
     mobjtype_t item;
     mobj_t* mo;
     unsigned int an;

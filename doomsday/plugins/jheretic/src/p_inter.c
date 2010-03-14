@@ -953,7 +953,7 @@ boolean P_MorphPlayer(player_t* player)
 {
     assert(player);
     {
-    map_t* map = Thinker_Map((thinker_t*) player->plr->mo);
+    GameMap* map = Thinker_Map((thinker_t*) player->plr->mo);
     mobj_t* pmo, *fog, *chicken;
     float pos[3];
     angle_t angle;
@@ -1015,7 +1015,7 @@ boolean P_MorphMonster(mobj_t* actor)
 {
     assert(actor);
     {
-    map_t* map = Thinker_Map((thinker_t*) actor);
+    GameMap* map = Thinker_Map((thinker_t*) actor);
     mobj_t* fog, *chicken, *target;
     mobjtype_t moType;
     float pos[3];
@@ -1232,7 +1232,7 @@ int P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source,
 
         case MT_WHIRLWIND:
             {
-            map_t* map = Thinker_Map((thinker_t*) target);
+            GameMap* map = Thinker_Map((thinker_t*) target);
             int randVal;
 
             target->angle += (P_Random() - P_Random()) << 20;

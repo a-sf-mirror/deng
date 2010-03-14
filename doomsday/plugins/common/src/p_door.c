@@ -315,7 +315,7 @@ void T_Door(door_t* door)
     }
 }
 
-static int EV_DoDoor2(map_t* map, int tag, float speed, int topwait,
+static int EV_DoDoor2(GameMap* map, int tag, float speed, int topwait,
                       doortype_e type)
 {
     int rtn = 0, sound;
@@ -435,7 +435,7 @@ int EV_DoDoor(linedef_t* line, byte* args, doortype_e type)
     assert(line);
     assert(args);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     return EV_DoDoor2(map, (int) args[0], (float) args[1] * (1.0 / 8), (int) args[2], type);
     }
 }
@@ -444,7 +444,7 @@ int EV_DoDoor(linedef_t* line, doortype_e type)
 {
     assert(line);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     return EV_DoDoor2(map, P_ToXLine(line)->tag, DOORSPEED, DOORWAIT, type);
     }
 }
@@ -706,7 +706,7 @@ boolean EV_VerticalDoor(linedef_t* line, mobj_t* mo)
     assert(line);
     assert(mo);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     XLineDef* xline;
     XSector* xsec;
     sector_t* sec;
@@ -887,7 +887,7 @@ void P_SpawnDoorCloseIn30(sector_t* sec)
 {
     assert(sec);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     door_t* door;
 
     door = Z_Calloc(sizeof(*door), PU_MAP, 0);
@@ -909,7 +909,7 @@ void P_SpawnDoorRaiseIn5Mins(sector_t* sec)
 {
     assert(sec);
     {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     door_t* door;
 
     door = Z_Calloc(sizeof(*door), PU_MAP, 0);

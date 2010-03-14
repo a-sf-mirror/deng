@@ -139,7 +139,7 @@ void SV_PrepareMaterial(material_t* mat, materialarchive_t* arc)
  * reference to a material which is not currently used on any world surface
  * (for example, thinkers that will change a material at some later time)?
  */
-void SV_InitMaterialArchives(map_t* map)
+void SV_InitMaterialArchives(GameMap* map)
 {
     assert(map);
     {

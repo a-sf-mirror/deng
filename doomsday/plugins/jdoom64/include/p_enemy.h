@@ -33,6 +33,6 @@
 #endif
 
 void        P_NoiseAlert(mobj_t *target, mobj_t *emmiter);
-int         P_Massacre(struct map_s* map);
+int         P_Massacre(GameMap* map);
 
 #endif

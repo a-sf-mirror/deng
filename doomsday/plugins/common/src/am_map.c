@@ -189,7 +189,7 @@ static void registerSpecialLine(automapcfg_t* cfg, int cheatLevel, int lineSpeci
 static void setColorAndAlpha(automapcfg_t* cfg, int objectname, float r,
                              float g, float b, float a);
 
-static void     findMinMaxBoundaries(map_t* map);
+static void     findMinMaxBoundaries(GameMap* map);
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
@@ -1716,7 +1716,7 @@ void AM_IncMapCheatLevel(automapid_t id)
 /**
  * Determines bounding box of all the map's vertexes.
  */
-static void findMinMaxBoundaries(map_t* map)
+static void findMinMaxBoundaries(GameMap* map)
 {
     uint i;
     float pos[2], lowX, hiX, lowY, hiY;

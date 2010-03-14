@@ -32,9 +32,9 @@
 #  error "Using jDoom headers without __JDOOM__"
 #endif
 
-void        P_SpawnBrainTargets(struct map_s* map);
+void        P_SpawnBrainTargets(GameMap* map);
 
 void        P_NoiseAlert(mobj_t* target, mobj_t* emmiter);
-int         P_Massacre(struct map_s* map);
+int         P_Massacre(GameMap* map);
 
 #endif

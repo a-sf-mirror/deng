@@ -173,7 +173,7 @@ mobjtype_t P_MapScriptThingIdToMobjType(int thingId)
     return mapScriptThingIdToMobjTypeXlat[thingId];
 }
 
-boolean EV_ThingProjectile(map_t* map, byte* args, boolean gravity)
+boolean EV_ThingProjectile(GameMap* map, byte* args, boolean gravity)
 {
     assert(map);
     assert(args);
@@ -228,7 +228,7 @@ boolean EV_ThingProjectile(map_t* map, byte* args, boolean gravity)
     }
 }
 
-boolean EV_ThingSpawn(map_t* map, byte* args, boolean fog)
+boolean EV_ThingSpawn(GameMap* map, byte* args, boolean fog)
 {
     assert(map);
     assert(args);
@@ -287,7 +287,7 @@ boolean EV_ThingSpawn(map_t* map, byte* args, boolean fog)
     }
 }
 
-boolean EV_ThingActivate(map_t* map, int tid)
+boolean EV_ThingActivate(GameMap* map, int tid)
 {
     assert(map);
     {
@@ -308,7 +308,7 @@ boolean EV_ThingActivate(map_t* map, int tid)
     }
 }
 
-boolean EV_ThingDeactivate(map_t* map, int tid)
+boolean EV_ThingDeactivate(GameMap* map, int tid)
 {
     assert(map);
     {
@@ -329,7 +329,7 @@ boolean EV_ThingDeactivate(map_t* map, int tid)
     }
 }
 
-boolean EV_ThingRemove(map_t* map, int tid)
+boolean EV_ThingRemove(GameMap* map, int tid)
 {
     assert(map);
     {
@@ -353,7 +353,7 @@ boolean EV_ThingRemove(map_t* map, int tid)
     }
 }
 
-boolean EV_ThingDestroy(map_t* map, int tid)
+boolean EV_ThingDestroy(GameMap* map, int tid)
 {
     assert(map);
     {

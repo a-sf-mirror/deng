@@ -723,7 +723,7 @@ static boolean drawSegsOfSubsector(subsector_t* ssec, void* context)
 static void renderWalls(const automap_t* amap, const automapcfg_t* cfg,
                         int player, int objType, boolean addToLists)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     rendwallseg_params_t params;
     uint i;
 
@@ -865,7 +865,7 @@ boolean drawLinedefsOfPolyobject(linedef_t* lineDef, void* context)
 static void renderPolyObjs(const automap_t* amap, const automapcfg_t* cfg,
                            int player)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     float aabb[4];
     rendwallseg_params_t params;
 
@@ -887,7 +887,7 @@ static void renderPolyObjs(const automap_t* amap, const automapcfg_t* cfg,
 #if __JDOOM__ || __JHERETIC__ || __JDOOM64__
 boolean renderXGLinedef(linedef_t* line, void* context)
 {
-    map_t* map = P_CurrentMap();
+    GameMap* map = P_CurrentMap();
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
     XLineDef* xLine;
 
@@ -1427,7 +1427,7 @@ static void renderMapName(const automap_t* map)
     }
 }
 
-static void renderVertexes(map_t* map, float alpha)
+static void renderVertexes(GameMap* map, float alpha)
 {
     uint i;
     float v[2], oldPointSize;

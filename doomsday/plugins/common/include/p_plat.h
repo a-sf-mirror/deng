@@ -85,7 +85,7 @@ int         EV_DoPlat(linedef_t* li, byte* args, plattype_e type,
                       int amount);
 #else
 int         EV_DoPlat(linedef_t* li, plattype_e type, int amount);
-int         P_PlatActivate(struct map_s* map, short tag);
+int         P_PlatActivate(GameMap* map, short tag);
 #endif
-int         P_PlatDeactivate(struct map_s* map, short tag);
+int         P_PlatDeactivate(GameMap* map, short tag);
 #endif
