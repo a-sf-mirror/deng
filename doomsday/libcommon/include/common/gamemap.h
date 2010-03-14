@@ -447,13 +447,17 @@ public:
     void destroySectorTagLists();
     IterList* sectorIterListForTag(de::dint tag, bool createNewList);
 
-    XLineDef* XLineDef(de::duint idx);
-    XSector* XSector(de::duint idx);
+    XLineDef* toXLineDef(de::duint idx);
+    XSector* toXSector(de::duint idx);
 
     de::dfloat gravity();
 
     // @todo Should be private to GameMap.
     IterList* specHits();
+
+    bool isSectorTagBusy(dint tag);
+
+    bool isPolyobjBusy(dint polyobj);
 
 private:
     /**

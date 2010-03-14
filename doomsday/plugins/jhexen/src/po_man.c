@@ -617,14 +617,3 @@ void PO_ThrustMobj(struct mobj_s* mo, void* lineDefPtr, void* pop)
         }
     }
 }
-
-boolean PO_Busy(GameMap* map, int polyobj)
-{
-    assert(map);
-    {
-    polyobj_t* po = Map_Polyobj(map, polyobj);
-    if(po && po->specialData != NULL)
-        return true;
-    return false;
-    }
-}

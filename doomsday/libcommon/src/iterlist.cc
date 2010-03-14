@@ -33,7 +33,7 @@ dint IterList::add(void* obj)
     if(++_count > _max)
     {
          _max = (_max? _max * 2 : 8);
-         _list = std::realloc(_list, sizeof(void*) * _max);
+         _list = reinterpret_cast<void**>(std::realloc(_list, sizeof(void*) * _max));
     }
     _list[_count - 1] = obj;
     return _count - 1;

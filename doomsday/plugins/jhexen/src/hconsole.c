@@ -72,7 +72,6 @@ DEFCC(CCmdSpawnMobj);
 
 DEFCC(CCmdPrintPlayerCoords);
 
-DEFCC(CCmdScriptInfo);
 DEFCC(CCmdTest);
 DEFCC(CCmdMovePlane);
 
@@ -211,7 +210,6 @@ ccmd_t  gameCCmds[] = {
     // jHexen specific
     {"pig",         "",     CCmdCheatPig},
     {"runscript",   "i",    CCmdCheatRunScript},
-    {"scriptinfo",  NULL,   CCmdScriptInfo},
     {"class",       "i",    CCmdCheatShadowcaster},
     {NULL}
 };

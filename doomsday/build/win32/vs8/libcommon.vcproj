@@ -241,6 +241,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\libcommon\include\common\identifiers.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\libcommon\include\common\iterlist.h"
 				>
 			</File>

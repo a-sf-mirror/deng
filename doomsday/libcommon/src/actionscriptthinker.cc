@@ -28,17 +28,17 @@
 using namespace de;
 
 namespace {
-// A handy helper for declaring action script commands.
-#define D_ASCMD(x) script_action_t Cmd##x(ActionScriptThinker* script)
-
 typedef enum {
     SA_CONTINUE,
     SA_STOP,
     SA_TERMINATE
 } script_action_t;
 
+// A handy helper for declaring action script command interpreter.
+#define D_ASCMD(x) script_action_t Cmd##x(ActionScriptInterpreter& asi, ActionScriptThinker* script)
+
 /// Pointer to a script bytecode command interpreter.
-typedef script_action_t (*script_bytecode_cmdinterpreter_t) (ActionScriptThinker*);
+typedef script_action_t (*script_bytecode_cmdinterpreter_t) (ActionScriptInterpreter& asi, ActionScriptThinker*);
 
 D_ASCMD(NOP);
 D_ASCMD(Terminate);
@@ -103,8 +103,8 @@ D_ASCMD(ThingCount);
 D_ASCMD(ThingCountDirect);
 D_ASCMD(TagWait);
 D_ASCMD(TagWaitDirect);
-D_ASCMD(PolyWait);
-D_ASCMD(PolyWaitDirect);
+D_ASCMD(PolyobjWait);
+D_ASCMD(PolyobjWaitDirect);
 D_ASCMD(ChangeFloor);
 D_ASCMD(ChangeFloorDirect);
 D_ASCMD(ChangeCeiling);
@@ -140,7 +140,7 @@ D_ASCMD(SoundSequence);
 D_ASCMD(SetSideDefMaterial);
 D_ASCMD(SetLineDefBlocking);
 D_ASCMD(SetLineDefSpecial);
-D_ASCMD(MobjSound);
+D_ASCMD(ThingSound);
 D_ASCMD(EndPrintBold);
 
 const script_bytecode_cmdinterpreter_t bytecodeCommandInterpreters[] =
@@ -158,8 +158,8 @@ const script_bytecode_cmdinterpreter_t bytecodeCommandInterpreters[] =
     CmdIncScriptVar, CmdIncMapVar, CmdIncWorldVar, CmdDecScriptVar,
     CmdDecMapVar, CmdDecWorldVar, CmdGoto, CmdIfGoto, CmdDrop,
     CmdDelay, CmdDelayDirect, CmdRandom, CmdRandomDirect,
-    CmdMobjCount, CmdMobjCountDirect, CmdTagWait, CmdTagWaitDirect,
-    CmdPolyWait, CmdPolyWaitDirect, CmdChangeFloor,
+    CmdThingCount, CmdThingCountDirect, CmdTagWait, CmdTagWaitDirect,
+    CmdPolyobjWait, CmdPolyobjWaitDirect, CmdChangeFloor,
     CmdChangeFloorDirect, CmdChangeCeiling, CmdChangeCeilingDirect,
     CmdRestart, CmdAndLogical, CmdOrLogical, CmdAndBitwise,
     CmdOrBitwise, CmdEorBitwise, CmdNegateLogical, CmdLShift,
@@ -169,7 +169,7 @@ const script_bytecode_cmdinterpreter_t bytecodeCommandInterpreters[] =
     CmdPrintCharacter, CmdPlayerCount, CmdGameType, CmdGameSkill,
     CmdTimer, CmdSectorSound, CmdAmbientSound, CmdSoundSequence,
     CmdSetSideDefMaterial, CmdSetLineDefBlocking, CmdSetLineDefSpecial,
-    CmdMobjSound, CmdEndPrintBold
+    CmdThingSound, CmdEndPrintBold
 };
 
 __inline void Drop(ActionScriptThinker* script)
@@ -195,19 +195,18 @@ __inline dint Top(ActionScriptThinker* script)
 
 void ActionScriptThinker::think(const de::Time::Delta& /* elapsed */)
 {
-    ActionScriptInterpreter* asi = ActionScriptInterpreter;
-    script_info_t* info = &asi->_bytecode.scriptInfo[infoIndex];
-    script_action_t action;
+    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
+    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(scriptId);
 
-    if(info->scriptState == SS_TERMINATING)
+    if(rec.state == ActionScriptInterpreter::ScriptStateRecord::TERMINATING)
     {
-        info->scriptState = SS_INACTIVE;
-        scriptFinished(asi, scriptId);
+        rec.state = ActionScriptInterpreter::ScriptStateRecord::INACTIVE;
+        asi.scriptFinished(scriptId);
         Map_RemoveThinker(Thinker_Map(this), this);
         return;
     }
 
-    if(info->scriptState != SS_RUNNING)
+    if(rec.state != ActionScriptInterpreter::ScriptStateRecord::RUNNING)
     {
         return;
     }
@@ -218,40 +217,45 @@ void ActionScriptThinker::think(const de::Time::Delta& /* elapsed */)
         return;
     }
 
+    script_action_t action;
     do
     {
         script_bytecode_cmdinterpreter_t cmd = bytecodeCommandInterpreters[LONG(*bytecodePos++)];
-        action = cmd(this);
+        action = cmd(asi, this);
     } while(action == SA_CONTINUE);
 
     if(action == SA_TERMINATE)
     {
-        info->scriptState = SS_INACTIVE;
-        scriptFinished(asi, scriptId);
+        rec.state = ActionScriptInterpreter::ScriptStateRecord::INACTIVE;
+        asi.scriptFinished(scriptId);
         Map_RemoveThinker(Thinker_Map(this), this);
     }
 }
 
-void ActionScriptThinker::write() const
+void ActionScriptThinker::operator >> (de::Writer& to) const
 {
-    SV_WriteByte(1); // Write a version byte.
+    Thinker::operator >> (to);
 
-    SV_WriteLong(SV_ThingArchiveNum(activator));
-    SV_WriteLong(lineDef ? DMU_ToIndex(lineDef) : -1);
-    SV_WriteLong(lineSide);
-    SV_WriteLong((dint) scriptId);
-    SV_WriteLong(infoIndex);
-    SV_WriteLong(delayCount);
+    to << dbyte(1) // Write a version byte.
+       << dint(SV_ThingArchiveNum(activator))
+       << (lineDef ? dint(DMU_ToIndex(lineDef)) : dint(-1))
+       << lineSide
+       << scriptId
+       << infoIndex
+       << delayCount;
+
     for(duint i = 0; i < AST_STACK_DEPTH; ++i)
-        SV_WriteLong(stack[i]);
-    SV_WriteLong(stackDepth);
-    for(duint i = 0; i < AST_MAX_VARS; ++i)
-        SV_WriteLong(vars[i]);
+        to << stack[i];
 
-    SV_WriteLong((dint) (bytecodePos) - (dint) ActionScriptInterpreter->_bytecode.base);
+    to << stackDepth;
+    for(duint i = 0; i < AST_MAX_VARS; ++i)
+        to << vars[i];
+
+    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
+    to << (dint(bytecodePos) - dint(asi.bytecode().base));
 }
 
-dint ActionScriptThinker::read()
+void ActionScriptThinker::operator << (de::Reader& from)
 {
     dint temp;
 
@@ -268,7 +272,7 @@ dint ActionScriptThinker::read()
         else
             lineDef = DMU_ToPtr(DMU_LINEDEF, temp);
         lineSide = SV_ReadLong();
-        scriptId = (actionscriptid_t) SV_ReadLong();
+        scriptId = (ActionScriptId) SV_ReadLong();
         infoIndex = SV_ReadLong();
         delayCount = SV_ReadLong();
         for(duint i = 0; i < AST_STACK_DEPTH; ++i)
@@ -277,7 +281,8 @@ dint ActionScriptThinker::read()
         for(duint i = 0; i < AST_MAX_VARS; ++i)
             vars[i] = SV_ReadLong();
 
-        bytecodePos = (const dint*) (ActionScriptInterpreter->_bytecode.base + SV_ReadLong());
+        ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
+        bytecodePos = (const dint*) (asi.bytecode().base + SV_ReadLong());
     }
     else
     {
@@ -295,7 +300,7 @@ dint ActionScriptThinker::read()
         else
             lineDef = DMU_ToPtr(DMU_LINEDEF, temp);
         lineSide = SV_ReadLong();
-        scriptId = (actionscriptid_t) SV_ReadLong();
+        scriptId = (ActionScriptId) SV_ReadLong();
         infoIndex = SV_ReadLong();
         delayCount = SV_ReadLong();
         for(duint i = 0; i < AST_STACK_DEPTH; ++i)
@@ -304,12 +309,9 @@ dint ActionScriptThinker::read()
         for(duint i = 0; i < AST_MAX_VARS; ++i)
             vars[i] = SV_ReadLong();
 
-        bytecodePos = (const dint*) (ActionScriptInterpreter->_bytecode.base + SV_ReadLong());
+        ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
+        bytecodePos = (const dint*) (asi.bytecode().base + SV_ReadLong());
     }
-
-    thinker.function = ActionScriptThinker_Think;
-
-    return true; // Add this thinker.
 }
 
 namespace {
@@ -325,7 +327,7 @@ D_ASCMD(Terminate)
 
 D_ASCMD(Suspend)
 {
-    ActionScriptInterpreter->_bytecode.scriptInfo[script->infoIndex].scriptState = SS_SUSPENDED;
+    asi.scriptStateRecord(script->scriptId).state = ActionScriptInterpreter::ScriptStateRecord::SUSPENDED;
     return SA_STOP;
 }
 
@@ -337,101 +339,111 @@ D_ASCMD(PushNumber)
 
 D_ASCMD(LSpec1)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[0] = Pop(script);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[0] = Pop(script);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
 D_ASCMD(LSpec2)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[1] = Pop(script);
-    ActionScriptInterpreter->_specArgs[0] = Pop(script);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[1] = Pop(script);
+    args[0] = Pop(script);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
 D_ASCMD(LSpec3)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[2] = Pop(script);
-    ActionScriptInterpreter->_specArgs[1] = Pop(script);
-    ActionScriptInterpreter->_specArgs[0] = Pop(script);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[2] = Pop(script);
+    args[1] = Pop(script);
+    args[0] = Pop(script);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
 D_ASCMD(LSpec4)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[3] = Pop(script);
-    ActionScriptInterpreter->_specArgs[2] = Pop(script);
-    ActionScriptInterpreter->_specArgs[1] = Pop(script);
-    ActionScriptInterpreter->_specArgs[0] = Pop(script);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[3] = Pop(script);
+    args[2] = Pop(script);
+    args[1] = Pop(script);
+    args[0] = Pop(script);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
 D_ASCMD(LSpec5)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[4] = Pop(script);
-    ActionScriptInterpreter->_specArgs[3] = Pop(script);
-    ActionScriptInterpreter->_specArgs[2] = Pop(script);
-    ActionScriptInterpreter->_specArgs[1] = Pop(script);
-    ActionScriptInterpreter->_specArgs[0] = Pop(script);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[4] = Pop(script);
+    args[3] = Pop(script);
+    args[2] = Pop(script);
+    args[1] = Pop(script);
+    args[0] = Pop(script);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
 D_ASCMD(LSpec1Direct)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[0] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[0] = LONG(*script->bytecodePos++);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
 D_ASCMD(LSpec2Direct)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[0] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[1] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[0] = LONG(*script->bytecodePos++);
+    args[1] = LONG(*script->bytecodePos++);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
 D_ASCMD(LSpec3Direct)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[0] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[1] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[2] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[0] = LONG(*script->bytecodePos++);
+    args[1] = LONG(*script->bytecodePos++);
+    args[2] = LONG(*script->bytecodePos++);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
 D_ASCMD(LSpec4Direct)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[0] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[1] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[2] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[3] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[0] = LONG(*script->bytecodePos++);
+    args[1] = LONG(*script->bytecodePos++);
+    args[2] = LONG(*script->bytecodePos++);
+    args[3] = LONG(*script->bytecodePos++);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
 D_ASCMD(LSpec5Direct)
 {
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[0] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[1] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[2] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[3] = LONG(*script->bytecodePos++);
-    ActionScriptInterpreter->_specArgs[4] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, ActionScriptInterpreter->_specArgs, script->lineDef, script->lineSide, script->activator);
+    args[0] = LONG(*script->bytecodePos++);
+    args[1] = LONG(*script->bytecodePos++);
+    args[2] = LONG(*script->bytecodePos++);
+    args[3] = LONG(*script->bytecodePos++);
+    args[4] = LONG(*script->bytecodePos++);
+    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
     return SA_CONTINUE;
 }
 
@@ -516,13 +528,13 @@ D_ASCMD(AssignScriptVar)
 
 D_ASCMD(AssignMapVar)
 {
-    ActionScriptInterpreter->_mapVars[LONG(*script->bytecodePos++)] = Pop(script);
+    asi._mapVars[LONG(*script->bytecodePos++)] = Pop(script);
     return SA_CONTINUE;
 }
 
 D_ASCMD(AssignWorldVar)
 {
-    ActionScriptInterpreter->_worldVars[LONG(*script->bytecodePos++)] = Pop(script);
+    asi._worldVars[LONG(*script->bytecodePos++)] = Pop(script);
     return SA_CONTINUE;
 }
 
@@ -534,13 +546,13 @@ D_ASCMD(PushScriptVar)
 
 D_ASCMD(PushMapVar)
 {
-    Push(script, ActionScriptInterpreter->_mapVars[LONG(*script->bytecodePos++)]);
+    Push(script, asi._mapVars[LONG(*script->bytecodePos++)]);
     return SA_CONTINUE;
 }
 
 D_ASCMD(PushWorldVar)
 {
-    Push(script, ActionScriptInterpreter->_worldVars[LONG(*script->bytecodePos++)]);
+    Push(script, asi._worldVars[LONG(*script->bytecodePos++)]);
     return SA_CONTINUE;
 }
 
@@ -552,13 +564,13 @@ D_ASCMD(AddScriptVar)
 
 D_ASCMD(AddMapVar)
 {
-    ActionScriptInterpreter->_mapVars[LONG(*script->bytecodePos++)] += Pop(script);
+    asi._mapVars[LONG(*script->bytecodePos++)] += Pop(script);
     return SA_CONTINUE;
 }
 
 D_ASCMD(AddWorldVar)
 {
-    ActionScriptInterpreter->_worldVars[LONG(*script->bytecodePos++)] += Pop(script);
+    asi._worldVars[LONG(*script->bytecodePos++)] += Pop(script);
     return SA_CONTINUE;
 }
 
@@ -570,13 +582,13 @@ D_ASCMD(SubScriptVar)
 
 D_ASCMD(SubMapVar)
 {
-    ActionScriptInterpreter->_mapVars[LONG(*script->bytecodePos++)] -= Pop(script);
+    asi._mapVars[LONG(*script->bytecodePos++)] -= Pop(script);
     return SA_CONTINUE;
 }
 
 D_ASCMD(SubWorldVar)
 {
-    ActionScriptInterpreter->_worldVars[LONG(*script->bytecodePos++)] -= Pop(script);
+    asi._worldVars[LONG(*script->bytecodePos++)] -= Pop(script);
     return SA_CONTINUE;
 }
 
@@ -588,13 +600,13 @@ D_ASCMD(MulScriptVar)
 
 D_ASCMD(MulMapVar)
 {
-    ActionScriptInterpreter->_mapVars[LONG(*script->bytecodePos++)] *= Pop(script);
+    asi._mapVars[LONG(*script->bytecodePos++)] *= Pop(script);
     return SA_CONTINUE;
 }
 
 D_ASCMD(MulWorldVar)
 {
-    ActionScriptInterpreter->_worldVars[LONG(*script->bytecodePos++)] *= Pop(script);
+    asi._worldVars[LONG(*script->bytecodePos++)] *= Pop(script);
     return SA_CONTINUE;
 }
 
@@ -606,13 +618,13 @@ D_ASCMD(DivScriptVar)
 
 D_ASCMD(DivMapVar)
 {
-    ActionScriptInterpreter->_mapVars[LONG(*script->bytecodePos++)] /= Pop(script);
+    asi._mapVars[LONG(*script->bytecodePos++)] /= Pop(script);
     return SA_CONTINUE;
 }
 
 D_ASCMD(DivWorldVar)
 {
-    ActionScriptInterpreter->_worldVars[LONG(*script->bytecodePos++)] /= Pop(script);
+    asi._worldVars[LONG(*script->bytecodePos++)] /= Pop(script);
     return SA_CONTINUE;
 }
 
@@ -624,13 +636,13 @@ D_ASCMD(ModScriptVar)
 
 D_ASCMD(ModMapVar)
 {
-    ActionScriptInterpreter->_mapVars[LONG(*script->bytecodePos++)] %= Pop(script);
+    asi._mapVars[LONG(*script->bytecodePos++)] %= Pop(script);
     return SA_CONTINUE;
 }
 
 D_ASCMD(ModWorldVar)
 {
-    ActionScriptInterpreter->_worldVars[LONG(*script->bytecodePos++)] %= Pop(script);
+    asi._worldVars[LONG(*script->bytecodePos++)] %= Pop(script);
     return SA_CONTINUE;
 }
 
@@ -642,13 +654,13 @@ D_ASCMD(IncScriptVar)
 
 D_ASCMD(IncMapVar)
 {
-    ActionScriptInterpreter->_mapVars[LONG(*script->bytecodePos++)]++;
+    asi._mapVars[LONG(*script->bytecodePos++)]++;
     return SA_CONTINUE;
 }
 
 D_ASCMD(IncWorldVar)
 {
-    ActionScriptInterpreter->_worldVars[LONG(*script->bytecodePos++)]++;
+    asi._worldVars[LONG(*script->bytecodePos++)]++;
     return SA_CONTINUE;
 }
 
@@ -660,19 +672,19 @@ D_ASCMD(DecScriptVar)
 
 D_ASCMD(DecMapVar)
 {
-    ActionScriptInterpreter->_mapVars[LONG(*script->bytecodePos++)]--;
+    asi._mapVars[LONG(*script->bytecodePos++)]--;
     return SA_CONTINUE;
 }
 
 D_ASCMD(DecWorldVar)
 {
-    ActionScriptInterpreter->_worldVars[LONG(*script->bytecodePos++)]--;
+    asi._worldVars[LONG(*script->bytecodePos++)]--;
     return SA_CONTINUE;
 }
 
 D_ASCMD(Goto)
 {
-    script->bytecodePos = (dint*) (ActionScriptInterpreter->_bytecode.base + LONG(*script->bytecodePos));
+    script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
     return SA_CONTINUE;
 }
 
@@ -680,7 +692,7 @@ D_ASCMD(IfGoto)
 {
     if(Pop(script))
     {
-        script->bytecodePos = (dint*) (ActionScriptInterpreter->_bytecode.base + LONG(*script->bytecodePos));
+        script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
     }
     else
     {
@@ -815,39 +827,39 @@ dint countThingsOfType(GameMap* map, dint type, idnt tid)
 
 D_ASCMD(TagWait)
 {
-    script_info_t* info = &ActionScriptInterpreter->_bytecode.scriptInfo[script->infoIndex];
-    info->waitValue = Pop(script);
-    info->scriptState = SS_WAITING_FOR_TAG;
+    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
+    rec.waitValue = Pop(script);
+    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_TAG;
     return SA_STOP;
 }
 
 D_ASCMD(TagWaitDirect)
 {
-    script_info_t* info = &ActionScriptInterpreter->_bytecode.scriptInfo[script->infoIndex];
-    info->waitValue = LONG(*script->bytecodePos++);
-    info->scriptState = SS_WAITING_FOR_TAG;
+    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
+    rec.waitValue = LONG(*script->bytecodePos++);
+    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_TAG;
     return SA_STOP;
 }
 
-D_ASCMD(PolyWait)
+D_ASCMD(PolyobjWait)
 {
-    script_info_t* info = &ActionScriptInterpreter->_bytecode.scriptInfo[script->infoIndex];
-    info->waitValue = Pop(script);
-    info->scriptState = SS_WAITING_FOR_POLY;
+    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
+    rec.waitValue = Pop(script);
+    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_POLYOBJ;
     return SA_STOP;
 }
 
-D_ASCMD(PolyWaitDirect)
+D_ASCMD(PolyobjWaitDirect)
 {
-    script_info_t* info = &ActionScriptInterpreter->_bytecode.scriptInfo[script->infoIndex];
-    info->waitValue = LONG(*script->bytecodePos++);
-    info->scriptState = SS_WAITING_FOR_POLY;
+    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
+    rec.waitValue = LONG(*script->bytecodePos++);
+    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_POLYOBJ;
     return SA_STOP;
 }
 
 D_ASCMD(ChangeFloor)
 {
-    const dchar* flatName = getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script));
+    const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script)));
     dint tag = Pop(script);
     IterList* list;
 
@@ -869,7 +881,7 @@ D_ASCMD(ChangeFloor)
 D_ASCMD(ChangeFloorDirect)
 {
     dint tag = LONG(*script->bytecodePos++);
-    const dchar* flatName = getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) LONG(*script->bytecodePos++));
+    const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(LONG(*script->bytecodePos++)));
     IterList* list;
 
     if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
@@ -889,7 +901,7 @@ D_ASCMD(ChangeFloorDirect)
 
 D_ASCMD(ChangeCeiling)
 {
-    const dchar* flatName = getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script));
+    const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script)));
     dint tag = Pop(script);
     IterList* list;
 
@@ -911,7 +923,7 @@ D_ASCMD(ChangeCeiling)
 D_ASCMD(ChangeCeilingDirect)
 {
     dint tag = LONG(*script->bytecodePos++);
-    const dchar* flatName = getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) LONG(*script->bytecodePos++));
+    const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(LONG(*script->bytecodePos++)));
     IterList* list;
 
     if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
@@ -931,7 +943,7 @@ D_ASCMD(ChangeCeilingDirect)
 
 D_ASCMD(Restart)
 {
-    script->bytecodePos = ActionScriptInterpreter->_bytecode.scriptInfo[script->infoIndex].entryPoint;
+    script->bytecodePos = asi.bytecode().scriptInfo[script->infoIndex].entryPoint;
     return SA_CONTINUE;
 }
 
@@ -999,7 +1011,7 @@ D_ASCMD(IfNotGoto)
     }
     else
     {
-        script->bytecodePos = (dint*) (ActionScriptInterpreter->_bytecode.base + LONG(*script->bytecodePos));
+        script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
     }
     return SA_CONTINUE;
 }
@@ -1012,17 +1024,17 @@ D_ASCMD(LineDefSide)
 
 D_ASCMD(ScriptWait)
 {
-    script_info_t* info = &ActionScriptInterpreter->_bytecode.scriptInfo[script->infoIndex];
-    info->waitValue = Pop(script);
-    info->scriptState = SS_WAITING_FOR_SCRIPT;
+    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
+    rec.waitValue = Pop(script);
+    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_SCRIPT;
     return SA_STOP;
 }
 
 D_ASCMD(ScriptWaitDirect)
 {
-    script_info_t* info = &ActionScriptInterpreter->_bytecode.scriptInfo[script->infoIndex];
-    info->waitValue = LONG(*script->bytecodePos++);
-    info->scriptState = SS_WAITING_FOR_SCRIPT;
+    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
+    rec.waitValue = LONG(*script->bytecodePos++);
+    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_SCRIPT;
     return SA_STOP;
 }
 
@@ -1039,7 +1051,7 @@ D_ASCMD(CaseGoto)
 {
     if(Top(script) == LONG(*script->bytecodePos++))
     {
-        script->bytecodePos = (dint*) (ActionScriptInterpreter->_bytecode.base + LONG(*script->bytecodePos));
+        script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
         Drop(script);
     }
     else
@@ -1051,7 +1063,7 @@ D_ASCMD(CaseGoto)
 
 D_ASCMD(BeginPrint)
 {
-    ActionScriptInterpreter->_printBuffer[0] = 0;
+    asi._printBuffer[0] = 0;
     return SA_CONTINUE;
 }
 
@@ -1059,13 +1071,13 @@ D_ASCMD(EndPrint)
 {
     if(script->activator && script->activator->player)
     {
-        P_SetMessage(script->activator->player, ActionScriptInterpreter->_printBuffer, false);
+        P_SetMessage(script->activator->player, asi._printBuffer, false);
     }
     else
     {   // Send to everybody.
         for(dint i = 0; i < MAXPLAYERS; ++i)
             if(players[i].plr->inGame)
-                P_SetMessage(&players[i], ActionScriptInterpreter->_printBuffer, false);
+                P_SetMessage(&players[i], asi._printBuffer, false);
     }
 
     return SA_CONTINUE;
@@ -1077,7 +1089,7 @@ D_ASCMD(EndPrintBold)
     {
         if(players[i].plr->inGame)
         {
-            P_SetYellowMessage(&players[i], ActionScriptInterpreter->_printBuffer, false);
+            P_SetYellowMessage(&players[i], asi._printBuffer, false);
         }
     }
 
@@ -1086,7 +1098,7 @@ D_ASCMD(EndPrintBold)
 
 D_ASCMD(PrintString)
 {
-    strcat(ActionScriptInterpreter->_printBuffer, getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script)));
+    strcat(asi._printBuffer, asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
     return SA_CONTINUE;
 }
 
@@ -1094,14 +1106,14 @@ D_ASCMD(PrintNumber)
 {
     dchar tempStr[16];
     sprintf(tempStr, "%d", Pop(script));
-    strcat(ActionScriptInterpreter->_printBuffer, tempStr);
+    strcat(asi._printBuffer, tempStr);
     return SA_CONTINUE;
 }
 
 D_ASCMD(PrintCharacter)
 {
     dchar* bufferEnd;
-    bufferEnd = ActionScriptInterpreter->_printBuffer + strlen(ActionScriptInterpreter->_printBuffer);
+    bufferEnd = asi._printBuffer + strlen(asi._printBuffer);
     *bufferEnd++ = Pop(script);
     *bufferEnd = 0;
     return SA_CONTINUE;
@@ -1163,17 +1175,17 @@ D_ASCMD(SectorSound)
     }
     volume = Pop(script);
 
-    S_StartSoundAtVolume(S_GetSoundID(getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script))), th, volume / 127.0f);
+    S_StartSoundAtVolume(S_GetSoundID(asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script)))), th, volume / 127.0f);
     return SA_CONTINUE;
 }
 
-D_ASCMD(MobjSound)
+D_ASCMD(ThingSound)
 {
     dint tid, sound, volume, searcher;
     Thing* th;
 
     volume = Pop(script);
-    sound = S_GetSoundID(getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script)));
+    sound = S_GetSoundID(asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
     tid = Pop(script);
     searcher = -1;
     while(sound && (th = P_FindMobjFromTID(P_CurrentMap(), tid, &searcher)) != NULL)
@@ -1205,7 +1217,7 @@ D_ASCMD(AmbientSound)
             th->tics = 5 * TICSPERSEC; // Five seconds should be enough.
     }
 
-    sound = S_GetSoundID(getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script)));
+    sound = S_GetSoundID(asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
     S_StartSoundAtVolume(sound, th, volume / 127.0f);
 
     return SA_CONTINUE;
@@ -1216,7 +1228,7 @@ D_ASCMD(SoundSequence)
     Thing* th = NULL;
     if(script->lineDef)
         th = DMU_GetPtrp(DMU_GetPtrp(script->lineDef, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
-    SN_StartSequenceName(mo, getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script)));
+    SN_StartSequenceName(mo, asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
     return SA_CONTINUE;
 }
 
@@ -1228,7 +1240,7 @@ D_ASCMD(SetSideDefMaterial)
     LineDef* line;
     IterList* list;
 
-    mat = P_MaterialForName(MN_TEXTURES, getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script)));
+    mat = P_MaterialForName(MN_TEXTURES, asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
     position = Pop(script);
     side = Pop(script);
     lineTag = Pop(script);

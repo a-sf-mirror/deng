@@ -120,6 +120,7 @@ MonsterMissileInfo[] =
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
+DEFCC(CCmdScriptInfo);
 DEFCC(CCmdListMaps);
 
 void    G_PlayerReborn(int player);
@@ -206,7 +207,8 @@ cvar_t gamestatusCVars[] = {
 };
 
 ccmd_t gameCmds[] = {
-    { "listmaps",    "",     CCmdListMaps },
+    { "listmaps",   "",     CCmdListMaps },
+    { "scriptinfo", NULL,   CCmdScriptInfo },
     { NULL }
 };
 
@@ -2417,5 +2419,22 @@ DEFCC(CCmdListMaps)
 {
     Con_Message("Loaded maps:\n");
     G_PrintMapList();
+    return true;
+}
+
+DEFCC(CCmdScriptInfo)
+{
+    if(ActionScriptInterpreter)
+    {
+        ActionScriptId scriptId = -1;
+
+        if(argc == 2)
+            scriptId = (ActionScriptId) atoi(argv[1]);
+        else
+            scriptId = -1;
+
+        printScriptInfo(ActionScriptInterpreter, scriptId);
+    }
+
     return true;
 }

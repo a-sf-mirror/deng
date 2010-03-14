@@ -354,3 +354,28 @@ void GameMap::addBossSpot(dfloat x, dfloat y, dangle angle)
     spot->angle = angle;
 }
 #endif
+
+bool GameMap::isSectorTagBusy(dint tag)
+{
+    // @note We can't use the sector tag lists here as we might already be in an
+    // iteration at a higher level.
+    for(duint i = 0; i < numSectors(); ++i)
+    {
+        XSector* xsec = this->toXSector(DMU_ToPtr(DMU_SECTOR, i));
+
+        if(xsec->tag != tag)
+            continue;
+
+        if(xsec->specialData)
+            return true;
+    }
+    return false;
+}
+
+bool GameMap::isPolyobjBusy(dint polyobj)
+{
+    Polyobj* po = polyobj(polyobj);
+    if(po && po->specialData != NULL)
+        return true;
+    return false;
+}

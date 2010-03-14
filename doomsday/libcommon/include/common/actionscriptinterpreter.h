@@ -22,109 +22,210 @@
 #ifndef LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H
 #define LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H
 
+#include <list>
+#include <map>
+
+#include <de/Thing>
+#include <de/Error>
+
 #include "common.h"
 
-#include "common/GameMap"
-#include "common/ActionScriptThinker"
+typedef de::dint ActionScriptId;
 
-typedef de::dint actionscriptid_t;
+class ActionScriptThinker;
+class GameMap;
 
 /**
  * Interpreter for Hexen format ACS bytecode.
  */
 class ActionScriptInterpreter
 {
+public:
+    /// Only one instance of ActionScriptInterpreter is allowed. @ingroup errors
+    DEFINE_ERROR(TooManyInstancesError);
+    /// Invalid ActionScriptId specified. @ingroup errors
+    DEFINE_ERROR(UnknownActionScriptIdError);
+
+    struct ScriptStateRecord {
+        enum State {
+            INACTIVE,
+            RUNNING,
+            SUSPENDED,
+            WAITING_FOR_TAG,
+            WAITING_FOR_POLYOBJ,
+            WAITING_FOR_SCRIPT,
+            TERMINATING
+        };
+        State state;
+
+        de::dint waitValue;
+
+        ScriptStateRecord(State state=INACTIVE, de::dint waitValue = 0)
+            : state(state), waitValue(waitValue) {};
+    };
+
 private:
     static const de::dint MAX_MAP_VARS = 32;
     static const de::dint MAX_WORLD_VARS = 64;
 
     static const de::dint PRINT_BUFFER_SIZE = 256;
 
+    typedef std::map<ActionScriptId, ScriptStateRecord> ScriptStateRecords;
+
     struct Bytecode {
+        typedef de::dint StringId;
+
         const de::dbyte* base;
-        de::dint numScripts;
-        struct script_info_s* scriptInfo;
+
+        struct ScriptInfoRecord {
+            const ActionScriptId scriptId;
+            const de::dint* entryPoint;
+            const de::dint argCount;
+
+            ScriptInfoRecord(ActionScriptId scriptId, const de::dint* entryPoint, de::dint argCount)
+              : scriptId(scriptId), entryPoint(entryPoint), argCount(argCount) {};
+        };
+
+        typedef std::vector<ScriptInfoRecord> ScriptInfoRecords;
+        ScriptInfoRecords scriptInfoRecords;
 
         de::dint numStrings;
         de::dchar const** strings;
+
+        const de::dchar* string(StringId id) const {
+            assert(id >= 0 && id < numStrings);
+            return strings[id];
+        }
+
+        de::duint toIndex(ActionScriptId scriptId) const {
+            FOR_EACH(i, scriptInfoRecords, ScriptInfoRecords::const_iterator)
+            {
+                const ScriptInfoRecord& info = *i;
+                if(info.scriptId == scriptId)
+                    return de::dint(i - scriptInfoRecords.begin());
+            }
+
+            /// @throw UnknownActionScriptIdError Invalid ActionScriptId specified when
+            /// attempting to retrieve a ScriptInfoRecord.
+            throw UnknownActionScriptIdError("ActionScriptInterpreter::Bytecode::toIndex", "Invalid ActionScriptId");
+        }
     };
 
-    struct script_store_t {
+    struct DeferredScriptEvent {
+        /// Script number on target map.
+        ActionScriptId scriptId;
+
         /// Target map.
         de::duint map;
 
-        /// Script number on target map.
-        actionscriptid_t scriptId;
-
         /// Arguments passed to script (padded to 4 for alignment).
         de::dbyte args[4];
+
+        DeferredScriptEvent(ActionScriptId scriptId, de::duint map, de::dbyte arg1, de::dbyte arg2, de::dbyte arg3, de::dbyte arg4)
+          : scriptId(scriptId), map(map) {
+              args[0] = arg1;
+              args[1] = arg2;
+              args[2] = arg3;
+              args[3] = arg4;
+        }
     };
+
+    typedef std::list<DeferredScriptEvent> DeferredScriptEvents;
 
 public:
     ActionScriptInterpreter();
     ~ActionScriptInterpreter();
 
+    ScriptStateRecord& scriptStateRecord(ActionScriptId scriptId) {
+        if(_scriptStateRecords.find(scriptId) == _scriptStateRecords.end())
+            /// @throw UnknownActionScriptIdError An invalid ActionScriptId was specified
+            /// when attempting to retrieve a ScriptStateRecord.
+            throw UnknownActionScriptIdError("ActionScriptInterpreter::scriptStateRecord", "Invalid ActionScriptId");
+
+        return _scriptStateRecords[scriptId];
+    }
+
     void load(de::duint map, lumpnum_t lumpNum);
 
-    void writeWorldState() const;
+    void writeWorldState(de::Writer& to) const;
 
-    void readWorldState();
+    void readWorldState(de::Reader& from);
 
-    void writeMapState() const;
+    void writeMapState(de::Writer& to) const;
 
-    void readMapState();
+    void readMapState(de::Reader& from);
 
     /**
-     * Executes all deferred script start commands belonging to the specified map.
+     * Execute all deferred script events belonging to the specified map.
      */
-    void startAll(de::duint map);
+    void runDeferredScriptEvents(de::duint map);
 
-    bool start(actionscriptid_t scriptId, de::duint map, de::dbyte* args, de::Thing* activator, de::LineDef* lineDef, de::dint side);
+    bool start(ActionScriptId scriptId, de::duint map, de::dbyte* args, de::Thing* activator, de::LineDef* lineDef, de::dint side);
 
-    bool stop(actionscriptid_t scriptId, de::duint map);
+    bool stop(ActionScriptId scriptId);
 
-    bool suspend(actionscriptid_t scriptId, de::duint map);
+    bool suspend(ActionScriptId scriptId);
 
-    void tagFinished(de::dint tag) const;
+    /**
+     * Signal sector tag as finished.
+     */
+    void tagFinished(de::dint tag);
 
-    void polyobjFinished(de::dint po) const;
+    /**
+     * Signal polyobj as finished.
+     */
+    void polyobjFinished(de::dint po);
 
-    void printScriptInfo(actionscriptid_t scriptId);
+    /**
+     * Signal script as finished.
+     */
+    void scriptFinished(ActionScriptId scriptId);
+
+    void printScriptInfo(ActionScriptId scriptId);
+
+/// @todo Should be private.
+    const Bytecode& bytecode() const {
+        return _bytecode;
+    }
+
+    de::dint _worldVars[MAX_WORLD_VARS];
+    de::dint _mapVars[MAX_MAP_VARS];
+
+    de::dchar _printBuffer[PRINT_BUFFER_SIZE];
+
+public:
+    /**
+     * Returns the singleton ActionScriptInterpreter instance.
+     */
+    static ActionScriptInterpreter& actionScriptInterpreter();
 
 private:
     /// Loaded bytecode for the current map.
     Bytecode _bytecode;
 
-    /// List of deferred script start commands.
-    de::dint _scriptStoreSize;
-    script_store_t* _scriptStore;
+    /// Script state records. A record for each script in Bytecode::scriptInfo
+    ScriptStateRecords _scriptStateRecords;
 
-    de::dint _worldVars[MAX_WORLD_VARS];
-    de::dbyte _specArgs[8];
-    de::dint _mapVars[MAX_MAP_VARS];
-
-    de::dchar _printBuffer[PRINT_BUFFER_SIZE];
+    /// Deferred script events.
+    DeferredScriptEvents _deferredScriptEvents;
 
     void unloadBytecode();
 
-    ActionScriptThinker* createActionScriptThinker(GameMap* map,
-        actionscriptid_t scriptId, const de::dint* bytecodePos, de::dint delayCount,
-        de::dint infoIndex, de::Thing* activator, de::LineDef* lineDef, de::dint lineSide,
-        const de::dbyte* args, de::dint numArgs);
+    bool startScript(ActionScriptId scriptId, de::duint map, de::dbyte* args, de::Thing* activator,
+        de::LineDef* lineDef, de::dint lineSide, ActionScriptThinker** newScript);
 
-    bool startScript(actionscriptid_t scriptId, de::duint map, de::dbyte* args, de::Thing* activator,
-        de::LineDef* lineDef, de::dint lineSide, actionscript_thinker_t** newScript);
+    bool deferScriptEvent(ActionScriptId scriptId, de::duint map, de::dbyte* args);
 
-    void scriptFinished(actionscriptid_t scriptId);
-
-    bool addToScriptStore(actionscriptid_t scriptId, de::duint map, de::dbyte* args);
-
-    de::dint indexForScriptId(actionscriptid_t scriptId);
-
-    bool tagBusy(de::dint tag);
+    /**
+     * (Re)start any scripts currently waiting on the specified signal.
+     */
+    void startWaitingScripts(ScriptStateRecord::State state, de::dint waitValue);
 
     /// @todo Does not belong in this class.
     de::dint countThingsOfType(GameMap* map, de::dint type, de::dint tid);
+
+    /// The singleton instance of the ActionScriptInterpreter.
+    static ActionScriptInterpreter* _singleton;
 };
 
 #endif /* LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H */

@@ -40,7 +40,7 @@ private:
 
 public:
     de::dint delayCount;
-    actionscriptid_t scriptId;
+    ActionScriptId scriptId;
     const de::dint* bytecodePos;
     de::dint infoIndex;
     de::dint stack[AST_STACK_DEPTH];
@@ -51,7 +51,7 @@ public:
     de::dint lineSide;
 
 public:
-    ActionScriptThinker(actionscriptid_t scriptId, const de::dint* bytecodePos,
+    ActionScriptThinker(ActionScriptId scriptId, const de::dint* bytecodePos,
         de::dint delayCount, de::dint infoIndex, de::Thing* activator,
         de::LineDef* lineDef, de::dint lineSide, const de::dbyte* args = NULL,
         de::dint numArgs = 0)
@@ -63,7 +63,7 @@ public:
         activator(activator),
         lineDef(lineDef),
         lineSide(lineSide),
-        stackDepth(0),
+        stackDepth(0)
     {
         if(args)
         {
@@ -77,10 +77,6 @@ public:
     // Implements ISerializable.
     void operator >> (de::Writer& to) const;
     void operator << (de::Reader& from);
-
-    static de::Thinker* construct() {
-        return new ActionScriptThinker;
-    }
 };
 
 #endif /* LIBCOMMON_ACTIONSCRIPT_THINKER_H */
