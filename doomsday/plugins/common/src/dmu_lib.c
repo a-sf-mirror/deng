@@ -65,7 +65,7 @@
 
 linedef_t* P_AllocDummyLine(void)
 {
-    xlinedef_t* extra = Z_Calloc(sizeof(xlinedef_t), PU_STATIC, 0);
+    XLineDef* extra = Z_Calloc(sizeof(XLineDef), PU_STATIC, 0);
     return DMU_AllocDummy(DMU_LINEDEF, extra);
 }
 
@@ -83,8 +83,8 @@ void P_CopyLine(linedef_t* dest, linedef_t* src)
 {
     int i, sidx;
     sidedef_t* sidefrom, *sideto;
-    xlinedef_t* xsrc = P_ToXLine(src);
-    xlinedef_t* xdest = P_ToXLine(dest);
+    XLineDef* xsrc = P_ToXLine(src);
+    XLineDef* xdest = P_ToXLine(dest);
 
     if(src == dest)
         return; // no point copying self
@@ -162,8 +162,8 @@ void P_CopyLine(linedef_t* dest, linedef_t* src)
  */
 void P_CopySector(sector_t* dest, sector_t* src)
 {
-    xsector_t*          xsrc = P_ToXSector(src);
-    xsector_t*          xdest = P_ToXSector(dest);
+    XSector*          xsrc = P_ToXSector(src);
+    XSector*          xdest = P_ToXSector(dest);
 
     if(src == dest)
         return; // no point copying self.

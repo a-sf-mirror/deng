@@ -112,7 +112,7 @@ boolean EV_StartFloorWaggle(map_t* map, int tag, int height, int speed,
     boolean retCode = false;
     sector_t* sec = NULL;
     waggle_t* waggle;
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)

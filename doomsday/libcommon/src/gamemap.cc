@@ -265,7 +265,7 @@ void GameMap::initPolyobjs()
 
     for(duint i = 0; i < numPolyobjs(); ++i)
     {
-        const mapspot_t* spot;
+        const MapSpot* spot;
         Polyobj* po;
         duint j;
         
@@ -334,9 +334,9 @@ void GameMap::purgeDeferredSpawns()
 #if __JHERETIC__
 void GameMap::addMaceSpot(dfloat x, dfloat y, dangle angle)
 {
-    mapspot_t* spot;
+    MapSpot* spot;
 
-    _maceSpots = Z_Realloc(_maceSpots, sizeof(mapspot_t) * ++_maceSpotCount, PU_MAP);
+    _maceSpots = Z_Realloc(_maceSpots, sizeof(MapSpot) * ++_maceSpotCount, PU_MAP);
     spot = &_maceSpots[_maceSpotCount-1];
 
     spot->pos = Vector2f(x, y);
@@ -345,9 +345,9 @@ void GameMap::addMaceSpot(dfloat x, dfloat y, dangle angle)
 
 void GameMap::addBossSpot(dfloat x, dfloat y, dangle angle)
 {
-    mapspot_t* spot;
+    MapSpot* spot;
 
-    _bossSpots = Z_Realloc(_bossSpots, sizeof(mapspot_t) * ++_bossSpotCount, PU_MAP);
+    _bossSpots = Z_Realloc(_bossSpots, sizeof(MapSpot) * ++_bossSpotCount, PU_MAP);
     spot = &_bossSpots[_bossSpotCount-1];
 
     spot->pos = Vector2f(x, y);

@@ -869,7 +869,7 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
 boolean PIT_CheckLine(linedef_t* ld, void* data)
 {
     float bbox[4];
-    xlinedef_t* xline;
+    XLineDef* xline;
     map_t* map = P_CurrentMap();
 
     DMU_GetFloatpv(ld, DMU_BOUNDING_BOX, bbox);
@@ -1492,7 +1492,7 @@ boolean PTR_ShootTraverse(intercept_t* in)
     divline_t* trace = (divline_t*) DD_GetVariable(DD_TRACE_ADDRESS);
     sector_t* frontSec = NULL, *backSec = NULL;
     subsector_t* contact, *originSub;
-    xlinedef_t* xline;
+    XLineDef* xline;
     boolean lineWasHit;
 
     tracePos[VX] = FIX2FLT(trace->pos[VX]);
@@ -2145,7 +2145,7 @@ void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage, int distance)
 boolean PTR_UseTraverse(intercept_t* in)
 {
     map_t* map = P_CurrentMap();
-    xlinedef_t* xline;
+    XLineDef* xline;
     int side;
 
     if(in->type != ICPT_LINE)
@@ -3056,7 +3056,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
         {
         map_t* map = P_CurrentMap();
         linedef_t* line = in->d.lineDef;
-        xlinedef_t* xline = P_ToXLine(line);
+        XLineDef* xline = P_ToXLine(line);
 
         if(xline->special != USE_PUZZLE_ITEM_SPECIAL)
         {

@@ -1,9 +1,7 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project
  *
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,176 +14,70 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * p_iterlist.c : Object lists.
- * The lists can be traversed through iteration but otherwise act like a
- * LIFO stack. Used for things like spechits, linespecials etc.
- */
+#include "common/Iterlist"
 
-// HEADER FILES ------------------------------------------------------------
+using namespace de;
 
-#if __JDOOM__
-#  include "jdoom.h"
-#elif __JDOOM64__
-#  include "jdoom64.h"
-#elif __JHERETIC__
-#  include "jheretic.h"
-#elif __JHEXEN__
-#  include "jhexen.h"
-#endif
-
-#include "p_iterlist.h"
-
-// MACROS ------------------------------------------------------------------
-
-// TYPES -------------------------------------------------------------------
-
-// EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
-
-// PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-
-// PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
-
-// EXTERNAL DATA DECLARATIONS ----------------------------------------------
-
-// PUBLIC DATA DEFINITIONS -------------------------------------------------
-
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
-
-// CODE --------------------------------------------------------------------
-
-/**
- * Allocate and initialize a new iterlist.
- *
- * @return          Ptr to the new list.
- */
-iterlist_t* P_CreateIterList(void)
+IterList::~IterList()
 {
-    iterlist_t* list = malloc(sizeof(iterlist_t));
-
-    list->list = NULL;
-    list->count = list->max = list->rover = 0;
-    list->forward = false;
-
-    return list;
+    if(_count > 0)
+        std::free(_list);
 }
 
-/**
- * Free any memory used by the iterlist.
- *
- * @param list      Ptr to the list to be destroyed.
- */
-void P_DestroyIterList(iterlist_t* list)
+dint IterList::add(void* obj)
 {
-    assert(list);
-    if(list->count > 0)
-    {
-        free(list->list);
-        list->list = NULL;
-    }
-    free(list);
-    list = NULL;
-}
-
-/**
- * Add the given object to iterlist.
- *
- * @param list      Ptr to the list to add 'obj' too.
- * @param obj       Ptr to the object to be added to the list.
- * @return          The index of the object within 'list' once added,
- *                  ELSE @c -1.
- */
-int P_AddObjectToIterList(iterlist_t* list, void* obj)
-{
-    assert(list);
     assert(obj);
-    if(++list->count > list->max)
+    if(++_count > _max)
     {
-         list->max = (list->max? list->max * 2 : 8);
-         list->list = realloc(list->list, sizeof(void*) * list->max);
+         _max = (_max? _max * 2 : 8);
+         _list = std::realloc(_list, sizeof(void*) * _max);
     }
-    list->list[list->count - 1] = obj;
-    return list->count - 1;
+    _list[_count - 1] = obj;
+    return _count - 1;
 }
 
-/**
- * Pop the top of the iterlist and return the next element.
- *
- * @param list      Ptr to the list to be pop.
- * @return          Ptr to the next object in 'list'.
- */
-void* P_PopIterList(iterlist_t* list)
+void* IterList::pop()
 {
-    assert(list);
-    if(list->count > 0)
-        return list->list[--list->count];
+    if(_count > 0)
+        return _list[--_count];
     return NULL;
 }
 
-/**
- * Returns the next element in the iterlist.
- *
- * @param list      Ptr to the list to iterate.
- * @return          The next object in the iterlist.
- */
-void* P_IterListIterator(iterlist_t* list)
+void* IterList::iterator()
 {
-    assert(list);
-    if(!list->count)
+    if(!_count)
         return NULL;
 
-    if(list->forward)
+    if(_forward)
     {
-        if(list->rover < list->count - 1)
-            return list->list[++list->rover];
+        if(_rover < _count - 1)
+            return _list[++_rover];
         return NULL;
     }
 
-    if(list->rover > 0)
-        return list->list[--list->rover];
+    if(_rover > 0)
+        return _list[--_rover];
     return NULL;
 }
 
-/**
- * Returns the iterlist iterator to the beginning (the end).
- *
- * @param list      Ptr to the list whoose iterator to reset.
- * @param forward   @c true = iteration will move forwards.
- */
-void P_IterListResetIterator(iterlist_t* list, boolean forward)
+void IterList::resetIterator(bool forward)
 {
-    assert(list);
-    list->forward = forward;
-    if(list->forward)
-        list->rover = -1;
+    _forward = forward;
+    if(_forward)
+        _rover = -1;
     else
-        list->rover = list->count;
+        _rover = _count;
 }
 
-/**
- * Empty the iterlist.
- *
- * @param list      Ptr to the list to empty.
- */
-void P_EmptyIterList(iterlist_t* list)
+void IterList::clear()
 {
-    assert(list);
-    list->count = list->max = list->rover = 0;
+    _count = _max = _rover = 0;
 }
 
-/**
- * Return the size of the iterlist.
- *
- * @param list      Ptr to the list to return the size of.
- * @return          The size of the iterlist.
- */
-int P_IterListSize(iterlist_t* list)
+dint IterList::size() const
 {
-    assert(list);
-    return list->count;
+    return _count;
 }

@@ -105,7 +105,7 @@
 
 void T_Door(door_t* door)
 {
-    xsector_t* xsec;
+    XSector* xsec;
     result_e res;
 
     xsec = P_ToXSector(door->sector);
@@ -319,10 +319,10 @@ static int EV_DoDoor2(map_t* map, int tag, float speed, int topwait,
                       doortype_e type)
 {
     int rtn = 0, sound;
-    xsector_t* xsec;
+    XSector* xsec;
     sector_t* sec = NULL;
     door_t* door;
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)
@@ -493,7 +493,7 @@ static void sendNeedKeyMessage(player_t* p, textenum_t msgTxt, int keyNum)
  */
 static boolean tryLockedDoor(linedef_t *line, player_t *p)
 {
-    xlinedef_t *xline = P_ToXLine(line);
+    XLineDef *xline = P_ToXLine(line);
 
     if(!p || !xline)
         return false;
@@ -575,7 +575,7 @@ static boolean tryLockedDoor(linedef_t *line, player_t *p)
  */
 static boolean tryLockedManualDoor(linedef_t* line, mobj_t* mo)
 {
-    xlinedef_t*            xline = P_ToXLine(line);
+    XLineDef*            xline = P_ToXLine(line);
     player_t*           p;
 #if !__JHEXEN__
     int                 keyNum = -1;
@@ -707,8 +707,8 @@ boolean EV_VerticalDoor(linedef_t* line, mobj_t* mo)
     assert(mo);
     {
     map_t* map = P_CurrentMap();
-    xlinedef_t* xline;
-    xsector_t* xsec;
+    XLineDef* xline;
+    XSector* xsec;
     sector_t* sec;
     door_t* door;
 

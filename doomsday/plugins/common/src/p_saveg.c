@@ -2221,7 +2221,7 @@ static void SV_WriteSector(sector_t *sec)
     short       ceilingFlags = (short) DMU_GetIntp(sec, DMU_CEILING_FLAGS);
     material_t* floorMaterial = DMU_GetPtrp(sec, DMU_FLOOR_MATERIAL);
     material_t* ceilingMaterial = DMU_GetPtrp(sec, DMU_CEILING_MATERIAL);
-    xsector_t*  xsec = P_ToXSector(sec);
+    XSector*  xsec = P_ToXSector(sec);
     float       rgb[3];
 
 #if !__JHEXEN__
@@ -2308,7 +2308,7 @@ static void SV_ReadSector(sector_t *sec)
     int                 type = 0;
     material_t*         floorMaterial, *ceilingMaterial;
     byte                rgb[3], lightlevel;
-    xsector_t*          xsec = P_ToXSector(sec);
+    XSector*          xsec = P_ToXSector(sec);
     int                 fh, ch;
 
     // A type byte?
@@ -2440,7 +2440,7 @@ static void SV_WriteLine(linedef_t* li)
     uint                i, j;
     float               rgba[4];
     lineclass_t         type;
-    xlinedef_t*            xli = P_ToXLine(li);
+    XLineDef*            xli = P_ToXLine(li);
 
 #if !__JHEXEN__
     if(xli->xg)
@@ -2534,7 +2534,7 @@ static void SV_ReadLine(linedef_t *li)
     int                 ver;
     material_t*         topMaterial, *bottomMaterial, *middleMaterial;
     short               flags;
-    xlinedef_t*            xli = P_ToXLine(li);
+    XLineDef*            xli = P_ToXLine(li);
 
     // A type byte?
 #if __JHEXEN__
@@ -4258,7 +4258,7 @@ static void P_UnArchiveThinkers(map_t* map)
 
         for(i = 0; i < Map_NumLineDefs(map); ++i)
         {
-            xlinedef_t* xline = P_ToXLine(DMU_ToPtr(DMU_LINEDEF, i));
+            XLineDef* xline = P_ToXLine(DMU_ToPtr(DMU_LINEDEF, i));
             if(xline->xg)
                 xline->xg->activator =
                     SV_GetArchiveThing((int) xline->xg->activator, &xline->xg->activator);
@@ -4303,7 +4303,7 @@ static void P_UnArchiveBrain(map_t* map)
 static void P_ArchiveSoundTargets(void)
 {
     map_t* map = P_CurrentMap();
-    xsector_t* xsec;
+    XSector* xsec;
     uint i;
 
     // Write the total number.
@@ -4326,7 +4326,7 @@ static void P_UnArchiveSoundTargets(void)
 {
     map_t* map = P_CurrentMap();
     uint i, secid, numsoundtargets;
-    xsector_t* xsec;
+    XSector* xsec;
 
     // Sound Target data was introduced in ver 5
     if(hdr.version < 5)

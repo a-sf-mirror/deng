@@ -1,9 +1,7 @@
-/**\file
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/*
+ * The Doomsday Engine Project
  *
- *\author Copyright © 2006-2009 Daniel Swanson <danij@dengine.net>
+ * Copyright © 2006-2010 Daniel Swanson <danij@dengine.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,39 +14,77 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifndef LIBCOMMON_ITERLIST_H
+#define LIBCOMMON_ITERLIST_H
+
+#include "common.h"
 
 /**
- * p_iterlist.c : Object lists.
- * The lists can be traversed through iteration but otherwise act like a
- * LIFO stack. Used for things like spechits, linespecials etc.
+ * Object iteration list.
+ * Can be traversed through iteration but otherwise act like a LIFO stack.
  */
+class IterList
+{
+public:
+    IterList();
 
-#ifndef __COMMON_ITERLIST_H__
-#define __COMMON_ITERLIST_H__
+    ~IterList();
 
-#include "dd_api.h"
+    /**
+     * Add the given object to iterlist.
+     *
+     * @param obj       Ptr to the object to be added to the list.
+     * @return          The index of the object within 'list' once added,
+     *                  ELSE @c -1.
+     */
+    de::dint add(void* obj);
 
-typedef struct iterlist_s {
-    void      **list;
-    int         max;
-    int         count;
-    int         rover; // used during iteration
-    boolean     forward; // if true iteration moves forward instead.
-} iterlist_t;
+    /**
+     * Pop the top of the iterlist and return the next element.
+     *
+     * @return          Ptr to the next object in 'list'.
+     */
+    void* pop();
 
-iterlist_t *P_CreateIterList(void);
-void        P_DestroyIterList(iterlist_t *list);
+    /**
+     * Returns the next element in the iterlist.
+     *
+     * @return          The next object in the iterlist.
+     */
+    void* iterator();
 
-int         P_AddObjectToIterList(iterlist_t *list, void *obj);
-void       *P_PopIterList(iterlist_t *list);
+    /**
+     * Returns the iterlist iterator to the beginning (the end).
+     *
+     * @param forward   @c true = iteration will move forwards.
+     */
+    void resetIterator(bool forward);
 
-void       *P_IterListIterator(iterlist_t *list);
-void        P_IterListResetIterator(iterlist_t *list, boolean forward);
+    /**
+     * Empty the iterlist.
+     */
+    void clear();
 
-void        P_EmptyIterList(iterlist_t *list);
-int         P_IterListSize(iterlist_t *list);
-#endif
+    /**
+     * Return the size of the iterlist.
+     *
+     * @return          The size of the iterlist.
+     */
+    de::dint size() const;
+
+private:
+    void** _list;
+    de::dint _max;
+    de::dint _count;
+
+    /// Used during iteration to track the current position of the iterator.
+    de::dint _rover;
+
+    /// If @c true iteration moves forward.
+    bool _forward;
+};
+
+#endif /* LIBCOMMON_ITERLIST_H */

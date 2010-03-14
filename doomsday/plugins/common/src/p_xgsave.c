@@ -97,7 +97,7 @@ void SV_WriteXGLine(linedef_t* li)
 
 void SV_ReadXGLine(linedef_t* li)
 {
-    xlinedef_t* xline = P_ToXLine(li);
+    XLineDef* xline = P_ToXLine(li);
     xgline_t* xg;
 
     // Read version.
@@ -159,7 +159,7 @@ void SV_ReadXGFunction(xgsector_t* xg, function_t* fn)
 
 void SV_WriteXGSector(sector_t* sec)
 {
-    xsector_t* xsec = P_ToXSector(sec);
+    XSector* xsec = P_ToXSector(sec);
     sectortype_t* info;
     xgsector_t* xg;
     int i;
@@ -184,7 +184,7 @@ void SV_WriteXGSector(sector_t* sec)
 
 void SV_ReadXGSector(sector_t* sec)
 {
-    xsector_t* xsec = P_ToXSector(sec);
+    XSector* xsec = P_ToXSector(sec);
     xgsector_t* xg;
     int i;
 

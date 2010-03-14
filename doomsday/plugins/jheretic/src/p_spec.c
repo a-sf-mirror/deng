@@ -397,7 +397,7 @@ boolean P_ActivateLine(linedef_t *ld, mobj_t *mo, int side, int actType)
 static void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 {
     int                 ok;
-    xlinedef_t*            xline;
+    XLineDef*            xline;
 
     // Extended functionality overrides old.
     if(XL_CrossLine(line, side, thing))
@@ -887,7 +887,7 @@ static void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
  */
 static void P_ShootSpecialLine(mobj_t* thing, linedef_t* line)
 {
-    xlinedef_t*            xline = P_ToXLine(line);
+    XLineDef*            xline = P_ToXLine(line);
 
     // Impacts that other things can activate.
     if(!thing->player)
@@ -1046,7 +1046,7 @@ void GameMap_UpdateSpecials(map_t* map)
     // Update scrolling plane materials.
     for(i = 0; i < Map_NumSectors(map); ++i)
     {
-        xsector_t*          sect = P_ToXSector(P_ToPtr(DMU_SECTOR, i));
+        XSector*          sect = P_ToXSector(P_ToPtr(DMU_SECTOR, i));
         float               texOff[2];
 
         switch(sect->special)
@@ -1157,10 +1157,10 @@ void GameMap_SpawnSpecials(map_t* map)
     {
     uint i;
     linedef_t* line;
-    xlinedef_t* xline;
-    iterlist_t* list;
+    XLineDef* xline;
+    IterList* list;
     sector_t* sec;
-    xsector_t* xsec;
+    XSector* xsec;
 
     // Init special SECTORs.
     GameMap_DestroySectorTagLists(map);
@@ -1449,7 +1449,7 @@ void GameMap_PlayAmbientSfx(map_t* map)
 
 boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
 {
-    xlinedef_t* xline = P_ToXLine(line);
+    XLineDef* xline = P_ToXLine(line);
 
     // Switches that other things can activate.
     if(!mo->player)

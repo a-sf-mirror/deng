@@ -130,7 +130,7 @@ boolean EV_SectorSoundChange(map_t* map, byte* args)
     {
     boolean rtn = false;
     sector_t* sec = NULL;
-    iterlist_t* list;
+    IterList* list;
 
     if(!args[0])
         return false;
@@ -625,7 +625,7 @@ boolean P_ActivateLine(linedef_t *line, mobj_t *mo, int side, int activationType
     int             lineActivation;
     boolean         repeat;
     boolean         buttonSuccess;
-    xlinedef_t        *xline = P_ToXLine(line);
+    XLineDef        *xline = P_ToXLine(line);
 
     lineActivation = GET_SPAC(xline->flags);
     if(lineActivation != activationType)
@@ -668,7 +668,7 @@ boolean P_ActivateLine(linedef_t *line, mobj_t *mo, int side, int activationType
 void P_PlayerInSpecialSector(player_t* player)
 {
     sector_t* sector;
-    xsector_t* xsector;
+    XSector* xsector;
     static float pushTab[3] = {
         (1.0f / 32) * 5,
         (1.0f / 32) * 10,
@@ -806,10 +806,10 @@ void GameMap_SpawnSpecials(map_t* map)
     {
     uint i;
     linedef_t* line;
-    xlinedef_t* xline;
-    iterlist_t* list;
+    XLineDef* xline;
+    IterList* list;
     sector_t* sec;
-    xsector_t* xsec;
+    XSector* xsec;
 
     // Init special SECTORs.
     GameMap_DestroySectorTagLists(map);
@@ -887,7 +887,7 @@ void GameMap_AnimateSurfaces(map_t* map)
     // Update scrolling plane materials.
     for(i = 0; i < Map_NumSectors(map); ++i)
     {
-        xsector_t* sect = P_ToXSector(DMU_ToPtr(DMU_SECTOR, i));
+        XSector* sect = P_ToXSector(DMU_ToPtr(DMU_SECTOR, i));
         float texOff[2];
 
         switch(sect->special)
@@ -976,7 +976,7 @@ void GameMap_AnimateSurfaces(map_t* map)
         {
             sidedef_t* side = 0;
             fixed_t texOff[2];
-            xlinedef_t* xline = P_ToXLine(line);
+            XLineDef* xline = P_ToXLine(line);
 
             side = DMU_GetPtrp(line, DMU_SIDEDEF0);
             for(i = 0; i < 3; ++i)
@@ -1032,7 +1032,7 @@ void GameMap_AnimateSurfaces(map_t* map)
 
 static boolean isLightningSector(sector_t* sec)
 {
-    xsector_t* xsec = P_ToXSector(sec);
+    XSector* xsec = P_ToXSector(sec);
 
     if(xsec->special == LIGHTNING_SPECIAL ||
        xsec->special == LIGHTNING_SPECIAL2)
@@ -1107,7 +1107,7 @@ static void P_LightningFlash(map_t* map)
 
         if(isLightningSector(sec))
         {
-            xsector_t* xsec = P_ToXSector(sec);
+            XSector* xsec = P_ToXSector(sec);
             float newLevel = DMU_GetFloatp(sec, DMU_LIGHT_LEVEL);
 
             *tempLight = newLevel;

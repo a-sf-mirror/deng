@@ -86,7 +86,7 @@ int EV_BuildPillar(linedef_t* line, byte* args, boolean crush)
     float newHeight;
     sector_t* sec = NULL;
     pillar_t* pillar;
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, (int) args[0], false);
     if(!list)
@@ -164,7 +164,7 @@ int EV_OpenPillar(linedef_t* line, byte* args)
     int rtn = 0;
     sector_t* sec = NULL;
     pillar_t* pillar;
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, (int) args[0], false);
     if(!list)

@@ -1000,7 +1000,7 @@ void AM_SetViewRotate(automapid_t id, int offOnToggle)
 void AM_UpdateLinedef(automapid_t id, uint lineIdx, boolean visible)
 {
     automapcfg_t* mcfg;
-    xlinedef_t* xline;
+    XLineDef* xline;
 
     if(!(mcfg = getAutomapCFG(id)))
         return;

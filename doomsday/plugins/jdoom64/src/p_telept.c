@@ -93,7 +93,7 @@ static int findMobj(void* p, void* context)
 
 static mobj_t* getTeleportDestination(map_t* map, short tag)
 {
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, tag, false);
     if(list)
@@ -359,7 +359,7 @@ static int fadeSpawn(void* p, void* context)
 int EV_FadeSpawn(linedef_t* li, mobj_t* mo)
 {
     map_t* map = Thinker_Map((thinker_t*) mo);
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, P_ToXLine(li)->tag, false);
     if(list)
@@ -440,7 +440,7 @@ int EV_FadeAway(linedef_t* line, mobj_t* thing)
 {
     map_t* map = Thinker_Map((thinker_t*) thing);
     sector_t* sec = NULL;
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(list)

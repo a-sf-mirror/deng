@@ -155,7 +155,7 @@ boolean EV_SpawnLight(linedef_t* line, byte* arg, lighttype_t type)
     boolean rtn = false;
     light_t* light;
     sector_t* sec = NULL;
-    iterlist_t* list;
+    IterList* list;
 
     arg1 = (int) arg[1];
     arg2 = (int) arg[2];

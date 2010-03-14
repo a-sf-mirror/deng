@@ -159,7 +159,7 @@ sectortype_t *XS_GetType(int id)
 void XF_Init(sector_t *sec, function_t *fn, char *func, int min, int max,
              float scale, float offset)
 {
-    xsector_t          *xsec = P_ToXSector(sec);
+    XSector          *xsec = P_ToXSector(sec);
 
     memset(fn, 0, sizeof(*fn));
 
@@ -300,7 +300,7 @@ int destroyXSThinker(void* p, void* context)
 void XS_SetSectorType(sector_t* sec, int special)
 {
     map_t* map = P_CurrentMap();
-    xsector_t* xsec = P_ToXSector(sec);
+    XSector* xsec = P_ToXSector(sec);
     xgsector_t* xg;
     sectortype_t* info;
     int i;
@@ -411,7 +411,7 @@ void XS_Init(map_t* map)
     {   // Allocate stair builder data.
         uint i;
         sector_t* sec;
-        xsector_t* xsec;
+        XSector* xsec;
 
         /*  // Clients rely on the server, they don't do XG themselves.
            if(IS_CLIENT) return; */
@@ -455,7 +455,7 @@ void XS_PlaneSound(sector_t* sec, int plane, int snd)
 
 void XS_MoverStopped(xgplanemover_t *mover, boolean done)
 {
-    xlinedef_t* origin = P_ToXLine(mover->origin);
+    XLineDef* origin = P_ToXLine(mover->origin);
 
     XG_Dev("XS_MoverStopped: Sector %i (done=%i, origin line=%i)",
            DMU_ToIndex(mover->sector), done,
@@ -510,7 +510,7 @@ void XS_PlaneMover(xgplanemover_t *mover)
     int         dir;
     float       ceil = DMU_GetFloatp(mover->sector, DMU_CEILING_HEIGHT);
     float       floor = DMU_GetFloatp(mover->sector, DMU_FLOOR_HEIGHT);
-    xsector_t  *xsec = P_ToXSector(mover->sector);
+    XSector  *xsec = P_ToXSector(mover->sector);
     boolean     docrush = (mover->flags & PMF_CRUSH) != 0;
     boolean     follows = (mover->flags & PMF_OTHER_FOLLOWS) != 0;
     boolean     setorig = (mover->flags & PMF_SET_ORIGINAL) != 0;
@@ -913,7 +913,7 @@ sector_t* XS_FindActTagged(map_t* map, int tag)
     {
     uint k, foundcount = 0, retsectorid = 0;
     sector_t* sec, *retsector;
-    xsector_t* xsec;
+    XSector* xsec;
 
     retsector = NULL;
 
@@ -999,7 +999,7 @@ boolean XS_GetPlane(linedef_t* actline, sector_t* sector, int ref,
     material_t* otherMat;
     float otherHeight;
     sector_t* otherSec = NULL, *iter;
-    xlinedef_t* xline;
+    XLineDef* xline;
     char buff[50];
 
     if(refdata)
@@ -1376,7 +1376,7 @@ int C_DECL XSTrav_HighestSectorType(sector_t *sec, boolean ceiling,
                                     mobj_t *activator)
 {
     int        *type = context2;
-    xsector_t  *xsec = P_ToXSector(sec);
+    XSector  *xsec = P_ToXSector(sec);
 
     if(xsec->special > *type)
         *type = xsec->special;
@@ -1386,7 +1386,7 @@ int C_DECL XSTrav_HighestSectorType(sector_t *sec, boolean ceiling,
 
 void XS_InitMovePlane(linedef_t* line)
 {
-    xlinedef_t* xline = P_ToXLine(line);
+    XLineDef* xline = P_ToXLine(line);
 
     // fdata keeps track of wait time.
     xline->xg->fdata = xline->xg->info.fparm[5];
@@ -1401,7 +1401,7 @@ int C_DECL XSTrav_MovePlane(sector_t* sector, boolean ceiling, void* context,
     linetype_t* info = (linetype_t*) context2;
     xgplanemover_t* mover;
     material_t* mat;
-    xlinedef_t* xline = P_ToXLine(line);
+    XLineDef* xline = P_ToXLine(line);
     boolean playsound;
     int st;
 
@@ -1542,7 +1542,7 @@ boolean XS_DoBuild(sector_t* sector, boolean ceiling, linedef_t* origin,
     static float        firstheight;
 
     float               waittime;
-    xsector_t          *xsec;
+    XSector          *xsec;
     xgplanemover_t     *mover;
 
     if(!sector)
@@ -1668,7 +1668,7 @@ static void markBuiltSectors(map_t* map)
     // Mark the sectors of the last step as processed.
     for(i = 0; i < Map_NumSectors(map); ++i)
     {
-        xsector_t* xsec = GameMap_XSector(map, i);
+        XSector* xsec = GameMap_XSector(map, i);
 
         if(xsec->blFlags & BL_WAS_BUILT)
         {
@@ -1699,7 +1699,7 @@ static boolean spreadBuildToNeighborAll(linedef_t* origin, linetype_t* info,
 
     for(i = 0; i < Map_NumSectors(map); ++i)
     {
-        xsector_t* xsec = GameMap_XSector(map, i);
+        XSector* xsec = GameMap_XSector(map, i);
         sector_t* sec;
 
         // Only spread from built sectors (spread only once!).
@@ -1805,7 +1805,7 @@ boolean spreadBuildToNeighborLowestIDX(linedef_t* origin, linetype_t* info,
 
     for(i = 0; i < Map_NumSectors(map); ++i)
     {
-        xsector_t* xsec = GameMap_XSector(map, i);
+        XSector* xsec = GameMap_XSector(map, i);
         sector_t* sec;
 
         // Only spread from built sectors (spread only once!).
@@ -2638,7 +2638,7 @@ void XS_DoChain(sector_t* sec, int ch, int activating, void* actThing)
     sectortype_t* info;
     float flevtime = TIC2FLT(map->time);
     linedef_t* dummyLine;
-    xlinedef_t* xdummyLine;
+    XLineDef* xdummyLine;
     linetype_t* ltype;
 
     xg = P_ToXSector(sec)->xg;
@@ -2880,7 +2880,7 @@ void XS_Thinker(xsthinker_t* xs)
     float ang;
     float floorOffset[2], ceilOffset[2];
     sector_t* sector = xs->sector;
-    xsector_t* xsector = P_ToXSector(sector);
+    XSector* xsector = P_ToXSector(sector);
     xgsector_t* xg;
     sectortype_t* info;
 
@@ -3018,7 +3018,7 @@ void XS_Thinker(xsthinker_t* xs)
 
 float XS_Gravity(struct sector_s* sec)
 {
-    xsector_t* xsec;
+    XSector* xsec;
 
     if(!sec)
         return GameMap_Gravity(P_CurrentMap()); // World gravity.
@@ -3079,7 +3079,7 @@ void XS_Update(map_t* map)
     // It's all PU_MAP memory, so we can just lose it.
     for(i = 0; i < Map_NumSectors(map); ++i)
     {
-        xsector_t* xsec = GameMap_XSector(map, i);
+        XSector* xsec = GameMap_XSector(map, i);
 
         if(xsec->xg)
         {
@@ -3168,7 +3168,7 @@ DEFCC(CCmdMovePlane)
     {
         int tag = (short) strtol(argv[2], 0, 0);
         sector_t* sec = NULL;
-        iterlist_t* list;
+        IterList* list;
 
         p = 3;
 

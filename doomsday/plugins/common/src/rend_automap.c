@@ -615,7 +615,7 @@ int Rend_AutomapSeg(void* obj, void* data)
     rendwallseg_params_t* p = (rendwallseg_params_t*) data;
     float v1[2], v2[2];
     linedef_t* line;
-    xlinedef_t* xLine;
+    XLineDef* xLine;
     sector_t* frontSector, *backSector;
     const mapobjectinfo_t* info;
     player_t* plr = p->plr;
@@ -820,7 +820,7 @@ int renderPolyObjLinedef(void* obj, void* context)
 {
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
     linedef_t* line = (linedef_t*) obj;
-    xlinedef_t* xLine = P_ToXLine(line);
+    XLineDef* xLine = P_ToXLine(line);
     const mapobjectinfo_t* info;
     automapobjectname_t amo;
 
@@ -889,7 +889,7 @@ boolean renderXGLinedef(linedef_t* line, void* context)
 {
     map_t* map = P_CurrentMap();
     rendwallseg_params_t* p = (rendwallseg_params_t*) context;
-    xlinedef_t* xLine;
+    XLineDef* xLine;
 
     xLine = P_ToXLine(line);
     if(!xLine || xLine->validCount == VALIDCOUNT ||

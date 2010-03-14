@@ -274,10 +274,10 @@ static int EV_DoCeiling2(map_t* map, int tag, float basespeed, ceilingtype_e typ
 #endif
 {
     int rtn = 0;
-    xsector_t* xsec;
+    XSector* xsec;
     sector_t* sec = NULL;
     ceiling_t* ceiling;
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)

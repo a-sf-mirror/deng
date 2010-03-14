@@ -380,9 +380,9 @@ void P_v19_UnArchiveWorld(void)
     float matOffset[2];
     short* get;
     sector_t* sec;
-    xsector_t* xsec;
+    XSector* xsec;
     linedef_t* line;
-    xlinedef_t* xline;
+    XLineDef* xline;
 
     get = (short*) savePtr;
 

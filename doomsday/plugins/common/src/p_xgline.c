@@ -609,7 +609,7 @@ void XL_SetLineType(linedef_t* line, int id)
     assert(line);
     {
     map_t* map = P_CurrentMap();
-    xlinedef_t* xline = P_ToXLine(line);
+    XLineDef* xline = P_ToXLine(line);
 
     if(XL_GetType(id))
     {
@@ -693,7 +693,7 @@ int XL_TraversePlanes(map_t* map, linedef_t* line, int refType, int ref,
     mobj_t* mo;
     boolean ok, findSecTagged;
     sector_t* sec, *frontSec, *backSec;
-    xsector_t* xsec;
+    XSector* xsec;
 
     if(xgDev)
     {
@@ -762,7 +762,7 @@ int XL_TraversePlanes(map_t* map, linedef_t* line, int refType, int ref,
     // References to multiple planes
     if(findSecTagged)
     {   // Use tagged sector lists for these (speed).
-        iterlist_t* list;
+        IterList* list;
 
         list = GameMap_SectorIterListForTag(map, tag, false);
         if(list)
@@ -926,7 +926,7 @@ int XL_TraverseLines(map_t* map, linedef_t* line, int rtype, int ref,
     // References to multiple lines
     if(findLineTagged)
     {   // Use tagged line lists for these (speed).
-        iterlist_t *list = GameMap_IterListForTag(map, tag, false);
+        IterList *list = GameMap_IterListForTag(map, tag, false);
 
         if(list)
         {
@@ -960,7 +960,7 @@ int XL_TraverseLines(map_t* map, linedef_t* line, int rtype, int ref,
             }
             else if(reftype == LREF_ACT_TAGGED)
             {
-                xlinedef_t *xl = P_ToXLine(iter);
+                XLineDef *xl = P_ToXLine(iter);
 
                 if(xl->xg && xl->xg->info.actTag == ref)
                     if(!func(iter, true, data, context, activator))
@@ -1195,7 +1195,7 @@ int C_DECL XLTrav_QuickActivate(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xlinedef_t* xline = P_ToXLine(line);
+        XLineDef* xline = P_ToXLine(line);
 
         if(xline->xg)
         {
@@ -1215,7 +1215,7 @@ int C_DECL XLTrav_CheckLine(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xlinedef_t*            xline = P_ToXLine(line);
+        XLineDef*            xline = P_ToXLine(line);
 
         if(!xline->xg)
             return false; // Stop checking!
@@ -1237,7 +1237,7 @@ int C_DECL XLTrav_SmartActivate(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xlinedef_t*            xline = P_ToXLine(line);
+        XLineDef*            xline = P_ToXLine(line);
 
         if(xline->xg)
         {
@@ -1258,7 +1258,7 @@ int C_DECL XL_DoChainSequence(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xlinedef_t*            xline = P_ToXLine(line);
+        XLineDef*            xline = P_ToXLine(line);
 
         if(xline->xg)
         {
@@ -1528,7 +1528,7 @@ int C_DECL XLTrav_LineCount(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xlinedef_t*            xline = P_ToXLine(line);
+        XLineDef*            xline = P_ToXLine(line);
         linetype_t*         info = context2;
 
         if(xline->xg)
@@ -1870,11 +1870,11 @@ int C_DECL XLTrav_DisableLine(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xlinedef_t*            xline = P_ToXLine(line);
+        XLineDef*            xline = P_ToXLine(line);
 
         if(xline->xg)
         {
-            xlinedef_t*            origLine = P_ToXLine((linedef_t*) context);
+            XLineDef*            origLine = P_ToXLine((linedef_t*) context);
 
             xline->xg->disabled = origLine->xg->active;
         }
@@ -1888,11 +1888,11 @@ int C_DECL XLTrav_EnableLine(linedef_t* line, boolean dummy, void* context,
 {
     if(line)
     {
-        xlinedef_t*            xline = P_ToXLine(line);
+        XLineDef*            xline = P_ToXLine(line);
 
         if(xline->xg)
         {
-            xlinedef_t*            origLine = P_ToXLine((linedef_t*) context);
+            XLineDef*            origLine = P_ToXLine((linedef_t*) context);
 
             xline->xg->disabled = !origLine->xg->active;
         }
@@ -2239,7 +2239,7 @@ int XL_LineEvent(int evtype, int linetype, linedef_t* line, int sidenum,
     {
     map_t* map = P_CurrentMap();
     int i;
-    xlinedef_t* xline;
+    XLineDef* xline;
     xgline_t* xg;
     linetype_t* info;
     boolean active;
@@ -2559,7 +2559,7 @@ void XL_DoChain(linedef_t* line, int chain, boolean activating,
                 mobj_t* actThing)
 {
     linedef_t*          dummyLine;
-    xlinedef_t*            xdummyLine;
+    XLineDef*            xdummyLine;
 
     // We'll use a dummy line for the chain.
     dummyLine = P_AllocDummyLine();
@@ -2593,7 +2593,7 @@ void XL_Thinker(xlthinker_t* xl)
     map_t* map = Thinker_Map((thinker_t*) xl);
     float levtime;
     linedef_t* line = xl->line;
-    xlinedef_t* xline;
+    XLineDef* xline;
     xgline_t* xg;
     linetype_t* info;
 
@@ -2792,7 +2792,7 @@ void XL_Update(map_t* map)
     // It's all PU_MAP memory, so we can just lose it.
     for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
-        xlinedef_t* xline = GameMap_XLineDef(map, i);
+        XLineDef* xline = GameMap_XLineDef(map, i);
 
         if(xline->xg)
         {

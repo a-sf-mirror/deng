@@ -281,7 +281,7 @@ void EV_StartLightStrobing(linedef_t* line)
     {
     map_t* map = P_CurrentMap();
     sector_t* sec = NULL;
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
     if(!list)
@@ -304,7 +304,7 @@ void EV_TurnTagLightsOff(linedef_t* line)
     {
     map_t* map = P_CurrentMap();
     sector_t* sec = NULL;
-    iterlist_t* list;
+    IterList* list;
     float lightLevel, otherLevel;
 
     list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
@@ -331,7 +331,7 @@ void EV_LightTurnOn(linedef_t* line, float max)
     {
     map_t* map = P_CurrentMap();
     sector_t* sec = NULL;
-    iterlist_t* list;
+    IterList* list;
     float lightLevel, otherLevel;
 
     list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);

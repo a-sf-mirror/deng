@@ -255,8 +255,8 @@ static int doPlat(linedef_t* line, int tag, plattype_e type, int amount)
 #if !__JHEXEN__
     sector_t* frontSector = DMU_GetPtrp(line, DMU_FRONT_SECTOR);
 #endif
-    xsector_t* xsec;
-    iterlist_t* list;
+    XSector* xsec;
+    IterList* list;
     map_t* map = P_CurrentMap();
 
     list = GameMap_SectorIterListForTag(map, tag, false);
@@ -472,7 +472,7 @@ int EV_DoPlat(linedef_t* line, plattype_e type, int amount)
     return doPlat(line, (int) args[0], args, type, amount);
 #else
     int rtn = 0;
-    xlinedef_t* xline = P_ToXLine(line);
+    XLineDef* xline = P_ToXLine(line);
 
     // Activate all <type> plats that are in stasis.
     switch(type)

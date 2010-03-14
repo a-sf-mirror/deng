@@ -201,7 +201,7 @@ static int findMobj(void* p, void* context)
 
 static mobj_t* getTeleportDestination(map_t* map, short tag)
 {
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, tag, false);
     if(list)

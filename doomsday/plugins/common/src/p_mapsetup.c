@@ -88,7 +88,7 @@ static void     P_PrintMapBanner(uint episode, uint map);
 /**
  * Converts a line to an xline.
  */
-xlinedef_t* P_ToXLine(linedef_t* line)
+XLineDef* P_ToXLine(linedef_t* line)
 {
     if(!line)
         return NULL;
@@ -108,7 +108,7 @@ xlinedef_t* P_ToXLine(linedef_t* line)
 /**
  * Converts a sector to an xsector.
  */
-xsector_t* P_ToXSector(sector_t* sector)
+XSector* P_ToXSector(sector_t* sector)
 {
     if(!sector)
         return NULL;
@@ -128,7 +128,7 @@ xsector_t* P_ToXSector(sector_t* sector)
 /**
  * Given a subsector - find its parent xsector.
  */
-xsector_t* P_ToXSectorOfSubsector(subsector_t* subsector)
+XSector* P_ToXSectorOfSubsector(subsector_t* subsector)
 {
     sector_t* sec;
 
@@ -156,9 +156,9 @@ xsector_t* P_ToXSectorOfSubsector(subsector_t* subsector)
  *
  * @param               Index of the xline to return.
  *
- * @return              Ptr to xlinedef_t.
+ * @return              Ptr to XLineDef.
  */
-xlinedef_t* GameMap_XLineDef(map_t* map, uint index)
+XLineDef* GameMap_XLineDef(map_t* map, uint index)
 {
     assert(map);
     if(index >= Map_NumLineDefs(map))
@@ -173,9 +173,9 @@ xlinedef_t* GameMap_XLineDef(map_t* map, uint index)
  *
  * @param               Index of the xsector to return.
  *
- * @return              Ptr to xsector_t.
+ * @return              Ptr to XSector.
  */
-xsector_t* GameMap_XSector(map_t* map, uint index)
+XSector* GameMap_XSector(map_t* map, uint index)
 {
     assert(map);
     if(index >= Map_NumSectors(map))
@@ -197,10 +197,10 @@ void P_SetupForMapData(map_t* map, int type)
     switch(type)
     {
     case DMU_SECTOR:
-        map->_xSectors = Z_Calloc(Map_NumSectors(map) * sizeof(xsector_t), PU_STATIC, 0);
+        map->_xSectors = Z_Calloc(Map_NumSectors(map) * sizeof(XSector), PU_STATIC, 0);
         break;
     case DMU_LINEDEF:
-        map->_xLineDefs = Z_Calloc(Map_NumLineDefs(map) * sizeof(xlinedef_t), PU_STATIC, 0);
+        map->_xLineDefs = Z_Calloc(Map_NumLineDefs(map) * sizeof(XLineDef), PU_STATIC, 0);
         break;
     default:
         break;
@@ -304,7 +304,7 @@ int applySurfaceColor(void* obj, void* context)
 }
 #endif
 
-static boolean checkMapSpotSpawnFlags(const mapspot_t* spot)
+static boolean checkMapSpotSpawnFlags(const MapSpot* spot)
 {
 #if __JHEXEN__
     static unsigned int classFlags[] = {
@@ -389,7 +389,7 @@ static void P_LoadMapObjs(map_t* map)
 
     for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
-        xlinedef_t* xl = &map->_xLineDefs[i];
+        XLineDef* xl = &map->_xLineDefs[i];
 
         xl->origID = P_GetObjectRecordInt(map, MO_XLINEDEF, i, MO_ORIGINALID);
         xl->flags = P_GetObjectRecordShort(map, MO_XLINEDEF, i, MO_FLAGS);
@@ -412,7 +412,7 @@ static void P_LoadMapObjs(map_t* map)
 
     for(i = 0; i < Map_NumSectors(map); ++i)
     {
-        xsector_t* xsec = &map->_xSectors[i];
+        XSector* xsec = &map->_xSectors[i];
 
         xsec->origID = P_GetObjectRecordInt(map, MO_XSECTOR, i, MO_ORIGINALID);
         xsec->special = P_GetObjectRecordShort(map, MO_XSECTOR, i, MO_TYPE);
@@ -449,13 +449,13 @@ static void P_LoadMapObjs(map_t* map)
     map->numSpawnSpots = P_NumObjectRecords(map, MO_THING);
 
     if(map->numSpawnSpots > 0)
-        map->_spawnSpots = Z_Malloc(map->numSpawnSpots * sizeof(mapspot_t), PU_MAP, 0);
+        map->_spawnSpots = Z_Malloc(map->numSpawnSpots * sizeof(MapSpot), PU_MAP, 0);
     else
         map->_spawnSpots = NULL;
 
     for(i = 0; i < map->numSpawnSpots; ++i)
     {
-        mapspot_t* spot = &map->_spawnSpots[i];
+        MapSpot* spot = &map->_spawnSpots[i];
 
         spot->pos[VX] = P_GetObjectRecordFloat(map, MO_THING, i, MO_X);
         spot->pos[VY] = P_GetObjectRecordFloat(map, MO_THING, i, MO_Y);
@@ -487,7 +487,7 @@ static void P_LoadMapObjs(map_t* map)
         if(spot->doomEdNum >= 1400 && spot->doomEdNum < 1410)
         {
             subsector_t* ssec = Map_PointInSubsector(map, spot->pos[VX], spot->pos[VY]);
-            xsector_t* xsector = P_ToXSector(DMU_GetPtrp(ssec, DMU_SECTOR));
+            XSector* xsector = P_ToXSector(DMU_GetPtrp(ssec, DMU_SECTOR));
 
             xsector->seqType = spot->doomEdNum - 1400;
             continue;
@@ -636,7 +636,7 @@ static void interpretLinedefFlags(map_t* map)
     // Interpret the archived map linedef flags and update accordingly.
     for(i = 0; i < Map_NumLineDefs(map); ++i)
     {
-        xlinedef_t* xline = &map->_xLineDefs[i];
+        XLineDef* xline = &map->_xLineDefs[i];
         int flags = 0;
 
         /**
@@ -810,7 +810,7 @@ int P_SetupMapWorker(void* ptr)
         // Sometimes doesn't show up if not in deathmatch.
         if(!(!deathmatch && P_Random() < 64))
         {
-            const mapspot_t* spot = &map->_maceSpots[P_Random() % map->maceSpotCount];
+            const MapSpot* spot = &map->_maceSpots[P_Random() % map->maceSpotCount];
 
             GameMap_SpawnMobj3f(map, MT_WMACE, spot->pos[VX], spot->pos[VY], 0,
                           spot->angle, MSF_Z_FLOOR);

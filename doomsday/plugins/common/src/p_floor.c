@@ -341,7 +341,7 @@ void T_MoveFloor(floor_t* floor)
 
     if(res == pastdest)
     {
-        xsector_t* xsec = P_ToXSector(floor->sector);
+        XSector* xsec = P_ToXSector(floor->sector);
         DMU_SetFloatp(floor->sector, DMU_FLOOR_SPEED, 0);
 
 #if __JHEXEN__
@@ -548,10 +548,10 @@ int EV_DoFloor(linedef_t *line, floortype_e floortype)
     sector_t* frontsector;
 #endif
     int rtn = 0;
-    xsector_t* xsec;
+    XSector* xsec;
     sector_t* sec = NULL;
     floor_t* floor = NULL;
-    iterlist_t* list;
+    IterList* list;
 #if __JHEXEN__
     int tag = (int) args[0];
 #else
@@ -933,7 +933,7 @@ static int findSectorNeighborsForStairBuild(void* ptr, void* context)
     findsectorneighborsforstairbuildparams_t* params =
         (findsectorneighborsforstairbuildparams_t*) context;
     sector_t* frontSec, *backSec;
-    xsector_t* xsec;
+    XSector* xsec;
 
     frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR);
     if(!frontSec)
@@ -986,7 +986,7 @@ int findAdjacentSectorForSpread(void* ptr, void* context)
     linedef_t*          li = (linedef_t*) ptr;
     spreadsectorparams_t* params = (spreadsectorparams_t*) context;
     sector_t*           frontSec, *backSec;
-    xsector_t*          xsec;
+    XSector*          xsec;
 
     frontSec = DMU_GetPtrp(li, DMU_FRONT_SECTOR);
     if(!frontSec)
@@ -1023,11 +1023,11 @@ int findAdjacentSectorForSpread(void* ptr, void* context)
 int EV_BuildStairs(linedef_t* line, stair_e type)
 {
     int rtn = 0;
-    xsector_t* xsec;
+    XSector* xsec;
     sector_t* sec = NULL;
     floor_t* floor;
     float height = 0, stairsize = 0, speed = 0;
-    iterlist_t* list;
+    IterList* list;
     spreadsectorparams_t params;
     map_t* map = P_CurrentMap();
 
@@ -1224,7 +1224,7 @@ int EV_BuildStairs(linedef_t* line, byte* args, int direction, stairs_e stairsTy
     float height;
     int delay, type, resetDelay;
     sector_t* sec = NULL, *qSec;
-    iterlist_t* list;
+    IterList* list;
 
     // Set global stairs variables
     map->stairData.textureChange = 0;
@@ -1300,7 +1300,7 @@ int EV_DoDonut(linedef_t* line)
 {
     int rtn = 0;
     sector_t* sec, *outer, *ring;
-    iterlist_t* list;
+    IterList* list;
     map_t* map = P_CurrentMap();
 
     list = GameMap_SectorIterListForTag(map, P_ToXLine(line)->tag, false);
@@ -1417,7 +1417,7 @@ int EV_DoFloorAndCeiling(linedef_t* line, int ftype, int ctype)
 # endif
     boolean floor, ceiling;
     sector_t* sec = NULL;
-    iterlist_t* list;
+    IterList* list;
 
     list = GameMap_SectorIterListForTag(map, tag, false);
     if(!list)
@@ -1430,7 +1430,7 @@ int EV_DoFloorAndCeiling(linedef_t* line, int ftype, int ctype)
      * linked at a time, this routine manually removes the link before
      * then creating a second thinker for the sector.
      * In order to commonize this we should maintain seperate links in
-     * xsector_t for each type of special (not thinker type) i.e:
+     * XSector for each type of special (not thinker type) i.e:
      *
      *   floor, ceiling, lightlevel
      *

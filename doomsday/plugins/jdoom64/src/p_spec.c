@@ -260,7 +260,7 @@ boolean P_ActivateLine(linedef_t *ld, mobj_t *mo, int side, int actType)
 void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 {
     int                 ok;
-    xlinedef_t            *xline;
+    XLineDef            *xline;
 
     // Extended functionality overrides old.
     if(XL_CrossLine(line, side, thing))
@@ -818,7 +818,7 @@ void P_CrossSpecialLine(linedef_t *line, int side, mobj_t *thing)
 void P_ShootSpecialLine(mobj_t *thing, linedef_t *line)
 {
     int                 ok;
-    xlinedef_t*            xline = P_ToXLine(line);
+    XLineDef*            xline = P_ToXLine(line);
 
     //  Impacts that other things can activate.
     if(!thing->player)
@@ -1059,7 +1059,7 @@ void GameMap_Thunder(map_t* map)
     assert(map);
     {
     sector_t* sec = NULL;
-    iterlist_t* list;
+    IterList* list;
 
     if(!(P_Random() < 10))
         return;
@@ -1089,10 +1089,10 @@ void GameMap_SpawnSpecials(map_t* map)
     {
     uint i;
     linedef_t* line;
-    xlinedef_t* xline;
-    iterlist_t* list;
+    XLineDef* xline;
+    IterList* list;
     sector_t* sec;
-    xsector_t* xsec;
+    XSector* xsec;
 
     // Init special SECTORs.
     GameMap_DestroySectorTagLists(map);
@@ -1251,7 +1251,7 @@ void GameMap_SpawnSpecials(map_t* map)
 
 boolean P_UseSpecialLine2(mobj_t* mo, linedef_t* line, int side)
 {
-    xlinedef_t* xline = P_ToXLine(line);
+    XLineDef* xline = P_ToXLine(line);
 
     // Err...
     // Use the back sides of VERY SPECIAL lines...

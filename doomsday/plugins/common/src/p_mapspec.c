@@ -86,7 +86,7 @@ void GameMap_DestroyLineTagLists(map_t* map)
     }
 }
 
-iterlist_t* GameMap_IterListForTag(map_t* map, int tag, boolean createNewList)
+IterList* GameMap_IterListForTag(map_t* map, int tag, boolean createNewList)
 {
     assert(map);
     {
@@ -132,7 +132,7 @@ void GameMap_DestroySectorTagLists(map_t* map)
     }
 }
 
-iterlist_t* GameMap_SectorIterListForTag(map_t* map, int tag, boolean createNewList)
+IterList* GameMap_SectorIterListForTag(map_t* map, int tag, boolean createNewList)
 {
     assert(map);
     {
@@ -157,7 +157,7 @@ iterlist_t* GameMap_SectorIterListForTag(map_t* map, int tag, boolean createNewL
     }
 }
 
-iterlist_t* GameMap_SpecHits(map_t* map)
+IterList* GameMap_SpecHits(map_t* map)
 {
     assert(map);
     return map->_spechit;
@@ -637,7 +637,7 @@ int spreadSoundToNeighbors(void *ptr, void *context)
         if(OPENRANGE > 0)
         {
             sector_t           *other;
-            xlinedef_t            *xline;
+            XLineDef            *xline;
 
             if(frontSec == params->baseSec)
                 other = backSec;
@@ -669,7 +669,7 @@ void P_RecursiveSound(struct mobj_s *soundTarget, sector_t *sec,
                       int soundBlocks)
 {
     spreadsoundtoneighborsparams_t params;
-    xsector_t          *xsec = P_ToXSector(sec);
+    XSector          *xsec = P_ToXSector(sec);
 
     // Wake up all monsters in this sector.
     if(DMU_GetIntp(sec, DMU_VALID_COUNT) == VALIDCOUNT &&

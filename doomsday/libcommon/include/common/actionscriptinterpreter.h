@@ -25,6 +25,7 @@
 #include "common.h"
 
 #include "common/GameMap"
+#include "common/ActionScriptThinker"
 
 typedef de::dint actionscriptid_t;
 
@@ -78,7 +79,7 @@ public:
      */
     void startAll(de::duint map);
 
-    bool start(actionscriptid_t scriptId, de::duint map, de::dbyte* args, Thing* activator, LineDef* lineDef, de::dint side);
+    bool start(actionscriptid_t scriptId, de::duint map, de::dbyte* args, de::Thing* activator, de::LineDef* lineDef, de::dint side);
 
     bool stop(actionscriptid_t scriptId, de::duint map);
 
@@ -106,13 +107,13 @@ private:
 
     void unloadBytecode();
 
-    actionscript_thinker_t* createActionScriptThinker(GameMap* map,
+    ActionScriptThinker* createActionScriptThinker(GameMap* map,
         actionscriptid_t scriptId, const de::dint* bytecodePos, de::dint delayCount,
-        de::dint infoIndex, Thing* activator, LineDef* lineDef, de::dint lineSide,
+        de::dint infoIndex, de::Thing* activator, de::LineDef* lineDef, de::dint lineSide,
         const de::dbyte* args, de::dint numArgs);
 
-    bool startScript(actionscriptid_t scriptId, de::duint map, de::dbyte* args, Thing* activator,
-        LineDef* lineDef, de::dint lineSide, actionscript_thinker_t** newScript);
+    bool startScript(actionscriptid_t scriptId, de::duint map, de::dbyte* args, de::Thing* activator,
+        de::LineDef* lineDef, de::dint lineSide, actionscript_thinker_t** newScript);
 
     void scriptFinished(actionscriptid_t scriptId);
 

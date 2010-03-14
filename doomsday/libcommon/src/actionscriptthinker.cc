@@ -849,7 +849,7 @@ D_ASCMD(ChangeFloor)
 {
     const dchar* flatName = getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script));
     dint tag = Pop(script);
-    iterlist_t* list;
+    IterList* list;
 
     if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
     {
@@ -870,7 +870,7 @@ D_ASCMD(ChangeFloorDirect)
 {
     dint tag = LONG(*script->bytecodePos++);
     const dchar* flatName = getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) LONG(*script->bytecodePos++));
-    iterlist_t* list;
+    IterList* list;
 
     if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
     {
@@ -891,7 +891,7 @@ D_ASCMD(ChangeCeiling)
 {
     const dchar* flatName = getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script));
     dint tag = Pop(script);
-    iterlist_t* list;
+    IterList* list;
 
     if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
     {
@@ -912,7 +912,7 @@ D_ASCMD(ChangeCeilingDirect)
 {
     dint tag = LONG(*script->bytecodePos++);
     const dchar* flatName = getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) LONG(*script->bytecodePos++));
-    iterlist_t* list;
+    IterList* list;
 
     if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
     {
@@ -1226,7 +1226,7 @@ D_ASCMD(SetSideDefMaterial)
     dint lineTag, side, position;
     Material* mat;
     LineDef* line;
-    iterlist_t* list;
+    IterList* list;
 
     mat = P_MaterialForName(MN_TEXTURES, getString(&ActionScriptInterpreter->_bytecode, (script_bytecode_stringid_t) Pop(script)));
     position = Pop(script);
@@ -1265,7 +1265,7 @@ D_ASCMD(SetLineDefBlocking)
     LineDef* line;
     dint lineTag;
     bool blocking;
-    iterlist_t* list;
+    IterList* list;
 
     blocking = Pop(script)? DDLF_BLOCKING : 0;
     lineTag = Pop(script);
@@ -1289,7 +1289,7 @@ D_ASCMD(SetLineDefSpecial)
     GameMap* map = P_CurrentMap();
     LineDef* line;
     dint lineTag, special, arg1, arg2, arg3, arg4, arg5;
-    iterlist_t* list;
+    IterList* list;
 
     arg5 = Pop(script);
     arg4 = Pop(script);

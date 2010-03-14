@@ -37,7 +37,7 @@ void            P_SetupMap(struct map_s* map, skillmode_t skill);
 const char*     P_GetMapNiceName(void);
 const char*     P_GetMapAuthor(boolean surpressIWADAuthors);
 
-xlinedef_t*     P_ToXLine(linedef_t* line);
-xsector_t*      P_ToXSector(sector_t* sector);
-xsector_t*      P_ToXSectorOfSubsector(subsector_t* sub);
+XLineDef*     P_ToXLine(linedef_t* line);
+XSector*      P_ToXSector(sector_t* sector);
+XSector*      P_ToXSectorOfSubsector(subsector_t* sub);
 #endif /* LIBCOMMON_PLAYSETUP_H */

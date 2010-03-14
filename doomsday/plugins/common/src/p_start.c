@@ -1110,7 +1110,7 @@ void P_TurnGizmosAwayFromDoors(map_t* map)
     uint i, l;
     int k, t;
     linedef_t* closestline = NULL, *li;
-    xlinedef_t* xli;
+    XLineDef* xli;
     float closestdist = 0, dist, off, linelen;
     mobj_t* tlist[MAXLIST];
 
