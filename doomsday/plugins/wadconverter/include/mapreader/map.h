@@ -448,7 +448,6 @@ namespace wadconverter
 
     private:
         static FormatId recognize(const LumpNums& lumpNums);
-        static int isClosedPolygon(LineDef** lineList, size_t num);
     };
 }
 

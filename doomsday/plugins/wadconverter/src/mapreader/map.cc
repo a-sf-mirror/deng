@@ -182,26 +182,6 @@ Map::MapLumpId Map::dataTypeForLumpName(const char* name)
 }
 
 /**
- * @return              @c  0 = Unclosed polygon.
- */
-int Map::isClosedPolygon(LineDef** lineList, size_t num)
-{
-    uint i;
-
-    for(i = 0; i < num; ++i)
-    {
-        LineDef* line = lineList[i];
-        LineDef* next = (i == num-1? lineList[0] : lineList[i+1]);
-
-        if(!(line->v[1] == next->v[0]))
-             return false;
-    }
-
-    // The polygon is closed.
-    return true;
-}
-
-/**
  * Create a temporary polyobj (read from the original map data).
  */
 void Map::createPolyobj(LineDef** lineDefs, uint lineDefCount, int tag,
@@ -209,12 +189,6 @@ void Map::createPolyobj(LineDef** lineDefs, uint lineDefCount, int tag,
 {
     assert(lineDefs);
     assert(lineDefCount > 0);
-
-    // Ensure that lineList is a closed polygon.
-    if(isClosedPolygon(lineDefs, lineDefCount) == 0)
-    {   // Nope, perhaps it needs sorting?
-        throw std::runtime_error("LineDefs do not form a closed polygon.");
-    }
 
     uint* lineIndices = (uint*) malloc(sizeof(objectrecordid_t) * lineDefCount);
     for(uint i = 0; i < lineDefCount; ++i)
