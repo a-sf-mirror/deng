@@ -50,7 +50,7 @@ spawnqueuenode_t* allocateNode(void)
     return Z_Malloc(sizeof(spawnqueuenode_t), PU_STATIC, 0);
 }
 
-void freeNode(map_t* map, spawnqueuenode_t* node)
+void freeNode(GameMap* map, spawnqueuenode_t* node)
 {
     // Find this node in the spawn queue and unlink it if found.
     if(map->_spawnQueueHead)
@@ -74,7 +74,7 @@ void freeNode(map_t* map, spawnqueuenode_t* node)
     Z_Free(node);
 }
 
-spawnqueuenode_t* dequeueSpawn(map_t* map)
+spawnqueuenode_t* dequeueSpawn(GameMap* map)
 {
     spawnqueuenode_t* n = map->_spawnQueueHead;
 
@@ -84,7 +84,7 @@ spawnqueuenode_t* dequeueSpawn(map_t* map)
     return n;
 }
 
-void emptySpawnQueue(map_t* map)
+void emptySpawnQueue(GameMap* map)
 {
     if(map->_spawnQueueHead)
     {
@@ -97,7 +97,7 @@ void emptySpawnQueue(map_t* map)
     map->_spawnQueueHead = NULL;
 }
 
-void enqueueSpawn(map_t* map, int minTics, mobjtype_t type,
+void enqueueSpawn(GameMap* map, int minTics, mobjtype_t type,
                          float x, float y, float z, angle_t angle, int spawnFlags,
                          void (*callback) (mobj_t* mo, void* context),
                          void* context)
@@ -152,7 +152,7 @@ void enqueueSpawn(map_t* map, int minTics, mobjtype_t type,
     }
 }
 
-mobj_t* doDeferredSpawn(map_t* map)
+mobj_t* doDeferredSpawn(GameMap* map)
 {
     mobj_t* mo = NULL;
 
@@ -178,7 +178,7 @@ mobj_t* doDeferredSpawn(map_t* map)
 /**
  * Called 35 times per second by P_DoTick.
  */
-void doDeferredSpawns(map_t* map)
+void doDeferredSpawns(GameMap* map)
 {
     while(doDeferredSpawn(map));
 }

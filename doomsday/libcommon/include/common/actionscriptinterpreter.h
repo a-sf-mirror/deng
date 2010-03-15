@@ -30,10 +30,11 @@
 
 #include "common.h"
 
-typedef de::dint ActionScriptId;
+typedef de::dint FunctionName;
 
 class ActionScriptThinker;
 class GameMap;
+class File;
 
 /**
  * Interpreter for Hexen format ACS bytecode.
@@ -43,11 +44,11 @@ class ActionScriptInterpreter
 public:
     /// Only one instance of ActionScriptInterpreter is allowed. @ingroup errors
     DEFINE_ERROR(TooManyInstancesError);
-    /// Invalid ActionScriptId specified. @ingroup errors
-    DEFINE_ERROR(UnknownActionScriptIdError);
+    /// Invalid FunctionName specified. @ingroup errors
+    DEFINE_ERROR(UnknownFunctionNameError);
 
-    struct ScriptStateRecord {
-        enum State {
+    struct ScriptState {
+        enum Status {
             INACTIVE,
             RUNNING,
             SUSPENDED,
@@ -56,12 +57,12 @@ public:
             WAITING_FOR_SCRIPT,
             TERMINATING
         };
-        State state;
+        Status status;
 
         de::dint waitValue;
 
-        ScriptStateRecord(State state=INACTIVE, de::dint waitValue = 0)
-            : state(state), waitValue(waitValue) {};
+        ScriptState(Status status=INACTIVE, de::dint waitValue = 0)
+            : status(status), waitValue(waitValue) {};
     };
 
 private:
@@ -70,59 +71,60 @@ private:
 
     static const de::dint PRINT_BUFFER_SIZE = 256;
 
-    typedef std::map<ActionScriptId, ScriptStateRecord> ScriptStateRecords;
+    typedef std::map<FunctionName, ScriptState> ScriptStates;
 
     struct Bytecode {
         typedef de::dint StringId;
 
         const de::dbyte* base;
 
-        struct ScriptInfoRecord {
-            const ActionScriptId scriptId;
+        struct Function {
+            const FunctionName name;
             const de::dint* entryPoint;
-            const de::dint argCount;
+            const de::dint numArguments;
 
-            ScriptInfoRecord(ActionScriptId scriptId, const de::dint* entryPoint, de::dint argCount)
-              : scriptId(scriptId), entryPoint(entryPoint), argCount(argCount) {};
+            Function(FunctionName name, const de::dint* entryPoint, de::dint numArguments)
+              : name(name), entryPoint(entryPoint), numArguments(numArguments) {};
         };
 
-        typedef std::vector<ScriptInfoRecord> ScriptInfoRecords;
-        ScriptInfoRecords scriptInfoRecords;
+        void load(const de::File& file);
 
-        de::dint numStrings;
-        de::dchar const** strings;
+        void unload();
 
         const de::dchar* string(StringId id) const {
-            assert(id >= 0 && id < numStrings);
-            return strings[id];
+            assert(id >= 0 && id < _numStrings);
+            return _strings[id];
         }
 
-        de::duint toIndex(ActionScriptId scriptId) const {
-            FOR_EACH(i, scriptInfoRecords, ScriptInfoRecords::const_iterator)
-            {
-                const ScriptInfoRecord& info = *i;
-                if(info.scriptId == scriptId)
-                    return de::dint(i - scriptInfoRecords.begin());
-            }
-
-            /// @throw UnknownActionScriptIdError Invalid ActionScriptId specified when
-            /// attempting to retrieve a ScriptInfoRecord.
-            throw UnknownActionScriptIdError("ActionScriptInterpreter::Bytecode::toIndex", "Invalid ActionScriptId");
+        const Function& function(FunctionName name) const {
+            Functions::const_iterator found = _functions.find(name);
+            if(found != _functions.end())
+                return found->second;
+            /// @throw UnknownFunctionNameError Invalid name specified when
+            /// attempting to lookup a Function.
+            throw UnknownFunctionNameError("ActionScriptInterpreter::Bytecode::function", "Invalid FunctionName");
         }
+
+    private:
+        typedef std::map<FunctionName, Function> Functions;
+        Functions _functions;
+
+        de::dint _numStrings;
+        de::dchar const** _strings;
     };
 
     struct DeferredScriptEvent {
-        /// Script number on target map.
-        ActionScriptId scriptId;
+        /// Function name on the target map.
+        FunctionName name;
 
         /// Target map.
         de::duint map;
 
-        /// Arguments passed to script (padded to 4 for alignment).
+        /// Arguments passed to the function (padded to 4 for alignment).
         de::dbyte args[4];
 
-        DeferredScriptEvent(ActionScriptId scriptId, de::duint map, de::dbyte arg1, de::dbyte arg2, de::dbyte arg3, de::dbyte arg4)
-          : scriptId(scriptId), map(map) {
+        DeferredScriptEvent(FunctionName name, de::duint map, de::dbyte arg1, de::dbyte arg2, de::dbyte arg3, de::dbyte arg4)
+          : name(name), map(map) {
               args[0] = arg1;
               args[1] = arg2;
               args[2] = arg3;
@@ -136,35 +138,35 @@ public:
     ActionScriptInterpreter();
     ~ActionScriptInterpreter();
 
-    ScriptStateRecord& scriptStateRecord(ActionScriptId scriptId) {
-        if(_scriptStateRecords.find(scriptId) == _scriptStateRecords.end())
-            /// @throw UnknownActionScriptIdError An invalid ActionScriptId was specified
-            /// when attempting to retrieve a ScriptStateRecord.
-            throw UnknownActionScriptIdError("ActionScriptInterpreter::scriptStateRecord", "Invalid ActionScriptId");
+    ScriptState& scriptState(FunctionName name) {
+        if(_scriptStates.find(name) == _scriptStates.end())
+            /// @throw UnknownFunctionNameError An invalid FunctionName was specified
+            /// when attempting to retrieve a ScriptState.
+            throw UnknownFunctionNameError("ActionScriptInterpreter::scriptState", "Invalid FunctionName");
 
-        return _scriptStateRecords[scriptId];
+        return _scriptStates[name];
     }
 
-    void load(de::duint map, lumpnum_t lumpNum);
+    void load(const de::File& file);
 
-    void writeWorldState(de::Writer& to) const;
+    void writeWorldContext(de::Writer& to) const;
 
-    void readWorldState(de::Reader& from);
+    void readWorldContext(de::Reader& from);
 
-    void writeMapState(de::Writer& to) const;
+    void writeMapContext(de::Writer& to) const;
 
-    void readMapState(de::Reader& from);
+    void readMapContext(de::Reader& from);
 
     /**
      * Execute all deferred script events belonging to the specified map.
      */
     void runDeferredScriptEvents(de::duint map);
 
-    bool start(ActionScriptId scriptId, de::duint map, de::dbyte* args, de::Thing* activator, de::LineDef* lineDef, de::dint side);
+    bool start(FunctionName name, de::duint map, de::dbyte* args, de::Thing* activator, de::LineDef* lineDef, de::dint side);
 
-    bool stop(ActionScriptId scriptId);
+    bool stop(FunctionName name);
 
-    bool suspend(ActionScriptId scriptId);
+    bool suspend(FunctionName name);
 
     /**
      * Signal sector tag as finished.
@@ -179,17 +181,20 @@ public:
     /**
      * Signal script as finished.
      */
-    void scriptFinished(ActionScriptId scriptId);
+    void scriptFinished(FunctionName name);
 
-    void printScriptInfo(ActionScriptId scriptId);
+    void printScriptInfo(FunctionName name);
 
 /// @todo Should be private.
     const Bytecode& bytecode() const {
         return _bytecode;
     }
 
-    de::dint _worldVars[MAX_WORLD_VARS];
-    de::dint _mapVars[MAX_MAP_VARS];
+    /// World context - A set of global variables that persist between maps.
+    de::dint _worldContext[MAX_WORLD_VARS];
+
+    /// Map context - A set of global variables the exist for the life of the current map.
+    de::dint _mapContext[MAX_MAP_VARS];
 
     de::dchar _printBuffer[PRINT_BUFFER_SIZE];
 
@@ -204,22 +209,20 @@ private:
     Bytecode _bytecode;
 
     /// Script state records. A record for each script in Bytecode::scriptInfo
-    ScriptStateRecords _scriptStateRecords;
+    ScriptStates _scriptStates;
 
     /// Deferred script events.
     DeferredScriptEvents _deferredScriptEvents;
 
-    void unloadBytecode();
-
-    bool startScript(ActionScriptId scriptId, de::duint map, de::dbyte* args, de::Thing* activator,
+    bool startScript(FunctionName name, de::duint map, de::dbyte* args, de::Thing* activator,
         de::LineDef* lineDef, de::dint lineSide, ActionScriptThinker** newScript);
 
-    bool deferScriptEvent(ActionScriptId scriptId, de::duint map, de::dbyte* args);
+    bool deferScriptEvent(FunctionName name, de::duint map, de::dbyte* args);
 
     /**
      * (Re)start any scripts currently waiting on the specified signal.
      */
-    void startWaitingScripts(ScriptStateRecord::State state, de::dint waitValue);
+    void startWaitingScripts(ScriptState::Status status, de::dint waitValue);
 
     /// @todo Does not belong in this class.
     de::dint countThingsOfType(GameMap* map, de::dint type, de::dint tid);

@@ -28,185 +28,165 @@
 using namespace de;
 
 namespace {
-typedef enum {
-    SA_CONTINUE,
-    SA_STOP,
-    SA_TERMINATE
-} script_action_t;
-
-// A handy helper for declaring action script command interpreter.
-#define D_ASCMD(x) script_action_t Cmd##x(ActionScriptInterpreter& asi, ActionScriptThinker* script)
-
-/// Pointer to a script bytecode command interpreter.
-typedef script_action_t (*script_bytecode_cmdinterpreter_t) (ActionScriptInterpreter& asi, ActionScriptThinker*);
-
-D_ASCMD(NOP);
-D_ASCMD(Terminate);
-D_ASCMD(Suspend);
-D_ASCMD(PushNumber);
-D_ASCMD(LSpec1);
-D_ASCMD(LSpec2);
-D_ASCMD(LSpec3);
-D_ASCMD(LSpec4);
-D_ASCMD(LSpec5);
-D_ASCMD(LSpec1Direct);
-D_ASCMD(LSpec2Direct);
-D_ASCMD(LSpec3Direct);
-D_ASCMD(LSpec4Direct);
-D_ASCMD(LSpec5Direct);
-D_ASCMD(Add);
-D_ASCMD(Subtract);
-D_ASCMD(Multiply);
-D_ASCMD(Divide);
-D_ASCMD(Modulus);
-D_ASCMD(EQ);
-D_ASCMD(NE);
-D_ASCMD(LT);
-D_ASCMD(GT);
-D_ASCMD(LE);
-D_ASCMD(GE);
-D_ASCMD(AssignScriptVar);
-D_ASCMD(AssignMapVar);
-D_ASCMD(AssignWorldVar);
-D_ASCMD(PushScriptVar);
-D_ASCMD(PushMapVar);
-D_ASCMD(PushWorldVar);
-D_ASCMD(AddScriptVar);
-D_ASCMD(AddMapVar);
-D_ASCMD(AddWorldVar);
-D_ASCMD(SubScriptVar);
-D_ASCMD(SubMapVar);
-D_ASCMD(SubWorldVar);
-D_ASCMD(MulScriptVar);
-D_ASCMD(MulMapVar);
-D_ASCMD(MulWorldVar);
-D_ASCMD(DivScriptVar);
-D_ASCMD(DivMapVar);
-D_ASCMD(DivWorldVar);
-D_ASCMD(ModScriptVar);
-D_ASCMD(ModMapVar);
-D_ASCMD(ModWorldVar);
-D_ASCMD(IncScriptVar);
-D_ASCMD(IncMapVar);
-D_ASCMD(IncWorldVar);
-D_ASCMD(DecScriptVar);
-D_ASCMD(DecMapVar);
-D_ASCMD(DecWorldVar);
-D_ASCMD(Goto);
-D_ASCMD(IfGoto);
-D_ASCMD(Drop);
-D_ASCMD(Delay);
-D_ASCMD(DelayDirect);
-D_ASCMD(Random);
-D_ASCMD(RandomDirect);
-D_ASCMD(ThingCount);
-D_ASCMD(ThingCountDirect);
-D_ASCMD(TagWait);
-D_ASCMD(TagWaitDirect);
-D_ASCMD(PolyobjWait);
-D_ASCMD(PolyobjWaitDirect);
-D_ASCMD(ChangeFloor);
-D_ASCMD(ChangeFloorDirect);
-D_ASCMD(ChangeCeiling);
-D_ASCMD(ChangeCeilingDirect);
-D_ASCMD(Restart);
-D_ASCMD(AndLogical);
-D_ASCMD(OrLogical);
-D_ASCMD(AndBitwise);
-D_ASCMD(OrBitwise);
-D_ASCMD(EorBitwise);
-D_ASCMD(NegateLogical);
-D_ASCMD(LShift);
-D_ASCMD(RShift);
-D_ASCMD(UnaryMinus);
-D_ASCMD(IfNotGoto);
-D_ASCMD(LineDefSide);
-D_ASCMD(ScriptWait);
-D_ASCMD(ScriptWaitDirect);
-D_ASCMD(ClearLineDefSpecial);
-D_ASCMD(CaseGoto);
-D_ASCMD(BeginPrint);
-D_ASCMD(EndPrint);
-D_ASCMD(PrintString);
-D_ASCMD(PrintNumber);
-D_ASCMD(PrintCharacter);
-D_ASCMD(PlayerCount);
-D_ASCMD(GameType);
-D_ASCMD(GameSkill);
-D_ASCMD(Timer);
-D_ASCMD(SectorSound);
-D_ASCMD(AmbientSound);
-D_ASCMD(SoundSequence);
-D_ASCMD(SetSideDefMaterial);
-D_ASCMD(SetLineDefBlocking);
-D_ASCMD(SetLineDefSpecial);
-D_ASCMD(ThingSound);
-D_ASCMD(EndPrintBold);
-
-const script_bytecode_cmdinterpreter_t bytecodeCommandInterpreters[] =
-{
-    CmdNOP, CmdTerminate, CmdSuspend, CmdPushNumber, CmdLSpec1, CmdLSpec2,
-    CmdLSpec3, CmdLSpec4, CmdLSpec5, CmdLSpec1Direct, CmdLSpec2Direct,
-    CmdLSpec3Direct, CmdLSpec4Direct, CmdLSpec5Direct, CmdAdd,
-    CmdSubtract, CmdMultiply, CmdDivide, CmdModulus, CmdEQ, CmdNE,
-    CmdLT, CmdGT, CmdLE, CmdGE, CmdAssignScriptVar, CmdAssignMapVar,
-    CmdAssignWorldVar, CmdPushScriptVar, CmdPushMapVar,
-    CmdPushWorldVar, CmdAddScriptVar, CmdAddMapVar, CmdAddWorldVar,
-    CmdSubScriptVar, CmdSubMapVar, CmdSubWorldVar, CmdMulScriptVar,
-    CmdMulMapVar, CmdMulWorldVar, CmdDivScriptVar, CmdDivMapVar,
-    CmdDivWorldVar, CmdModScriptVar, CmdModMapVar, CmdModWorldVar,
-    CmdIncScriptVar, CmdIncMapVar, CmdIncWorldVar, CmdDecScriptVar,
-    CmdDecMapVar, CmdDecWorldVar, CmdGoto, CmdIfGoto, CmdDrop,
-    CmdDelay, CmdDelayDirect, CmdRandom, CmdRandomDirect,
-    CmdThingCount, CmdThingCountDirect, CmdTagWait, CmdTagWaitDirect,
-    CmdPolyobjWait, CmdPolyobjWaitDirect, CmdChangeFloor,
-    CmdChangeFloorDirect, CmdChangeCeiling, CmdChangeCeilingDirect,
-    CmdRestart, CmdAndLogical, CmdOrLogical, CmdAndBitwise,
-    CmdOrBitwise, CmdEorBitwise, CmdNegateLogical, CmdLShift,
-    CmdRShift, CmdUnaryMinus, CmdIfNotGoto, CmdLineDefSide, CmdScriptWait,
-    CmdScriptWaitDirect, CmdClearLineDefSpecial, CmdCaseGoto,
-    CmdBeginPrint, CmdEndPrint, CmdPrintString, CmdPrintNumber,
-    CmdPrintCharacter, CmdPlayerCount, CmdGameType, CmdGameSkill,
-    CmdTimer, CmdSectorSound, CmdAmbientSound, CmdSoundSequence,
-    CmdSetSideDefMaterial, CmdSetLineDefBlocking, CmdSetLineDefSpecial,
-    CmdThingSound, CmdEndPrintBold
+enum ProcessAction {
+    CONTINUE,
+    STOP,
+    TERMINATE
 };
 
-__inline void Drop(ActionScriptThinker* script)
-{
-    script->stackDepth--;
-}
+// A handy helper for declaring action script statement interpreter functions.
+#define DEFINE_STATEMENT(x) ProcessAction SI##x(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script)
 
-__inline dint Pop(ActionScriptThinker* script)
-{
-    return script->stack[--script->stackDepth];
-}
+/// Pointer to an action script statement interpreter.
+typedef ProcessAction (*statement_interpreter_t) (ActionScriptInterpreter&, ActionScriptThinker::Process*, ActionScriptThinker*);
 
-__inline void Push(ActionScriptThinker* script, dint value)
-{
-    script->stack[script->stackDepth++] = value;
-}
+DEFINE_STATEMENT(NOP);
+DEFINE_STATEMENT(Terminate);
+DEFINE_STATEMENT(Suspend);
+DEFINE_STATEMENT(PushNumber);
+DEFINE_STATEMENT(LSpec1);
+DEFINE_STATEMENT(LSpec2);
+DEFINE_STATEMENT(LSpec3);
+DEFINE_STATEMENT(LSpec4);
+DEFINE_STATEMENT(LSpec5);
+DEFINE_STATEMENT(LSpec1Direct);
+DEFINE_STATEMENT(LSpec2Direct);
+DEFINE_STATEMENT(LSpec3Direct);
+DEFINE_STATEMENT(LSpec4Direct);
+DEFINE_STATEMENT(LSpec5Direct);
+DEFINE_STATEMENT(Add);
+DEFINE_STATEMENT(Subtract);
+DEFINE_STATEMENT(Multiply);
+DEFINE_STATEMENT(Divide);
+DEFINE_STATEMENT(Modulus);
+DEFINE_STATEMENT(EQ);
+DEFINE_STATEMENT(NE);
+DEFINE_STATEMENT(LT);
+DEFINE_STATEMENT(GT);
+DEFINE_STATEMENT(LE);
+DEFINE_STATEMENT(GE);
+DEFINE_STATEMENT(AssignScriptVar);
+DEFINE_STATEMENT(AssignMapVar);
+DEFINE_STATEMENT(AssignWorldVar);
+DEFINE_STATEMENT(PushScriptVar);
+DEFINE_STATEMENT(PushMapVar);
+DEFINE_STATEMENT(PushWorldVar);
+DEFINE_STATEMENT(AddScriptVar);
+DEFINE_STATEMENT(AddMapVar);
+DEFINE_STATEMENT(AddWorldVar);
+DEFINE_STATEMENT(SubScriptVar);
+DEFINE_STATEMENT(SubMapVar);
+DEFINE_STATEMENT(SubWorldVar);
+DEFINE_STATEMENT(MulScriptVar);
+DEFINE_STATEMENT(MulMapVar);
+DEFINE_STATEMENT(MulWorldVar);
+DEFINE_STATEMENT(DivScriptVar);
+DEFINE_STATEMENT(DivMapVar);
+DEFINE_STATEMENT(DivWorldVar);
+DEFINE_STATEMENT(ModScriptVar);
+DEFINE_STATEMENT(ModMapVar);
+DEFINE_STATEMENT(ModWorldVar);
+DEFINE_STATEMENT(IncScriptVar);
+DEFINE_STATEMENT(IncMapVar);
+DEFINE_STATEMENT(IncWorldVar);
+DEFINE_STATEMENT(DecScriptVar);
+DEFINE_STATEMENT(DecMapVar);
+DEFINE_STATEMENT(DecWorldVar);
+DEFINE_STATEMENT(Goto);
+DEFINE_STATEMENT(IfGoto);
+DEFINE_STATEMENT(Drop);
+DEFINE_STATEMENT(Delay);
+DEFINE_STATEMENT(DelayDirect);
+DEFINE_STATEMENT(Random);
+DEFINE_STATEMENT(RandomDirect);
+DEFINE_STATEMENT(ThingCount);
+DEFINE_STATEMENT(ThingCountDirect);
+DEFINE_STATEMENT(TagWait);
+DEFINE_STATEMENT(TagWaitDirect);
+DEFINE_STATEMENT(PolyobjWait);
+DEFINE_STATEMENT(PolyobjWaitDirect);
+DEFINE_STATEMENT(ChangeFloor);
+DEFINE_STATEMENT(ChangeFloorDirect);
+DEFINE_STATEMENT(ChangeCeiling);
+DEFINE_STATEMENT(ChangeCeilingDirect);
+DEFINE_STATEMENT(Restart);
+DEFINE_STATEMENT(AndLogical);
+DEFINE_STATEMENT(OrLogical);
+DEFINE_STATEMENT(AndBitwise);
+DEFINE_STATEMENT(OrBitwise);
+DEFINE_STATEMENT(EorBitwise);
+DEFINE_STATEMENT(NegateLogical);
+DEFINE_STATEMENT(LShift);
+DEFINE_STATEMENT(RShift);
+DEFINE_STATEMENT(UnaryMinus);
+DEFINE_STATEMENT(IfNotGoto);
+DEFINE_STATEMENT(LineDefSide);
+DEFINE_STATEMENT(ScriptWait);
+DEFINE_STATEMENT(ScriptWaitDirect);
+DEFINE_STATEMENT(ClearLineDefSpecial);
+DEFINE_STATEMENT(CaseGoto);
+DEFINE_STATEMENT(BeginPrint);
+DEFINE_STATEMENT(EndPrint);
+DEFINE_STATEMENT(PrintString);
+DEFINE_STATEMENT(PrintNumber);
+DEFINE_STATEMENT(PrintCharacter);
+DEFINE_STATEMENT(PlayerCount);
+DEFINE_STATEMENT(GameType);
+DEFINE_STATEMENT(GameSkill);
+DEFINE_STATEMENT(Timer);
+DEFINE_STATEMENT(SectorSound);
+DEFINE_STATEMENT(AmbientSound);
+DEFINE_STATEMENT(SoundSequence);
+DEFINE_STATEMENT(SetSideDefMaterial);
+DEFINE_STATEMENT(SetLineDefBlocking);
+DEFINE_STATEMENT(SetLineDefSpecial);
+DEFINE_STATEMENT(ThingSound);
+DEFINE_STATEMENT(EndPrintBold);
 
-__inline dint Top(ActionScriptThinker* script)
+const statement_interpreter_t statementInterpreters[] =
 {
-    return script->stack[script->stackDepth - 1];
-}
+    SINOP, SITerminate, SISuspend, SIPushNumber, SILSpec1, SILSpec2,
+    SILSpec3, SILSpec4, SILSpec5, SILSpec1Direct, SILSpec2Direct,
+    SILSpec3Direct, SILSpec4Direct, SILSpec5Direct, SIAdd,
+    SISubtract, SIMultiply, SIDivide, SIModulus, SIEQ, SINE,
+    SILT, SIGT, SILE, SIGE, SIAssignScriptVar, SIAssignMapVar,
+    SIAssignWorldVar, SIPushScriptVar, SIPushMapVar,
+    SIPushWorldVar, SIAddScriptVar, SIAddMapVar, SIAddWorldVar,
+    SISubScriptVar, SISubMapVar, SISubWorldVar, SIMulScriptVar,
+    SIMulMapVar, SIMulWorldVar, SIDivScriptVar, SIDivMapVar,
+    SIDivWorldVar, SIModScriptVar, SIModMapVar, SIModWorldVar,
+    SIIncScriptVar, SIIncMapVar, SIIncWorldVar, SIDecScriptVar,
+    SIDecMapVar, SIDecWorldVar, SIGoto, SIIfGoto, SIDrop,
+    SIDelay, SIDelayDirect, SIRandom, SIRandomDirect,
+    SIThingCount, SIThingCountDirect, SITagWait, SITagWaitDirect,
+    SIPolyobjWait, SIPolyobjWaitDirect, SIChangeFloor,
+    SIChangeFloorDirect, SIChangeCeiling, SIChangeCeilingDirect,
+    SIRestart, SIAndLogical, SIOrLogical, SIAndBitwise,
+    SIOrBitwise, SIEorBitwise, SINegateLogical, SILShift,
+    SIRShift, SIUnaryMinus, SIIfNotGoto, SILineDefSide, SIScriptWait,
+    SIScriptWaitDirect, SIClearLineDefSpecial, SICaseGoto,
+    SIBeginPrint, SIEndPrint, SIPrintString, SIPrintNumber,
+    SIPrintCharacter, SIPlayerCount, SIGameType, SIGameSkill,
+    SITimer, SISectorSound, SIAmbientSound, SISoundSequence,
+    SISetSideDefMaterial, SISetLineDefBlocking, SISetLineDefSpecial,
+    SIThingSound, SIEndPrintBold
+};
 }
 
 void ActionScriptThinker::think(const de::Time::Delta& /* elapsed */)
 {
     ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
-    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(scriptId);
+    ActionScriptInterpreter::ScriptState& state = asi.scriptState(name);
 
-    if(rec.state == ActionScriptInterpreter::ScriptStateRecord::TERMINATING)
+    if(state.status == ActionScriptInterpreter::ScriptState::TERMINATING)
     {
-        rec.state = ActionScriptInterpreter::ScriptStateRecord::INACTIVE;
-        asi.scriptFinished(scriptId);
-        Map_RemoveThinker(Thinker_Map(this), this);
+        state.status = ActionScriptInterpreter::ScriptState::INACTIVE;
+        asi.scriptFinished(name);
+        this->map()->destroy(this);
         return;
     }
 
-    if(rec.state != ActionScriptInterpreter::ScriptStateRecord::RUNNING)
+    if(state.status != ActionScriptInterpreter::ScriptState::RUNNING)
     {
         return;
     }
@@ -217,18 +197,18 @@ void ActionScriptThinker::think(const de::Time::Delta& /* elapsed */)
         return;
     }
 
-    script_action_t action;
+    ProcessAction action;
     do
     {
-        script_bytecode_cmdinterpreter_t cmd = bytecodeCommandInterpreters[LONG(*bytecodePos++)];
-        action = cmd(asi, this);
-    } while(action == SA_CONTINUE);
+        statement_interpreter_t statement = statementInterpreters[LONG(*bytecodePos++)];
+        action = statement(asi, &process, this);
+    } while(action == CONTINUE);
 
-    if(action == SA_TERMINATE)
+    if(action == TERMINATE)
     {
-        rec.state = ActionScriptInterpreter::ScriptStateRecord::INACTIVE;
-        asi.scriptFinished(scriptId);
-        Map_RemoveThinker(Thinker_Map(this), this);
+        state.status = ActionScriptInterpreter::ScriptState::INACTIVE;
+        asi.scriptFinished(name);
+        this->map()->destroy(this);
     }
 }
 
@@ -236,20 +216,19 @@ void ActionScriptThinker::operator >> (de::Writer& to) const
 {
     Thinker::operator >> (to);
 
-    to << dbyte(1) // Write a version byte.
-       << dint(SV_ThingArchiveNum(activator))
-       << (lineDef ? dint(DMU_ToIndex(lineDef)) : dint(-1))
-       << lineSide
-       << scriptId
-       << infoIndex
+    to << dbyte(2) // Write a version byte.
+       << dint(SV_ThingArchiveNum(process._activator))
+       << (process._lineDef ? dint(DMU_ToIndex(process._lineDef)) : dint(-1))
+       << process._lineSide
+       << name
        << delayCount;
 
-    for(duint i = 0; i < AST_STACK_DEPTH; ++i)
-        to << stack[i];
+    for(duint i = 0; i < STACK_DEPTH; ++i)
+        to << process._stack[i];
+    to << process._stackDepth;
 
-    to << stackDepth;
-    for(duint i = 0; i < AST_MAX_VARS; ++i)
-        to << vars[i];
+    for(duint i = 0; i < MAX_VARS; ++i)
+        to << process._context[i];
 
     ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
     to << (dint(bytecodePos) - dint(asi.bytecode().base));
@@ -262,24 +241,25 @@ void ActionScriptThinker::operator << (de::Reader& from)
     if(saveVersion >= 4)
     {
         // @note the thinker class byte has already been read.
-        /*int ver =*/ SV_ReadByte(); // version byte.
+        dbyte ver = SV_ReadByte(); // version byte.
 
-        activator = (Thing*) SV_ReadLong();
-        activator = SV_GetArchiveThing((dint) activator, &activator);
+        process._activator = (Thing*) SV_ReadLong();
+        process._activator = SV_GetArchiveThing((dint) process._activator, &process._activator);
         temp = SV_ReadLong();
         if(temp == -1)
-            lineDef = NULL;
+            process._lineDef = NULL;
         else
-            lineDef = DMU_ToPtr(DMU_LINEDEF, temp);
-        lineSide = SV_ReadLong();
-        scriptId = (ActionScriptId) SV_ReadLong();
-        infoIndex = SV_ReadLong();
+            process._lineDef = DMU_ToPtr(DMU_LINEDEF, temp);
+        process._lineSide = SV_ReadLong();
+        name = (FunctionName) SV_ReadLong();
+        if(ver < 2)
+            SV_ReadLong(); // Was infoIndex (32bit signed integer).
         delayCount = SV_ReadLong();
-        for(duint i = 0; i < AST_STACK_DEPTH; ++i)
-            stack[i] = SV_ReadLong();
-        stackDepth = SV_ReadLong();
-        for(duint i = 0; i < AST_MAX_VARS; ++i)
-            vars[i] = SV_ReadLong();
+        for(duint i = 0; i < STACK_DEPTH; ++i)
+            process._stack[i] = SV_ReadLong();
+        process._stackDepth = SV_ReadLong();
+        for(duint i = 0; i < MAX_VARS; ++i)
+            process._context[i] = SV_ReadLong();
 
         ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
         bytecodePos = (const dint*) (asi.bytecode().base + SV_ReadLong());
@@ -288,26 +268,25 @@ void ActionScriptThinker::operator << (de::Reader& from)
     {
         // Its in the old pre V4 format which serialized ActionScriptThinker
         // Padding at the start (an old thinker_t struct)
-        thinker_t junk;
-        SV_Read(&junk, (size_t) 16);
+        from.seek(16);
 
         // Start of used data members.
-        activator = (Thing*) SV_ReadLong();
-        activator = SV_GetArchiveThing((dint) activator, &activator);
+        process._activator = (Thing*) SV_ReadLong();
+        process._activator = SV_GetArchiveThing((dint) process._activator, &process._activator);
         temp = SV_ReadLong();
         if(temp == -1)
-            lineDef = NULL;
+            process._lineDef = NULL;
         else
-            lineDef = DMU_ToPtr(DMU_LINEDEF, temp);
-        lineSide = SV_ReadLong();
-        scriptId = (ActionScriptId) SV_ReadLong();
-        infoIndex = SV_ReadLong();
+            process._lineDef = DMU_ToPtr(DMU_LINEDEF, temp);
+        process._lineSide = SV_ReadLong();
+        name = (FunctionName) SV_ReadLong();
+        SV_ReadLong(); // Was infoIndex (32bit signed integer).
         delayCount = SV_ReadLong();
-        for(duint i = 0; i < AST_STACK_DEPTH; ++i)
-            stack[i] = SV_ReadLong();
-        stackDepth = SV_ReadLong();
-        for(duint i = 0; i < AST_MAX_VARS; ++i)
-            vars[i] = SV_ReadLong();
+        for(duint i = 0; i < STACK_DEPTH; ++i)
+            process._stack[i] = SV_ReadLong();
+        process._stackDepth = SV_ReadLong();
+        for(duint i = 0; i < MAX_VARS; ++i)
+            process._context[i] = SV_ReadLong();
 
         ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
         bytecodePos = (const dint*) (asi.bytecode().base + SV_ReadLong());
@@ -315,114 +294,114 @@ void ActionScriptThinker::operator << (de::Reader& from)
 }
 
 namespace {
-D_ASCMD(NOP)
+DEFINE_STATEMENT(NOP)
 {
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(Terminate)
+DEFINE_STATEMENT(Terminate)
 {
-    return SA_TERMINATE;
+    return TERMINATE;
 }
 
-D_ASCMD(Suspend)
+DEFINE_STATEMENT(Suspend)
 {
-    asi.scriptStateRecord(script->scriptId).state = ActionScriptInterpreter::ScriptStateRecord::SUSPENDED;
-    return SA_STOP;
+    asi.scriptState(script->name).status = ActionScriptInterpreter::ScriptState::SUSPENDED;
+    return STOP;
 }
 
-D_ASCMD(PushNumber)
+DEFINE_STATEMENT(PushNumber)
 {
-    Push(script, LONG(*script->bytecodePos++));
-    return SA_CONTINUE;
+    proc->push(LONG(*script->bytecodePos++));
+    return CONTINUE;
 }
 
-D_ASCMD(LSpec1)
-{
-    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    dint special = LONG(*script->bytecodePos++);
-    args[0] = Pop(script);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
-}
-
-D_ASCMD(LSpec2)
+DEFINE_STATEMENT(LSpec1)
 {
     dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    args[1] = Pop(script);
-    args[0] = Pop(script);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
+    args[0] = proc->pop();
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
 }
 
-D_ASCMD(LSpec3)
+DEFINE_STATEMENT(LSpec2)
 {
     dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    args[2] = Pop(script);
-    args[1] = Pop(script);
-    args[0] = Pop(script);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
+    args[1] = proc->pop();
+    args[0] = proc->pop();
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
 }
 
-D_ASCMD(LSpec4)
+DEFINE_STATEMENT(LSpec3)
 {
     dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    args[3] = Pop(script);
-    args[2] = Pop(script);
-    args[1] = Pop(script);
-    args[0] = Pop(script);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
+    args[2] = proc->pop();
+    args[1] = proc->pop();
+    args[0] = proc->pop();
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
 }
 
-D_ASCMD(LSpec5)
+DEFINE_STATEMENT(LSpec4)
 {
     dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
-    args[4] = Pop(script);
-    args[3] = Pop(script);
-    args[2] = Pop(script);
-    args[1] = Pop(script);
-    args[0] = Pop(script);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
+    args[3] = proc->pop();
+    args[2] = proc->pop();
+    args[1] = proc->pop();
+    args[0] = proc->pop();
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
 }
 
-D_ASCMD(LSpec1Direct)
+DEFINE_STATEMENT(LSpec5)
+{
+    dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    dint special = LONG(*script->bytecodePos++);
+    args[4] = proc->pop();
+    args[3] = proc->pop();
+    args[2] = proc->pop();
+    args[1] = proc->pop();
+    args[0] = proc->pop();
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
+}
+
+DEFINE_STATEMENT(LSpec1Direct)
 {
     dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
     args[0] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
 }
 
-D_ASCMD(LSpec2Direct)
+DEFINE_STATEMENT(LSpec2Direct)
 {
     dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
     args[0] = LONG(*script->bytecodePos++);
     args[1] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
 }
 
-D_ASCMD(LSpec3Direct)
+DEFINE_STATEMENT(LSpec3Direct)
 {
     dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
     args[0] = LONG(*script->bytecodePos++);
     args[1] = LONG(*script->bytecodePos++);
     args[2] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
 }
 
-D_ASCMD(LSpec4Direct)
+DEFINE_STATEMENT(LSpec4Direct)
 {
     dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
@@ -430,11 +409,11 @@ D_ASCMD(LSpec4Direct)
     args[1] = LONG(*script->bytecodePos++);
     args[2] = LONG(*script->bytecodePos++);
     args[3] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
 }
 
-D_ASCMD(LSpec5Direct)
+DEFINE_STATEMENT(LSpec5Direct)
 {
     dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     dint special = LONG(*script->bytecodePos++);
@@ -443,254 +422,254 @@ D_ASCMD(LSpec5Direct)
     args[2] = LONG(*script->bytecodePos++);
     args[3] = LONG(*script->bytecodePos++);
     args[4] = LONG(*script->bytecodePos++);
-    P_ExecuteLineSpecial(special, args, script->lineDef, script->lineSide, script->activator);
-    return SA_CONTINUE;
+    P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+    return CONTINUE;
 }
 
-D_ASCMD(Add)
+DEFINE_STATEMENT(Add)
 {
-    Push(script, Pop(script) + Pop(script));
-    return SA_CONTINUE;
+    proc->push(proc->pop() + proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(Subtract)
+DEFINE_STATEMENT(Subtract)
 {
-    dint operand2 = Pop(script);
-    Push(script, Pop(script) - operand2);
-    return SA_CONTINUE;
+    dint operand2 = proc->pop();
+    proc->push(proc->pop() - operand2);
+    return CONTINUE;
 }
 
-D_ASCMD(Multiply)
+DEFINE_STATEMENT(Multiply)
 {
-    Push(script, Pop(script) * Pop(script));
-    return SA_CONTINUE;
+    proc->push(proc->pop() * proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(Divide)
+DEFINE_STATEMENT(Divide)
 {
-    dint operand2 = Pop(script);
-    Push(script, Pop(script) / operand2);
-    return SA_CONTINUE;
+    dint operand2 = proc->pop();
+    proc->push(proc->pop() / operand2);
+    return CONTINUE;
 }
 
-D_ASCMD(Modulus)
+DEFINE_STATEMENT(Modulus)
 {
-    dint operand2 = Pop(script);
-    Push(script, Pop(script) % operand2);
-    return SA_CONTINUE;
+    dint operand2 = proc->pop();
+    proc->push(proc->pop() % operand2);
+    return CONTINUE;
 }
 
-D_ASCMD(EQ)
+DEFINE_STATEMENT(EQ)
 {
-    Push(script, Pop(script) == Pop(script));
-    return SA_CONTINUE;
+    proc->push(proc->pop() == proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(NE)
+DEFINE_STATEMENT(NE)
 {
-    Push(script, Pop(script) != Pop(script));
-    return SA_CONTINUE;
+    proc->push(proc->pop() != proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(LT)
+DEFINE_STATEMENT(LT)
 {
-    dint operand2 = Pop(script);
-    Push(script, Pop(script) < operand2);
-    return SA_CONTINUE;
+    dint operand2 = proc->pop();
+    proc->push(proc->pop() < operand2);
+    return CONTINUE;
 }
 
-D_ASCMD(GT)
+DEFINE_STATEMENT(GT)
 {
-    int operand2 = Pop(script);
-    Push(script, Pop(script) > operand2);
-    return SA_CONTINUE;
+    int operand2 = proc->pop();
+    proc->push(proc->pop() > operand2);
+    return CONTINUE;
 }
 
-D_ASCMD(LE)
+DEFINE_STATEMENT(LE)
 {
-    dint operand2 = Pop(script);
-    Push(script, Pop(script) <= operand2);
-    return SA_CONTINUE;
+    dint operand2 = proc->pop();
+    proc->push(proc->pop() <= operand2);
+    return CONTINUE;
 }
 
-D_ASCMD(GE)
+DEFINE_STATEMENT(GE)
 {
-    dint operand2 = Pop(script);
-    Push(script, Pop(script) >= operand2);
-    return SA_CONTINUE;
+    dint operand2 = proc->pop();
+    proc->push(proc->pop() >= operand2);
+    return CONTINUE;
 }
 
-D_ASCMD(AssignScriptVar)
+DEFINE_STATEMENT(AssignScriptVar)
 {
-    script->vars[LONG(*script->bytecodePos++)] = Pop(script);
-    return SA_CONTINUE;
+    proc->_context[LONG(*script->bytecodePos++)] = proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(AssignMapVar)
+DEFINE_STATEMENT(AssignMapVar)
 {
-    asi._mapVars[LONG(*script->bytecodePos++)] = Pop(script);
-    return SA_CONTINUE;
+    asi._mapContext[LONG(*script->bytecodePos++)] = proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(AssignWorldVar)
+DEFINE_STATEMENT(AssignWorldVar)
 {
-    asi._worldVars[LONG(*script->bytecodePos++)] = Pop(script);
-    return SA_CONTINUE;
+    asi._worldContext[LONG(*script->bytecodePos++)] = proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(PushScriptVar)
+DEFINE_STATEMENT(PushScriptVar)
 {
-    Push(script, script->vars[LONG(*script->bytecodePos++)]);
-    return SA_CONTINUE;
+    proc->push(proc->_context[LONG(*script->bytecodePos++)]);
+    return CONTINUE;
 }
 
-D_ASCMD(PushMapVar)
+DEFINE_STATEMENT(PushMapVar)
 {
-    Push(script, asi._mapVars[LONG(*script->bytecodePos++)]);
-    return SA_CONTINUE;
+    proc->push(asi._mapContext[LONG(*script->bytecodePos++)]);
+    return CONTINUE;
 }
 
-D_ASCMD(PushWorldVar)
+DEFINE_STATEMENT(PushWorldVar)
 {
-    Push(script, asi._worldVars[LONG(*script->bytecodePos++)]);
-    return SA_CONTINUE;
+    proc->push(asi._worldContext[LONG(*script->bytecodePos++)]);
+    return CONTINUE;
 }
 
-D_ASCMD(AddScriptVar)
+DEFINE_STATEMENT(AddScriptVar)
 {
-    script->vars[LONG(*script->bytecodePos++)] += Pop(script);
-    return SA_CONTINUE;
+    proc->_context[LONG(*script->bytecodePos++)] += proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(AddMapVar)
+DEFINE_STATEMENT(AddMapVar)
 {
-    asi._mapVars[LONG(*script->bytecodePos++)] += Pop(script);
-    return SA_CONTINUE;
+    asi._mapContext[LONG(*script->bytecodePos++)] += proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(AddWorldVar)
+DEFINE_STATEMENT(AddWorldVar)
 {
-    asi._worldVars[LONG(*script->bytecodePos++)] += Pop(script);
-    return SA_CONTINUE;
+    asi._worldContext[LONG(*script->bytecodePos++)] += proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(SubScriptVar)
+DEFINE_STATEMENT(SubScriptVar)
 {
-    script->vars[LONG(*script->bytecodePos++)] -= Pop(script);
-    return SA_CONTINUE;
+    proc->_context[LONG(*script->bytecodePos++)] -= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(SubMapVar)
+DEFINE_STATEMENT(SubMapVar)
 {
-    asi._mapVars[LONG(*script->bytecodePos++)] -= Pop(script);
-    return SA_CONTINUE;
+    asi._mapContext[LONG(*script->bytecodePos++)] -= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(SubWorldVar)
+DEFINE_STATEMENT(SubWorldVar)
 {
-    asi._worldVars[LONG(*script->bytecodePos++)] -= Pop(script);
-    return SA_CONTINUE;
+    asi._worldContext[LONG(*script->bytecodePos++)] -= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(MulScriptVar)
+DEFINE_STATEMENT(MulScriptVar)
 {
-    script->vars[LONG(*script->bytecodePos++)] *= Pop(script);
-    return SA_CONTINUE;
+    proc->_context[LONG(*script->bytecodePos++)] *= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(MulMapVar)
+DEFINE_STATEMENT(MulMapVar)
 {
-    asi._mapVars[LONG(*script->bytecodePos++)] *= Pop(script);
-    return SA_CONTINUE;
+    asi._mapContext[LONG(*script->bytecodePos++)] *= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(MulWorldVar)
+DEFINE_STATEMENT(MulWorldVar)
 {
-    asi._worldVars[LONG(*script->bytecodePos++)] *= Pop(script);
-    return SA_CONTINUE;
+    asi._worldContext[LONG(*script->bytecodePos++)] *= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(DivScriptVar)
+DEFINE_STATEMENT(DivScriptVar)
 {
-    script->vars[LONG(*script->bytecodePos++)] /= Pop(script);
-    return SA_CONTINUE;
+    proc->_context[LONG(*script->bytecodePos++)] /= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(DivMapVar)
+DEFINE_STATEMENT(DivMapVar)
 {
-    asi._mapVars[LONG(*script->bytecodePos++)] /= Pop(script);
-    return SA_CONTINUE;
+    asi._mapContext[LONG(*script->bytecodePos++)] /= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(DivWorldVar)
+DEFINE_STATEMENT(DivWorldVar)
 {
-    asi._worldVars[LONG(*script->bytecodePos++)] /= Pop(script);
-    return SA_CONTINUE;
+    asi._worldContext[LONG(*script->bytecodePos++)] /= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(ModScriptVar)
+DEFINE_STATEMENT(ModScriptVar)
 {
-    script->vars[LONG(*script->bytecodePos++)] %= Pop(script);
-    return SA_CONTINUE;
+    proc->_context[LONG(*script->bytecodePos++)] %= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(ModMapVar)
+DEFINE_STATEMENT(ModMapVar)
 {
-    asi._mapVars[LONG(*script->bytecodePos++)] %= Pop(script);
-    return SA_CONTINUE;
+    asi._mapContext[LONG(*script->bytecodePos++)] %= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(ModWorldVar)
+DEFINE_STATEMENT(ModWorldVar)
 {
-    asi._worldVars[LONG(*script->bytecodePos++)] %= Pop(script);
-    return SA_CONTINUE;
+    asi._worldContext[LONG(*script->bytecodePos++)] %= proc->pop();
+    return CONTINUE;
 }
 
-D_ASCMD(IncScriptVar)
+DEFINE_STATEMENT(IncScriptVar)
 {
-    script->vars[LONG(*script->bytecodePos++)]++;
-    return SA_CONTINUE;
+    proc->_context[LONG(*script->bytecodePos++)]++;
+    return CONTINUE;
 }
 
-D_ASCMD(IncMapVar)
+DEFINE_STATEMENT(IncMapVar)
 {
-    asi._mapVars[LONG(*script->bytecodePos++)]++;
-    return SA_CONTINUE;
+    asi._mapContext[LONG(*script->bytecodePos++)]++;
+    return CONTINUE;
 }
 
-D_ASCMD(IncWorldVar)
+DEFINE_STATEMENT(IncWorldVar)
 {
-    asi._worldVars[LONG(*script->bytecodePos++)]++;
-    return SA_CONTINUE;
+    asi._worldContext[LONG(*script->bytecodePos++)]++;
+    return CONTINUE;
 }
 
-D_ASCMD(DecScriptVar)
+DEFINE_STATEMENT(DecScriptVar)
 {
-    script->vars[LONG(*script->bytecodePos++)]--;
-    return SA_CONTINUE;
+    proc->_context[LONG(*script->bytecodePos++)]--;
+    return CONTINUE;
 }
 
-D_ASCMD(DecMapVar)
+DEFINE_STATEMENT(DecMapVar)
 {
-    asi._mapVars[LONG(*script->bytecodePos++)]--;
-    return SA_CONTINUE;
+    asi._mapContext[LONG(*script->bytecodePos++)]--;
+    return CONTINUE;
 }
 
-D_ASCMD(DecWorldVar)
+DEFINE_STATEMENT(DecWorldVar)
 {
-    asi._worldVars[LONG(*script->bytecodePos++)]--;
-    return SA_CONTINUE;
+    asi._worldContext[LONG(*script->bytecodePos++)]--;
+    return CONTINUE;
 }
 
-D_ASCMD(Goto)
+DEFINE_STATEMENT(Goto)
 {
     script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(IfGoto)
+DEFINE_STATEMENT(IfGoto)
 {
-    if(Pop(script))
+    if(proc->pop())
     {
         script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
     }
@@ -698,59 +677,59 @@ D_ASCMD(IfGoto)
     {
         script->bytecodePos++;
     }
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(Drop)
+DEFINE_STATEMENT(Drop)
 {
-    Drop(script);
-    return SA_CONTINUE;
+    proc->drop();
+    return CONTINUE;
 }
 
-D_ASCMD(Delay)
+DEFINE_STATEMENT(Delay)
 {
-    script->delayCount = Pop(script);
-    return SA_STOP;
+    script->delayCount = proc->pop();
+    return STOP;
 }
 
-D_ASCMD(DelayDirect)
+DEFINE_STATEMENT(DelayDirect)
 {
     script->delayCount = LONG(*script->bytecodePos++);
-    return SA_STOP;
+    return STOP;
 }
 
-D_ASCMD(Random)
+DEFINE_STATEMENT(Random)
 {
     dint low, high;
-    high = Pop(script);
-    low = Pop(script);
-    Push(script, low + (P_Random() % (high - low + 1)));
-    return SA_CONTINUE;
+    high = proc->pop();
+    low = proc->pop();
+    proc->push(low + (P_Random() % (high - low + 1)));
+    return CONTINUE;
 }
 
-D_ASCMD(RandomDirect)
+DEFINE_STATEMENT(RandomDirect)
 {
     dint low, high;
     low = LONG(*script->bytecodePos++);
     high = LONG(*script->bytecodePos++);
-    Push(script, low + (P_Random() % (high - low + 1)));
-    return SA_CONTINUE;
+    proc->push(low + (P_Random() % (high - low + 1)));
+    return CONTINUE;
 }
 
-D_ASCMD(ThingCount)
+DEFINE_STATEMENT(ThingCount)
 {
     dint tid;
-    tid = Pop(script);
-    Push(script, countThingsOfType(P_CurrentMap(), Pop(script), tid));
-    return SA_CONTINUE;
+    tid = proc->pop();
+    proc->push(countThingsOfType(P_CurrentMap(), proc->pop(), tid));
+    return CONTINUE;
 }
 
-D_ASCMD(ThingCountDirect)
+DEFINE_STATEMENT(ThingCountDirect)
 {
     dint type;
     type = LONG(*script->bytecodePos++);
-    Push(script, countThingsOfType(P_CurrentMap(), type, LONG(*script->bytecodePos++)));
-    return SA_CONTINUE;
+    proc->push(countThingsOfType(P_CurrentMap(), type, LONG(*script->bytecodePos++)));
+    return CONTINUE;
 }
 
 typedef struct {
@@ -825,42 +804,42 @@ dint countThingsOfType(GameMap* map, dint type, idnt tid)
     return count;
 }
 
-D_ASCMD(TagWait)
+DEFINE_STATEMENT(TagWait)
 {
-    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
-    rec.waitValue = Pop(script);
-    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_TAG;
-    return SA_STOP;
+    ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    state.waitValue = proc->pop();
+    state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_TAG;
+    return STOP;
 }
 
-D_ASCMD(TagWaitDirect)
+DEFINE_STATEMENT(TagWaitDirect)
 {
-    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
-    rec.waitValue = LONG(*script->bytecodePos++);
-    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_TAG;
-    return SA_STOP;
+    ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    state.waitValue = LONG(*script->bytecodePos++);
+    state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_TAG;
+    return STOP;
 }
 
-D_ASCMD(PolyobjWait)
+DEFINE_STATEMENT(PolyobjWait)
 {
-    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
-    rec.waitValue = Pop(script);
-    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_POLYOBJ;
-    return SA_STOP;
+    ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    state.waitValue = proc->pop();
+    state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_POLYOBJ;
+    return STOP;
 }
 
-D_ASCMD(PolyobjWaitDirect)
+DEFINE_STATEMENT(PolyobjWaitDirect)
 {
-    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
-    rec.waitValue = LONG(*script->bytecodePos++);
-    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_POLYOBJ;
-    return SA_STOP;
+    ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    state.waitValue = LONG(*script->bytecodePos++);
+    state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_POLYOBJ;
+    return STOP;
 }
 
-D_ASCMD(ChangeFloor)
+DEFINE_STATEMENT(ChangeFloor)
 {
-    const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script)));
-    dint tag = Pop(script);
+    const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(proc->pop()));
+    dint tag = proc->pop();
     IterList* list;
 
     if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
@@ -875,10 +854,10 @@ D_ASCMD(ChangeFloor)
         }
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(ChangeFloorDirect)
+DEFINE_STATEMENT(ChangeFloorDirect)
 {
     dint tag = LONG(*script->bytecodePos++);
     const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(LONG(*script->bytecodePos++)));
@@ -896,13 +875,13 @@ D_ASCMD(ChangeFloorDirect)
         }
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(ChangeCeiling)
+DEFINE_STATEMENT(ChangeCeiling)
 {
-    const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script)));
-    dint tag = Pop(script);
+    const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(proc->pop()));
+    dint tag = proc->pop();
     IterList* list;
 
     if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
@@ -917,10 +896,10 @@ D_ASCMD(ChangeCeiling)
         }
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(ChangeCeilingDirect)
+DEFINE_STATEMENT(ChangeCeilingDirect)
 {
     dint tag = LONG(*script->bytecodePos++);
     const dchar* flatName = asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(LONG(*script->bytecodePos++)));
@@ -938,74 +917,74 @@ D_ASCMD(ChangeCeilingDirect)
         }
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(Restart)
+DEFINE_STATEMENT(Restart)
 {
-    script->bytecodePos = asi.bytecode().scriptInfo[script->infoIndex].entryPoint;
-    return SA_CONTINUE;
+    script->bytecodePos = asi.bytecode().function(script->name).entryPoint;
+    return CONTINUE;
 }
 
-D_ASCMD(AndLogical)
+DEFINE_STATEMENT(AndLogical)
 {
-    Push(script, Pop(script) && Pop(script));
-    return SA_CONTINUE;
+    proc->push(proc->pop() && proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(OrLogical)
+DEFINE_STATEMENT(OrLogical)
 {
-    Push(script, Pop(script) || Pop(script));
-    return SA_CONTINUE;
+    proc->push(proc->pop() || proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(AndBitwise)
+DEFINE_STATEMENT(AndBitwise)
 {
-    Push(script, Pop(script) & Pop(script));
-    return SA_CONTINUE;
+    proc->push(proc->pop() & proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(OrBitwise)
+DEFINE_STATEMENT(OrBitwise)
 {
-    Push(script, Pop(script) | Pop(script));
-    return SA_CONTINUE;
+    proc->push(proc->pop() | proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(EorBitwise)
+DEFINE_STATEMENT(EorBitwise)
 {
-    Push(script, Pop(script) ^ Pop(script));
-    return SA_CONTINUE;
+    proc->push(proc->pop() ^ proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(NegateLogical)
+DEFINE_STATEMENT(NegateLogical)
 {
-    Push(script, !Pop(script));
-    return SA_CONTINUE;
+    proc->push(!proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(LShift)
+DEFINE_STATEMENT(LShift)
 {
-    dint operand2 = Pop(script);
-    Push(script, Pop(script) << operand2);
-    return SA_CONTINUE;
+    dint operand2 = proc->pop();
+    proc->push(proc->pop() << operand2);
+    return CONTINUE;
 }
 
-D_ASCMD(RShift)
+DEFINE_STATEMENT(RShift)
 {
-    dint operand2 = Pop(script);
-    Push(script, Pop(script) >> operand2);
-    return SA_CONTINUE;
+    dint operand2 = proc->pop();
+    proc->push(proc->pop() >> operand2);
+    return CONTINUE;
 }
 
-D_ASCMD(UnaryMinus)
+DEFINE_STATEMENT(UnaryMinus)
 {
-    Push(script, -Pop(script));
-    return SA_CONTINUE;
+    proc->push(-proc->pop());
+    return CONTINUE;
 }
 
-D_ASCMD(IfNotGoto)
+DEFINE_STATEMENT(IfNotGoto)
 {
-    if(Pop(script))
+    if(proc->pop())
     {
         script->bytecodePos++;
     }
@@ -1013,65 +992,65 @@ D_ASCMD(IfNotGoto)
     {
         script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
     }
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(LineDefSide)
+DEFINE_STATEMENT(LineDefSide)
 {
-    Push(script, script->lineSide);
-    return SA_CONTINUE;
+    proc->push(proc->_lineSide);
+    return CONTINUE;
 }
 
-D_ASCMD(ScriptWait)
+DEFINE_STATEMENT(ScriptWait)
 {
-    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
-    rec.waitValue = Pop(script);
-    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_SCRIPT;
-    return SA_STOP;
+    ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    state.waitValue = proc->pop();
+    state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_SCRIPT;
+    return STOP;
 }
 
-D_ASCMD(ScriptWaitDirect)
+DEFINE_STATEMENT(ScriptWaitDirect)
 {
-    ActionScriptInterpreter::ScriptStateRecord& rec = asi.scriptStateRecord(script->scriptId);
-    rec.waitValue = LONG(*script->bytecodePos++);
-    rec.state = ActionScriptInterpreter::ScriptStateRecord::WAITING_FOR_SCRIPT;
-    return SA_STOP;
+    ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    state.waitValue = LONG(*script->bytecodePos++);
+    state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_SCRIPT;
+    return STOP;
 }
 
-D_ASCMD(ClearLineDefSpecial)
+DEFINE_STATEMENT(ClearLineDefSpecial)
 {
-    if(script->lineDef)
+    if(proc->_lineDef)
     {
-        P_ToXLine(script->lineDef)->special = 0;
+        P_ToXLine(proc->_lineDef)->special = 0;
     }
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(CaseGoto)
+DEFINE_STATEMENT(CaseGoto)
 {
-    if(Top(script) == LONG(*script->bytecodePos++))
+    if(proc->top() == LONG(*script->bytecodePos++))
     {
         script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
-        Drop(script);
+        proc->drop();
     }
     else
     {
         script->bytecodePos++;
     }
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(BeginPrint)
+DEFINE_STATEMENT(BeginPrint)
 {
     asi._printBuffer[0] = 0;
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(EndPrint)
+DEFINE_STATEMENT(EndPrint)
 {
-    if(script->activator && script->activator->player)
+    if(proc->_activator && proc->_activator->player)
     {
-        P_SetMessage(script->activator->player, asi._printBuffer, false);
+        P_SetMessage(proc->_activator->player, asi._printBuffer, false);
     }
     else
     {   // Send to everybody.
@@ -1080,10 +1059,10 @@ D_ASCMD(EndPrint)
                 P_SetMessage(&players[i], asi._printBuffer, false);
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(EndPrintBold)
+DEFINE_STATEMENT(EndPrintBold)
 {
     for(dint i = 0; i < MAXPLAYERS; ++i)
     {
@@ -1093,44 +1072,44 @@ D_ASCMD(EndPrintBold)
         }
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(PrintString)
+DEFINE_STATEMENT(PrintString)
 {
-    strcat(asi._printBuffer, asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
-    return SA_CONTINUE;
+    strcat(asi._printBuffer, asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(proc->pop())));
+    return CONTINUE;
 }
 
-D_ASCMD(PrintNumber)
+DEFINE_STATEMENT(PrintNumber)
 {
     dchar tempStr[16];
-    sprintf(tempStr, "%d", Pop(script));
+    sprintf(tempStr, "%d", proc->pop());
     strcat(asi._printBuffer, tempStr);
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(PrintCharacter)
+DEFINE_STATEMENT(PrintCharacter)
 {
     dchar* bufferEnd;
     bufferEnd = asi._printBuffer + strlen(asi._printBuffer);
-    *bufferEnd++ = Pop(script);
+    *bufferEnd++ = proc->pop();
     *bufferEnd = 0;
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(PlayerCount)
+DEFINE_STATEMENT(PlayerCount)
 {
     dint count = 0;
     for(dint i = 0; i < MAXPLAYERS; ++i)
     {
         count += players[i].plr->inGame;
     }
-    Push(script, count);
-    return SA_CONTINUE;
+    proc->push(count);
+    return CONTINUE;
 }
 
-D_ASCMD(GameType)
+DEFINE_STATEMENT(GameType)
 {
     dint gameType;
 
@@ -1146,69 +1125,70 @@ D_ASCMD(GameType)
     {
         gameType = GAMETYPE_COOPERATIVE;
     }
-    Push(script, gameType);
+    proc->push(gameType);
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(GameSkill)
+DEFINE_STATEMENT(GameSkill)
 {
-    Push(script, gameSkill);
-    return SA_CONTINUE;
+    proc->push(gameSkill);
+    return CONTINUE;
 }
 
-D_ASCMD(Timer)
+DEFINE_STATEMENT(Timer)
 {
     GameMap* map = P_CurrentMap();
-    Push(script, map->time);
-    return SA_CONTINUE;
+    proc->push(map->time);
+    return CONTINUE;
 }
 
-D_ASCMD(SectorSound)
+DEFINE_STATEMENT(SectorSound)
 {
     dint volume;
     Thing* th = NULL;
 
-    if(script->lineDef)
+    if(proc->_lineDef)
     {
-        th = DMU_GetPtrp(DMU_GetPtrp(script->lineDef, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
+        th = DMU_GetPtrp(DMU_GetPtrp(proc->_lineDef, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
     }
-    volume = Pop(script);
+    volume = proc->pop();
 
-    S_StartSoundAtVolume(S_GetSoundID(asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script)))), th, volume / 127.0f);
-    return SA_CONTINUE;
+    S_StartSoundAtVolume(S_GetSoundID(asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(proc->pop()))), th, volume / 127.0f);
+    return CONTINUE;
 }
 
-D_ASCMD(ThingSound)
+DEFINE_STATEMENT(ThingSound)
 {
     dint tid, sound, volume, searcher;
     Thing* th;
 
-    volume = Pop(script);
-    sound = S_GetSoundID(asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
-    tid = Pop(script);
+    volume = proc->pop();
+    sound = S_GetSoundID(asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(proc->pop())));
+    tid = proc->pop();
     searcher = -1;
     while(sound && (th = P_FindMobjFromTID(P_CurrentMap(), tid, &searcher)) != NULL)
     {
         S_StartSoundAtVolume(sound, th, volume / 127.0f);
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(AmbientSound)
+DEFINE_STATEMENT(AmbientSound)
 {
     dint volume, sound;
     Thing* th = NULL; // For 3D positioning.
     Thing* plrth = players[DISPLAYPLAYER].plr->thing;
 
-    volume = Pop(script);
-    // If we are playing 3D sounds, create a temporary source mobj
-    // for the sound.
-    if(cfg.snd3D && plrth)
+    volume = proc->pop();
+    // If we are playing 3D sounds, create a temporary source for the sound.
+    if(cfg.snd3D && plrth && plrth->hasObject())
     {
-        GameMap* map = Thinker_Map(plrth);
-        Vector3f pos = plrth->pos +
+        Object& obj = plrth->object();
+        GameMap* map = obj.map(plrth);
+
+        Vector3f pos = obj.pos +
             Vector3f((((M_Random() - 127) * 2) << FRACBITS),
                      (((M_Random() - 127) * 2) << FRACBITS),
                      (((M_Random() - 127) * 2) << FRACBITS));
@@ -1217,22 +1197,21 @@ D_ASCMD(AmbientSound)
             th->tics = 5 * TICSPERSEC; // Five seconds should be enough.
     }
 
-    sound = S_GetSoundID(asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
+    sound = S_GetSoundID(asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(proc->pop())));
     S_StartSoundAtVolume(sound, th, volume / 127.0f);
-
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(SoundSequence)
+DEFINE_STATEMENT(SoundSequence)
 {
     Thing* th = NULL;
-    if(script->lineDef)
-        th = DMU_GetPtrp(DMU_GetPtrp(script->lineDef, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
-    SN_StartSequenceName(mo, asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
-    return SA_CONTINUE;
+    if(proc->_lineDef)
+        th = DMU_GetPtrp(DMU_GetPtrp(proc->_lineDef, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
+    SN_StartSequenceName(mo, asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(proc->pop())));
+    return CONTINUE;
 }
 
-D_ASCMD(SetSideDefMaterial)
+DEFINE_STATEMENT(SetSideDefMaterial)
 {
     GameMap* map = P_CurrentMap();
     dint lineTag, side, position;
@@ -1240,10 +1219,10 @@ D_ASCMD(SetSideDefMaterial)
     LineDef* line;
     IterList* list;
 
-    mat = P_MaterialForName(MN_TEXTURES, asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(Pop(script))));
-    position = Pop(script);
-    side = Pop(script);
-    lineTag = Pop(script);
+    mat = P_MaterialForName(MN_TEXTURES, asi.bytecode().string(static_cast<ActionScriptInterpreter::Bytecode::StringId>(proc->pop())));
+    position = proc->pop();
+    side = proc->pop();
+    lineTag = proc->pop();
 
     list = map->iterListForTag(lineTag, false);
     if(list)
@@ -1268,10 +1247,10 @@ D_ASCMD(SetSideDefMaterial)
         }
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(SetLineDefBlocking)
+DEFINE_STATEMENT(SetLineDefBlocking)
 {
     GameMap* map = P_CurrentMap();
     LineDef* line;
@@ -1279,8 +1258,8 @@ D_ASCMD(SetLineDefBlocking)
     bool blocking;
     IterList* list;
 
-    blocking = Pop(script)? DDLF_BLOCKING : 0;
-    lineTag = Pop(script);
+    blocking = proc->pop()? DDLF_BLOCKING : 0;
+    lineTag = proc->pop();
 
     list = map->iterListForTag(lineTag, false);
     if(list)
@@ -1293,23 +1272,23 @@ D_ASCMD(SetLineDefBlocking)
         }
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 
-D_ASCMD(SetLineDefSpecial)
+DEFINE_STATEMENT(SetLineDefSpecial)
 {
     GameMap* map = P_CurrentMap();
     LineDef* line;
     dint lineTag, special, arg1, arg2, arg3, arg4, arg5;
     IterList* list;
 
-    arg5 = Pop(script);
-    arg4 = Pop(script);
-    arg3 = Pop(script);
-    arg2 = Pop(script);
-    arg1 = Pop(script);
-    special = Pop(script);
-    lineTag = Pop(script);
+    arg5 = proc->pop();
+    arg4 = proc->pop();
+    arg3 = proc->pop();
+    arg2 = proc->pop();
+    arg1 = proc->pop();
+    special = proc->pop();
+    lineTag = proc->pop();
 
     list = map->iterListForTag(lineTag, false);
     if(list)
@@ -1327,6 +1306,6 @@ D_ASCMD(SetLineDefSpecial)
         }
     }
 
-    return SA_CONTINUE;
+    return CONTINUE;
 }
 }

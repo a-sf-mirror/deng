@@ -922,7 +922,9 @@ boolean GameMap_Load(GameMap* map, skillmode_t skill)
 
 static void loadActionScripts(const char* mapID)
 {
-#if __JHEXEN__
+    if(IS_CLIENT)
+        return;
+
     /**
      * @todo The map converter should convert/decompile the Hexen ACS bytecode
      * into DE script source file(s) and then loaded here.
@@ -935,7 +937,6 @@ static void loadActionScripts(const char* mapID)
             P_CreateActionScriptInterpreter();
         ActionScriptInterpreter_Load(ActionScriptInterpreter, 0, lumpNum);
     }
-#endif
 }
 
 /**

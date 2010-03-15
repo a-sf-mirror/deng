@@ -37,18 +37,13 @@ namespace {
 #define SIDEDEF_SECTION_MIDDLE  1
 #define SIDEDEF_SECTION_BOTTOM  2
 
-bool isValidACSBytecode(lumpnum_t lumpNum, dint* numScripts, dint* numStrings)
+bool recognize(const de::File& file, dint* numScripts, dint* numStrings)
 {
-    dsize lumpLength, infoOffset;
+    dsize infoOffset;
     dbyte buff[12];
 
-    if(lumpNum == -1)
-        return false;
-
-    lumpLength = W_LumpLength(lumpNum);
-
     // Smaller than the bytecode header?
-    if(lumpLength < 12)
+    if(file.size() < 12)
         return false;
 
     // Smaller than the expected size inclusive of the start of script info table?
@@ -75,12 +70,11 @@ bool isValidACSBytecode(lumpnum_t lumpNum, dint* numScripts, dint* numStrings)
 }
 
 ActionScriptThinker* createActionScriptThinker(GameMap* map,
-    ActionScriptId scriptId, const dint* bytecodePos, dint delayCount,
-    dint infoIndex, Thing* activator, LineDef* lineDef, dint lineSide,
-    const dbyte* args, dint numArgs)
+    FunctionName name, const dint* bytecodePos, dint numArgs, const dbyte* args,
+    Thing* activator, LineDef* lineDef, dint lineSide, dint delayCount)
 {
-    ActionScriptThinker* script = new ActionScriptThinker(scriptId, bytecodePos,
-        delayCount, infoIndex, activator, lineDef, lineSide, args, numArgs);
+    ActionScriptThinker* script = new ActionScriptThinker(name, bytecodePos, numArgs, args,
+        activator, lineDef, lineSide, delayCount);
     map->add(script);
     return script;
 }
@@ -103,14 +97,14 @@ ActionScriptInterpreter::ActionScriptInterpreter()
 
 ActionScriptInterpreter::~ActionScriptInterpreter()
 {
-    unloadBytecode();
+    _bytecode.unload();
 
     _deferredScriptEvents.clear();
 
     _singleton = 0;
 }
 
-bool ActionScriptInterpreter::startScript(ActionScriptId scriptId, duint map,
+bool ActionScriptInterpreter::startScript(FunctionName name, duint map,
     dbyte* args, Thing* activator, LineDef* lineDef, dint lineSide,
     ActionScriptThinker** newScript)
 {
@@ -119,31 +113,29 @@ bool ActionScriptInterpreter::startScript(ActionScriptId scriptId, duint map,
 
     if(map && map-1 != gameMap)
     {   // Add to the script store.
-        return deferScriptEvent(scriptId, map, args);
+        return deferScriptEvent(name, map, args);
     }
 
-    ScriptStateRecord& rec = scriptStateRecord(scriptId);
-    switch(rec.state)
+    ScriptState& state = scriptState(name);
+    switch(state.status)
     {
-    case ScriptStateRecord::SUSPENDED:
+    case ScriptState::SUSPENDED:
         // Resume suspended script.
-        rec.state = ScriptStateRecord::RUNNING;
+        state.status = ScriptState::RUNNING;
         return true;
 
-    case ScriptStateRecord::INACTIVE:
+    case ScriptState::INACTIVE:
         // Start an inactive script.
         {
-        duint infoIndex = _bytecode.toIndex(scriptId);
-        const Bytecode::ScriptInfoRecord& info = _bytecode.scriptInfoRecords[infoIndex];
+        const Bytecode::Function& func = _bytecode.function(name);
 
-        ActionScriptThinker* script = createActionScriptThinker(P_CurrentMap(), scriptId,
-            info.entryPoint, 0, infoIndex, activator, lineDef,
-            lineSide, args, info.argCount);
+        ActionScriptThinker* script = createActionScriptThinker(P_CurrentMap(), name,
+            func.entryPoint, func.numArguments, args, activator, lineDef, lineSide, 0);
 
         if(newScript)
             *newScript = script;
 
-        rec.state = ScriptStateRecord::RUNNING;
+        state.status = ScriptState::RUNNING;
         return true;
         }
     default: // Script is already running.
@@ -151,103 +143,106 @@ bool ActionScriptInterpreter::startScript(ActionScriptId scriptId, duint map,
     }
 }
 
-void ActionScriptInterpreter::unloadBytecode()
-{
-    if(_bytecode.base)
-        std::free(const_cast<dbyte*>(_bytecode.base)); _bytecode.base = NULL;
+void ActionScriptInterpreter::Bytecode::unload()
+ {
+    if(base)
+        std::free(const_cast<de::dbyte*>(base)); base = NULL;
 
-    _bytecode.scriptInfoRecords.clear();
+    _functions.clear();
 
-    if(_bytecode.strings)
-        std::free(_bytecode.strings); _bytecode.strings = NULL;
-    _bytecode.numStrings = 0;
+    if(_strings)
+        std::free(_strings); _strings = NULL;
+    _numStrings = 0;
 }
 
-void ActionScriptInterpreter::load(duint map, lumpnum_t lumpNum)
+void ActionScriptInterpreter::Bytecode::load(const de::File& file)
 {
 #define OPEN_SCRIPTS_BASE       1000
- 
-    LOG_VERBOSE("Load ACS scripts.");
 
-    if(_bytecode.base)
-        unloadBytecode();
-
-    memset(_mapVars, 0, sizeof(_mapVars));
-
-    if(IS_CLIENT)
-        return;
+    unload();
 
     dint numScripts, numStrings;
-    if(!isValidACSBytecode(lumpNum, &numScripts, &numStrings))
+    if(!recognize(file, &numScripts, &numStrings))
     {
-        LOG_WARNING("ActionScriptInterpreter::load: Warning, lump #") << lumpNum <<
-            "is not valid ACS bytecode.";
+        LOG_WARNING("ActionScriptInterpreter::Bytecode::load: Warning, file \"") << file.name() <<
+            "\" is not valid ACS bytecode.";
         return;
     }
     if(numScripts == 0)
         return; // Empty lump.
 
-    _bytecode.numStrings = numStrings;
-    _bytecode.base = (const dbyte*) W_CacheLumpNum(lumpNum, PU_STATIC);
+    _numStrings = numStrings;
+    base = (const dbyte*) W_CacheLumpNum(lumpNum, PU_STATIC);
 
     // Load the script info.
-    dsize infoOffset = (dsize) LONG(*((dint32*) (_bytecode.base + 4)));
+    dsize infoOffset = (dsize) LONG(*((dint32*) (base + 4)));
 
-    const dbyte* ptr = (_bytecode.base + infoOffset + 4);
+    const dbyte* ptr = (base + infoOffset + 4);
     for(dint i = 0; i < numScripts; ++i, ptr += 12)
     {
         dint _scriptId = (dint) LONG(*((dint32*) (ptr)));
         dsize entryPointOffset = (dsize) LONG(*((dint32*) (ptr + 4)));
         dint argCount = (dint) LONG(*((dint32*) (ptr + 8)));
-        const dint* entryPoint = (const dint*) (_bytecode.base + entryPointOffset);
+        const dint* entryPoint = (const dint*) (base + entryPointOffset);
 
-        ActionScriptId scriptId;
-        ScriptStateRecord::State state;
+        FunctionName name;
+        ScriptState::Status status;
         if(_scriptId >= OPEN_SCRIPTS_BASE)
         {   // Auto-activate
-            scriptId = static_cast<ActionScriptId>(_scriptId - OPEN_SCRIPTS_BASE);
-            state = ScriptStateRecord::RUNNING;
+            name = static_cast<FunctionName>(_scriptId - OPEN_SCRIPTS_BASE);
+            status = ScriptState::RUNNING;
         }
         else
         {
-            scriptId = static_cast<ActionScriptId>(_scriptId);
-            state = ScriptStateRecord::INACTIVE;
+            name = static_cast<FunctionName>(_scriptId);
+            status = ScriptState::INACTIVE;
         }
 
-        _bytecode.scriptInfoRecords.push_back(
-            Bytecode::ScriptInfoRecord(scriptId, entryPoint, argCount));
+        _functions.insert(std::pair<FunctionName, ActionScriptInterpreter::Bytecode::Function>(name, ActionScriptInterpreter::Bytecode::Function(name, entryPoint, argCount)));
 
-        if(state == ScriptStateRecord::RUNNING)
+        if(status == ScriptState::RUNNING)
         {
             // World scripts are allotted 1 second for initialization.
-            createActionScriptThinker(P_CurrentMap(), scriptId,
+            createActionScriptThinker(P_CurrentMap(), name,
                 entryPoint, TICSPERSEC, i, NULL, NULL, 0, NULL, 0);
         }
 
-        _scriptStateRecords[scriptId] = ScriptStateRecord(state);
+        _scriptStates[name] = ScriptState(status);
     }
 
     // Load the string offsets.
-    if(_bytecode.numStrings > 0)
+    if(_numStrings > 0)
     {
-        _bytecode.strings = reinterpret_cast<dchar const**>(std::malloc(_bytecode.numStrings * sizeof(dchar*)));
+        _strings = reinterpret_cast<dchar const**>(std::malloc(_numStrings * sizeof(dchar*)));
 
-        const dbyte* ptr = (_bytecode.base + infoOffset + 4 + numScripts * 12 + 4);
-        for(dint i = 0; i < _bytecode.numStrings; ++i, ptr += 4)
+        const dbyte* ptr = (base + infoOffset + 4 + numScripts * 12 + 4);
+        for(dint i = 0; i < _numStrings; ++i, ptr += 4)
         {
-            _bytecode.strings[i] = (const dchar*) _bytecode.base + LONG(*((dint32*) (ptr)));
+            _strings[i] = (const dchar*) base + LONG(*((dint32*) (ptr)));
         }
     }
 
 #undef OPEN_SCRIPTS_BASE
 }
 
-void ActionScriptInterpreter::writeWorldState(de::Writer& to) const
+void ActionScriptInterpreter::load(const de::File& file)
+{
+    LOG_VERBOSE("Load ACS scripts.");
+
+    memset(_mapContext, 0, sizeof(_mapContext));
+
+    _bytecode.load(file);
+}
+
+void ActionScriptInterpreter::writeWorldContext(de::Writer& to) const
 {
     to << dbyte(3); // Version byte.
 
     for(dint i = 0; i < MAX_WORLD_VARS; ++i)
-        to << _worldVars[i];
+        to << _worldContext[i];
+
+    // Although not actually considered as belonging to the World context, deferred
+    // events are (de)serialized along with it.
 
     to << dint(_deferredScriptEvents.size());
 
@@ -256,14 +251,14 @@ void ActionScriptInterpreter::writeWorldState(de::Writer& to) const
         const DeferredScriptEvent& ev = *i;
 
         to << ev.map
-           << ev.scriptId;
+           << ev.name;
 
         for(dint j = 0; j < 4; ++j)
             to << ev.args[j];
     }
 }
 
-void ActionScriptInterpreter::readWorldState(de::Reader& from)
+void ActionScriptInterpreter::readWorldContext(de::Reader& from)
 {
     dbyte ver = 1;
     
@@ -271,10 +266,12 @@ void ActionScriptInterpreter::readWorldState(de::Reader& from)
         from >> ver;
 
     for(dint i = 0; i < MAX_WORLD_VARS; ++i)
-        from >> _worldVars[i];
+        from >> _worldContext[i];
+
+    // Although not actually considered as belonging to the World context, deferred
+    // events are (de)serialized along with it.
 
     _deferredScriptEvents.clear();
-
     if(ver >= 3)
     {
         dint num;
@@ -283,16 +280,16 @@ void ActionScriptInterpreter::readWorldState(de::Reader& from)
         {
             for(dint i = 0; i < num; ++i)
             {
-                duint map, scriptId;
+                duint map, name;
                 dbyte args[4];
 
                 from >> map;
-                from >> scriptId;
+                from >> name;
                 for(dint j = 0; j < 4; ++j)
                     from >> args[j];
 
                 _deferredScriptEvents.push_back(
-                    DeferredScriptEvent(scriptId, map, args[0], args[1], args[2], args[3]));
+                    DeferredScriptEvent(name, map, args[0], args[1], args[2], args[3]));
             }
         }
     }
@@ -303,13 +300,13 @@ void ActionScriptInterpreter::readWorldState(de::Reader& from)
         dint num = 0;
         for(dint i = 0; i < 20; ++i)
         {
-            dint map, scriptId;
+            dint map, name;
             from >> map;
-            from >> scriptId;
+            from >> name;
 
             DeferredScriptEvent& ev = tempStore[map < 0? 19 : num++];
             ev.map = map < 0? 0 : map-1;
-            ev.scriptId = scriptId;
+            ev.name = name;
             for(dint j = 0; j < 4; ++j)
                 from >> ev.args[j];
         }
@@ -324,35 +321,43 @@ void ActionScriptInterpreter::readWorldState(de::Reader& from)
     }
 }
 
-void ActionScriptInterpreter::writeMapState(de::Writer& to) const
+void ActionScriptInterpreter::writeMapContext(de::Writer& to) const
 {
-    FOR_EACH(i, _scriptStateRecords, ScriptStateRecords::const_iterator)
+    // Currently the state of running scripts is split. The internal state of a script
+    // is owned by ActionScriptThinker and (de)serialized with it. The logical state
+    // of all scripts (running or not) are (de)serialized along with the Map context.
+
+    FOR_EACH(i, _scriptStates, ScriptStates::const_iterator)
     {
-        const ScriptStateRecord& rec = i->second;
-        to << dshort(rec.state)
-           << dshort(rec.waitValue);
+        const ScriptState& state = i->second;
+        to << dshort(state.status)
+           << dshort(state.waitValue);
     }
 
     for(dint i = 0; i < MAX_MAP_VARS; ++i)
-        to << _mapVars[i];
+        to << _mapContext[i];
 }
 
-void ActionScriptInterpreter::readMapState(de::Reader& from)
+void ActionScriptInterpreter::readMapContext(de::Reader& from)
 {
-    FOR_EACH(i, _scriptStateRecords, ScriptStateRecords::iterator)
-    {
-        ScriptStateRecord& rec = i->second;
-        dshort state, waitValue;
+    // Currently the state of running scripts is split. The internal state of a script
+    // is owned by ActionScriptThinker and (de)serialized with it. The logical state
+    // of all scripts (running or not) are (de)serialized along with the Map context.
 
-        from >> state
+    FOR_EACH(i, _scriptStates, ScriptStates::iterator)
+    {
+        ScriptState& state = i->second;
+        dshort status, waitValue;
+
+        from >> status
              >> waitValue;
 
-        rec.state = static_cast<ScriptStateRecord::State>(state);
-        rec.waitValue = dint(waitValue);
+        state.status = static_cast<ScriptState::Status>(status);
+        state.waitValue = dint(waitValue);
     }
 
     for(dint i = 0; i < MAX_MAP_VARS; ++i)
-        from >> _mapVars[i];
+        from >> _mapContext[i];
 }
 
 void ActionScriptInterpreter::runDeferredScriptEvents(duint map)
@@ -367,7 +372,7 @@ void ActionScriptInterpreter::runDeferredScriptEvents(duint map)
         }
 
         ActionScriptThinker* newScript;
-        startScript(ev.scriptId, 0, ev.args, NULL, NULL, 0, &newScript);
+        startScript(ev.name, 0, ev.args, NULL, NULL, 0, &newScript);
         if(newScript)
         {
             newScript->delayCount = TICSPERSEC;
@@ -377,92 +382,92 @@ void ActionScriptInterpreter::runDeferredScriptEvents(duint map)
     }
 }
 
-bool ActionScriptInterpreter::start(ActionScriptId scriptId, duint map, dbyte* args,
+bool ActionScriptInterpreter::start(FunctionName name, duint map, dbyte* args,
     Thing* activator, LineDef* lineDef, dint side)
 {
     try
     {
-        return startScript(scriptId, map, args, activator, lineDef, side, NULL);
+        return startScript(name, map, args, activator, lineDef, side, NULL);
     }
-    catch(const UnknownActionScriptIdError& err)
+    catch(const UnknownFunctionNameError& err)
     {   /// Non-critical. Log and continue.
-        LOG_WARNING(err.asText()) << " #" << scriptId;
+        LOG_WARNING(err.asText()) << " #" << name;
         return false;
     }
 }
 
-bool ActionScriptInterpreter::deferScriptEvent(ActionScriptId scriptId, duint map,
+bool ActionScriptInterpreter::deferScriptEvent(FunctionName name, duint map,
     dbyte* args)
 {
     // Don't allow duplicates.
     FOR_EACH(i, _deferredScriptEvents, DeferredScriptEvents::const_iterator)
     {
         const DeferredScriptEvent& ev = *i;
-        if(ev.scriptId == scriptId && ev.map == map)
+        if(ev.name == name && ev.map == map)
             return false;
     }
 
-    _deferredScriptEvents.push_back(DeferredScriptEvent(map, scriptId, args[0], args[1], args[2], args[3]));
+    _deferredScriptEvents.push_back(DeferredScriptEvent(map, name, args[0], args[1], args[2], args[3]));
     return true;
 }
 
-bool ActionScriptInterpreter::stop(ActionScriptId scriptId)
+bool ActionScriptInterpreter::stop(FunctionName name)
 {
     try
     {
-        ScriptStateRecord& rec = scriptStateRecord(scriptId);
+        ScriptState& state = scriptState(name);
         // Is explicit termination allowed?
-        switch(rec.state)
+        switch(state.status)
         {
-        case ScriptStateRecord::INACTIVE:
-        case ScriptStateRecord::TERMINATING:
+        case ScriptState::INACTIVE:
+        case ScriptState::TERMINATING:
             return false; // No.
 
         default:
-            rec.state = ScriptStateRecord::TERMINATING;
+            state.status = ScriptState::TERMINATING;
             return true;
         };
     }
-    catch(const UnknownActionScriptIdError& err)
+    catch(const UnknownFunctionNameError& err)
     {   /// Non-critical. Log and continue.
-        LOG_WARNING(err.asText()) << " #" << scriptId;
+        LOG_WARNING(err.asText()) << " #" << name;
         return false;
     }
 }
 
-bool ActionScriptInterpreter::suspend(ActionScriptId scriptId)
+bool ActionScriptInterpreter::suspend(FunctionName name)
 {
     try
     {
-        ScriptStateRecord& rec = scriptStateRecord(scriptId);
+        ScriptState& state = scriptState(name);
         // Is explicit suspension allowed?
-        switch(rec.state)
+        switch(state.status)
         {
-        case ScriptStateRecord::INACTIVE:
-        case ScriptStateRecord::SUSPENDED:
-        case ScriptStateRecord::TERMINATING:
+        case ScriptState::INACTIVE:
+        case ScriptState::SUSPENDED:
+        case ScriptState::TERMINATING:
             return false; // No.
 
         default:
-            rec.state = ScriptStateRecord::SUSPENDED;
+            state.status = ScriptState::SUSPENDED;
             return true;
         };
     }
-    catch(const UnknownActionScriptIdError& err)
+    catch(const UnknownFunctionNameError& err)
     {   /// Non-critical. Log and continue.
-        LOG_WARNING(err.asText()) << " #" << scriptId;
+        LOG_WARNING(err.asText()) << " #" << name;
         return false;
     }
 }
 
-void ActionScriptInterpreter::startWaitingScripts(ScriptStateRecord::State state, dint waitValue)
+void ActionScriptInterpreter::startWaitingScripts(ScriptState::Status status, dint waitValue)
 {
-    FOR_EACH(i, _scriptStateRecords, ScriptStateRecords::iterator)
+    FOR_EACH(i, _scriptStates, ScriptStates::iterator)
     {
-        ScriptStateRecord& rec = i->second;
-        if(rec.state == state && rec.waitValue == waitValue)
+        ScriptState& state = i->second;
+        if(state.status == status && state.waitValue == waitValue)
         {
-            rec.state = ScriptStateRecord::RUNNING;
+            state.status = ScriptState::RUNNING;
         }
     }
 }
@@ -472,7 +477,7 @@ void ActionScriptInterpreter::tagFinished(dint tag)
     if(P_CurrentMap().isSectorTagBusy(tag))
         return;
     // Start any scripts currently waiting for this signal.
-    startWaitingScripts(ScriptStateRecord::WAITING_FOR_TAG, tag);
+    startWaitingScripts(ScriptState::WAITING_FOR_TAG, tag);
 }
 
 void ActionScriptInterpreter::polyobjFinished(dint po)
@@ -480,18 +485,18 @@ void ActionScriptInterpreter::polyobjFinished(dint po)
     if(P_CurrentMap().isPolyobjBusy(po))
         return;
     // Start any scripts currently waiting for this signal.
-    startWaitingScripts(ScriptStateRecord::WAITING_FOR_POLYOBJ, po);
+    startWaitingScripts(ScriptState::WAITING_FOR_POLYOBJ, po);
 }
 
-void ActionScriptInterpreter::scriptFinished(ActionScriptId scriptId)
+void ActionScriptInterpreter::scriptFinished(FunctionName name)
 {
     // Start any scripts currently waiting for this signal.
-    startWaitingScripts(ScriptStateRecord::WAITING_FOR_SCRIPT, dint(scriptId));
+    startWaitingScripts(ScriptState::WAITING_FOR_SCRIPT, dint(name));
 }
 
-void ActionScriptInterpreter::printScriptInfo(ActionScriptId scriptId)
+void ActionScriptInterpreter::printScriptInfo(FunctionName name)
 {
-    static const char* scriptStateDescriptions[] = {
+    static const char* scriptStatusDescriptions[] = {
         "Inactive",
         "Running",
         "Suspended",
@@ -501,25 +506,25 @@ void ActionScriptInterpreter::printScriptInfo(ActionScriptId scriptId)
         "Terminating"
     };
 
-    if(scriptId != -1)
+    if(name != -1)
     {
         try
         {
-            const ScriptStateRecord& rec = scriptStateRecord(scriptId);
-            LOG_MESSAGE("") << scriptId << " ("
-                << scriptStateDescriptions[rec.state] << " w: " << rec.waitValue << ")";
+            const ScriptState& state = scriptState(name);
+            LOG_MESSAGE("") << name << " ("
+                << scriptStatusDescriptions[state.status] << " w: " << state.waitValue << ")";
         }
-        catch(const UnknownActionScriptIdError& err)
+        catch(const UnknownFunctionNameError& err)
         {   // Non-critical. Log and continue.
-            LOG_WARNING(err.asText()) << " #" << scriptId;
+            LOG_WARNING(err.asText()) << " #" << name;
         }
         return;
     }
 
-    FOR_EACH(i, _scriptStateRecords, ScriptStateRecords::const_iterator)
+    FOR_EACH(i, _scriptStates, ScriptStates::const_iterator)
     {
-        const ScriptStateRecord& rec = i->second;
+        const ScriptState& state = i->second;
         LOG_MESSAGE("") << i->first << " ("
-            << scriptStateDescriptions[rec.state] << " w: " << rec.waitValue << ")";
+            << scriptStatusDescriptions[state.status] << " w: " << state.waitValue << ")";
     }
 }

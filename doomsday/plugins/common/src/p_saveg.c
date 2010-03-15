@@ -4485,7 +4485,7 @@ static void P_ArchiveMap(boolean savePlayers)
 #if __JHEXEN__
     SV_BeginSegment(ASEG_SCRIPTS);
     if(ActionScriptInterpreter)
-        ActionScriptInterpreter_WriteMapState(ActionScriptInterpreter);
+        ActionScriptInterpreter_WriteMapContext(ActionScriptInterpreter);
 
     P_ArchiveSounds();
 #else
@@ -4538,7 +4538,7 @@ static void P_UnArchiveMap(GameMap* map)
 
 #if __JHEXEN__
     AssertSegment(ASEG_SCRIPTS);
-    ActionScriptInterpreter_ReadMapState(ActionScriptInterpreter);
+    ActionScriptInterpreter_ReadMapContext(ActionScriptInterpreter);
 
     P_UnArchiveSounds(map);
     if(saveVersion < 9)
@@ -4734,7 +4734,7 @@ int SV_SaveGameWorker(void* ptr)
     // Write global script info
     SV_BeginSegment(ASEG_GLOBALSCRIPTDATA);
     if(ActionScriptInterpreter)
-        ActionScriptInterpreter_WriteWorldState(ActionScriptInterpreter);
+        ActionScriptInterpreter_WriteWorldContext(ActionScriptInterpreter);
 #else
     // Write the header.
     hdr.magic = MY_SAVE_MAGIC;
@@ -4961,7 +4961,7 @@ static boolean SV_LoadGame2(void)
     // Read global script info.
     if(saveVersion >= 7)
         AssertSegment(ASEG_GLOBALSCRIPTDATA);
-    ActionScriptInterpreter_ReadWorldState(ActionScriptInterpreter);
+    ActionScriptInterpreter_ReadWorldContext(ActionScriptInterpreter);
 #endif
 
     // We don't want to see a briefing if we're loading a save game.

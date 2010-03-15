@@ -35,42 +35,71 @@
 class ActionScriptThinker : public de::Thinker
 {
 private:
-    static const de::dint AST_MAX_VARS = 10;
-    static const de::dint AST_STACK_DEPTH = 32;
+    static const de::dint MAX_VARS = 10;
+    static const de::dint STACK_DEPTH = 32;
 
 public:
-    de::dint delayCount;
-    ActionScriptId scriptId;
+    struct Process {
+        de::dint _stack[STACK_DEPTH];
+        de::dint _stackDepth;
+
+        /// Local context - set of variables that exist for the life of this process.
+        de::dint _context[MAX_VARS];
+
+        /// Callers.
+        de::Thing* _activator;
+        de::LineDef* _lineDef;
+        de::dint _lineSide;
+
+        Process(de::dint numArguments, const de::dbyte* arguments, de::Thing* activator,
+                de::LineDef* lineDef, de::dint lineSide)
+          : _activator(activator),
+            _lineDef(lineDef),
+            _lineSide(lineSide),
+            _stackDepth(0)
+        {
+            if(arguments)
+            {
+                /// Create local variables for the arguments in this context.
+                for(de::dint i = 0; i < numArguments; ++i)
+                    _context[i] = arguments[i];
+            }
+        };
+
+        void drop() {
+            _stackDepth--;
+        }
+
+        de::dint pop() {
+            return _stack[--_stackDepth];
+        }
+
+        void push(de::dint value) {
+            _stack[_stackDepth++] = value;
+        }
+
+        de::dint top() const {
+            return _stack[_stackDepth - 1];
+        }
+    } process;
+
+public:
+    FunctionName name;
+
     const de::dint* bytecodePos;
-    de::dint infoIndex;
-    de::dint stack[AST_STACK_DEPTH];
-    de::dint stackDepth;
-    de::dint vars[AST_MAX_VARS];
-    de::Thing* activator;
-    de::LineDef* lineDef;
-    de::dint lineSide;
+    de::dint delayCount;
 
 public:
-    ActionScriptThinker(ActionScriptId scriptId, const de::dint* bytecodePos,
-        de::dint delayCount, de::dint infoIndex, de::Thing* activator,
-        de::LineDef* lineDef, de::dint lineSide, const de::dbyte* args = NULL,
-        de::dint numArgs = 0)
+    ActionScriptThinker(FunctionName name, const de::dint* bytecodePos,
+        de::dint numArguments, const de::dbyte* arguments,
+        de::Thing* activator, de::LineDef* lineDef, de::dint lineSide,
+        de::dint delayCount = 0)
       : de::Thinker(SID_ACTIONSCRIPT_THINKER),
-        scriptId(scriptId),
+        name(name),
         bytecodePos(bytecodePos),
         delayCount(delayCount),
-        infoIndex(infoIndex),
-        activator(activator),
-        lineDef(lineDef),
-        lineSide(lineSide),
-        stackDepth(0)
-    {
-        if(args)
-        {
-            for(de::dint i = 0; i < numArgs; ++i)
-                vars[i] = args[i];
-        }
-    }
+        process(numArguments, arguments, activator, lineDef, lineSide)
+    {}
 
     void think(const de::Time::Delta& elapsed);
 
