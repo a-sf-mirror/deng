@@ -789,6 +789,7 @@ int P_SetupMapWorker(void* ptr)
 
     if(!Map_Load(map))
     {
+        Con_BusyWorkerEnd();
         return 0; // Failed.
     }
 
