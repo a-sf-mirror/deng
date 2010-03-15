@@ -482,11 +482,6 @@ namespace wadconverter
 
     private:
         static FormatId recognize(const LumpNums& lumpNums);
-
-        /**
-         * @return              @c  0 = Unclosed polygon.
-         */
-        static bool isClosedPolygon(LineDef** lineList, size_t num);
     };
 }
 

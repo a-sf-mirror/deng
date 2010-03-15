@@ -185,32 +185,11 @@ MapReader::MapLumpId MapReader::dataTypeForLumpName(const char* name)
     return ML_INVALID;
 }
 
-bool MapReader::isClosedPolygon(LineDef** lineList, size_t num)
-{
-    for(uint32_t i = 0; i < num; ++i)
-    {
-        LineDef* line = lineList[i];
-        LineDef* next = (i == num-1? lineList[0] : lineList[i+1]);
-
-        if(!(line->v[1] == next->v[0]))
-             return false;
-    }
-
-    // The polygon is closed.
-    return true;
-}
-
 void MapReader::createPolyobj(LineDef** lineDefs, uint32_t lineDefCount, int tag,
     int sequenceType, int16_t anchorX, int16_t anchorY)
 {
     assert(lineDefs);
     assert(lineDefCount > 0);
-
-    // Ensure that lineList is a closed polygon.
-    if(isClosedPolygon(lineDefs, lineDefCount) == 0)
-    {   // Nope, perhaps it needs sorting?
-        throw std::runtime_error("LineDefs do not form a closed polygon.");
-    }
 
     uint32_t* lineIndices = reinterpret_cast<uint32_t*>(std::malloc(sizeof(uint32_t) * lineDefCount));
     for(uint32_t i = 0; i < lineDefCount; ++i)
