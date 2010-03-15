@@ -449,10 +449,14 @@ void P_DestroyMap(map_t* map)
         Z_Free(map->_subsectorContacts);
     map->_subsectorContacts = NULL;
 
-    P_DestroyNodePile(map->mobjNodes);
+    if(map->mobjNodes)
+        P_DestroyNodePile(map->mobjNodes);
     map->mobjNodes = NULL;
-    P_DestroyNodePile(map->lineNodes);
+
+    if(map->lineNodes)
+        P_DestroyNodePile(map->lineNodes);
     map->lineNodes = NULL;
+
     if(map->lineLinks)
         Z_Free(map->lineLinks);
     map->lineLinks = NULL;
