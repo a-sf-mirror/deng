@@ -399,7 +399,7 @@ void T_MoveFloor(floor_t* floor)
         }
 #endif
 #if __JHEXEN__
-        ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(floor->sector)->tag);
+        Map_SectorTagFinished(Thinker_Map((thinker_t*) floor), P_ToXSector(floor->sector)->tag);
 #endif
         Map_RemoveThinker(Thinker_Map((thinker_t*) floor), (thinker_t*) floor);
     }
@@ -1385,7 +1385,7 @@ static int stopFloorCrush(void* p, void* context)
         // Completely remove the crushing floor
         SN_StopSequence(DMU_GetPtrp(floor->sector, DMU_SOUND_ORIGIN));
         P_ToXSector(floor->sector)->specialData = NULL;
-        ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(floor->sector)->tag);
+        Map_SectorTagFinished(Thinker_Map((thinker_t*) floor), P_ToXSector(floor->sector)->tag);
         Map_RemoveThinker(Thinker_Map((thinker_t*) floor), (thinker_t*) floor);
         (*found) = true;
     }

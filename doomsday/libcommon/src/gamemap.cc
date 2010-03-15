@@ -372,10 +372,102 @@ bool GameMap::isSectorTagBusy(dint tag)
     return false;
 }
 
+void GameMap::sectorTagFinished(dint tag)
+{
+    if(isSectorTagBusy(tag))
+        return;
+    // Start any scripts currently waiting for this signal.
+    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
+    asi.sectorTagFinished(tag);
+}
+
 bool GameMap::isPolyobjBusy(dint polyobj)
 {
     Polyobj* po = polyobj(polyobj);
     if(po && po->specialData != NULL)
         return true;
     return false;
+}
+
+void GameMap::polyobjFinished(dint po)
+{
+    if(isPolyobjBusy(po))
+        return;
+    // Start any scripts currently waiting for this signal.
+    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
+    asi.polyobjFinished(tag);
+}
+
+namespace {
+typedef struct {
+    mobjtype_t      type;
+    dint            count;
+} countthingoftypeparams_t;
+
+dint countThingOfType(void* p, void* paramaters)
+{
+    countthingoftypeparams_t* params = reinterpret_cast<countthingoftypeparams_t*>(paramaters);
+    Thing* th = reinterpret_cast<Thing*>(p);
+
+    // Does the type match?
+    if(th->type != params->type)
+        return true; // Continue iteration.
+
+    // Minimum health requirement?
+    if((th->flags & MF_COUNTKILL) && th->health <= 0)
+        return true; // Continue iteration.
+
+    params->count++;
+
+    return true; // Continue iteration.
+}
+}
+
+dint GameMap::countThingsOfType(dint type, dint tid)
+{
+    mobjtype_t thingType;
+    dint count;
+
+    if(!(type + tid))
+    {   // Nothing to count.
+        return 0;
+    }
+
+    thingType = P_MapScriptThingIdToMobjType(type);
+    count = 0;
+
+    if(tid)
+    {   // Count TID things.
+        Thing* th;
+        dint searcher = -1;
+
+        while((th = P_FindMobjFromTID(tid, &searcher)) != NULL)
+        {
+            if(type == 0)
+            {   // Just count TIDs.
+                count++;
+            }
+            else if(thingType == th->type)
+            {
+                if((th->flags & MF_COUNTKILL) && th->health <= 0)
+                {   // Don't count dead monsters.
+                    continue;
+                }
+
+                count++;
+            }
+        }
+    }
+    else
+    {   // Count only types.
+        countthingoftypeparams_t params;
+
+        params.type = thingType;
+        params.count = 0;
+        iterateThinkers(P_MobjThinker, countThingOfType, &params);
+
+        count = params.count;
+    }
+
+    return count;
 }

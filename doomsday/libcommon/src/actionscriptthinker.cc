@@ -236,61 +236,47 @@ void ActionScriptThinker::operator >> (de::Writer& to) const
 
 void ActionScriptThinker::operator << (de::Reader& from)
 {
-    dint temp;
+    dbyte ver = 1;
 
     if(saveVersion >= 4)
-    {
-        // @note the thinker class byte has already been read.
-        dbyte ver = SV_ReadByte(); // version byte.
-
-        process._activator = (Thing*) SV_ReadLong();
-        process._activator = SV_GetArchiveThing((dint) process._activator, &process._activator);
-        temp = SV_ReadLong();
-        if(temp == -1)
-            process._lineDef = NULL;
-        else
-            process._lineDef = DMU_ToPtr(DMU_LINEDEF, temp);
-        process._lineSide = SV_ReadLong();
-        name = (FunctionName) SV_ReadLong();
-        if(ver < 2)
-            SV_ReadLong(); // Was infoIndex (32bit signed integer).
-        delayCount = SV_ReadLong();
-        for(duint i = 0; i < STACK_DEPTH; ++i)
-            process._stack[i] = SV_ReadLong();
-        process._stackDepth = SV_ReadLong();
-        for(duint i = 0; i < MAX_VARS; ++i)
-            process._context[i] = SV_ReadLong();
-
-        ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
-        bytecodePos = (const dint*) (asi.bytecode().base + SV_ReadLong());
+    {   // @note the thinker class byte has already been read.
+        from >> ver; // version byte.
     }
     else
     {
         // Its in the old pre V4 format which serialized ActionScriptThinker
         // Padding at the start (an old thinker_t struct)
         from.seek(16);
-
-        // Start of used data members.
-        process._activator = (Thing*) SV_ReadLong();
-        process._activator = SV_GetArchiveThing((dint) process._activator, &process._activator);
-        temp = SV_ReadLong();
-        if(temp == -1)
-            process._lineDef = NULL;
-        else
-            process._lineDef = DMU_ToPtr(DMU_LINEDEF, temp);
-        process._lineSide = SV_ReadLong();
-        name = (FunctionName) SV_ReadLong();
-        SV_ReadLong(); // Was infoIndex (32bit signed integer).
-        delayCount = SV_ReadLong();
-        for(duint i = 0; i < STACK_DEPTH; ++i)
-            process._stack[i] = SV_ReadLong();
-        process._stackDepth = SV_ReadLong();
-        for(duint i = 0; i < MAX_VARS; ++i)
-            process._context[i] = SV_ReadLong();
-
-        ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
-        bytecodePos = (const dint*) (asi.bytecode().base + SV_ReadLong());
     }
+
+    // Start of used data members.
+    dint activator; from >> activator;
+    process._activator = SV_GetArchiveThing(activator, &process._activator);
+
+    dint lineDef; from >> lineDef;
+    if(lineDef == -1)
+        process._lineDef = NULL;
+    else
+        process._lineDef = DMU_ToPtr(DMU_LINEDEF, lineDef);
+
+    from >> process._lineSide
+         >> name;
+
+    if(ver < 2)
+        from.seek(4); // Was infoIndex (32bit signed integer).
+
+    from >> delayCount;
+
+    for(duint i = 0; i < STACK_DEPTH; ++i)
+        from >> process._stack[i];
+    from >> process._stackDepth;
+
+    for(duint i = 0; i < MAX_VARS; ++i)
+        from >> process._context[i];
+
+    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
+    dint offset; from >> offset;
+    bytecodePos = (const dint*) (asi.bytecode().base + offset);
 }
 
 namespace {
@@ -720,7 +706,7 @@ DEFINE_STATEMENT(ThingCount)
 {
     dint tid;
     tid = proc->pop();
-    proc->push(countThingsOfType(P_CurrentMap(), proc->pop(), tid));
+    proc->push(P_CurrentMap().countThingsOfType(proc->pop(), tid));
     return CONTINUE;
 }
 
@@ -728,80 +714,8 @@ DEFINE_STATEMENT(ThingCountDirect)
 {
     dint type;
     type = LONG(*script->bytecodePos++);
-    proc->push(countThingsOfType(P_CurrentMap(), type, LONG(*script->bytecodePos++)));
+    proc->push(P_CurrentMap().countThingsOfType(type, LONG(*script->bytecodePos++)));
     return CONTINUE;
-}
-
-typedef struct {
-    mobjtype_t      type;
-    dint            count;
-} countthingoftypeparams_t;
-
-dint countThingOfType(void* p, void* paramaters)
-{
-    countthingoftypeparams_t* params = reinterpret_cast<countthingoftypeparams_t*>(paramaters);
-    Thing* th = reinterpret_cast<Thing*>(p);
-
-    // Does the type match?
-    if(th->type != params->type)
-        return true; // Continue iteration.
-
-    // Minimum health requirement?
-    if((th->flags & MF_COUNTKILL) && th->health <= 0)
-        return true; // Continue iteration.
-
-    params->count++;
-
-    return true; // Continue iteration.
-}
-
-dint countThingsOfType(GameMap* map, dint type, idnt tid)
-{
-    mobjtype_t thingType;
-    dint count;
-
-    if(!(type + tid))
-    {   // Nothing to count.
-        return 0;
-    }
-
-    thingType = P_MapScriptThingIdToMobjType(type);
-    count = 0;
-
-    if(tid)
-    {   // Count TID things.
-        Thing* th;
-        dint searcher = -1;
-
-        while((th = P_FindMobjFromTID(map, tid, &searcher)) != NULL)
-        {
-            if(type == 0)
-            {   // Just count TIDs.
-                count++;
-            }
-            else if(thingType == th->type)
-            {
-                if((th->flags & MF_COUNTKILL) && th->health <= 0)
-                {   // Don't count dead monsters.
-                    continue;
-                }
-
-                count++;
-            }
-        }
-    }
-    else
-    {   // Count only types.
-        countthingoftypeparams_t params;
-
-        params.type = thingType;
-        params.count = 0;
-        Map_IterateThinkers(map, P_MobjThinker, countThingOfType, &params);
-
-        count = params.count;
-    }
-
-    return count;
 }
 
 DEFINE_STATEMENT(TagWait)

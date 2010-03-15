@@ -71,7 +71,7 @@ void T_BuildPillar(pillar_t* pillar)
     {
         P_ToXSector(pillar->sector)->specialData = NULL;
         SN_StopSequence(DMU_GetPtrp(pillar->sector, DMU_SOUND_ORIGIN));
-        ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(pillar->sector)->tag);
+        Map_SectorTagFinished(Thinker_Map((thinker_t*) pillar), P_ToXSector(pillar->sector)->tag);
         Map_RemoveThinker(Thinker_Map((thinker_t*) pillar), (thinker_t*) pillar);
     }
     }

@@ -95,7 +95,7 @@ void T_RotatePoly(polyevent_t* pe)
                 po->specialData = NULL;
 
             PO_StopSequence(po);
-            ActionScriptInterpreter_PolyobjFinished(ActionScriptInterpreter, po->tag);
+            Map_PolyobjFinished(Thinker_Map((thinker_t*) pe), po->tag);
             Map_RemoveThinker(Thinker_Map((thinker_t*) pe), (thinker_t*) pe);
             po->angleSpeed = 0;
         }
@@ -226,7 +226,7 @@ void T_MovePoly(polyevent_t* pe)
                 po->specialData = NULL;
 
             PO_StopSequence(po);
-            ActionScriptInterpreter_PolyobjFinished(ActionScriptInterpreter, po->tag);
+            Map_PolyobjFinished(Thinker_Map((thinker_t*) pe), po->tag);
             Map_RemoveThinker(Thinker_Map((thinker_t*) pe), (thinker_t*) pe);
             po->speed = 0;
         }
@@ -365,7 +365,7 @@ void T_PolyDoor(polydoor_t* pd)
                     if(po->specialData == pd)
                         po->specialData = NULL;
 
-                    ActionScriptInterpreter_PolyobjFinished(ActionScriptInterpreter, po->tag);
+                    Map_PolyobjFinished(Thinker_Map((thinker_t*) pd), po->tag);
                     Map_RemoveThinker(Thinker_Map((thinker_t*) pd), (thinker_t*) pd);
                 }
             }
@@ -417,7 +417,7 @@ void T_PolyDoor(polydoor_t* pd)
                     if(po->specialData == pd)
                         po->specialData = NULL;
 
-                    ActionScriptInterpreter_PolyobjFinished(ActionScriptInterpreter, po->tag);
+                    Map_PolyobjFinished(Thinker_Map((thinker_t*) pd), po->tag);
                     Map_RemoveThinker(Thinker_Map((thinker_t*) pd), (thinker_t*) pd);
                 }
             }

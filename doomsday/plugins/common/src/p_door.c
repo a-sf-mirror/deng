@@ -215,7 +215,7 @@ void T_Door(door_t* door)
             case DT_CLOSE:
                 xsec->specialData = NULL;
 #if __JHEXEN__
-                ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(door->sector)->tag);
+                Map_SectorTagFinished(Thinker_Map((thinker_t*) door), P_ToXSector(door->sector)->tag);
 #endif
                 Map_RemoveThinker(Thinker_Map((thinker_t*) door), (thinker_t*) door); // Unlink and free.
 #if __JHERETIC__
@@ -296,7 +296,7 @@ void T_Door(door_t* door)
             case DT_OPEN:
                 xsec->specialData = NULL;
 #if __JHEXEN__
-                ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(door->sector)->tag);
+                Map_SectorTagFinished(Thinker_Map((thinker_t*) door), P_ToXSector(door->sector)->tag);
 #endif
                 Map_RemoveThinker(Thinker_Map((thinker_t*) door), (thinker_t*) door); // Unlink and free.
 #if __JHERETIC__

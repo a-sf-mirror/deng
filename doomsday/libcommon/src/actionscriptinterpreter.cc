@@ -474,23 +474,16 @@ void ActionScriptInterpreter::startWaitingScripts(ScriptState::Status status, di
 
 void ActionScriptInterpreter::tagFinished(dint tag)
 {
-    if(P_CurrentMap().isSectorTagBusy(tag))
-        return;
-    // Start any scripts currently waiting for this signal.
     startWaitingScripts(ScriptState::WAITING_FOR_TAG, tag);
 }
 
 void ActionScriptInterpreter::polyobjFinished(dint po)
 {
-    if(P_CurrentMap().isPolyobjBusy(po))
-        return;
-    // Start any scripts currently waiting for this signal.
     startWaitingScripts(ScriptState::WAITING_FOR_POLYOBJ, po);
 }
 
 void ActionScriptInterpreter::scriptFinished(FunctionName name)
 {
-    // Start any scripts currently waiting for this signal.
     startWaitingScripts(ScriptState::WAITING_FOR_SCRIPT, dint(name));
 }
 

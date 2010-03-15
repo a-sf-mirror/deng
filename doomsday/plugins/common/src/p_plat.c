@@ -97,7 +97,7 @@ static void stopPlat(plat_t* plat)
 {
     P_ToXSector(plat->sector)->specialData = NULL;
 #if __JHEXEN__
-    ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(plat->sector)->tag);
+    Map_SectorTagFinished(Thinker_Map((thinker_t*) plat), P_ToXSector(plat->sector)->tag);
 #endif
     Map_RemoveThinker(Thinker_Map((thinker_t*) plat), (thinker_t*) plat);
 }

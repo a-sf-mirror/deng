@@ -169,17 +169,17 @@ public:
     bool suspend(FunctionName name);
 
     /**
-     * Signal sector tag as finished.
+     * Resume any scripts waiting on the sector-tag-finished signal.
      */
     void tagFinished(de::dint tag);
 
     /**
-     * Signal polyobj as finished.
+     * Resume any scripts waiting on the polyobj-finished signal.
      */
     void polyobjFinished(de::dint po);
 
     /**
-     * Signal script as finished.
+     * Resume any scripts waiting on the script-finished signal.
      */
     void scriptFinished(FunctionName name);
 
@@ -223,9 +223,6 @@ private:
      * (Re)start any scripts currently waiting on the specified signal.
      */
     void startWaitingScripts(ScriptState::Status status, de::dint waitValue);
-
-    /// @todo Does not belong in this class.
-    de::dint countThingsOfType(GameMap* map, de::dint type, de::dint tid);
 
     /// The singleton instance of the ActionScriptInterpreter.
     static ActionScriptInterpreter* _singleton;

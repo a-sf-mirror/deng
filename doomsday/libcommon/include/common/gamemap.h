@@ -417,6 +417,8 @@ public:
     de::Thing* spawnThing(mobjtype_t type, de::dfloat x, de::dfloat y, de::dfloat z, de::dangle angle, de::dint spawnFlags);
     de::Thing* spawnThing(mobjtype_t type, const de::Vector3f& pos, de::dangle angle, de::dint spawnFlags);
 
+    de::dint countThingsOfType(de::dint type, de::dint tid);
+
     void updateSpecials();
 
     void addPlayerStart(de::dint defaultPlrNum, de::duint entryPoint, bool deathmatch, de::dfloat x,
@@ -455,9 +457,9 @@ public:
     // @todo Should be private to GameMap.
     IterList* specHits();
 
-    bool isSectorTagBusy(dint tag);
+    void sectorTagFinished(dint tag);
 
-    bool isPolyobjBusy(dint polyobj);
+    void polyobjFinished(dint polyobj);
 
 private:
     /**
@@ -574,6 +576,11 @@ private:
     /// $unstuck: used to check unsticking.
     de::dint tmUnstuck;
 #endif
+
+private:
+    bool isSectorTagBusy(dint tag);
+
+    bool isPolyobjBusy(dint polyobj);
 };
 
 #endif /* LIBCOMMON_GAMEMAP_H */

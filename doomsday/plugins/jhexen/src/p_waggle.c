@@ -88,7 +88,7 @@ void T_FloorWaggle(waggle_t* waggle)
                         waggle->originalHeight);
             P_ChangeSector(waggle->sector, true);
             P_ToXSector(waggle->sector)->specialData = NULL;
-            ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(waggle->sector)->tag);
+            Map_SectorTagFinished(Thinker_Map((thinker_t*) waggle), P_ToXSector(waggle->sector)->tag);
             Map_RemoveThinker(Thinker_Map((thinker_t*) waggle), (thinker_t*) waggle);
             return;
         }

@@ -94,7 +94,7 @@ static void stopCeiling(ceiling_t* ceiling)
 {
     P_ToXSector(ceiling->sector)->specialData = NULL;
 #if __JHEXEN__
-    ActionScriptInterpreter_TagFinished(ActionScriptInterpreter, P_ToXSector(ceiling->sector)->tag);
+    Map_SectorTagFinished(Thinker_Map((thinker_t*) ceiling), P_ToXSector(ceiling->sector)->tag);
 #endif
     Map_RemoveThinker(Thinker_Map((thinker_t*) ceiling), (thinker_t*) ceiling);
 }
