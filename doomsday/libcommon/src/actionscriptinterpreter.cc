@@ -143,8 +143,13 @@ bool ActionScriptInterpreter::startScript(FunctionName name, duint map,
     }
 }
 
-void ActionScriptInterpreter::Bytecode::unload()
- {
+Bytecode::~Bytecode()
+{
+    unload();
+}
+
+void Bytecode::unload()
+{
     if(base)
         std::free(const_cast<de::dbyte*>(base)); base = NULL;
 
@@ -155,7 +160,7 @@ void ActionScriptInterpreter::Bytecode::unload()
     _numStrings = 0;
 }
 
-void ActionScriptInterpreter::Bytecode::load(const de::File& file)
+void Bytecode::load(const de::File& file)
 {
 #define OPEN_SCRIPTS_BASE       1000
 
@@ -164,7 +169,7 @@ void ActionScriptInterpreter::Bytecode::load(const de::File& file)
     dint numScripts, numStrings;
     if(!recognize(file, &numScripts, &numStrings))
     {
-        LOG_WARNING("ActionScriptInterpreter::Bytecode::load: Warning, file \"") << file.name() <<
+        LOG_WARNING("Bytecode::load: Warning, file \"") << file.name() <<
             "\" is not valid ACS bytecode.";
         return;
     }
@@ -186,28 +191,28 @@ void ActionScriptInterpreter::Bytecode::load(const de::File& file)
         const dint* entryPoint = (const dint*) (base + entryPointOffset);
 
         FunctionName name;
-        ScriptState::Status status;
+        ActionScriptInterpreter::ScriptState::Status status;
         if(_scriptId >= OPEN_SCRIPTS_BASE)
         {   // Auto-activate
             name = static_cast<FunctionName>(_scriptId - OPEN_SCRIPTS_BASE);
-            status = ScriptState::RUNNING;
+            status = ActionScriptInterpreter::ScriptState::RUNNING;
         }
         else
         {
             name = static_cast<FunctionName>(_scriptId);
-            status = ScriptState::INACTIVE;
+            status = ActionScriptInterpreter::ScriptState::INACTIVE;
         }
 
-        _functions.insert(std::pair<FunctionName, ActionScriptInterpreter::Bytecode::Function>(name, ActionScriptInterpreter::Bytecode::Function(name, entryPoint, argCount)));
+        _functions.insert(std::pair<FunctionName, Bytecode::Function>(name, Function(name, entryPoint, argCount)));
 
-        if(status == ScriptState::RUNNING)
+        if(status == ActionScriptInterpreter::ScriptState::RUNNING)
         {
             // World scripts are allotted 1 second for initialization.
             createActionScriptThinker(P_CurrentMap(), name,
                 entryPoint, TICSPERSEC, i, NULL, NULL, 0, NULL, 0);
         }
 
-        _scriptStates[name] = ScriptState(status);
+        _scriptStates[name] = ActionScriptInterpreter::ScriptState(status);
     }
 
     // Load the string offsets.

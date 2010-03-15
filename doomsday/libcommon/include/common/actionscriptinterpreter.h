@@ -36,6 +36,56 @@ class ActionScriptThinker;
 class GameMap;
 class File;
 
+struct Bytecode
+{
+public:
+    /// Invalid FunctionName specified. @ingroup errors
+    DEFINE_ERROR(UnknownFunctionNameError);
+
+    typedef de::dint StringId;
+
+    const de::dbyte* base;
+
+    struct Function {
+        const FunctionName name;
+        const de::dint* entryPoint;
+        const de::dint numArguments;
+
+        Function(FunctionName name, const de::dint* entryPoint, de::dint numArguments)
+          : name(name), entryPoint(entryPoint), numArguments(numArguments) {};
+    };
+
+public:
+    Bytecode() : base(NULL), _numStrings(0), _strings(NULL) {};
+
+    ~Bytecode();
+
+    void load(const de::File& file);
+
+    void unload();
+
+    const de::dchar* string(StringId id) const {
+        assert(id >= 0 && id < _numStrings);
+        return _strings[id];
+    }
+
+    const Function& function(FunctionName name) const {
+        Functions::const_iterator found = _functions.find(name);
+        if(found != _functions.end())
+            return found->second;
+        /// @throw UnknownFunctionNameError Invalid name specified when
+        /// attempting to lookup a Function.
+        throw UnknownFunctionNameError("ActionScriptInterpreter::Bytecode::function", "Invalid FunctionName");
+    }
+
+private:
+    typedef std::map<FunctionName, Function> Functions;
+    Functions _functions;
+
+    de::dint _numStrings;
+    de::dchar const** _strings;
+};
+
 /**
  * Interpreter for Hexen format ACS bytecode.
  */
@@ -72,46 +122,6 @@ private:
     static const de::dint PRINT_BUFFER_SIZE = 256;
 
     typedef std::map<FunctionName, ScriptState> ScriptStates;
-
-    struct Bytecode {
-        typedef de::dint StringId;
-
-        const de::dbyte* base;
-
-        struct Function {
-            const FunctionName name;
-            const de::dint* entryPoint;
-            const de::dint numArguments;
-
-            Function(FunctionName name, const de::dint* entryPoint, de::dint numArguments)
-              : name(name), entryPoint(entryPoint), numArguments(numArguments) {};
-        };
-
-        void load(const de::File& file);
-
-        void unload();
-
-        const de::dchar* string(StringId id) const {
-            assert(id >= 0 && id < _numStrings);
-            return _strings[id];
-        }
-
-        const Function& function(FunctionName name) const {
-            Functions::const_iterator found = _functions.find(name);
-            if(found != _functions.end())
-                return found->second;
-            /// @throw UnknownFunctionNameError Invalid name specified when
-            /// attempting to lookup a Function.
-            throw UnknownFunctionNameError("ActionScriptInterpreter::Bytecode::function", "Invalid FunctionName");
-        }
-
-    private:
-        typedef std::map<FunctionName, Function> Functions;
-        Functions _functions;
-
-        de::dint _numStrings;
-        de::dchar const** _strings;
-    };
 
     struct DeferredScriptEvent {
         /// Function name on the target map.

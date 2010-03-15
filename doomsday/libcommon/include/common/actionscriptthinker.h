@@ -39,6 +39,12 @@ private:
     static const de::dint STACK_DEPTH = 32;
 
 public:
+    enum ProcessAction {
+        CONTINUE,
+        STOP,
+        TERMINATE
+    };
+
     struct Process {
         de::dint _stack[STACK_DEPTH];
         de::dint _stackDepth;
