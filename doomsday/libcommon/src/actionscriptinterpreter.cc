@@ -22,21 +22,13 @@
 #include <de/Writer>
 #include <de/Reader>
 
-#include "common/ActionScriptInterpreter"
+#include "common/ActionScriptEnvironment"
 #include "common/ActionScriptThinker"
 #include "common/GameMap"
 
 using namespace de;
 
 namespace {
-#define GAMETYPE_SINGLE         0
-#define GAMETYPE_COOPERATIVE    1
-#define GAMETYPE_DEATHMATCH     2
-
-#define SIDEDEF_SECTION_TOP     0
-#define SIDEDEF_SECTION_MIDDLE  1
-#define SIDEDEF_SECTION_BOTTOM  2
-
 bool recognize(const de::File& file, dint* numScripts, dint* numStrings)
 {
     dsize infoOffset;
@@ -80,22 +72,22 @@ ActionScriptThinker* createActionScriptThinker(GameMap* map,
 }
 }
 
-// This will be set when the ActionScriptInterpreter is constructed.
-ActionScriptInterpreter* ActionScriptInterpreter::_singleton = 0;
+// This will be set when the ActionScriptEnvironment is constructed.
+ActionScriptEnvironment* ActionScriptEnvironment::_singleton = 0;
 
-ActionScriptInterpreter::ActionScriptInterpreter()
+ActionScriptEnvironment::ActionScriptEnvironment()
 {
     if(_singleton)
     {
         /// @throw TooManyInstancesError Attempted to construct a new instance of
-        /// ActionScriptInterpreter while one already exists. There can only be one
-        /// instance of ActionScriptInterpreter per process.
-        throw TooManyInstancesError("ActionScriptInterpreter::ActionScriptInterpreter", "Only one instance allowed");
+        /// ActionScriptEnvironment while one already exists. There can only be one
+        /// instance of ActionScriptEnvironment per process.
+        throw TooManyInstancesError("ActionScriptEnvironment::ActionScriptEnvironment", "Only one instance allowed");
     }
     _singleton = this;
 }
 
-ActionScriptInterpreter::~ActionScriptInterpreter()
+ActionScriptEnvironment::~ActionScriptEnvironment()
 {
     _bytecode.unload();
 
@@ -104,7 +96,7 @@ ActionScriptInterpreter::~ActionScriptInterpreter()
     _singleton = 0;
 }
 
-bool ActionScriptInterpreter::startScript(FunctionName name, duint map,
+bool ActionScriptEnvironment::startScript(FunctionName name, duint map,
     dbyte* args, Thing* activator, LineDef* lineDef, dint lineSide,
     ActionScriptThinker** newScript)
 {
@@ -127,7 +119,7 @@ bool ActionScriptInterpreter::startScript(FunctionName name, duint map,
     case ScriptState::INACTIVE:
         // Start an inactive script.
         {
-        const Bytecode::Function& func = _bytecode.function(name);
+        const ActionScriptBytecodeInterpreter::Function& func = _bytecode.function(name);
 
         ActionScriptThinker* script = createActionScriptThinker(P_CurrentMap(), name,
             func.entryPoint, func.numArguments, args, activator, lineDef, lineSide, 0);
@@ -143,12 +135,12 @@ bool ActionScriptInterpreter::startScript(FunctionName name, duint map,
     }
 }
 
-Bytecode::~Bytecode()
+ActionScriptBytecodeInterpreter::~ActionScriptBytecodeInterpreter()
 {
     unload();
 }
 
-void Bytecode::unload()
+void ActionScriptBytecodeInterpreter::unload()
 {
     if(base)
         std::free(const_cast<de::dbyte*>(base)); base = NULL;
@@ -160,7 +152,7 @@ void Bytecode::unload()
     _numStrings = 0;
 }
 
-void Bytecode::load(const de::File& file)
+void ActionScriptBytecodeInterpreter::load(const de::File& file)
 {
 #define OPEN_SCRIPTS_BASE       1000
 
@@ -169,7 +161,7 @@ void Bytecode::load(const de::File& file)
     dint numScripts, numStrings;
     if(!recognize(file, &numScripts, &numStrings))
     {
-        LOG_WARNING("Bytecode::load: Warning, file \"") << file.name() <<
+        LOG_WARNING("ActionScriptBytecodeInterpreter::load: Warning, file \"") << file.name() <<
             "\" is not valid ACS bytecode.";
         return;
     }
@@ -191,28 +183,28 @@ void Bytecode::load(const de::File& file)
         const dint* entryPoint = (const dint*) (base + entryPointOffset);
 
         FunctionName name;
-        ActionScriptInterpreter::ScriptState::Status status;
+        ActionScriptEnvironment::ScriptState::Status status;
         if(_scriptId >= OPEN_SCRIPTS_BASE)
         {   // Auto-activate
             name = static_cast<FunctionName>(_scriptId - OPEN_SCRIPTS_BASE);
-            status = ActionScriptInterpreter::ScriptState::RUNNING;
+            status = ActionScriptEnvironment::ScriptState::RUNNING;
         }
         else
         {
             name = static_cast<FunctionName>(_scriptId);
-            status = ActionScriptInterpreter::ScriptState::INACTIVE;
+            status = ActionScriptEnvironment::ScriptState::INACTIVE;
         }
 
-        _functions.insert(std::pair<FunctionName, Bytecode::Function>(name, Function(name, entryPoint, argCount)));
+        _functions.insert(std::pair<FunctionName, Function>(name, Function(name, entryPoint, argCount)));
 
-        if(status == ActionScriptInterpreter::ScriptState::RUNNING)
+        if(status == ActionScriptEnvironment::ScriptState::RUNNING)
         {
             // World scripts are allotted 1 second for initialization.
             createActionScriptThinker(P_CurrentMap(), name,
                 entryPoint, TICSPERSEC, i, NULL, NULL, 0, NULL, 0);
         }
 
-        _scriptStates[name] = ActionScriptInterpreter::ScriptState(status);
+        _scriptStates[name] = ActionScriptEnvironment::ScriptState(status);
     }
 
     // Load the string offsets.
@@ -230,7 +222,7 @@ void Bytecode::load(const de::File& file)
 #undef OPEN_SCRIPTS_BASE
 }
 
-void ActionScriptInterpreter::load(const de::File& file)
+void ActionScriptEnvironment::load(const de::File& file)
 {
     LOG_VERBOSE("Load ACS scripts.");
 
@@ -239,7 +231,7 @@ void ActionScriptInterpreter::load(const de::File& file)
     _bytecode.load(file);
 }
 
-void ActionScriptInterpreter::writeWorldContext(de::Writer& to) const
+void ActionScriptEnvironment::writeWorldContext(de::Writer& to) const
 {
     to << dbyte(3); // Version byte.
 
@@ -263,7 +255,7 @@ void ActionScriptInterpreter::writeWorldContext(de::Writer& to) const
     }
 }
 
-void ActionScriptInterpreter::readWorldContext(de::Reader& from)
+void ActionScriptEnvironment::readWorldContext(de::Reader& from)
 {
     dbyte ver = 1;
     
@@ -326,7 +318,7 @@ void ActionScriptInterpreter::readWorldContext(de::Reader& from)
     }
 }
 
-void ActionScriptInterpreter::writeMapContext(de::Writer& to) const
+void ActionScriptEnvironment::writeMapContext(de::Writer& to) const
 {
     // Currently the state of running scripts is split. The internal state of a script
     // is owned by ActionScriptThinker and (de)serialized with it. The logical state
@@ -343,7 +335,7 @@ void ActionScriptInterpreter::writeMapContext(de::Writer& to) const
         to << _mapContext[i];
 }
 
-void ActionScriptInterpreter::readMapContext(de::Reader& from)
+void ActionScriptEnvironment::readMapContext(de::Reader& from)
 {
     // Currently the state of running scripts is split. The internal state of a script
     // is owned by ActionScriptThinker and (de)serialized with it. The logical state
@@ -365,7 +357,7 @@ void ActionScriptInterpreter::readMapContext(de::Reader& from)
         from >> _mapContext[i];
 }
 
-void ActionScriptInterpreter::runDeferredScriptEvents(duint map)
+void ActionScriptEnvironment::runDeferredScriptEvents(duint map)
 {
     for(DeferredScriptEvents::iterator i = _deferredScriptEvents.begin(); i != _deferredScriptEvents.end(); )
     {
@@ -387,7 +379,7 @@ void ActionScriptInterpreter::runDeferredScriptEvents(duint map)
     }
 }
 
-bool ActionScriptInterpreter::start(FunctionName name, duint map, dbyte* args,
+bool ActionScriptEnvironment::start(FunctionName name, duint map, dbyte* args,
     Thing* activator, LineDef* lineDef, dint side)
 {
     try
@@ -401,7 +393,7 @@ bool ActionScriptInterpreter::start(FunctionName name, duint map, dbyte* args,
     }
 }
 
-bool ActionScriptInterpreter::deferScriptEvent(FunctionName name, duint map,
+bool ActionScriptEnvironment::deferScriptEvent(FunctionName name, duint map,
     dbyte* args)
 {
     // Don't allow duplicates.
@@ -416,7 +408,7 @@ bool ActionScriptInterpreter::deferScriptEvent(FunctionName name, duint map,
     return true;
 }
 
-bool ActionScriptInterpreter::stop(FunctionName name)
+bool ActionScriptEnvironment::stop(FunctionName name)
 {
     try
     {
@@ -440,7 +432,7 @@ bool ActionScriptInterpreter::stop(FunctionName name)
     }
 }
 
-bool ActionScriptInterpreter::suspend(FunctionName name)
+bool ActionScriptEnvironment::suspend(FunctionName name)
 {
     try
     {
@@ -465,7 +457,7 @@ bool ActionScriptInterpreter::suspend(FunctionName name)
     }
 }
 
-void ActionScriptInterpreter::startWaitingScripts(ScriptState::Status status, dint waitValue)
+void ActionScriptEnvironment::startWaitingScripts(ScriptState::Status status, dint waitValue)
 {
     FOR_EACH(i, _scriptStates, ScriptStates::iterator)
     {
@@ -477,22 +469,22 @@ void ActionScriptInterpreter::startWaitingScripts(ScriptState::Status status, di
     }
 }
 
-void ActionScriptInterpreter::tagFinished(dint tag)
+void ActionScriptEnvironment::tagFinished(dint tag)
 {
     startWaitingScripts(ScriptState::WAITING_FOR_TAG, tag);
 }
 
-void ActionScriptInterpreter::polyobjFinished(dint po)
+void ActionScriptEnvironment::polyobjFinished(dint po)
 {
     startWaitingScripts(ScriptState::WAITING_FOR_POLYOBJ, po);
 }
 
-void ActionScriptInterpreter::scriptFinished(FunctionName name)
+void ActionScriptEnvironment::scriptFinished(FunctionName name)
 {
     startWaitingScripts(ScriptState::WAITING_FOR_SCRIPT, dint(name));
 }
 
-void ActionScriptInterpreter::printScriptInfo(FunctionName name)
+void ActionScriptEnvironment::printScriptInfo(FunctionName name)
 {
     static const char* scriptStatusDescriptions[] = {
         "Inactive",

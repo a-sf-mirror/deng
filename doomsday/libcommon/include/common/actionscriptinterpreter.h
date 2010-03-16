@@ -36,7 +36,10 @@ class ActionScriptThinker;
 class GameMap;
 class File;
 
-struct Bytecode
+/**
+ * Interpreter for Hexen format ACS bytecode.
+ */
+struct ActionScriptBytecodeInterpreter
 {
 public:
     /// Invalid FunctionName specified. @ingroup errors
@@ -56,9 +59,9 @@ public:
     };
 
 public:
-    Bytecode() : base(NULL), _numStrings(0), _strings(NULL) {};
+    ActionScriptBytecodeInterpreter() : base(NULL), _numStrings(0), _strings(NULL) {};
 
-    ~Bytecode();
+    ~ActionScriptBytecodeInterpreter();
 
     void load(const de::File& file);
 
@@ -75,7 +78,7 @@ public:
             return found->second;
         /// @throw UnknownFunctionNameError Invalid name specified when
         /// attempting to lookup a Function.
-        throw UnknownFunctionNameError("ActionScriptInterpreter::Bytecode::function", "Invalid FunctionName");
+        throw UnknownFunctionNameError("ActionScriptBytecodeInterpreter::function", "Invalid FunctionName");
     }
 
 private:
@@ -86,13 +89,10 @@ private:
     de::dchar const** _strings;
 };
 
-/**
- * Interpreter for Hexen format ACS bytecode.
- */
-class ActionScriptInterpreter
+class ActionScriptEnvironment
 {
 public:
-    /// Only one instance of ActionScriptInterpreter is allowed. @ingroup errors
+    /// Only one instance of ActionScriptEnvironment is allowed. @ingroup errors
     DEFINE_ERROR(TooManyInstancesError);
     /// Invalid FunctionName specified. @ingroup errors
     DEFINE_ERROR(UnknownFunctionNameError);
@@ -145,14 +145,14 @@ private:
     typedef std::list<DeferredScriptEvent> DeferredScriptEvents;
 
 public:
-    ActionScriptInterpreter();
-    ~ActionScriptInterpreter();
+    ActionScriptEnvironment();
+    ~ActionScriptEnvironment();
 
     ScriptState& scriptState(FunctionName name) {
         if(_scriptStates.find(name) == _scriptStates.end())
             /// @throw UnknownFunctionNameError An invalid FunctionName was specified
             /// when attempting to retrieve a ScriptState.
-            throw UnknownFunctionNameError("ActionScriptInterpreter::scriptState", "Invalid FunctionName");
+            throw UnknownFunctionNameError("ActionScriptEnvironment::scriptState", "Invalid FunctionName");
 
         return _scriptStates[name];
     }
@@ -195,8 +195,7 @@ public:
 
     void printScriptInfo(FunctionName name);
 
-/// @todo Should be private.
-    const Bytecode& bytecode() const {
+    const ActionScriptBytecodeInterpreter& bytecode() const {
         return _bytecode;
     }
 
@@ -210,15 +209,15 @@ public:
 
 public:
     /**
-     * Returns the singleton ActionScriptInterpreter instance.
+     * Returns the singleton ActionScriptEnvironment instance.
      */
-    static ActionScriptInterpreter& actionScriptInterpreter();
+    static ActionScriptEnvironment& actionScriptEnvironment();
 
 private:
     /// Loaded bytecode for the current map.
-    Bytecode _bytecode;
+    ActionScriptBytecodeInterpreter _bytecode;
 
-    /// Script state records. A record for each script in Bytecode::scriptInfo
+    /// Script state records. A record for each script in ActionScriptBytecodeInterpreter::scriptInfo
     ScriptStates _scriptStates;
 
     /// Deferred script events.
@@ -234,8 +233,8 @@ private:
      */
     void startWaitingScripts(ScriptState::Status status, de::dint waitValue);
 
-    /// The singleton instance of the ActionScriptInterpreter.
-    static ActionScriptInterpreter* _singleton;
+    /// The singleton instance of the ActionScriptEnvironment.
+    static ActionScriptEnvironment* _singleton;
 };
 
 #endif /* LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H */

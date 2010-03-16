@@ -1378,8 +1378,8 @@ void G_StartNewInit(void)
     SV_HxInitBaseSlot();
     SV_HxClearRebornSlot();
 
-    if(ActionScriptInterpreter)
-        P_DestroyActionScriptInterpreter(ActionScriptInterpreter);
+    if(ActionScriptEnvironment)
+        P_DestroyActionScriptEnvironment(ActionScriptEnvironment);
 
     // Default the player start spot group to 0
     for(i = 0; i < MAXPLAYERS; ++i)
@@ -2424,7 +2424,7 @@ DEFCC(CCmdListMaps)
 
 DEFCC(CCmdScriptInfo)
 {
-    if(ActionScriptInterpreter)
+    if(ActionScriptEnvironment)
     {
         ActionScriptId scriptId = -1;
 
@@ -2433,7 +2433,7 @@ DEFCC(CCmdScriptInfo)
         else
             scriptId = -1;
 
-        printScriptInfo(ActionScriptInterpreter, scriptId);
+        printScriptInfo(ActionScriptEnvironment, scriptId);
     }
 
     return true;

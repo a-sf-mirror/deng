@@ -572,8 +572,8 @@ void G_Shutdown(void)
     if(P_CurrentMap())
         P_DestroyGameMap(P_CurrentMap());
     
-    if(ActionScriptInterpreter)
-        P_DestroyActionScriptInterpreter(ActionScriptInterpreter);
+    if(ActionScriptEnvironment)
+        P_DestroyActionScriptEnvironment(ActionScriptEnvironment);
 
     P_ShutdownInventory();
     AM_Shutdown();

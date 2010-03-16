@@ -377,8 +377,8 @@ void GameMap::sectorTagFinished(dint tag)
     if(isSectorTagBusy(tag))
         return;
     // Start any scripts currently waiting for this signal.
-    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
-    asi.sectorTagFinished(tag);
+    ActionScriptEnvironment& ase = ActionScriptEnvironment::actionScriptEnvironment();
+    ase.sectorTagFinished(tag);
 }
 
 bool GameMap::isPolyobjBusy(dint polyobj)
@@ -394,8 +394,8 @@ void GameMap::polyobjFinished(dint po)
     if(isPolyobjBusy(po))
         return;
     // Start any scripts currently waiting for this signal.
-    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
-    asi.polyobjFinished(tag);
+    ActionScriptEnvironment& ase = ActionScriptEnvironment::actionScriptEnvironment();
+    ase.polyobjFinished(tag);
 }
 
 namespace {

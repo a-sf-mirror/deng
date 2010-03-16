@@ -27,7 +27,7 @@
 #include "common.h"
 #include "identifiers.h"
 
-#include "common/ActionScriptInterpreter"
+#include "common/ActionScriptEnvironment"
 
 /**
  * Action Script Thinker.

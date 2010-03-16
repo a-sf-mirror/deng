@@ -187,6 +187,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\libcommon\src\actionscriptstatement.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\libcommon\src\actionscriptthinker.cc"
 				>
 			</File>
@@ -214,6 +218,10 @@
 			>
 			<File
 				RelativePath="..\..\..\libcommon\include\common\actionscriptinterpreter.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\libcommon\include\common\actionscriptstatement.h"
 				>
 			</File>
 			<File

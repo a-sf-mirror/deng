@@ -789,7 +789,7 @@ int Cht_ScriptFunc3(const int* args, int player)
         return false;
     if(plr->health <= 0)
         return false; // Dead players can't cheat.
-    if(!ActionScriptInterpreter)
+    if(!ActionScriptEnvironment)
         return false;
 
     tens = args[0] - '0';
@@ -801,7 +801,7 @@ int Cht_ScriptFunc3(const int* args, int player)
         return false;
     scriptArgs[0] = scriptArgs[1] = scriptArgs[2] = 0;
 
-    if(ActionScriptInterpreter_Start(ActionScriptInterpreter, script, 0, scriptArgs, plr->plr->mo, NULL, 0))
+    if(ActionScriptEnvironment_Start(ActionScriptEnvironment, script, 0, scriptArgs, plr->plr->mo, NULL, 0))
     {
         sprintf(textBuffer, "RUNNING SCRIPT %.2d", script);
         P_SetMessage(plr, textBuffer, false);

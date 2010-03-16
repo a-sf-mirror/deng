@@ -19,7 +19,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common/ActionScriptInterpreter"
+#include "common/ActionScriptEnvironment"
 #include "common/ActionScriptThinker"
 #include "common/ActionScriptStatement"
 #include "common/GameMap"
@@ -28,18 +28,18 @@ using namespace de;
 
 void ActionScriptThinker::think(const de::Time::Delta& /* elapsed */)
 {
-    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
-    ActionScriptInterpreter::ScriptState& state = asi.scriptState(name);
+    ActionScriptEnvironment& ase = ActionScriptEnvironment::actionScriptEnvironment();
+    ActionScriptEnvironment::ScriptState& state = ase.scriptState(name);
 
-    if(state.status == ActionScriptInterpreter::ScriptState::TERMINATING)
+    if(state.status == ActionScriptEnvironment::ScriptState::TERMINATING)
     {
-        state.status = ActionScriptInterpreter::ScriptState::INACTIVE;
-        asi.scriptFinished(name);
+        state.status = ActionScriptEnvironment::ScriptState::INACTIVE;
+        ase.scriptFinished(name);
         this->map()->destroy(this);
         return;
     }
 
-    if(state.status != ActionScriptInterpreter::ScriptState::RUNNING)
+    if(state.status != ActionScriptEnvironment::ScriptState::RUNNING)
     {
         return;
     }
@@ -54,13 +54,13 @@ void ActionScriptThinker::think(const de::Time::Delta& /* elapsed */)
     do
     {
         Statement* statement = Statement::constructFrom(LONG(*bytecodePos++));
-        action = statement->execute(asi, &process, this);
+        action = statement->execute(ase, &process, this);
     } while(action == CONTINUE);
 
     if(action == TERMINATE)
     {
-        state.status = ActionScriptInterpreter::ScriptState::INACTIVE;
-        asi.scriptFinished(name);
+        state.status = ActionScriptEnvironment::ScriptState::INACTIVE;
+        ase.scriptFinished(name);
         this->map()->destroy(this);
     }
 }
@@ -83,8 +83,8 @@ void ActionScriptThinker::operator >> (de::Writer& to) const
     for(duint i = 0; i < MAX_VARS; ++i)
         to << process._context[i];
 
-    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
-    to << (dint(bytecodePos) - dint(asi.bytecode().base));
+    ActionScriptEnvironment& ase = ActionScriptEnvironment::actionScriptEnvironment();
+    to << (dint(bytecodePos) - dint(ase.bytecode().base));
 }
 
 void ActionScriptThinker::operator << (de::Reader& from)
@@ -127,7 +127,7 @@ void ActionScriptThinker::operator << (de::Reader& from)
     for(duint i = 0; i < MAX_VARS; ++i)
         from >> process._context[i];
 
-    ActionScriptInterpreter& asi = ActionScriptInterpreter::actionScriptInterpreter();
+    ActionScriptEnvironment& ase = ActionScriptEnvironment::actionScriptEnvironment();
     dint offset; from >> offset;
-    bytecodePos = (const dint*) (asi.bytecode().base + offset);
+    bytecodePos = (const dint*) (ase.bytecode().base + offset);
 }

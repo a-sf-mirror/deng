@@ -218,7 +218,7 @@ boolean P_StartLockedACS(linedef_t* line, byte* args, mobj_t* mo, int side)
         newArgs[i] = args[i];
     }
     newArgs[4] = 0;
-    return ActionScriptInterpreter_Start(ActionScriptInterpreter, newArgs[0], newArgs[1], &newArgs[2], mo, line, side);
+    return ActionScriptEnvironment_Start(ActionScriptEnvironment, newArgs[0], newArgs[1], &newArgs[2], mo, line, side);
 }
 
 boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
@@ -495,15 +495,15 @@ boolean P_ExecuteLineSpecial(int special, byte* args, linedef_t* line,
         break;
 
     case 80: // ACS_Execute
-        success = ActionScriptInterpreter_Start(ActionScriptInterpreter, args[0], args[1], &args[2], mo, line, side);
+        success = ActionScriptEnvironment_Start(ActionScriptEnvironment, args[0], args[1], &args[2], mo, line, side);
         break;
 
     case 81: // ACS_Suspend
-        success = ActionScriptInterpreter_Suspend(ActionScriptInterpreter, args[0], args[1]);
+        success = ActionScriptEnvironment_Suspend(ActionScriptEnvironment, args[0], args[1]);
         break;
 
     case 82: // ACS_Terminate
-        success = ActionScriptInterpreter_Stop(ActionScriptInterpreter, args[0], args[1]);
+        success = ActionScriptEnvironment_Stop(ActionScriptEnvironment, args[0], args[1]);
         break;
 
     case 83: // ACS_LockedExecute

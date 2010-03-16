@@ -38,7 +38,7 @@ public:
     DEFINE_ERROR(DeserializationError);
 
 public:
-    virtual ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const = 0;
+    virtual ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const = 0;
 
 protected:
     typedef de::dbyte SerialId;

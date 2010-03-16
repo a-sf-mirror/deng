@@ -4500,7 +4500,7 @@ void C_DECL A_KoraxChase(mobj_t* actor)
             P_Teleport(actor, spot->pos[VX], spot->pos[VY], spot->angle, true);
         }
 
-        ActionScriptInterpreter_Start(ActionScriptInterpreter, 0, 249, args, actor, NULL, 0);
+        ActionScriptEnvironment_Start(ActionScriptEnvironment, 0, 249, args, actor, NULL, 0);
         actor->special2 = 1; // Don't run again.
 
         return;
@@ -4581,7 +4581,7 @@ void C_DECL A_KoraxBonePop(mobj_t* actor)
     if(mo)
         KSpiritInit(mo, actor);
 
-    ActionScriptInterpreter_Start(ActionScriptInterpreter, 0, 255, args, actor, NULL, 0); // Death script.
+    ActionScriptEnvironment_Start(ActionScriptEnvironment, 0, 255, args, actor, NULL, 0); // Death script.
     }
 }
 
@@ -4766,7 +4766,7 @@ void C_DECL A_KoraxCommand(mobj_t* mo)
     else
         numScripts = 4;
 
-    ActionScriptInterpreter_Start(ActionScriptInterpreter, 0, 250 + (P_Random() % numScripts), args, mo, NULL, 0);
+    ActionScriptEnvironment_Start(ActionScriptEnvironment, 0, 250 + (P_Random() % numScripts), args, mo, NULL, 0);
     }
 }
 

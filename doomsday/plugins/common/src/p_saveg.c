@@ -4484,8 +4484,8 @@ static void P_ArchiveMap(boolean savePlayers)
 
 #if __JHEXEN__
     SV_BeginSegment(ASEG_SCRIPTS);
-    if(ActionScriptInterpreter)
-        ActionScriptInterpreter_WriteMapContext(ActionScriptInterpreter);
+    if(ActionScriptEnvironment)
+        ActionScriptEnvironment_WriteMapContext(ActionScriptEnvironment);
 
     P_ArchiveSounds();
 #else
@@ -4538,7 +4538,7 @@ static void P_UnArchiveMap(GameMap* map)
 
 #if __JHEXEN__
     AssertSegment(ASEG_SCRIPTS);
-    ActionScriptInterpreter_ReadMapContext(ActionScriptInterpreter);
+    ActionScriptEnvironment_ReadMapContext(ActionScriptEnvironment);
 
     P_UnArchiveSounds(map);
     if(saveVersion < 9)
@@ -4733,8 +4733,8 @@ int SV_SaveGameWorker(void* ptr)
 
     // Write global script info
     SV_BeginSegment(ASEG_GLOBALSCRIPTDATA);
-    if(ActionScriptInterpreter)
-        ActionScriptInterpreter_WriteWorldContext(ActionScriptInterpreter);
+    if(ActionScriptEnvironment)
+        ActionScriptEnvironment_WriteWorldContext(ActionScriptEnvironment);
 #else
     // Write the header.
     hdr.magic = MY_SAVE_MAGIC;
@@ -4961,7 +4961,7 @@ static boolean SV_LoadGame2(void)
     // Read global script info.
     if(saveVersion >= 7)
         AssertSegment(ASEG_GLOBALSCRIPTDATA);
-    ActionScriptInterpreter_ReadWorldContext(ActionScriptInterpreter);
+    ActionScriptEnvironment_ReadWorldContext(ActionScriptEnvironment);
 #endif
 
     // We don't want to see a briefing if we're loading a save game.
@@ -5502,8 +5502,8 @@ void SV_MapTeleport(uint map, uint position)
     // Launch waiting scripts
     if(!deathmatch)
     {
-        if(ActionScriptInterpreter)
-            ActionScriptInterpreter_StartAll(ActionScriptInterpreter, gameMap);
+        if(ActionScriptEnvironment)
+            ActionScriptEnvironment_StartAll(ActionScriptEnvironment, gameMap);
     }
 
     // For single play, save immediately into the reborn slot

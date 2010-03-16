@@ -25,29 +25,29 @@ using namespace de;
 
 class NOPStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class TerminateStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         return ActionScriptThinker::TERMINATE;
     }
 };
 
 class SuspendStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi.scriptState(script->name).status = ActionScriptInterpreter::ScriptState::SUSPENDED;
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase.scriptState(script->name).status = ActionScriptEnvironment::ScriptState::SUSPENDED;
         return ActionScriptThinker::STOP;
     }
 };
 
 class PushNumberStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(LONG(*script->bytecodePos++));
         return ActionScriptThinker::CONTINUE;
     }
@@ -55,7 +55,7 @@ class PushNumberStatement : public Statement
 
 class LSpec1Statement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[0] = proc->pop();
@@ -66,7 +66,7 @@ class LSpec1Statement : public Statement
 
 class LSpec2Statement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[1] = proc->pop();
@@ -78,7 +78,7 @@ class LSpec2Statement : public Statement
 
 class LSpec3Statement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[2] = proc->pop();
@@ -91,7 +91,7 @@ class LSpec3Statement : public Statement
 
 class LSpec4Statement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[3] = proc->pop();
@@ -105,7 +105,7 @@ class LSpec4Statement : public Statement
 
 class LSpec5Statement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[4] = proc->pop();
@@ -120,7 +120,7 @@ class LSpec5Statement : public Statement
 
 class LSpec1DirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[0] = LONG(*script->bytecodePos++);
@@ -131,7 +131,7 @@ class LSpec1DirectStatement : public Statement
 
 class LSpec2DirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[0] = LONG(*script->bytecodePos++);
@@ -143,7 +143,7 @@ class LSpec2DirectStatement : public Statement
 
 class LSpec3DirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[0] = LONG(*script->bytecodePos++);
@@ -156,7 +156,7 @@ class LSpec3DirectStatement : public Statement
 
 class LSpec4DirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[0] = LONG(*script->bytecodePos++);
@@ -170,7 +170,7 @@ class LSpec4DirectStatement : public Statement
 
 class LSpec5DirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         dint special = LONG(*script->bytecodePos++);
         args[0] = LONG(*script->bytecodePos++);
@@ -185,7 +185,7 @@ class LSpec5DirectStatement : public Statement
 
 class AddStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->pop() + proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -193,7 +193,7 @@ class AddStatement : public Statement
 
 class SubtractStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint operand2 = proc->pop();
         proc->push(proc->pop() - operand2);
         return ActionScriptThinker::CONTINUE;
@@ -202,7 +202,7 @@ class SubtractStatement : public Statement
 
 class MultiplyStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->pop() * proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -210,7 +210,7 @@ class MultiplyStatement : public Statement
 
 class DivideStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint operand2 = proc->pop();
         proc->push(proc->pop() / operand2);
         return ActionScriptThinker::CONTINUE;
@@ -219,7 +219,7 @@ class DivideStatement : public Statement
 
 class ModulusStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint operand2 = proc->pop();
         proc->push(proc->pop() % operand2);
         return ActionScriptThinker::CONTINUE;
@@ -228,7 +228,7 @@ class ModulusStatement : public Statement
 
 class EQStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->pop() == proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -236,7 +236,7 @@ class EQStatement : public Statement
 
 class NEStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->pop() != proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -244,7 +244,7 @@ class NEStatement : public Statement
 
 class LTStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint operand2 = proc->pop();
         proc->push(proc->pop() < operand2);
         return ActionScriptThinker::CONTINUE;
@@ -253,7 +253,7 @@ class LTStatement : public Statement
 
 class GTStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         int operand2 = proc->pop();
         proc->push(proc->pop() > operand2);
         return ActionScriptThinker::CONTINUE;
@@ -262,7 +262,7 @@ class GTStatement : public Statement
 
 class LEStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint operand2 = proc->pop();
         proc->push(proc->pop() <= operand2);
         return ActionScriptThinker::CONTINUE;
@@ -271,7 +271,7 @@ class LEStatement : public Statement
 
 class GEStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint operand2 = proc->pop();
         proc->push(proc->pop() >= operand2);
         return ActionScriptThinker::CONTINUE;
@@ -280,7 +280,7 @@ class GEStatement : public Statement
 
 class AssignScriptVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->_context[LONG(*script->bytecodePos++)] = proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
@@ -288,23 +288,23 @@ class AssignScriptVarStatement : public Statement
 
 class AssignMapVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._mapContext[LONG(*script->bytecodePos++)] = proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._mapContext[LONG(*script->bytecodePos++)] = proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class AssignWorldVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._worldContext[LONG(*script->bytecodePos++)] = proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._worldContext[LONG(*script->bytecodePos++)] = proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class PushScriptVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->_context[LONG(*script->bytecodePos++)]);
         return ActionScriptThinker::CONTINUE;
     }
@@ -312,23 +312,23 @@ class PushScriptVarStatement : public Statement
 
 class PushMapVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->push(asi._mapContext[LONG(*script->bytecodePos++)]);
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        proc->push(ase._mapContext[LONG(*script->bytecodePos++)]);
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class PushWorldVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->push(asi._worldContext[LONG(*script->bytecodePos++)]);
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        proc->push(ase._worldContext[LONG(*script->bytecodePos++)]);
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class AddScriptVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->_context[LONG(*script->bytecodePos++)] += proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
@@ -336,23 +336,23 @@ class AddScriptVarStatement : public Statement
 
 class AddMapVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._mapContext[LONG(*script->bytecodePos++)] += proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._mapContext[LONG(*script->bytecodePos++)] += proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class AddWorldVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._worldContext[LONG(*script->bytecodePos++)] += proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._worldContext[LONG(*script->bytecodePos++)] += proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class SubScriptVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->_context[LONG(*script->bytecodePos++)] -= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
@@ -360,23 +360,23 @@ class SubScriptVarStatement : public Statement
 
 class SubMapVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._mapContext[LONG(*script->bytecodePos++)] -= proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._mapContext[LONG(*script->bytecodePos++)] -= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class SubWorldVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._worldContext[LONG(*script->bytecodePos++)] -= proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._worldContext[LONG(*script->bytecodePos++)] -= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class MulScriptVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->_context[LONG(*script->bytecodePos++)] *= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
@@ -384,23 +384,23 @@ class MulScriptVarStatement : public Statement
 
 class MulMapVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._mapContext[LONG(*script->bytecodePos++)] *= proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._mapContext[LONG(*script->bytecodePos++)] *= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class MulWorldVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._worldContext[LONG(*script->bytecodePos++)] *= proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._worldContext[LONG(*script->bytecodePos++)] *= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class DivScriptVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->_context[LONG(*script->bytecodePos++)] /= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
@@ -408,23 +408,23 @@ class DivScriptVarStatement : public Statement
 
 class DivMapVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._mapContext[LONG(*script->bytecodePos++)] /= proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._mapContext[LONG(*script->bytecodePos++)] /= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class DivWorldVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._worldContext[LONG(*script->bytecodePos++)] /= proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._worldContext[LONG(*script->bytecodePos++)] /= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class ModScriptVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->_context[LONG(*script->bytecodePos++)] %= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
@@ -432,23 +432,23 @@ class ModScriptVarStatement : public Statement
 
 class ModMapVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._mapContext[LONG(*script->bytecodePos++)] %= proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._mapContext[LONG(*script->bytecodePos++)] %= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class ModWorldVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._worldContext[LONG(*script->bytecodePos++)] %= proc->pop();
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._worldContext[LONG(*script->bytecodePos++)] %= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class IncScriptVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->_context[LONG(*script->bytecodePos++)]++;
         return ActionScriptThinker::CONTINUE;
     }
@@ -456,23 +456,23 @@ class IncScriptVarStatement : public Statement
 
 class IncMapVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._mapContext[LONG(*script->bytecodePos++)]++;
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._mapContext[LONG(*script->bytecodePos++)]++;
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class IncWorldVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._worldContext[LONG(*script->bytecodePos++)]++;
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._worldContext[LONG(*script->bytecodePos++)]++;
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class DecScriptVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->_context[LONG(*script->bytecodePos++)]--;
         return ActionScriptThinker::CONTINUE;
     }
@@ -480,34 +480,34 @@ class DecScriptVarStatement : public Statement
 
 class DecMapVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._mapContext[LONG(*script->bytecodePos++)]--;
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._mapContext[LONG(*script->bytecodePos++)]--;
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class DecWorldVarStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._worldContext[LONG(*script->bytecodePos++)]--;
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._worldContext[LONG(*script->bytecodePos++)]--;
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class GotoStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        script->bytecodePos = (dint*) (ase.bytecode().base + LONG(*script->bytecodePos));
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class IfGotoStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         if(proc->pop())
         {
-            script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
+            script->bytecodePos = (dint*) (ase.bytecode().base + LONG(*script->bytecodePos));
         }
         else
         {
@@ -519,7 +519,7 @@ class IfGotoStatement : public Statement
 
 class DropStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->drop();
         return ActionScriptThinker::CONTINUE;
     }
@@ -527,7 +527,7 @@ class DropStatement : public Statement
 
 class DelayStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         script->delayCount = proc->pop();
         return ActionScriptThinker::STOP;
     }
@@ -535,7 +535,7 @@ class DelayStatement : public Statement
 
 class DelayDirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         script->delayCount = LONG(*script->bytecodePos++);
         return ActionScriptThinker::STOP;
     }
@@ -543,7 +543,7 @@ class DelayDirectStatement : public Statement
 
 class RandomStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint low, high;
         high = proc->pop();
         low = proc->pop();
@@ -554,7 +554,7 @@ class RandomStatement : public Statement
 
 class RandomDirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint low, high;
         low = LONG(*script->bytecodePos++);
         high = LONG(*script->bytecodePos++);
@@ -565,7 +565,7 @@ class RandomDirectStatement : public Statement
 
 class ThingCountStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint tid;
         tid = proc->pop();
         proc->push(P_CurrentMap().countThingsOfType(proc->pop(), tid));
@@ -575,7 +575,7 @@ class ThingCountStatement : public Statement
 
 class ThingCountDirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint type;
         type = LONG(*script->bytecodePos++);
         proc->push(P_CurrentMap().countThingsOfType(type, LONG(*script->bytecodePos++)));
@@ -585,48 +585,48 @@ class ThingCountDirectStatement : public Statement
 
 class TagWaitStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ActionScriptEnvironment::ScriptState& state = ase.scriptState(script->name);
         state.waitValue = proc->pop();
-        state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_TAG;
+        state.status = ActionScriptEnvironment::ScriptState::WAITING_FOR_TAG;
         return ActionScriptThinker::STOP; 
     }
 };
 
 class TagWaitDirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ActionScriptEnvironment::ScriptState& state = ase.scriptState(script->name);
         state.waitValue = LONG(*script->bytecodePos++);
-        state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_TAG;
+        state.status = ActionScriptEnvironment::ScriptState::WAITING_FOR_TAG;
         return ActionScriptThinker::STOP;
     }
 };
 
 class PolyobjWaitStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ActionScriptEnvironment::ScriptState& state = ase.scriptState(script->name);
         state.waitValue = proc->pop();
-        state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_POLYOBJ;
+        state.status = ActionScriptEnvironment::ScriptState::WAITING_FOR_POLYOBJ;
         return ActionScriptThinker::STOP;
     }
 };
 
 class PolyobjWaitDirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ActionScriptEnvironment::ScriptState& state = ase.scriptState(script->name);
         state.waitValue = LONG(*script->bytecodePos++);
-        state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_POLYOBJ;
+        state.status = ActionScriptEnvironment::ScriptState::WAITING_FOR_POLYOBJ;
         return ActionScriptThinker::STOP;
     }
 };
 
 class ChangeFloorStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        const dchar* flatName = asi.bytecode().string(static_cast<Bytecode::StringId>(proc->pop()));
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        const dchar* flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop()));
         dint tag = proc->pop();
         IterList* list;
 
@@ -648,9 +648,9 @@ class ChangeFloorStatement : public Statement
 
 class ChangeFloorDirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint tag = LONG(*script->bytecodePos++);
-        const dchar* flatName = asi.bytecode().string(static_cast<Bytecode::StringId>(LONG(*script->bytecodePos++)));
+        const dchar* flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(LONG(*script->bytecodePos++)));
         IterList* list;
 
         if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
@@ -671,8 +671,8 @@ class ChangeFloorDirectStatement : public Statement
 
 class ChangeCeilingStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        const dchar* flatName = asi.bytecode().string(static_cast<Bytecode::StringId>(proc->pop()));
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        const dchar* flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop()));
         dint tag = proc->pop();
         IterList* list;
 
@@ -694,9 +694,9 @@ class ChangeCeilingStatement : public Statement
 
 class ChangeCeilingDirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint tag = LONG(*script->bytecodePos++);
-        const dchar* flatName = asi.bytecode().string(static_cast<Bytecode::StringId>(LONG(*script->bytecodePos++)));
+        const dchar* flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(LONG(*script->bytecodePos++)));
         IterList* list;
 
         if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
@@ -717,15 +717,15 @@ class ChangeCeilingDirectStatement : public Statement
 
 class RestartStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        script->bytecodePos = asi.bytecode().function(script->name).entryPoint;
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        script->bytecodePos = ase.bytecode().function(script->name).entryPoint;
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class AndLogicalStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->pop() && proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -733,7 +733,7 @@ class AndLogicalStatement : public Statement
 
 class OrLogicalStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->pop() || proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -741,7 +741,7 @@ class OrLogicalStatement : public Statement
 
 class AndBitwiseStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->pop() & proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -749,7 +749,7 @@ class AndBitwiseStatement : public Statement
 
 class OrBitwiseStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->pop() | proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -757,7 +757,7 @@ class OrBitwiseStatement : public Statement
 
 class EorBitwiseStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->pop() ^ proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -765,7 +765,7 @@ class EorBitwiseStatement : public Statement
 
 class NegateLogicalStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(!proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -773,7 +773,7 @@ class NegateLogicalStatement : public Statement
 
 class LShiftStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint operand2 = proc->pop();
         proc->push(proc->pop() << operand2);
         return ActionScriptThinker::CONTINUE;
@@ -782,7 +782,7 @@ class LShiftStatement : public Statement
 
 class RShiftStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint operand2 = proc->pop();
         proc->push(proc->pop() >> operand2);
         return ActionScriptThinker::CONTINUE;
@@ -791,7 +791,7 @@ class RShiftStatement : public Statement
 
 class UnaryMinusStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(-proc->pop());
         return ActionScriptThinker::CONTINUE;
     }
@@ -799,14 +799,14 @@ class UnaryMinusStatement : public Statement
 
 class IfNotGotoStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         if(proc->pop())
         {
             script->bytecodePos++;
         }
         else
         {
-            script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
+            script->bytecodePos = (dint*) (ase.bytecode().base + LONG(*script->bytecodePos));
         }
         return ActionScriptThinker::CONTINUE;
     }
@@ -814,7 +814,7 @@ class IfNotGotoStatement : public Statement
 
 class LineDefSideStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(proc->_lineSide);
         return ActionScriptThinker::CONTINUE;
     }
@@ -822,27 +822,27 @@ class LineDefSideStatement : public Statement
 
 class ScriptWaitStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ActionScriptEnvironment::ScriptState& state = ase.scriptState(script->name);
         state.waitValue = proc->pop();
-        state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_SCRIPT;
+        state.status = ActionScriptEnvironment::ScriptState::WAITING_FOR_SCRIPT;
         return ActionScriptThinker::STOP;
     }
 };
 
 class ScriptWaitDirectStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ActionScriptInterpreter::ScriptState& state = asi.scriptState(script->name);
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ActionScriptEnvironment::ScriptState& state = ase.scriptState(script->name);
         state.waitValue = LONG(*script->bytecodePos++);
-        state.status = ActionScriptInterpreter::ScriptState::WAITING_FOR_SCRIPT;
+        state.status = ActionScriptEnvironment::ScriptState::WAITING_FOR_SCRIPT;
         return ActionScriptThinker::STOP;
     }
 };
 
 class ClearLineDefSpecialStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         if(proc->_lineDef)
         {
             P_ToXLine(proc->_lineDef)->special = 0;
@@ -853,10 +853,10 @@ class ClearLineDefSpecialStatement : public Statement
 
 class CaseGotoStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         if(proc->top() == LONG(*script->bytecodePos++))
         {
-            script->bytecodePos = (dint*) (asi.bytecode().base + LONG(*script->bytecodePos));
+            script->bytecodePos = (dint*) (ase.bytecode().base + LONG(*script->bytecodePos));
             proc->drop();
         }
         else
@@ -869,24 +869,24 @@ class CaseGotoStatement : public Statement
 
 class BeginPrintStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        asi._printBuffer[0] = 0;
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        ase._printBuffer[0] = 0;
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class EndPrintStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         if(proc->_activator && proc->_activator->player)
         {
-            P_SetMessage(proc->_activator->player, asi._printBuffer, false);
+            P_SetMessage(proc->_activator->player, ase._printBuffer, false);
         }
         else
         {   // Send to everybody.
             for(dint i = 0; i < MAXPLAYERS; ++i)
                 if(players[i].plr->inGame)
-                    P_SetMessage(&players[i], asi._printBuffer, false);
+                    P_SetMessage(&players[i], ase._printBuffer, false);
         }
 
         return ActionScriptThinker::CONTINUE;
@@ -895,27 +895,27 @@ class EndPrintStatement : public Statement
 
 class PrintStringStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        strcat(asi._printBuffer, asi.bytecode().string(static_cast<Bytecode::StringId>(proc->pop())));
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+        strcat(ase._printBuffer, ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop())));
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class PrintNumberStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dchar tempStr[16];
         sprintf(tempStr, "%d", proc->pop());
-        strcat(asi._printBuffer, tempStr);
+        strcat(ase._printBuffer, tempStr);
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class PrintCharacterStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dchar* bufferEnd;
-        bufferEnd = asi._printBuffer + strlen(asi._printBuffer);
+        bufferEnd = ase._printBuffer + strlen(ase._printBuffer);
         *bufferEnd++ = proc->pop();
         *bufferEnd = 0;
         return ActionScriptThinker::CONTINUE;
@@ -924,7 +924,7 @@ class PrintCharacterStatement : public Statement
 
 class PlayerCountStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint count = 0;
         for(dint i = 0; i < MAXPLAYERS; ++i)
         {
@@ -937,7 +937,11 @@ class PlayerCountStatement : public Statement
 
 class GameTypeStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+#define GAMETYPE_SINGLE         0
+#define GAMETYPE_COOPERATIVE    1
+#define GAMETYPE_DEATHMATCH     2
+
         dint gameType;
 
         if(IS_NETGAME == false)
@@ -955,12 +959,16 @@ class GameTypeStatement : public Statement
         proc->push(gameType);
 
         return ActionScriptThinker::CONTINUE;
+
+#undef GAMETYPE_SINGLE         0
+#undef GAMETYPE_COOPERATIVE    1
+#undef GAMETYPE_DEATHMATCH     2
     }
 };
 
 class GameSkillStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         proc->push(gameSkill);
         return ActionScriptThinker::CONTINUE;
     }
@@ -968,7 +976,7 @@ class GameSkillStatement : public Statement
 
 class TimerStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         GameMap* map = P_CurrentMap();
         proc->push(map->time);
         return ActionScriptThinker::CONTINUE;
@@ -977,7 +985,7 @@ class TimerStatement : public Statement
 
 class SectorSoundStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint volume;
         Thing* th = NULL;
 
@@ -987,14 +995,14 @@ class SectorSoundStatement : public Statement
         }
         volume = proc->pop();
 
-        S_StartSoundAtVolume(S_GetSoundID(asi.bytecode().string(static_cast<Bytecode::StringId>(proc->pop()))), th, volume / 127.0f);
+        S_StartSoundAtVolume(S_GetSoundID(ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop()))), th, volume / 127.0f);
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class AmbientSoundStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint volume, sound;
         Thing* th = NULL; // For 3D positioning.
         Thing* plrth = players[DISPLAYPLAYER].plr->thing;
@@ -1015,7 +1023,7 @@ class AmbientSoundStatement : public Statement
                 th->tics = 5 * TICSPERSEC; // Five seconds should be enough.
         }
 
-        sound = S_GetSoundID(asi.bytecode().string(static_cast<Bytecode::StringId>(proc->pop())));
+        sound = S_GetSoundID(ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop())));
         S_StartSoundAtVolume(sound, th, volume / 127.0f);
         return ActionScriptThinker::CONTINUE;
     }
@@ -1023,25 +1031,29 @@ class AmbientSoundStatement : public Statement
 
 class SoundSequenceStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         Thing* th = NULL;
         if(proc->_lineDef)
             th = DMU_GetPtrp(DMU_GetPtrp(proc->_lineDef, DMU_FRONT_SECTOR), DMU_SOUND_ORIGIN);
-        SN_StartSequenceName(mo, asi.bytecode().string(static_cast<Bytecode::StringId>(proc->pop())));
+        SN_StartSequenceName(mo, ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop())));
         return ActionScriptThinker::CONTINUE;
     }
 };
 
 class SetSideDefMaterialStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+#define SIDEDEF_SECTION_TOP     0
+#define SIDEDEF_SECTION_MIDDLE  1
+#define SIDEDEF_SECTION_BOTTOM  2
+
         GameMap* map = P_CurrentMap();
         dint lineTag, side, position;
         Material* mat;
         LineDef* line;
         IterList* list;
 
-        mat = P_MaterialForName(MN_TEXTURES, asi.bytecode().string(static_cast<Bytecode::StringId>(proc->pop())));
+        mat = P_MaterialForName(MN_TEXTURES, ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop())));
         position = proc->pop();
         side = proc->pop();
         lineTag = proc->pop();
@@ -1070,12 +1082,16 @@ class SetSideDefMaterialStatement : public Statement
         }
 
         return ActionScriptThinker::CONTINUE;
+
+#undef SIDEDEF_SECTION_TOP
+#undef SIDEDEF_SECTION_MIDDLE
+#undef SIDEDEF_SECTION_BOTTOM
     }
 };
 
 class SetLineDefBlockingStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         GameMap* map = P_CurrentMap();
         LineDef* line;
         dint lineTag;
@@ -1102,7 +1118,7 @@ class SetLineDefBlockingStatement : public Statement
 
 class SetLineDefSpecialStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         GameMap* map = P_CurrentMap();
         LineDef* line;
         dint lineTag, special, arg1, arg2, arg3, arg4, arg5;
@@ -1138,12 +1154,12 @@ class SetLineDefSpecialStatement : public Statement
 
 class ThingSoundStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint tid, sound, volume, searcher;
         Thing* th;
 
         volume = proc->pop();
-        sound = S_GetSoundID(asi.bytecode().string(static_cast<Bytecode::StringId>(proc->pop())));
+        sound = S_GetSoundID(ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop())));
         tid = proc->pop();
         searcher = -1;
         while(sound && (th = P_FindMobjFromTID(P_CurrentMap(), tid, &searcher)) != NULL)
@@ -1157,12 +1173,12 @@ class ThingSoundStatement : public Statement
 
 class EndPrintBoldStatement : public Statement
 {
-    ActionScriptThinker::ProcessAction execute(ActionScriptInterpreter& asi, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
+    ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         for(dint i = 0; i < MAXPLAYERS; ++i)
         {
             if(players[i].plr->inGame)
             {
-                P_SetYellowMessage(&players[i], asi._printBuffer, false);
+                P_SetYellowMessage(&players[i], ase._printBuffer, false);
             }
         }
 

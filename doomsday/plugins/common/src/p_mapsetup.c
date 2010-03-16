@@ -933,9 +933,9 @@ static void loadActionScripts(const char* mapID)
     lumpnum_t lumpNum = W_GetNumForName(mapID) + 11 /*ML_BEHAVIOR*/;
     if(lumpNum != -1)
     {
-        if(!ActionScriptInterpreter)
-            P_CreateActionScriptInterpreter();
-        ActionScriptInterpreter_Load(ActionScriptInterpreter, 0, lumpNum);
+        if(!ActionScriptEnvironment)
+            P_CreateActionScriptEnvironment();
+        ActionScriptEnvironment_Load(ActionScriptEnvironment, 0, lumpNum);
     }
 }
 

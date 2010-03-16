@@ -3102,7 +3102,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
         if(map->puzzleItemType != xline->arg1)
             return false; // Item type doesn't match.
 
-        ActionScriptInterpreter_Start(ActionScriptInterpreter, (ActionScriptId) xline->arg2, 0, &xline->arg3, map->puzzleItemUser, line, 0);
+        ActionScriptEnvironment_Start(ActionScriptEnvironment, (ActionScriptId) xline->arg2, 0, &xline->arg3, map->puzzleItemUser, line, 0);
         xline->special = 0;
         map->puzzleActivated = true;
 
@@ -3120,7 +3120,7 @@ boolean PTR_PuzzleItemTraverse(intercept_t* in)
         if(map->puzzleItemType != mo->args[0])
             return true; // Item type doesn't match...
 
-        ActionScriptInterpreter_Start(ActionScriptInterpreter, (ActionScriptId) mo->args[1], 0, &mo->args[2], map->puzzleItemUser, NULL, 0);
+        ActionScriptEnvironment_Start(ActionScriptEnvironment, (ActionScriptId) mo->args[1], 0, &mo->args[2], map->puzzleItemUser, NULL, 0);
         mo->special = 0;
         map->puzzleActivated = true;
 
