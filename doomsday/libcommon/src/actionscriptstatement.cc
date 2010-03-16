@@ -960,9 +960,9 @@ class GameTypeStatement : public Statement
 
         return ActionScriptThinker::CONTINUE;
 
-#undef GAMETYPE_SINGLE         0
-#undef GAMETYPE_COOPERATIVE    1
-#undef GAMETYPE_DEATHMATCH     2
+#undef GAMETYPE_SINGLE
+#undef GAMETYPE_COOPERATIVE
+#undef GAMETYPE_DEATHMATCH
     }
 };
 
