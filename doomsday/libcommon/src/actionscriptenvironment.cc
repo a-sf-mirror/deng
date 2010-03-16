@@ -167,53 +167,33 @@ void ActionScriptEnvironment::readWorldContext(de::Reader& from)
     // events are (de)serialized along with it.
 
     _deferredScriptEvents.clear();
+
+    dint num = 20;
     if(ver >= 3)
-    {
-        dint num;
         from >> num;
-        if(num)
+
+    if(num)
+    {
+        for(dint i = 0; i < num; ++i)
         {
-            for(dint i = 0; i < num; ++i)
+            duint map, name;
+            dbyte args[4];
+
+            from >> map;
+            from >> name;
+            for(dint j = 0; j < 4; ++j)
+                from >> args[j];
+
+            if(!(map < 0))
             {
-                duint map, name;
-                dbyte args[4];
-
-                from >> map;
-                from >> name;
-                for(dint j = 0; j < 4; ++j)
-                    from >> args[j];
-
                 _deferredScriptEvents.push_back(
-                    DeferredScriptEvent(name, map, args[0], args[1], args[2], args[3]));
+                    DeferredScriptEvent(name, (ver >= 3)? map : map-1, args[0], args[1], args[2], args[3]));
             }
         }
     }
-    else
-    {   // Old format.
-        DeferredScriptEvent tempStore[20];
 
-        dint num = 0;
-        for(dint i = 0; i < 20; ++i)
-        {
-            dint map, name;
-            from >> map;
-            from >> name;
-
-            DeferredScriptEvent& ev = tempStore[map < 0? 19 : num++];
-            ev.map = map < 0? 0 : map-1;
-            ev.name = name;
-            for(dint j = 0; j < 4; ++j)
-                from >> ev.args[j];
-        }
-
-        if(saveVersion < 7)
-            from.seek(12);
-
-        for(dint i = 0; i < num; ++i)
-        {
-            _deferredScriptEvents.push_back(tempStore[i]);
-        }
-    }
+    if(saveVersion < 7)
+        from.seek(12);
 }
 
 void ActionScriptEnvironment::writeMapContext(de::Writer& to) const

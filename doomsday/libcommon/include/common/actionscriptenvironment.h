@@ -34,7 +34,6 @@
 #include "common/ActionScriptBytecodeInterpreter"
 
 class ActionScriptThinker;
-class GameMap;
 
 class ActionScriptEnvironment
 {
