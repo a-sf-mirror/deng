@@ -38,6 +38,8 @@ public:
     DEFINE_ERROR(DeserializationError);
 
 public:
+    virtual ~Statement() {}
+
     virtual ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const = 0;
 
 protected:
@@ -156,7 +158,7 @@ public:
      *
      * @return  The deserialized statement. Caller gets ownership.
      */
-    static Statement* constructFrom(SerialId id /*de::Reader& from*/);
+    static Statement* constructFrom(de::Reader& from);
 };
 
 #endif /* LIBCOMMON_ACTIONSCRIPT_STATEMENT_H */
