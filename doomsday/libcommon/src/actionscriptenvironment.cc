@@ -59,6 +59,7 @@ ActionScriptEnvironment::~ActionScriptEnvironment()
 {
     _bytecode.unload();
 
+    _scriptStates.clear();
     _deferredScriptEvents.clear();
 
     _singleton = 0;
@@ -110,6 +111,22 @@ void ActionScriptEnvironment::load(const de::File& file)
     memset(_mapContext, 0, sizeof(_mapContext));
 
     _bytecode.load(file);
+    _scriptStates.clear();
+
+    FOR_EACH(i, _bytecode.functions(), ActionScriptBytecodeInterpreter::Functions::const_iterator)
+    {
+        const ActionScriptBytecodeInterpreter::Function& func = i->second;
+
+        if(func.callOnMapStart)
+        {
+            // World scripts are allotted 1 second for initialization.
+            createActionScriptThinker(P_CurrentMap(), func.name,
+                func.entryPoint, func.numArguments, NULL, NULL, NULL, 0, TICSPERSEC);
+        }
+
+        ScriptState::Status status = func.callOnMapStart? ScriptState::RUNNING : ScriptState::INACTIVE;
+        _scriptStates[func.name] = ScriptState(status);
+    }
 }
 
 void ActionScriptEnvironment::writeWorldContext(de::Writer& to) const

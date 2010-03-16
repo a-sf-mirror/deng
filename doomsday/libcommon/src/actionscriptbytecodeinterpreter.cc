@@ -19,7 +19,6 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common/ActionScriptEnvironment" // temp
 #include "common/ActionScriptBytecodeInterpreter"
 
 using namespace de;
@@ -69,10 +68,7 @@ void ActionScriptBytecodeInterpreter::unload()
         std::free(const_cast<dbyte*>(base)); base = NULL;
 
     _functions.clear();
-
-    if(_strings)
-        std::free(_strings); _strings = NULL;
-    _numStrings = 0;
+    _strings.clear();
 }
 
 void ActionScriptBytecodeInterpreter::load(const de::File& file)
@@ -91,7 +87,6 @@ void ActionScriptBytecodeInterpreter::load(const de::File& file)
     if(numScripts == 0)
         return; // Empty lump.
 
-    _numStrings = numStrings;
     base = (const dbyte*) W_CacheLumpNum(lumpNum, PU_STATIC);
 
     // Load the script info.
@@ -106,39 +101,30 @@ void ActionScriptBytecodeInterpreter::load(const de::File& file)
         const dint* entryPoint = (const dint*) (base + entryPointOffset);
 
         FunctionName name;
-        ActionScriptEnvironment::ScriptState::Status status;
+        bool callOnMapStart;
         if(_scriptId >= OPEN_SCRIPTS_BASE)
         {   // Auto-activate
             name = static_cast<FunctionName>(_scriptId - OPEN_SCRIPTS_BASE);
-            status = ActionScriptEnvironment::ScriptState::RUNNING;
+            callOnMapStart = true;
         }
         else
         {
             name = static_cast<FunctionName>(_scriptId);
-            status = ActionScriptEnvironment::ScriptState::INACTIVE;
+            callOnMapStart = false;
         }
 
-        _functions.insert(std::pair<FunctionName, Function>(name, Function(name, entryPoint, argCount)));
-
-        if(status == ActionScriptEnvironment::ScriptState::RUNNING)
-        {
-            // World scripts are allotted 1 second for initialization.
-            createActionScriptThinker(P_CurrentMap(), name,
-                entryPoint, TICSPERSEC, i, NULL, NULL, 0, NULL, 0);
-        }
-
-        _scriptStates[name] = ActionScriptEnvironment::ScriptState(status);
+        _functions.insert(std::pair<FunctionName, Function>(name, Function(name, argCount, callOnMapStart, entryPoint)));
     }
 
-    // Load the string offsets.
-    if(_numStrings > 0)
+    // Read the string table.
+    if(numStrings > 0)
     {
-        _strings = reinterpret_cast<dchar const**>(std::malloc(_numStrings * sizeof(dchar*)));
+        _strings.reserve(numStrings);
 
         const dbyte* ptr = (base + infoOffset + 4 + numScripts * 12 + 4);
-        for(dint i = 0; i < _numStrings; ++i, ptr += 4)
+        for(dint i = 0; i < numStrings; ++i, ptr += 4)
         {
-            _strings[i] = (const dchar*) base + LONG(*((dint32*) (ptr)));
+            _strings.push_back(String((const dchar*) base + LONG(*((dint32*) (ptr)))));
         }
     }
 

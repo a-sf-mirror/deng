@@ -626,7 +626,7 @@ class PolyobjWaitDirectStatement : public Statement
 class ChangeFloorStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        const dchar* flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop()));
+        const String& flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop()));
         dint tag = proc->pop();
         IterList* list;
 
@@ -650,7 +650,7 @@ class ChangeFloorDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint tag = LONG(*script->bytecodePos++);
-        const dchar* flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(LONG(*script->bytecodePos++)));
+        const String& flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(LONG(*script->bytecodePos++)));
         IterList* list;
 
         if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
@@ -672,7 +672,7 @@ class ChangeFloorDirectStatement : public Statement
 class ChangeCeilingStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        const dchar* flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop()));
+        const String& flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(proc->pop()));
         dint tag = proc->pop();
         IterList* list;
 
@@ -696,7 +696,7 @@ class ChangeCeilingDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dint tag = LONG(*script->bytecodePos++);
-        const dchar* flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(LONG(*script->bytecodePos++)));
+        const String& flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(LONG(*script->bytecodePos++)));
         IterList* list;
 
         if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))

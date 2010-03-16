@@ -26,6 +26,7 @@
 
 #include <de/deng.h>
 
+#include <de/String>
 #include <de/File>
 
 typedef de::dint FunctionName;
@@ -39,21 +40,30 @@ public:
     /// Invalid FunctionName specified. @ingroup errors
     DEFINE_ERROR(UnknownFunctionNameError);
 
-    typedef de::dint StringId;
-
     const de::dbyte* base;
 
     struct Function {
-        const FunctionName name;
+        FunctionName name;
+        de::dint numArguments;
+        bool callOnMapStart;
         const de::dint* entryPoint;
-        const de::dint numArguments;
 
-        Function(FunctionName name, const de::dint* entryPoint, de::dint numArguments)
-          : name(name), entryPoint(entryPoint), numArguments(numArguments) {};
+        Function(FunctionName name, de::dint numArguments, bool callOnMapStart,
+                 const de::dint* entryPoint)
+          : name(name),
+            numArguments(numArguments),
+            callOnMapStart(callOnMapStart),
+            entryPoint(entryPoint)
+        {};
     };
 
+    typedef std::map<FunctionName, Function> Functions;
+
+    typedef de::dint StringId;
+    typedef std::vector<de::String> Strings;
+
 public:
-    ActionScriptBytecodeInterpreter() : base(NULL), _numStrings(0), _strings(NULL) {};
+    ActionScriptBytecodeInterpreter() : base(NULL) {};
 
     ~ActionScriptBytecodeInterpreter();
 
@@ -61,8 +71,8 @@ public:
 
     void unload();
 
-    const de::dchar* string(StringId id) const {
-        assert(id >= 0 && id < _numStrings);
+    const de::String& string(StringId id) const {
+        assert(id >= 0 && (unsigned) id < _strings.size());
         return _strings[id];
     }
 
@@ -75,12 +85,19 @@ public:
         throw UnknownFunctionNameError("ActionScriptBytecodeInterpreter::function", "Invalid FunctionName");
     }
 
+    /**
+     * Returns all currently loaded functions.
+     */
+    const Functions& functions() const {
+        return _functions;
+    }
+
 private:
-    typedef std::map<FunctionName, Function> Functions;
+    /// Function table.
     Functions _functions;
 
-    de::dint _numStrings;
-    de::dchar const** _strings;
+    /// String table.
+    Strings _strings;
 };
 
 #endif /* LIBCOMMON_ACTIONSCRIPT_BYTECODEINTERPRETER_H */
