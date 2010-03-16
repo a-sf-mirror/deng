@@ -26,68 +26,15 @@
 #include <map>
 
 #include <de/Thing>
+#include <de/File>
 #include <de/Error>
 
 #include "common.h"
 
-typedef de::dint FunctionName;
+#include "common/ActionScriptBytecodeInterpreter"
 
 class ActionScriptThinker;
 class GameMap;
-class File;
-
-/**
- * Interpreter for Hexen format ACS bytecode.
- */
-struct ActionScriptBytecodeInterpreter
-{
-public:
-    /// Invalid FunctionName specified. @ingroup errors
-    DEFINE_ERROR(UnknownFunctionNameError);
-
-    typedef de::dint StringId;
-
-    const de::dbyte* base;
-
-    struct Function {
-        const FunctionName name;
-        const de::dint* entryPoint;
-        const de::dint numArguments;
-
-        Function(FunctionName name, const de::dint* entryPoint, de::dint numArguments)
-          : name(name), entryPoint(entryPoint), numArguments(numArguments) {};
-    };
-
-public:
-    ActionScriptBytecodeInterpreter() : base(NULL), _numStrings(0), _strings(NULL) {};
-
-    ~ActionScriptBytecodeInterpreter();
-
-    void load(const de::File& file);
-
-    void unload();
-
-    const de::dchar* string(StringId id) const {
-        assert(id >= 0 && id < _numStrings);
-        return _strings[id];
-    }
-
-    const Function& function(FunctionName name) const {
-        Functions::const_iterator found = _functions.find(name);
-        if(found != _functions.end())
-            return found->second;
-        /// @throw UnknownFunctionNameError Invalid name specified when
-        /// attempting to lookup a Function.
-        throw UnknownFunctionNameError("ActionScriptBytecodeInterpreter::function", "Invalid FunctionName");
-    }
-
-private:
-    typedef std::map<FunctionName, Function> Functions;
-    Functions _functions;
-
-    de::dint _numStrings;
-    de::dchar const** _strings;
-};
 
 class ActionScriptEnvironment
 {
