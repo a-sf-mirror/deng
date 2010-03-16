@@ -19,8 +19,8 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H
-#define LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H
+#ifndef LIBCOMMON_ACTIONSCRIPT_ENVIRONMENT_H
+#define LIBCOMMON_ACTIONSCRIPT_ENVIRONMENT_H
 
 #include <list>
 #include <map>
@@ -237,4 +237,4 @@ private:
     static ActionScriptEnvironment* _singleton;
 };
 
-#endif /* LIBCOMMON_ACTIONSCRIPT_INTERPRETER_H */
+#endif /* LIBCOMMON_ACTIONSCRIPT_ENVIRONMENT_H */
