@@ -84,9 +84,12 @@ class SuspendStatement : public Statement
 class PushNumberStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->push(LONG(*script->bytecodePos++));
+        proc->push(_numberArgument);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _numberArgument;
 
     void operator << (Reader& from)
     {
@@ -98,6 +101,8 @@ class PushNumberStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("PushNumberStatement::operator <<", "Invalid ID");
         }
+
+        from >> _numberArgument;
     }
 };
 
@@ -105,11 +110,13 @@ class LSpec1Statement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
         args[0] = proc->pop();
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
 
     void operator << (Reader& from)
     {
@@ -121,6 +128,8 @@ class LSpec1Statement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec1Statement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument;
     }
 };
 
@@ -128,12 +137,14 @@ class LSpec2Statement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
         args[1] = proc->pop();
         args[0] = proc->pop();
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
 
     void operator << (Reader& from)
     {
@@ -145,6 +156,8 @@ class LSpec2Statement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec2Statement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument;
     }
 };
 
@@ -152,13 +165,15 @@ class LSpec3Statement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
         args[2] = proc->pop();
         args[1] = proc->pop();
         args[0] = proc->pop();
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
 
     void operator << (Reader& from)
     {
@@ -170,6 +185,8 @@ class LSpec3Statement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec3Statement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument;
     }
 };
 
@@ -177,14 +194,16 @@ class LSpec4Statement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
         args[3] = proc->pop();
         args[2] = proc->pop();
         args[1] = proc->pop();
         args[0] = proc->pop();
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
 
     void operator << (Reader& from)
     {
@@ -196,6 +215,8 @@ class LSpec4Statement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec4Statement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument;
     }
 };
 
@@ -203,15 +224,17 @@ class LSpec5Statement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
         args[4] = proc->pop();
         args[3] = proc->pop();
         args[2] = proc->pop();
         args[1] = proc->pop();
         args[0] = proc->pop();
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
 
     void operator << (Reader& from)
     {
@@ -223,6 +246,8 @@ class LSpec5Statement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec5Statement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument;
     }
 };
 
@@ -230,11 +255,14 @@ class LSpec1DirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
-        args[0] = LONG(*script->bytecodePos++);
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        args[0] = dbyte(_arg0Argument);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
+    dint32 _arg0Argument;
 
     void operator << (Reader& from)
     {
@@ -246,6 +274,9 @@ class LSpec1DirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec1DirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument
+             >> _arg0Argument;
     }
 };
 
@@ -253,12 +284,16 @@ class LSpec2DirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
-        args[0] = LONG(*script->bytecodePos++);
-        args[1] = LONG(*script->bytecodePos++);
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        args[0] = dbyte(_arg0Argument);
+        args[1] = dbyte(_arg1Argument);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
+    dint32 _arg0Argument;
+    dint32 _arg1Argument;
 
     void operator << (Reader& from)
     {
@@ -270,6 +305,10 @@ class LSpec2DirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec2DirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument
+             >> _arg0Argument
+             >> _arg1Argument;
     }
 };
 
@@ -277,13 +316,18 @@ class LSpec3DirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
-        args[0] = LONG(*script->bytecodePos++);
-        args[1] = LONG(*script->bytecodePos++);
-        args[2] = LONG(*script->bytecodePos++);
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        args[0] = dbyte(_arg0Argument);
+        args[1] = dbyte(_arg1Argument);
+        args[2] = dbyte(_arg2Argument);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
+    dint32 _arg0Argument;
+    dint32 _arg1Argument;
+    dint32 _arg2Argument;
 
     void operator << (Reader& from)
     {
@@ -295,6 +339,11 @@ class LSpec3DirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec3DirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument
+             >> _arg0Argument
+             >> _arg1Argument
+             >> _arg2Argument;
     }
 };
 
@@ -302,14 +351,20 @@ class LSpec4DirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
-        args[0] = LONG(*script->bytecodePos++);
-        args[1] = LONG(*script->bytecodePos++);
-        args[2] = LONG(*script->bytecodePos++);
-        args[3] = LONG(*script->bytecodePos++);
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        args[0] = dbyte(_arg0Argument);
+        args[1] = dbyte(_arg1Argument);
+        args[2] = dbyte(_arg2Argument);
+        args[3] = dbyte(_arg3Argument);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
+    dint32 _arg0Argument;
+    dint32 _arg1Argument;
+    dint32 _arg2Argument;
+    dint32 _arg3Argument;
 
     void operator << (Reader& from)
     {
@@ -321,6 +376,12 @@ class LSpec4DirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec4DirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument
+             >> _arg0Argument
+             >> _arg1Argument
+             >> _arg2Argument
+             >> _arg3Argument;
     }
 };
 
@@ -328,15 +389,22 @@ class LSpec5DirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         dbyte args[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        dint special = LONG(*script->bytecodePos++);
-        args[0] = LONG(*script->bytecodePos++);
-        args[1] = LONG(*script->bytecodePos++);
-        args[2] = LONG(*script->bytecodePos++);
-        args[3] = LONG(*script->bytecodePos++);
-        args[4] = LONG(*script->bytecodePos++);
-        P_ExecuteLineSpecial(special, args, proc->_lineDef, proc->_lineSide, proc->_activator);
+        args[0] = dbyte(_arg0Argument);
+        args[1] = dbyte(_arg1Argument);
+        args[2] = dbyte(_arg2Argument);
+        args[3] = dbyte(_arg3Argument);
+        args[4] = dbyte(_arg4Argument);
+        P_ExecuteLineSpecial(_specialArgument, args, proc->_lineDef, proc->_lineSide, proc->_activator);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _specialArgument;
+    dint32 _arg0Argument;
+    dint32 _arg1Argument;
+    dint32 _arg2Argument;
+    dint32 _arg3Argument;
+    dint32 _arg4Argument;
 
     void operator << (Reader& from)
     {
@@ -348,6 +416,13 @@ class LSpec5DirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("LSpec5DirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _specialArgument
+             >> _arg0Argument
+             >> _arg1Argument
+             >> _arg2Argument
+             >> _arg3Argument
+             >> _arg4Argument;
     }
 };
 
@@ -581,9 +656,12 @@ class GEStatement : public Statement
 class AssignScriptVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->_context[LONG(*script->bytecodePos++)] = proc->pop();
+        proc->_context[_variableName] = proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _variableName;
 
     void operator << (Reader& from)
     {
@@ -595,15 +673,20 @@ class AssignScriptVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("AssignScriptVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _variableName;
     }
 };
 
 class AssignMapVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._mapContext[LONG(*script->bytecodePos++)] = proc->pop();
+        ase._mapContext[_mapVariableName] = proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _mapVariableName;
 
     void operator << (Reader& from)
     {
@@ -615,15 +698,20 @@ class AssignMapVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("AssignMapVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _mapVariableName;
     }
 };
 
 class AssignWorldVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._worldContext[LONG(*script->bytecodePos++)] = proc->pop();
+        ase._worldContext[_worldVariableName] = proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _worldVariableName;
 
     void operator << (Reader& from)
     {
@@ -635,15 +723,20 @@ class AssignWorldVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("AssignWorldVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _worldVariableName;
     }
 };
 
 class PushScriptVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->push(proc->_context[LONG(*script->bytecodePos++)]);
+        proc->push(proc->_context[_variableName]);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _variableName;
 
     void operator << (Reader& from)
     {
@@ -655,15 +748,20 @@ class PushScriptVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("PushScriptVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _variableName;
     }
 };
 
 class PushMapVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->push(ase._mapContext[LONG(*script->bytecodePos++)]);
+        proc->push(ase._mapContext[_mapVariableName]);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _mapVariableName;
 
     void operator << (Reader& from)
     {
@@ -675,15 +773,20 @@ class PushMapVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("PushMapVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _mapVariableName;
     }
 };
 
 class PushWorldVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->push(ase._worldContext[LONG(*script->bytecodePos++)]);
+        proc->push(ase._worldContext[_worldVariableName]);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _worldVariableName;
 
     void operator << (Reader& from)
     {
@@ -695,15 +798,20 @@ class PushWorldVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("PushWorldVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _worldVariableName;
     }
 };
 
 class AddScriptVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->_context[LONG(*script->bytecodePos++)] += proc->pop();
+        proc->_context[_variableName] += proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _variableName;
 
     void operator << (Reader& from)
     {
@@ -715,15 +823,20 @@ class AddScriptVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("AddScriptVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _variableName;
     }
 };
 
 class AddMapVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._mapContext[LONG(*script->bytecodePos++)] += proc->pop();
+        ase._mapContext[_mapVariableName] += proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _mapVariableName;
 
     void operator << (Reader& from)
     {
@@ -735,15 +848,20 @@ class AddMapVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("AddMapVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _mapVariableName;
     }
 };
 
 class AddWorldVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._worldContext[LONG(*script->bytecodePos++)] += proc->pop();
+        ase._worldContext[_worldVariableName] += proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _worldVariableName;
 
     void operator << (Reader& from)
     {
@@ -755,15 +873,20 @@ class AddWorldVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("AddWorldVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _worldVariableName;
     }
 };
 
 class SubScriptVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->_context[LONG(*script->bytecodePos++)] -= proc->pop();
+        proc->_context[_variableName] -= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _variableName;
 
     void operator << (Reader& from)
     {
@@ -775,15 +898,20 @@ class SubScriptVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("SubScriptVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _variableName;
     }
 };
 
 class SubMapVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._mapContext[LONG(*script->bytecodePos++)] -= proc->pop();
+        ase._mapContext[_mapVariableName] -= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _mapVariableName;
 
     void operator << (Reader& from)
     {
@@ -795,15 +923,20 @@ class SubMapVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("SubMapVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _mapVariableName;
     }
 };
 
 class SubWorldVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._worldContext[LONG(*script->bytecodePos++)] -= proc->pop();
+        ase._worldContext[_worldVariableName] -= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _worldVariableName;
 
     void operator << (Reader& from)
     {
@@ -815,15 +948,20 @@ class SubWorldVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("SubWorldVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _worldVariableName;
     }
 };
 
 class MulScriptVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->_context[LONG(*script->bytecodePos++)] *= proc->pop();
+        proc->_context[_variableName] *= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _variableName;
 
     void operator << (Reader& from)
     {
@@ -835,15 +973,20 @@ class MulScriptVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("MulScriptVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _variableName;
     }
 };
 
 class MulMapVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._mapContext[LONG(*script->bytecodePos++)] *= proc->pop();
+        ase._mapContext[_mapVariableName] *= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _mapVariableName;
 
     void operator << (Reader& from)
     {
@@ -855,15 +998,20 @@ class MulMapVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("MulMapVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _mapVariableName;
     }
 };
 
 class MulWorldVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._worldContext[LONG(*script->bytecodePos++)] *= proc->pop();
+        ase._worldContext[_worldVariableName] *= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _worldVariableName;
 
     void operator << (Reader& from)
     {
@@ -875,15 +1023,20 @@ class MulWorldVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("MulWorldVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _worldVariableName;
     }
 };
 
 class DivScriptVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->_context[LONG(*script->bytecodePos++)] /= proc->pop();
+        proc->_context[_variableName] /= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _variableName;
 
     void operator << (Reader& from)
     {
@@ -895,15 +1048,20 @@ class DivScriptVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("DivScriptVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _variableName;
     }
 };
 
 class DivMapVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._mapContext[LONG(*script->bytecodePos++)] /= proc->pop();
+        ase._mapContext[_mapVariableName] /= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _mapVariableName;
 
     void operator << (Reader& from)
     {
@@ -915,15 +1073,20 @@ class DivMapVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("DivMapVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _mapVariableName;
     }
 };
 
 class DivWorldVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._worldContext[LONG(*script->bytecodePos++)] /= proc->pop();
+        ase._worldContext[_worldVariableName] /= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _worldVariableName;
 
     void operator << (Reader& from)
     {
@@ -935,15 +1098,20 @@ class DivWorldVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("DivWorldVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _worldVariableName;
     }
 };
 
 class ModScriptVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->_context[LONG(*script->bytecodePos++)] %= proc->pop();
+        proc->_context[_variableName] %= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _variableName;
 
     void operator << (Reader& from)
     {
@@ -955,15 +1123,20 @@ class ModScriptVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("ModScriptVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _variableName;
     }
 };
 
 class ModMapVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._mapContext[LONG(*script->bytecodePos++)] %= proc->pop();
+        ase._mapContext[_mapVariableName] %= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _mapVariableName;
 
     void operator << (Reader& from)
     {
@@ -975,15 +1148,20 @@ class ModMapVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("ModMapVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _mapVariableName;
     }
 };
 
 class ModWorldVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._worldContext[LONG(*script->bytecodePos++)] %= proc->pop();
+        ase._worldContext[_worldVariableName] %= proc->pop();
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _worldVariableName;
 
     void operator << (Reader& from)
     {
@@ -995,15 +1173,20 @@ class ModWorldVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("ModWorldVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _worldVariableName;
     }
 };
 
 class IncScriptVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->_context[LONG(*script->bytecodePos++)]++;
+        proc->_context[_variableName]++;
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _variableName;
 
     void operator << (Reader& from)
     {
@@ -1015,15 +1198,20 @@ class IncScriptVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("IncScriptVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _variableName;
     }
 };
 
 class IncMapVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._mapContext[LONG(*script->bytecodePos++)]++;
+        ase._mapContext[_mapVariableName]++;
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _mapVariableName;
 
     void operator << (Reader& from)
     {
@@ -1035,15 +1223,20 @@ class IncMapVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("IncMapVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _mapVariableName;
     }
 };
 
 class IncWorldVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._worldContext[LONG(*script->bytecodePos++)]++;
+        ase._worldContext[_worldVariableName]++;
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _worldVariableName;
 
     void operator << (Reader& from)
     {
@@ -1055,15 +1248,20 @@ class IncWorldVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("IncWorldVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _worldVariableName;
     }
 };
 
 class DecScriptVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        proc->_context[LONG(*script->bytecodePos++)]--;
+        proc->_context[_variableName]--;
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _variableName;
 
     void operator << (Reader& from)
     {
@@ -1075,15 +1273,20 @@ class DecScriptVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("DecScriptVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _variableName;
     }
 };
 
 class DecMapVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._mapContext[LONG(*script->bytecodePos++)]--;
+        ase._mapContext[_mapVariableName]--;
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _mapVariableName;
 
     void operator << (Reader& from)
     {
@@ -1095,15 +1298,20 @@ class DecMapVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("DecMapVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _mapVariableName;
     }
 };
 
 class DecWorldVarStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        ase._worldContext[LONG(*script->bytecodePos++)]--;
+        ase._worldContext[_worldVariableName]--;
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _worldVariableName;
 
     void operator << (Reader& from)
     {
@@ -1115,15 +1323,20 @@ class DecWorldVarStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("DecWorldVarStatement::operator <<", "Invalid ID");
         }
+
+        from >> _worldVariableName;
     }
 };
 
 class GotoStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        script->bytecodePos = (dint*) (ase.bytecode().base + LONG(*script->bytecodePos));
+        script->bytecodePos = (dint*) (ase.bytecode().base + _bytecodeOffset);
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _bytecodeOffset;
 
     void operator << (Reader& from)
     {
@@ -1135,6 +1348,8 @@ class GotoStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("GotoStatement::operator <<", "Invalid ID");
         }
+
+        from >> _bytecodeOffset;
     }
 };
 
@@ -1143,14 +1358,14 @@ class IfGotoStatement : public Statement
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         if(proc->pop())
         {
-            script->bytecodePos = (dint*) (ase.bytecode().base + LONG(*script->bytecodePos));
+            script->bytecodePos = (dint*) (ase.bytecode().base + _bytecodeOffset);
         }
-        else
-        {
-            script->bytecodePos++;
-        }
+
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _bytecodeOffset;
 
     void operator << (Reader& from)
     {
@@ -1162,6 +1377,8 @@ class IfGotoStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("IfGotoStatement::operator <<", "Invalid ID");
         }
+
+        from >> _bytecodeOffset;
     }
 };
 
@@ -1208,9 +1425,12 @@ class DelayStatement : public Statement
 class DelayDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        script->delayCount = LONG(*script->bytecodePos++);
+        script->delayCount = _delayCount;
         return ActionScriptThinker::STOP;
     }
+
+public:
+    dint32 _delayCount;
 
     void operator << (Reader& from)
     {
@@ -1222,6 +1442,8 @@ class DelayDirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("DelayDirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _delayCount;
     }
 };
 
@@ -1251,12 +1473,13 @@ class RandomStatement : public Statement
 class RandomDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        dint low, high;
-        low = LONG(*script->bytecodePos++);
-        high = LONG(*script->bytecodePos++);
-        proc->push(low + (P_Random() % (high - low + 1)));
+        proc->push(_low + (P_Random() % (_high - _low + 1)));
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _low;
+    dint32 _high;
 
     void operator << (Reader& from)
     {
@@ -1268,6 +1491,9 @@ class RandomDirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("RandomDirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _low
+             >> _high;
     }
 };
 
@@ -1296,11 +1522,13 @@ class ThingCountStatement : public Statement
 class ThingCountDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        dint type;
-        type = LONG(*script->bytecodePos++);
-        proc->push(P_CurrentMap().countThingsOfType(type, LONG(*script->bytecodePos++)));
+        proc->push(P_CurrentMap().countThingsOfType(_type, _tid));
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _type;
+    dint32 _tid;
 
     void operator << (Reader& from)
     {
@@ -1312,6 +1540,9 @@ class ThingCountDirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("ThingCountDirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _type
+             >> _tid;
     }
 };
 
@@ -1341,10 +1572,13 @@ class TagWaitDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         ActionScriptEnvironment::ScriptState& state = ase.scriptState(script->name);
-        state.waitValue = LONG(*script->bytecodePos++);
+        state.waitValue = _waitValue;
         state.status = ActionScriptEnvironment::ScriptState::WAITING_FOR_TAG;
         return ActionScriptThinker::STOP;
     }
+
+public:
+    dint32 _waitValue;
 
     void operator << (Reader& from)
     {
@@ -1356,6 +1590,8 @@ class TagWaitDirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("TagWaitDirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _waitValue;
     }
 };
 
@@ -1385,10 +1621,13 @@ class PolyobjWaitDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         ActionScriptEnvironment::ScriptState& state = ase.scriptState(script->name);
-        state.waitValue = LONG(*script->bytecodePos++);
+        state.waitValue = _waitValue;
         state.status = ActionScriptEnvironment::ScriptState::WAITING_FOR_POLYOBJ;
         return ActionScriptThinker::STOP;
     }
+
+public:
+    dint32 _waitValue;
 
     void operator << (Reader& from)
     {
@@ -1400,6 +1639,8 @@ class PolyobjWaitDirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("PolyobjWaitDirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _waitValue;
     }
 };
 
@@ -1441,11 +1682,10 @@ class ChangeFloorStatement : public Statement
 class ChangeFloorDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        dint tag = LONG(*script->bytecodePos++);
-        const String& flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(LONG(*script->bytecodePos++)));
+        const String& flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(_stringId));
         IterList* list;
 
-        if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
+        if((list = P_CurrentMap()->sectorIterListForTag(_tag, false)))
         {
             Material* mat = P_MaterialForName(MN_FLATS, flatName);
             Sector* sec = NULL;
@@ -1460,6 +1700,10 @@ class ChangeFloorDirectStatement : public Statement
         return ActionScriptThinker::CONTINUE;
     }
 
+public:
+    dint32 _tag;
+    dint32 _stringId;
+
     void operator << (Reader& from)
     {
         SerialId id;
@@ -1470,6 +1714,9 @@ class ChangeFloorDirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("ChangeFloorDirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _tag
+             >> _stringId;
     }
 };
 
@@ -1511,11 +1758,10 @@ class ChangeCeilingStatement : public Statement
 class ChangeCeilingDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        dint tag = LONG(*script->bytecodePos++);
-        const String& flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(LONG(*script->bytecodePos++)));
+        const String& flatName = ase.bytecode().string(static_cast<ActionScriptBytecodeInterpreter::StringId>(_stringId));
         IterList* list;
 
-        if((list = P_CurrentMap()->sectorIterListForTag(tag, false)))
+        if((list = P_CurrentMap()->sectorIterListForTag(_tag, false)))
         {
             Material* mat = P_MaterialForName(MN_FLATS, flatName);
             Sector* sec = NULL;
@@ -1530,6 +1776,10 @@ class ChangeCeilingDirectStatement : public Statement
         return ActionScriptThinker::CONTINUE;
     }
 
+public:
+    dint32 _tag;
+    dint32 _stringId;
+
     void operator << (Reader& from)
     {
         SerialId id;
@@ -1540,6 +1790,9 @@ class ChangeCeilingDirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("ChangeCeilingDirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _tag
+             >> _stringId;
     }
 };
 
@@ -1748,16 +2001,15 @@ class UnaryMinusStatement : public Statement
 class IfNotGotoStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        if(proc->pop())
+        if(!proc->pop())
         {
-            script->bytecodePos++;
-        }
-        else
-        {
-            script->bytecodePos = (dint*) (ase.bytecode().base + LONG(*script->bytecodePos));
+            script->bytecodePos = (dint*) (ase.bytecode().base + _bytecodeOffset);
         }
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _bytecodeOffset;
 
     void operator << (Reader& from)
     {
@@ -1769,6 +2021,8 @@ class IfNotGotoStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("IfNotGotoStatement::operator <<", "Invalid ID");
         }
+
+        from >> _bytecodeOffset;
     }
 };
 
@@ -1818,10 +2072,13 @@ class ScriptWaitDirectStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         ActionScriptEnvironment::ScriptState& state = ase.scriptState(script->name);
-        state.waitValue = LONG(*script->bytecodePos++);
+        state.waitValue = _waitValue;
         state.status = ActionScriptEnvironment::ScriptState::WAITING_FOR_SCRIPT;
         return ActionScriptThinker::STOP;
     }
+
+public:
+    dint32 _waitValue;
 
     void operator << (Reader& from)
     {
@@ -1833,6 +2090,8 @@ class ScriptWaitDirectStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("ScriptWaitDirectStatement::operator <<", "Invalid ID");
         }
+
+        from >> _waitValue;
     }
 };
 
@@ -1862,17 +2121,18 @@ class ClearLineDefSpecialStatement : public Statement
 class CaseGotoStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        if(proc->top() == LONG(*script->bytecodePos++))
+        if(proc->top() == _caseValue)
         {
-            script->bytecodePos = (dint*) (ase.bytecode().base + LONG(*script->bytecodePos));
+            script->bytecodePos = (dint*) (ase.bytecode().base + _bytecodeOffset);
             proc->drop();
         }
-        else
-        {
-            script->bytecodePos++;
-        }
+
         return ActionScriptThinker::CONTINUE;
     }
+
+public:
+    dint32 _caseValue;
+    dint32 _bytecodeOffset;
 
     void operator << (Reader& from)
     {
@@ -1884,6 +2144,9 @@ class CaseGotoStatement : public Statement
             /// serialized statement was invalid.
             throw DeserializationError("CaseGotoStatement::operator <<", "Invalid ID");
         }
+
+        from >> _caseValue
+             >> _bytecodeOffset;
     }
 };
 

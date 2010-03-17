@@ -57,7 +57,6 @@ void ActionScriptThinker::think(const de::Time::Delta& /* elapsed */)
     {
         Reader reader = Reader(ase.bytecode().base, littleEndianByteOrder, reinterpret_cast<const dbyte*>(bytecodePos) - ase.bytecode().base);
         Statement* statement = Statement::constructFrom(reader);
-        LONG(*bytecodePos++);
         action = statement->execute(ase, &process, this);
     } while(action == CONTINUE);
 
