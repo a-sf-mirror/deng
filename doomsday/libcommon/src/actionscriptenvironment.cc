@@ -30,7 +30,7 @@ using namespace de;
 
 namespace {
 ActionScriptThinker* createActionScriptThinker(GameMap* map,
-    FunctionName name, const dint* bytecodePos, dint numArgs, const dbyte* args,
+    FunctionName name, de::IByteArray::Offset bytecodePos, dint numArgs, const dbyte* args,
     Thing* activator, LineDef* lineDef, dint lineSide, dint delayCount)
 {
     ActionScriptThinker* script = new ActionScriptThinker(name, bytecodePos, numArgs, args,
@@ -156,7 +156,7 @@ void ActionScriptEnvironment::writeWorldContext(de::Writer& to) const
 void ActionScriptEnvironment::readWorldContext(de::Reader& from)
 {
     dbyte ver = 1;
-    
+
     if(saveVersion >= 7)
         from >> ver;
 

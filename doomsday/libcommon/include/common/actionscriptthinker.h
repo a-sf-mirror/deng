@@ -92,11 +92,11 @@ public:
 public:
     FunctionName name;
 
-    const de::dint* bytecodePos;
+    de::IByteArray::Offset bytecodePos;
     de::dint delayCount;
 
 public:
-    ActionScriptThinker(FunctionName name, const de::dint* bytecodePos,
+    ActionScriptThinker(FunctionName name, de::IByteArray::Offset bytecodePos,
         de::dint numArguments, const de::dbyte* arguments,
         de::Thing* activator, de::LineDef* lineDef, de::dint lineSide,
         de::dint delayCount = 0)

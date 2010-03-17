@@ -1331,7 +1331,7 @@ public:
 class GotoStatement : public Statement
 {
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
-        script->bytecodePos = (dint*) (ase.bytecode().base + _bytecodeOffset);
+        script->bytecodePos = static_cast<IByteArray::Offset>(_bytecodeOffset);
         return ActionScriptThinker::CONTINUE;
     }
 
@@ -1358,7 +1358,7 @@ class IfGotoStatement : public Statement
     ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const {
         if(proc->pop())
         {
-            script->bytecodePos = (dint*) (ase.bytecode().base + _bytecodeOffset);
+            script->bytecodePos = static_cast<IByteArray::Offset>(_bytecodeOffset);
         }
 
         return ActionScriptThinker::CONTINUE;

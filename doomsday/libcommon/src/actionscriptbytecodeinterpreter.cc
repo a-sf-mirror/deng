@@ -19,37 +19,48 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common/ActionScriptBytecodeInterpreter"
+#include <algorithm>
+#include <vector>
+
+#include <de/Reader>
+#include <de/LittleEndianByteOrder>
+#include <de/FixedByteArray>
+
+#include <common/ActionScriptBytecodeInterpreter>
 
 using namespace de;
 
 namespace {
-bool recognize(const de::File& file, dint* numScripts, dint* numStrings)
+bool recognize(const de::File& file, duint32* numScripts, duint32* numStrings)
 {
-    dsize infoOffset;
-    dbyte buff[12];
+    Reader reader = de::Reader(file, de::littleEndianByteOrder);
 
-    // Smaller than the bytecode header?
-    if(file.size() < 12)
+    // Smaller than the header?
+    if(reader.source().size() < 16)
         return false;
 
+    String magicBytes;
+    FixedByteArray byteSeq(magicBytes, 0, 3);
+    reader >> byteSeq;
+    if(magicBytes.compareWithCase("ACS"))
+        return false;
+    reader.seek(1);
+
     // Smaller than the expected size inclusive of the start of script info table?
-    W_ReadLumpSection(lumpNum, buff, 0, 12);
-    infoOffset = (size_t) LONG(*((int32_t*) (buff + 4)));
-    if(infoOffset > lumpLength)
+    duint32 infoOffset;
+    reader >> infoOffset;
+    if(infoOffset > reader.source().size())
         return false;
 
     // Smaller than the expected size inclusive of the whole script info table plus
     // the string offset table size value?
-    W_ReadLumpSection(lumpNum, buff, infoOffset, 4);
-    *numScripts = (int) LONG(*((int32_t*) (buff)));
-    if(infoOffset + 4 + *numScripts * 12 + 4 > lumpLength)
+    reader >> *numScripts;
+    if(infoOffset + 4 + *numScripts * 12 + 4 > reader.source().size())
         return false;
 
     // Smaller than the expected size inclusive of the string offset table?
-    W_ReadLumpSection(lumpNum, buff, infoOffset + 4 + *numScripts * 12, 4);
-    *numStrings = (int) LONG(*((int32_t*) (buff)));
-    if(infoOffset + 4 + *numScripts * 12 + 4 + *numStrings * 4 > lumpLength)
+    reader >> *numStrings;
+    if(infoOffset + 4 + *numScripts * 12 + 4 + *numStrings * 4 > reader.source().size())
         return false;
 
     // Passed basic lump structure checks.
@@ -65,7 +76,7 @@ ActionScriptBytecodeInterpreter::~ActionScriptBytecodeInterpreter()
 void ActionScriptBytecodeInterpreter::unload()
 {
     if(base)
-        std::free(const_cast<dbyte*>(base)); base = NULL;
+        std::free(const_cast<IByteArray*>(base)); base = NULL;
 
     _functions.clear();
     _strings.clear();
@@ -77,7 +88,7 @@ void ActionScriptBytecodeInterpreter::load(const de::File& file)
 
     unload();
 
-    dint numScripts, numStrings;
+    duint32 numScripts, numStrings;
     if(!recognize(file, &numScripts, &numStrings))
     {
         LOG_WARNING("ActionScriptBytecodeInterpreter::load: Warning, file \"") << file.name() <<
@@ -87,44 +98,71 @@ void ActionScriptBytecodeInterpreter::load(const de::File& file)
     if(numScripts == 0)
         return; // Empty lump.
 
-    base = (const dbyte*) W_CacheLumpNum(lumpNum, PU_STATIC);
+    Reader reader = de::Reader(file, de::littleEndianByteOrder);
 
-    // Load the script info.
-    dsize infoOffset = (dsize) LONG(*((dint32*) (base + 4)));
+    // Buffer the whole file. The script run time environment still needs access to it.
+    base = reinterpret_cast<IByteArray*>(std::malloc(reader.source().size()));
+    FixedByteArray byteSeq(*base, 0, reader.source().size());
+    reader >> byteSeq;
 
-    const dbyte* ptr = (base + infoOffset + 4);
-    for(dint i = 0; i < numScripts; ++i, ptr += 12)
+    // Back to the beginning to load the bytecode.
+    reader.setOffset(4);
+
+    // Read the bytecode start offset.
+    duint32 infoOffset;
+    reader >> infoOffset;
+
+    // Read the bytecode.
+    reader.seek(infoOffset);
+    for(duint32 i = 0; i < numScripts; ++i)
     {
-        dint _scriptId = (dint) LONG(*((dint32*) (ptr)));
-        dsize entryPointOffset = (dsize) LONG(*((dint32*) (ptr + 4)));
-        dint argCount = (dint) LONG(*((dint32*) (ptr + 8)));
-        const dint* entryPoint = (const dint*) (base + entryPointOffset);
+        duint32 scriptId, entryPointOffset, argCount;
+
+        reader >> scriptId
+               >> entryPointOffset
+               >> argCount;
 
         FunctionName name;
         bool callOnMapStart;
-        if(_scriptId >= OPEN_SCRIPTS_BASE)
+        if(scriptId >= OPEN_SCRIPTS_BASE)
         {   // Auto-activate
-            name = static_cast<FunctionName>(_scriptId - OPEN_SCRIPTS_BASE);
+            name = static_cast<FunctionName>(scriptId - OPEN_SCRIPTS_BASE);
             callOnMapStart = true;
         }
         else
         {
-            name = static_cast<FunctionName>(_scriptId);
+            name = static_cast<FunctionName>(scriptId);
             callOnMapStart = false;
         }
 
-        _functions.insert(std::pair<FunctionName, Function>(name, Function(name, argCount, callOnMapStart, entryPoint)));
+        _functions.insert(std::pair<FunctionName, Function>(name, Function(name, argCount, callOnMapStart, static_cast<IByteArray::Offset>(entryPointOffset))));
     }
 
     // Read the string table.
     if(numStrings > 0)
     {
-        _strings.reserve(numStrings);
-
-        const dbyte* ptr = (base + infoOffset + 4 + numScripts * 12 + 4);
-        for(dint i = 0; i < numStrings; ++i, ptr += 4)
+        // Seek to the start of the string offset table.
+        reader.seek(4);
+        // Read the string offset table.
+        std::vector<duint32> offsets;
+        offsets.reserve(numStrings);
+        for(duint32 i = 0; i < numStrings; ++i)
         {
-            _strings.push_back(String((const dchar*) base + LONG(*((dint32*) (ptr)))));
+            duint32 offset;
+            reader >> offset;
+            offsets.push_back(offset);
+        }
+
+        // Sort the offsets to ensure a linear seek.
+        std::sort(offsets.begin(), offsets.end());
+
+        // Read the strings.
+        _strings.reserve(numStrings);
+        FOR_EACH(i, offsets, std::vector<duint32>::const_iterator)
+        {
+            reader.setOffset(*i);
+            // Clearly wrong but how do I read construct a String from a cstring of unknown length using reader?
+            _strings.push_back(String("dummy"));
         }
     }
 

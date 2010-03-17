@@ -28,6 +28,7 @@
 
 #include <de/String>
 #include <de/File>
+#include <de/IByteArray>
 
 typedef de::dint FunctionName;
 
@@ -40,16 +41,16 @@ public:
     /// Invalid FunctionName specified. @ingroup errors
     DEFINE_ERROR(UnknownFunctionNameError);
 
-    const de::dbyte* base;
+    const de::IByteArray* base;
 
     struct Function {
         FunctionName name;
         de::dint numArguments;
         bool callOnMapStart;
-        const de::dint* entryPoint;
+        de::IByteArray::Offset entryPoint;
 
         Function(FunctionName name, de::dint numArguments, bool callOnMapStart,
-                 const de::dint* entryPoint)
+                 const de::IByteArray::Offset entryPoint)
           : name(name),
             numArguments(numArguments),
             callOnMapStart(callOnMapStart),

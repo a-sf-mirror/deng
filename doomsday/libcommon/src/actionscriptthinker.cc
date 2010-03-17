@@ -55,7 +55,7 @@ void ActionScriptThinker::think(const de::Time::Delta& /* elapsed */)
     ProcessAction action;
     do
     {
-        Reader reader = Reader(ase.bytecode().base, littleEndianByteOrder, reinterpret_cast<const dbyte*>(bytecodePos) - ase.bytecode().base);
+        Reader reader = Reader(*ase.bytecode().base, littleEndianByteOrder, bytecodePos);
         Statement* statement = Statement::constructFrom(reader);
         action = statement->execute(ase, &process, this);
     } while(action == CONTINUE);
@@ -131,6 +131,6 @@ void ActionScriptThinker::operator << (de::Reader& from)
         from >> process._context[i];
 
     ActionScriptEnvironment& ase = ActionScriptEnvironment::actionScriptEnvironment();
-    dint offset; from >> offset;
-    bytecodePos = (const dint*) (ase.bytecode().base + offset);
+    duint32 offset; from >> offset;
+    bytecodePos = static_cast<IByteArray::Offset>(offset);
 }
