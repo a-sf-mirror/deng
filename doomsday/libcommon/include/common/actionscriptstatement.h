@@ -43,7 +43,7 @@ public:
     virtual ActionScriptThinker::ProcessAction execute(ActionScriptEnvironment& ase, ActionScriptThinker::Process* proc, ActionScriptThinker* script) const = 0;
 
 protected:
-    typedef de::dbyte SerialId;
+    typedef de::duint32 SerialId;
     
     enum SerialIds {
         NOP,
