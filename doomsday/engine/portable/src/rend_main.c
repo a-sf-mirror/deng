@@ -3052,7 +3052,7 @@ void Rend_DrawArrow(const float pos3f[3], float a, float s,
     glRotatef(0, 0, 0, 1);
     glRotatef(0, 1, 0, 0);
     glRotatef(a, 0, 1, 0);
- 
+
     glScalef(s, 0, s);
 
     glBegin(GL_TRIANGLES);
@@ -3163,7 +3163,7 @@ static void Rend_RenderBoundingBoxes(map_t* map)
         float length = (po->box[1][1] - po->box[0][1])/2;
         float height = (sec->SP_ceilheight - sec->SP_floorheight)/2;
         float pos[3], alpha;
-        
+
         pos[VX] = po->box[0][0]+width;
         pos[VY] = po->box[0][1]+length;
         pos[VZ] = sec->SP_floorheight;
