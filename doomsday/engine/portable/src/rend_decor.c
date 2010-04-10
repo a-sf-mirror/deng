@@ -662,7 +662,7 @@ static void updateSurfaceDecorations(map_t* map, surface_t* suf, float offsetS,
 
     V3_Subtract(delta, v2, v1);
 
-    if(visible && suf->material &&
+    if(visible &&
        (delta[VX] * delta[VY] != 0 ||
         delta[VX] * delta[VZ] != 0 ||
         delta[VY] * delta[VZ] != 0))
@@ -735,7 +735,7 @@ static void updateSectorPlaneDecorations(map_t* map, sector_t* sec, int planeID)
     offsetS = -fmod(sec->bBox[BOXLEFT], 64);
     offsetT = -fmod(sec->bBox[BOXBOTTOM], 64);
 
-    updateSurfaceDecorations(map, suf, offsetS, offsetT, v1, v2, sec, true);
+    updateSurfaceDecorations(map, suf, offsetS, offsetT, v1, v2, sec, suf->material? true : false);
 }
 
 static void updateSideSectionDecorations(map_t* map, sidedef_t* side,
@@ -747,88 +747,86 @@ static void updateSideSectionDecorations(map_t* map, sidedef_t* side,
     int sid;
     float offsetS = 0, offsetT = 0;
     boolean visible = false;
-    float frontCeil, frontFloor, backCeil, backFloor, bottom, top;
+    const plane_t* frontCeil, *frontFloor, *backCeil, *backFloor;
+    float bottom, top;
 
     if(!side->lineDef->hEdges[0])
         return;
 
     line = side->lineDef;
     sid = (LINE_BACKSIDE(line) && LINE_BACKSIDE(line) == side)? 1 : 0;
-    frontCeil  = LINE_FRONTSECTOR(line)->SP_ceilvisheight;
-    frontFloor = LINE_FRONTSECTOR(line)->SP_floorvisheight;
+    frontCeil  = LINE_FRONTSECTOR(line)->SP_plane(PLN_CEILING);
+    frontFloor = LINE_FRONTSECTOR(line)->SP_plane(PLN_FLOOR);
 
     if(LINE_BACKSIDE(line))
     {
-        backCeil  = LINE_BACKSECTOR(line)->SP_ceilvisheight;
-        backFloor = LINE_BACKSECTOR(line)->SP_floorvisheight;
+        backCeil  = LINE_BACKSECTOR(line)->SP_plane(PLN_CEILING);
+        backFloor = LINE_BACKSECTOR(line)->SP_plane(PLN_FLOOR);
     }
 
     switch(section)
     {
     case SEG_MIDDLE:
         suf = &side->SW_middlesurface;
-        top = LINE_SECTOR(line, sid)->SP_ceilvisheight;
-        bottom = LINE_SECTOR(line, sid)->SP_floorvisheight;
-        visible = true;
+        if(suf->material)
+            if(!LINE_BACKSIDE(line))
+            {
+                top = frontCeil->visHeight;
+                bottom = frontFloor->visHeight;
+                if(line->flags & DDLF_DONTPEGBOTTOM)
+                    offsetT += frontCeil->visHeight - frontFloor->visHeight;
+                visible = true;
+            }
+            else
+            {
+                float texOffset[2];
+                hedge_t* hEdge = line->hEdges[0];
+                if(sid)
+                    hEdge = hEdge->twin;
+                if(R_FindBottomTopOfHEdgeSection(hEdge, SEG_MIDDLE,
+                             frontFloor, frontCeil, backFloor, backCeil,
+                             &bottom, &top, texOffset, NULL))
+                {
+                    offsetS = texOffset[VX];
+                    offsetT = texOffset[VY];
+                    visible = true;
+                }
+            }
         break;
 
     case SEG_TOP:
         suf = &side->SW_topsurface;
-        if(LINE_FRONTSIDE(line) && LINE_BACKSIDE(line) && backCeil < frontCeil &&
-           (!IS_SKYSURFACE(&LINE_BACKSECTOR(line)->SP_ceilsurface) ||
-            !IS_SKYSURFACE(&LINE_FRONTSECTOR(line)->SP_ceilsurface)))
-        {
-            top = LINE_SECTOR(line, sid)->SP_ceilvisheight;
-            bottom  = LINE_SECTOR(line, sid^1)->SP_ceilvisheight;
-            visible = true;
-        }
+        if(suf->material)
+            if(LINE_BACKSIDE(line) && backCeil->visHeight < frontCeil->visHeight &&
+               (!IS_SKYSURFACE(&backCeil->surface) || !IS_SKYSURFACE(&frontCeil->surface)))
+            {
+                top = frontCeil->visHeight;
+                bottom  = backCeil->visHeight;
+                if(!(line->flags & DDLF_DONTPEGTOP))
+                    offsetT += frontCeil->visHeight - backCeil->visHeight;
+                visible = true;
+            }
         break;
 
     case SEG_BOTTOM:
         suf = &side->SW_bottomsurface;
-        if(LINE_FRONTSIDE(line) && LINE_BACKSIDE(line) && backFloor > frontFloor &&
-           (!IS_SKYSURFACE(&LINE_BACKSECTOR(line)->SP_floorsurface) ||
-            !IS_SKYSURFACE(&LINE_FRONTSECTOR(line)->SP_floorsurface)))
-        {
-            top = LINE_SECTOR(line, sid^1)->SP_floorvisheight;
-            bottom  = LINE_SECTOR(line, sid)->SP_floorvisheight;
-            visible = true;
-        }
+        if(suf->material)
+            if(LINE_BACKSIDE(line) && backFloor->visHeight > frontFloor->visHeight &&
+               (!IS_SKYSURFACE(&backFloor->surface) || !IS_SKYSURFACE(&frontFloor->surface)))
+            {
+                top = backFloor->visHeight;
+                bottom  = frontFloor->visHeight;
+                if(line->flags & DDLF_DONTPEGBOTTOM)
+                    offsetT -= frontCeil->visHeight - backFloor->visHeight;
+                visible = true;
+            }
         break;
     }
 
-    if(visible && suf->material)
+    if(visible)
     {
-        if(LINE_BACKSIDE(line))
-        {
-            if(suf == &side->SW_topsurface)
-            {
-                if(!(line->flags & DDLF_DONTPEGTOP))
-                    offsetT += frontCeil - backCeil;
-            }
-            else // Its a bottom section.
-            {
-                if(line->flags & DDLF_DONTPEGBOTTOM)
-                    offsetT += frontCeil - backFloor;
-            }
-        }
-        else
-        {
-            if(line->flags & DDLF_DONTPEGBOTTOM)
-                offsetT += frontCeil - frontFloor;
-        }
-
-        if(sid)
-        {
-            // Flip vertices, this is the backside.
-            V3_Set(v1, line->L_v2->pos[VX], line->L_v2->pos[VY], top);
-            V3_Set(v2, line->L_v1->pos[VX], line->L_v1->pos[VY], bottom);
-        }
-        else
-        {
-            V3_Set(v1, line->L_v1->pos[VX], line->L_v1->pos[VY], top);
-            V3_Set(v2, line->L_v2->pos[VX], line->L_v2->pos[VY], bottom);
-        }
+        V3_Set(v1, LINE_VERTEX(line, sid  )->pos[VX], LINE_VERTEX(line, sid  )->pos[VY], top);
+        V3_Set(v2, LINE_VERTEX(line, sid^1)->pos[VX], LINE_VERTEX(line, sid^1)->pos[VY], bottom);
     }
 
     updateSurfaceDecorations(map, suf, offsetS, offsetT, v1, v2, NULL, visible);

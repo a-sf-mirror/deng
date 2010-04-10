@@ -49,10 +49,6 @@
 
 #define MAX_BOB_OFFSET          (8)
 
-#define NOMOMENTUM_THRESHOLD    (0.000001f)
-#define STOPSPEED               (1.0f/1.6/10)
-#define STANDSPEED              (1.0f/2)
-
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -337,6 +333,30 @@ float P_MobjGetFriction(mobj_t* mo)
     }
 }
 
+static boolean isInWalkState(player_t* pl)
+{
+    return pl->plr->mo->state - STATES -
+                PCLASS_INFO(pl->class)->runState < 4;
+}
+
+static float getFriction(mobj_t* mo)
+{
+    if((mo->flags2 & MF2_FLY) && !(mo->pos[VZ] <= mo->floorZ) &&
+       !mo->onMobj)
+    {   // Airborne friction.
+        return FRICTION_FLY;
+    }
+
+#if __JHERETIC__
+    if(P_ToXSector(P_GetPtrp(mo->subsector, DMU_SECTOR))->special == 15)
+    {   // Friction_Low
+        return FRICTION_LOW;
+    }
+#endif
+
+    return P_MobjGetFriction(mo);
+}
+
 void P_MobjMoveXY(mobj_t* mo)
 {
     assert(mo);
@@ -355,7 +375,7 @@ void P_MobjMoveXY(mobj_t* mo)
     mo->mom[MX] = mom[MX];
     mo->mom[MY] = mom[MY];
 
-    if(mom[MX] == 0 && mom[MY] == 0)
+    if(mo->mom[MX] == 0 && mo->mom[MY] == 0)
     {
         if(mo->flags & MF_SKULLFLY)
         {   // A flying mobj slammed into something.
@@ -509,48 +529,34 @@ void P_MobjMoveXY(mobj_t* mo)
     }
 
     // Stop player walking animation.
-    if(player && !player->plr->cmd.forwardMove && !player->plr->cmd.sideMove &&
-       mo->mom[MX] > -STANDSPEED && mo->mom[MX] < STANDSPEED &&
-       mo->mom[MY] > -STANDSPEED && mo->mom[MY] < STANDSPEED)
+    if((!player || (!(player->plr->cmd.forwardMove | player->plr->cmd.sideMove) &&
+        player->plr->mo != mo /* $voodoodolls: Stop animating. */)) &&
+       INRANGE_OF(mo->mom[MX], 0, WALKSTOP_THRESHOLD) &&
+       INRANGE_OF(mo->mom[MY], 0, WALKSTOP_THRESHOLD))
     {
         // If in a walking frame, stop moving.
-        if((unsigned) ((player->plr->mo->state - STATES) - PCLASS_INFO(player->class)->runState) < 4)
+        if(player && isInWalkState(player) && player->plr->mo == mo)
             P_MobjChangeState(player->plr->mo, PCLASS_INFO(player->class)->normalState);
-    }
 
-    if((!player || (player->plr->cmd.forwardMove == 0 && player->plr->cmd.sideMove == 0)) &&
-       mo->mom[MX] > -STOPSPEED && mo->mom[MX] < STOPSPEED &&
-       mo->mom[MY] > -STOPSPEED && mo->mom[MY] < STOPSPEED)
-    {
-        mo->mom[MX] = 0;
-        mo->mom[MY] = 0;
+        // $voodoodolls: Do not zero mom!
+        if(!(player && player->plr->mo != mo))
+            mo->mom[MX] = mo->mom[MY] = 0;
+
+        // $voodoodolls: Stop view bobbing if this isn't a voodoo doll.
+        if(player && player->plr->mo == mo)
+            player->bob = 0;
     }
     else
     {
-        if((mo->flags2 & MF2_FLY) && !(mo->pos[VZ] <= mo->floorZ) &&
-           !mo->onMobj)
-        {
-            mo->mom[MX] *= FRICTION_FLY;
-            mo->mom[MY] *= FRICTION_FLY;
-        }
-        else
-        {
-#if __JHERETIC__
-            if(P_ToXSector(DMU_GetPtrp(mo->subsector, DMU_SECTOR))->special == 15)
-            {
-                // Friction_Low
-                mo->mom[MX] *= FRICTION_LOW;
-                mo->mom[MY] *= FRICTION_LOW;
-            }
-            else
-#endif
-            {
-                float friction = P_MobjGetFriction(mo);
+        float friction = getFriction(mo);
 
-                mo->mom[MX] *= friction;
-                mo->mom[MY] *= friction;
-            }
-        }
+        mo->mom[MX] *= friction;
+        if(INRANGE_OF(mo->mom[MX], 0, NOMOMENTUM_THRESHOLD))
+            mo->mom[MX] = 0;
+
+        mo->mom[MY] *= friction;
+        if(INRANGE_OF(mo->mom[MY], 0, NOMOMENTUM_THRESHOLD))
+            mo->mom[MY] = 0;
     }
     }
 }
@@ -566,8 +572,8 @@ void P_MobjMoveZ(mobj_t* mo)
 
     gravity = XS_Gravity(DMU_GetPtrp(mo->subsector, DMU_SECTOR));
 
-    // Check for smooth step up.
-    if(mo->player && mo->pos[VZ] < mo->floorZ)
+    // $voodoodolls: Check for smooth step up unless a voodoo doll.
+    if(mo->player && mo->player->plr->mo == mo && mo->pos[VZ] < mo->floorZ)
     {
         mo->player->viewHeight -= mo->floorZ - mo->pos[VZ];
         mo->player->viewHeightDelta =
@@ -611,7 +617,8 @@ void P_MobjMoveZ(mobj_t* mo)
     }
 
     // Do some fly-bobbing.
-    if(mo->player && (mo->flags2 & MF2_FLY) && mo->pos[VZ] > mo->floorZ &&
+    if(mo->player && mo->player->plr->mo == mo &&
+       (mo->flags2 & MF2_FLY) && mo->pos[VZ] > mo->floorZ &&
        !mo->onMobj && (map->time & 2))
     {
         mo->pos[VZ] += FIX2FLT(finesine[(FINEANGLES / 20 * map->time >> 2) & FINEMASK]);

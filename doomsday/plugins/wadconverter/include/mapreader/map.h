@@ -251,6 +251,8 @@ namespace wadconverter
             byte d64useType;
             int16_t d64tag;
 
+            uint validCount; // Used for Polyobj LineDef collection.
+
             // DOOM format constructor.
             LineDef(uint v1, uint v2, uint frontSide, uint backSide, int16_t flags,
                     int16_t dType, int16_t dTag)
@@ -263,7 +265,8 @@ namespace wadconverter
                   d64texFlags(0),
                   d64type(0),
                   d64useType(0),
-                  d64tag(0)
+                  d64tag(0),
+                  validCount(0)
                 { v[0] = v1; v[1] = v2; sides[0] = frontSide; sides[1] = backSide; xArgs[0] = xArgs[1] = xArgs[2] = xArgs[3] = xArgs[4] = 0; }
 
             // DOOM64 format constructor.
@@ -279,7 +282,8 @@ namespace wadconverter
                   polyobjOwned(false),
                   dType(0),
                   dTag(0),
-                  xType(0)
+                  xType(0),
+                  validCount(0)
                 { v[0] = v1; v[1] = v2; sides[0] = frontSide; sides[1] = backSide; xArgs[0] = xArgs[1] = xArgs[2] = xArgs[3] = xArgs[4] = 0; }
 
             // Hexen format constructor.
@@ -295,12 +299,15 @@ namespace wadconverter
                   d64texFlags(0),
                   d64type(0),
                   d64useType(0),
-                  d64tag(0)
+                  d64tag(0),
+                  validCount(0)
                 { v[0] = v1; v[1] = v2; sides[0] = frontSide; sides[1] = backSide; xArgs[0] = arg1; xArgs[1] = arg2; xArgs[2] = arg3; xArgs[3] = arg4; xArgs[4] = arg5; }
         };
 
         typedef std::vector<LineDef> LineDefs;
         LineDefs _lineDefs;
+
+        uint validCount; // Used for Polyobj LineDef collection.
 
         /**
          * SideDefs.
@@ -433,7 +440,8 @@ namespace wadconverter
 
         void findPolyobjs();
         bool findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY);
-        bool iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2], uint* polyLineCount, LineDef** lineList);
+        LineDef** collectPolyobjLineDefs(LineDef* lineDef, uint* num);
+        void iterFindPolyLines(int16_t x, int16_t y, uint* polyLineCount, LineDef** lineList);
         void createPolyobj(LineDef** lineList, uint num, int tag, int sequenceType, int16_t anchorX, int16_t anchorY);
 
     public:

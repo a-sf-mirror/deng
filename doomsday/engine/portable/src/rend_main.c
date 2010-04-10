@@ -75,10 +75,10 @@ enum {
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
-void Rend_DrawBBox(const float pos3f[3], float w, float l, float h,
+void Rend_DrawBBox(const float pos3f[3], float w, float l, float h, float a,
                    const float color3f[3], float alpha, float br,
                    boolean alignToBase);
-void Rend_DrawArrow(const float pos3f[3], angle_t a, float s,
+void Rend_DrawArrow(const float pos3f[3], float a, float s,
                     const float color3f[3], float alpha);
 
 void Rend_RenderNormals(map_t* map);
@@ -109,6 +109,7 @@ int missileBlend = 1;
 int gameDrawHUD = 1; // Set to zero when we advise that the HUD should not be drawn
 
 int devMobjBBox = 0; // 1 = Draw mobj bounding boxes (for debug)
+int devPolyobjBBox = 0; // 1 = Draw polyobj bounding boxes (for debug)
 DGLuint dlBBox = 0; // Display list: active-textured bbox model.
 
 byte devBlockmap = 0; // 1 = mobjs, 2 = linedefs, 3 = subSectors.
@@ -143,6 +144,7 @@ void Rend_Register(void)
     C_VAR_BYTE("rend-dev-freeze", &freezeRLs, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_INT("rend-dev-cull-subsectors", &devNoCulling,CVF_NO_ARCHIVE,0,1);
     C_VAR_INT("rend-dev-mobj-bbox", &devMobjBBox, CVF_NO_ARCHIVE, 0, 1);
+    C_VAR_INT("rend-dev-polyobj-bbox", &devPolyobjBBox, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_BYTE("rend-dev-light-mod", &devLightModRange, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_BYTE("rend-dev-tex-showfix", &devNoTexFix, CVF_NO_ARCHIVE, 0, 1);
     C_VAR_BYTE("rend-dev-blockmap-debug", &devBlockmap, CVF_NO_ARCHIVE, 0, 3);
@@ -956,6 +958,7 @@ void Rend_AddMaskedPoly(const rvertex_t* rvertices,
         vis->data.wall.modTexCoord[1][1] = dyn->t[1];
         for(c = 0; c < 3; ++c)
             vis->data.wall.modColor[c] = dyn->color[c];
+        vis->data.wall.modColor[3] = 1;
     }
     else
     {
@@ -1578,6 +1581,38 @@ static void markSegsFacingFront(subsector_t* subsector)
     } while((hEdge = hEdge->next) != subsector->face->hEdge);
 }
 
+static void occludeFrontFacingSegsInSubsector(const subsector_t* ssec)
+{
+    if(ssec->face->hEdge)
+    {
+        hedge_t* hEdge = ssec->face->hEdge;
+        do
+        {
+            seg_t* seg = (seg_t*) hEdge->data;
+            if(seg && (seg->frameFlags & SEGINF_FACINGFRONT) && seg->sideDef)
+            {
+                if(!C_CheckViewRelSeg(hEdge->vertex->pos[VX], hEdge->vertex->pos[VY], hEdge->twin->vertex->pos[VX], hEdge->twin->vertex->pos[VY]))
+                    seg->frameFlags &= ~SEGINF_FACINGFRONT;
+            }
+        } while((hEdge = hEdge->next) != ssec->face->hEdge);
+    }
+
+    if(ssec->polyObj)
+    {
+        uint i;
+        for(i = 0; i < ssec->polyObj->numSegs; ++i)
+        {
+            seg_t* seg = &ssec->polyObj->segs[i];
+            if(seg->frameFlags & SEGINF_FACINGFRONT)
+            {
+                hedge_t* hEdge = seg->hEdge;
+                if(!C_CheckViewRelSeg(hEdge->vertex->pos[VX], hEdge->vertex->pos[VY], hEdge->twin->vertex->pos[VX], hEdge->twin->vertex->pos[VY]))
+                    seg->frameFlags &= ~SEGINF_FACINGFRONT;
+            }
+        }
+    }
+}
+
 static void prepareSkyMaskPoly(rvertex_t verts[4], rtexcoord_t coords[4],
                                rtexmapunit_t rTU[NUM_TEXMAP_UNITS],
                                float wallLength, material_t* mat)
@@ -2094,6 +2129,8 @@ static void Rend_RenderSubsector(face_t* face)
     occludeSubsector(subsector, false);
     LO_ClipInSubsector(subsector);
     occludeSubsector(subsector, true);
+
+    occludeFrontFacingSegsInSubsector(subsector);
 
     if(subsector->polyObj)
     {
@@ -2967,7 +3004,7 @@ static DGLuint constructBBox(DGLuint name, float br)
  * @param alignToBase   If @c true, align the base of the box
  *                      to the Z coordinate.
  */
-void Rend_DrawBBox(const float pos3f[3], float w, float l, float h,
+void Rend_DrawBBox(const float pos3f[3], float w, float l, float h, float a,
                    const float color3f[3], float alpha, float br,
                    boolean alignToBase)
 {
@@ -2979,6 +3016,10 @@ void Rend_DrawBBox(const float pos3f[3], float w, float l, float h,
         glTranslatef(pos3f[VX], pos3f[VZ] + h, pos3f[VY]);
     else
         glTranslatef(pos3f[VX], pos3f[VZ], pos3f[VY]);
+
+    glRotatef(0, 0, 0, 1);
+    glRotatef(0, 1, 0, 0);
+    glRotatef(a, 0, 1, 0);
 
     glScalef(w - br - br, h - br - br, l - br - br);
     glColor4f(color3f[0], color3f[1], color3f[2], alpha);
@@ -3000,7 +3041,7 @@ void Rend_DrawBBox(const float pos3f[3], float w, float l, float h,
  * @param color3f       Color to make the box (uniform vertex color).
  * @param alpha         Alpha to make the box (uniform vertex color).
  */
-void Rend_DrawArrow(const float pos3f[3], angle_t a, float s,
+void Rend_DrawArrow(const float pos3f[3], float a, float s,
                     const float color3f[3], float alpha)
 {
     glMatrixMode(GL_MODELVIEW);
@@ -3010,8 +3051,8 @@ void Rend_DrawArrow(const float pos3f[3], angle_t a, float s,
 
     glRotatef(0, 0, 0, 1);
     glRotatef(0, 1, 0, 0);
-    glRotatef((a / (float) ANGLE_MAX *-360), 0, 1, 0);
-
+    glRotatef(a, 0, 1, 0);
+ 
     glScalef(s, 0, s);
 
     glBegin(GL_TRIANGLES);
@@ -3034,6 +3075,43 @@ void Rend_DrawArrow(const float pos3f[3], angle_t a, float s,
     glPopMatrix();
 }
 
+static int drawMobjBBox(void* p, void* context)
+{
+    static const float  red[3] = { 1, 0.2f, 0.2f}; // non-solid objects
+    static const float  green[3] = { 0.2f, 1, 0.2f}; // solid objects
+    static const float  yellow[3] = {0.7f, 0.7f, 0.2f}; // missiles
+
+    mobj_t* mo = (mobj_t*) p;
+    float size, alpha, eye[3];
+
+    // We don't want the console player.
+    if(mo == ddPlayers[consolePlayer].shared.mo)
+        return true; // Continue iteration.
+    // Is it vissible?
+    if(!(mo->subsector && mo->subsector->sector->frameFlags & SIF_VISIBLE))
+        return true; // Continue iteration.
+
+    eye[VX] = vx;
+    eye[VY] = vz;
+    eye[VZ] = vy;
+
+    alpha = 1 - ((M_Distance(mo->pos, eye)/(theWindow->width/2))/4);
+    if(alpha < .25f)
+        alpha = .25f; // Don't make them totally invisible.
+
+    // Draw a bounding box in an appropriate color.
+    size = mo->radius;
+    Rend_DrawBBox(mo->pos, size, size, mo->height/2, 0,
+                  (mo->ddFlags & DDMF_MISSILE)? yellow :
+                  (mo->ddFlags & DDMF_SOLID)? green : red,
+                  alpha, .08f, true);
+
+    Rend_DrawArrow(mo->pos, ((mo->angle + ANG45 + ANG90) / (float) ANGLE_MAX *-360), size*1.25,
+                   (mo->ddFlags & DDMF_MISSILE)? yellow :
+                   (mo->ddFlags & DDMF_SOLID)? green : red, alpha);
+    return true; // Continue iteration.
+}
+
 /**
  * Renders bounding boxes for all mobj's (linked in sec->mobjList, except
  * the console player) in all sectors that are currently marked as vissible.
@@ -3052,7 +3130,7 @@ static void Rend_RenderBoundingBoxes(map_t* map)
     material_t* mat;
     material_snapshot_t ms;
 
-    if(!devMobjBBox || netGame)
+    if((!devMobjBBox && !devPolyobjBBox) || netGame)
         return;
 
     if(!dlBBox)
@@ -3061,9 +3139,6 @@ static void Rend_RenderBoundingBoxes(map_t* map)
     eye[VX] = vx;
     eye[VY] = vz;
     eye[VZ] = vy;
-
-    if(usingFog)
-        glDisable(GL_FOG);
 
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D);
@@ -3076,47 +3151,58 @@ static void Rend_RenderBoundingBoxes(map_t* map)
                    ms.units[MTU_PRIMARY].magMode);
     GL_BlendMode(BM_ADD);
 
-    // For every sector
-    for(i = 0; i < map->numSectors; ++i)
+    if(devMobjBBox)
+        Map_IterateThinkers2(map, gx.MobjThinker, ITF_PUBLIC, drawMobjBBox, NULL);
+
+    if(devPolyobjBBox)
+    for(i = 0; i < map->numPolyObjs; ++i)
     {
-        sector_t* sec = map->sectors[i];
-        mobj_t* mo;
+        const polyobj_t* po = map->polyObjs[i];
+        const sector_t* sec = po->subsector->sector;
+        float width  = (po->box[1][0] - po->box[0][0])/2;
+        float length = (po->box[1][1] - po->box[0][1])/2;
+        float height = (sec->SP_ceilheight - sec->SP_floorheight)/2;
+        float pos[3], alpha;
+        
+        pos[VX] = po->box[0][0]+width;
+        pos[VY] = po->box[0][1]+length;
+        pos[VZ] = sec->SP_floorheight;
 
-        // Is it vissible?
-        if(!(sec->frameFlags & SIF_VISIBLE))
-            continue;
+        alpha = 1 - ((M_Distance(pos, eye)/(theWindow->width/2))/4);
+        if(alpha < .25f)
+            alpha = .25f; // Don't make them totally invisible.
 
-        // For every mobj in the sector's mobjList
-        for(mo = sec->mobjList; mo; mo = mo->sNext)
+        Rend_DrawBBox(pos, width, length, height, 0, yellow, alpha, .08f, true);
+
+        {uint j;
+        for(j = 0; j < po->numSegs; ++j)
         {
-            float alpha, size;
+            seg_t* seg = &po->segs[j];
+            linedef_t* lineDef = seg->sideDef->lineDef;
+            float width  = (lineDef->bBox[BOXRIGHT] - lineDef->bBox[BOXLEFT])/2;
+            float length = (lineDef->bBox[BOXTOP] - lineDef->bBox[BOXBOTTOM])/2;
+            float pos[3];
 
-            if(mo == ddPlayers[consolePlayer].shared.mo)
-                continue; // We don't want the console player.
+            /** Draw a bounding box for the lineDef.
+            pos[VX] = lineDef->bBox[BOXLEFT]+width;
+            pos[VY] = lineDef->bBox[BOXBOTTOM]+length;
+            pos[VZ] = sec->SP_floorheight;
 
-            alpha = 1 - ((M_Distance(mo->pos, eye)/(theWindow->width/2))/4);
+            Rend_DrawBBox(pos, width, length, height, 0, red, alpha, .08f, true);
+            */
 
-            if(alpha < .25f)
-                alpha = .25f; // Don't make them totally invisible.
+            pos[VX] = (lineDef->L_v2->pos[VX]+lineDef->L_v1->pos[VX])/2;
+            pos[VY] = (lineDef->L_v2->pos[VY]+lineDef->L_v1->pos[VY])/2;
+            pos[VZ] = sec->SP_floorheight;
+            width = 0;
+            length = lineDef->length/2;
 
-            // Draw a bounding box in an appropriate color.
-            size = mo->radius;
-            Rend_DrawBBox(mo->pos, size, size, mo->height/2,
-                          (mo->ddFlags & DDMF_MISSILE)? yellow :
-                          (mo->ddFlags & DDMF_SOLID)? green : red,
-                          alpha, .08f, true);
-
-            Rend_DrawArrow(mo->pos, mo->angle + ANG45 + ANG90 , size*1.25,
-                           (mo->ddFlags & DDMF_MISSILE)? yellow :
-                           (mo->ddFlags & DDMF_SOLID)? green : red, alpha);
-        }
+            Rend_DrawBBox(pos, width, length, height, BANG2DEG(BANG_90-lineDef->angle), green, alpha, 0, true);
+        }}
     }
 
     GL_BlendMode(BM_NORMAL);
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-
-    if(usingFog)
-        glEnable(GL_FOG);
 }

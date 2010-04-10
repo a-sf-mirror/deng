@@ -986,7 +986,7 @@ void P_PlayerInSpecialSector(player_t* player)
         if(cfg.secretMsg)
         {
             P_SetMessage(player, "You've found a secret area!", false);
-            S_ConsoleSound(SFX_WPNUP, 0, player - players);
+            S_ConsoleSound(SFX_SECRET, 0, player - players);
         }
         break;
 
@@ -1056,8 +1056,10 @@ void GameMap_UpdateSpecials(map_t* map)
         case 27:
         case 28:
         case 29:
+            if(!cfg.fixPlaneScrollMaterialsEastOnly)
+                break;
             texOff[VY] = P_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y);
-            texOff[VY] -= PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 25);
+            texOff[VY] -= PLANE_MATERIAL_SCROLLUNIT * (1 + (sect->special - 25)*2);
             P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y, texOff[VY]);
             break;
 
@@ -1067,7 +1069,7 @@ void GameMap_UpdateSpecials(map_t* map)
         case 23:
         case 24:
             texOff[VX] = P_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X);
-            texOff[VX] -= PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 20);
+            texOff[VX] -= PLANE_MATERIAL_SCROLLUNIT * (1 + (sect->special - 20)*2);
             P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X, texOff[VX]);
             break;
 
@@ -1082,8 +1084,10 @@ void GameMap_UpdateSpecials(map_t* map)
         case 32:
         case 33:
         case 34:
+            if(!cfg.fixPlaneScrollMaterialsEastOnly)
+                break;
             texOff[VY] = P_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y);
-            texOff[VY] += PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 30);
+            texOff[VY] += PLANE_MATERIAL_SCROLLUNIT * (1 + (sect->special - 30)*2);
             P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y, texOff[VY]);
             break;
 
@@ -1092,15 +1096,14 @@ void GameMap_UpdateSpecials(map_t* map)
         case 37:
         case 38:
         case 39:
+            if(!cfg.fixPlaneScrollMaterialsEastOnly)
+                break;
             texOff[VX] = P_GetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X);
-            texOff[VX] += PLANE_MATERIAL_SCROLLUNIT * (1 + sect->special - 35);
+            texOff[VX] += PLANE_MATERIAL_SCROLLUNIT * (1 + (sect->special - 35)*2);
             P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X, texOff[VX]);
             break;
 
         default:
-            // DJS - Is this really necessary every tic?
-            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_X, 0);
-            P_SetFloat(DMU_SECTOR, i, DMU_FLOOR_MATERIAL_OFFSET_Y, 0);
             break;
         }
     }

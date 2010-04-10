@@ -2134,7 +2134,7 @@ static void finishLineDefs2(map_t* map)
         // Calculate the accurate length of each line.
         ld->length = P_AccurateDistance(ld->dX, ld->dY);
         ld->angle = bamsAtan2((int) (v[1]->pos[VY] - v[0]->pos[VY]),
-                              (int) (v[1]->pos[VX] - v[0]->pos[VX])) << FRACBITS;
+                              (int) (v[1]->pos[VX] - v[0]->pos[VX]));
 
         if(!ld->dX)
             ld->slopeType = ST_VERTICAL;
@@ -3555,7 +3555,7 @@ static linedef_t* createLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
 
     l->angle =
         bamsAtan2((int) (l->buildData.v[1]->pos[VY] - l->buildData.v[0]->pos[VY]),
-                  (int) (l->buildData.v[1]->pos[VX] - l->buildData.v[0]->pos[VX])) << FRACBITS;
+                  (int) (l->buildData.v[1]->pos[VX] - l->buildData.v[0]->pos[VX]));
 
     if(l->dX == 0)
         l->slopeType = ST_VERTICAL;
@@ -3587,8 +3587,8 @@ static linedef_t* createLineDef(map_t* map, vertex_t* vtx1, vertex_t* vtx2,
     }
     else
     {
-        l->bBox[BOXBOTTOM] = l->buildData.v[0]->pos[VY];
-        l->bBox[BOXTOP]    = l->buildData.v[1]->pos[VY];
+        l->bBox[BOXBOTTOM] = l->buildData.v[1]->pos[VY];
+        l->bBox[BOXTOP]    = l->buildData.v[0]->pos[VY];
     }
 
     // Remember the number of unique references.

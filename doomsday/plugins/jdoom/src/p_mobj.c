@@ -54,10 +54,6 @@
 
 #define MAX_BOB_OFFSET          (8)
 
-#define NOMOMENTUM_THRESHOLD    (0.000001f)
-#define STOPSPEED               (1.0f/1.6/10)
-#define DROPOFFMOMENTUM_THRESHOLD (1.0f / 4)
-
 // TYPES -------------------------------------------------------------------
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
@@ -202,8 +198,7 @@ void P_MobjMoveXY(mobj_t* mo)
     if(P_CameraXYMovement(mo))
         return;
 
-    if(INRANGE_OF(mo->mom[MX], 0, NOMOMENTUM_THRESHOLD) &&
-       INRANGE_OF(mo->mom[MY], 0, NOMOMENTUM_THRESHOLD))
+    if(mo->mom[MX] == 0 && mo->mom[MY] == 0)
     {
         if(mo->flags & MF_SKULLFLY)
         {   // The skull slammed into something.
@@ -244,8 +239,8 @@ void P_MobjMoveXY(mobj_t* mo)
         {
             pos[VX] = mo->pos[VX] + mom[MX] / 2;
             pos[VY] = mo->pos[VY] + mom[MY] / 2;
-            mom[VX] /= 2;
-            mom[VY] /= 2;
+            mom[MX] /= 2;
+            mom[MY] /= 2;
         }
         else
         {
@@ -339,16 +334,18 @@ void P_MobjMoveXY(mobj_t* mo)
     }
 
     // Stop player walking animation.
-    if((!player || !(player->plr->cmd.forwardMove | player->plr->cmd.sideMove) ||
-         player->plr->mo != mo /* $voodoodolls: Stop also. */) &&
-       INRANGE_OF(mo->mom[MX], 0, STOPSPEED) &&
-       INRANGE_OF(mo->mom[MY], 0, STOPSPEED))
+    if((!player || (!(player->plr->cmd.forwardMove | player->plr->cmd.sideMove) &&
+         player->plr->mo != mo /* $voodoodolls: Stop animating. */)) &&
+       INRANGE_OF(mo->mom[MX], 0, WALKSTOP_THRESHOLD) &&
+       INRANGE_OF(mo->mom[MY], 0, WALKSTOP_THRESHOLD))
     {
         // If in a walking frame, stop moving.
         if(player && isInWalkState(player) && player->plr->mo == mo)
             P_MobjChangeState(player->plr->mo, PCLASS_INFO(player->class)->normalState);
 
-        mo->mom[MX] = mo->mom[MY] = 0;
+        // $voodoodolls: Do not zero mom!
+        if(!(player && player->plr->mo != mo))
+            mo->mom[MX] = mo->mom[MY] = 0;
 
         // $voodoodolls: Stop view bobbing if this isn't a voodoo doll.
         if(player && player->plr->mo == mo)
@@ -356,10 +353,15 @@ void P_MobjMoveXY(mobj_t* mo)
     }
     else
     {
-        float       friction = getFriction(mo);
+        float friction = getFriction(mo);
 
         mo->mom[MX] *= friction;
+        if(INRANGE_OF(mo->mom[MX], 0, NOMOMENTUM_THRESHOLD))
+            mo->mom[MX] = 0;
+
         mo->mom[MY] *= friction;
+        if(INRANGE_OF(mo->mom[MY], 0, NOMOMENTUM_THRESHOLD))
+            mo->mom[MY] = 0;
     }
     }
 }

@@ -213,17 +213,7 @@ static unsigned char cheatTrackSeq2[] = {
 
 static boolean cheatsEnabled(void)
 {
-    extern boolean netCheatParm;
-
-    if(IS_NETGAME && !IS_CLIENT && netSvAllowCheats)
-        return true;
-
-#ifdef _DEBUG
-    return true;
-#else
-    return !(gameSkill == SM_NIGHTMARE || (IS_NETGAME && !netCheatParm) ||
-             players[CONSOLEPLAYER].health <= 0);
-#endif
+    return !IS_NETGAME;
 }
 
 void Cht_Init(void)
@@ -381,7 +371,7 @@ int Cht_WarpFunc(const int* args, int player)
     }
 
     map = P_TranslateMap((tens * 10 + ones) - 1);
-    if(map == gameMap)
+    if(userGame && map == gameMap)
     {   // Don't try to teleport to the current map.
         P_SetMessage(plr, TXT_CHEATBADINPUT, false);
         return false;
@@ -407,10 +397,19 @@ int Cht_WarpFunc(const int* args, int player)
             AM_Open(AM_MapForPlayer(i), false, true);
 
     // So be it.
-    nextMap = map;
-    nextMapEntryPoint = 0;
-    briefDisabled = true;
-    G_SetGameAction(GA_LEAVEMAP);
+    if(userGame)
+    {
+        nextMap = map;
+        nextMapEntryPoint = 0;
+        briefDisabled = true;
+        G_SetGameAction(GA_LEAVEMAP);
+    }
+    else
+    {
+        briefDisabled = true;
+        G_StartNewInit();
+        G_InitNew(dSkill, 0, map);
+    }
 
     return true;
 }
@@ -977,7 +976,7 @@ DEFCC(CCmdCheatWarp)
 {
     int num, args[2];
 
-    if(!cheatsEnabled())
+    if(IS_NETGAME)
         return false;
 
     if(argc != 2)
@@ -1034,7 +1033,7 @@ DEFCC(CCmdCheatGive)
         return true;
     }
 
-    if(!cheatsEnabled())
+    if(IS_NETGAME && !netSvAllowCheats)
         return false;
 
     if(argc != 2 && argc != 3)
@@ -1150,25 +1149,22 @@ DEFCC(CCmdCheatGive)
 
 DEFCC(CCmdCheatMassacre)
 {
-    if(!cheatsEnabled())
-        return false;
-
     Cht_MassacreFunc(NULL, CONSOLEPLAYER);
     return true;
 }
 
 DEFCC(CCmdCheatWhere)
 {
-    if(!cheatsEnabled())
-        return false;
-
     Cht_WhereFunc(NULL, CONSOLEPLAYER);
     return true;
 }
 
 DEFCC(CCmdCheatPig)
 {
-    if(!cheatsEnabled())
+    if(IS_NETGAME)
+        return false;
+
+    if(!userGame || gameSkill == SM_NIGHTMARE || players[CONSOLEPLAYER].health <= 0)
         return false;
 
     Cht_PigFunc(NULL, CONSOLEPLAYER);
@@ -1179,7 +1175,10 @@ DEFCC(CCmdCheatShadowcaster)
 {
     int args[2];
 
-    if(!cheatsEnabled())
+    if(IS_NETGAME)
+        return false;
+
+    if(!userGame || gameSkill == SM_NIGHTMARE || players[CONSOLEPLAYER].health <= 0)
         return false;
 
     args[0] = atoi(argv[1]) + '0';
@@ -1191,7 +1190,9 @@ DEFCC(CCmdCheatRunScript)
 {
     int num, args[2];
 
-    if(!cheatsEnabled())
+    if(IS_NETGAME)
+        return false;
+    if(!userGame)
         return false;
 
     num = atoi(argv[1]);

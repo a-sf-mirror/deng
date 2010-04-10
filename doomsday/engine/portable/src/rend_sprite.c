@@ -108,10 +108,6 @@ static __inline void renderQuad(dgl_vertex_t *v, dgl_color_t *c,
     glEnd();
 }
 
-/**
- * Fog is turned off while rendering. It's not feasible to think that the
- * fog would obstruct the player's view of his own weapon.
- */
 void Rend_Draw3DPlayerSprites(void)
 {
     int                 i;
@@ -119,13 +115,12 @@ void Rend_Draw3DPlayerSprites(void)
     // Setup the modelview matrix.
     Rend_ModelViewMatrix(false);
 
+    if(usingFog)
+        glEnable(GL_FOG);
+
     // Clear Z buffer. This will prevent the psprites from being clipped
     // by nearby polygons.
     glClear(GL_DEPTH_BUFFER_BIT);
-
-    // Turn off fog.
-    if(usingFog)
-        glDisable(GL_FOG);
 
     for(i = 0; i < DDMAXPSPRITES; ++i)
     {
@@ -141,9 +136,8 @@ void Rend_Draw3DPlayerSprites(void)
         }
     }
 
-    // Should we turn the fog back on?
     if(usingFog)
-        glEnable(GL_FOG);
+        glDisable(GL_FOG);
 }
 
 /**
@@ -451,6 +445,9 @@ void Rend_Draw2DPlayerSprites(void)
     if((ddpl->flags & DDPF_CAMERA) || (ddpl->flags & DDPF_CHASECAM))
         return;
 
+    if(usingFog)
+        glEnable(GL_FOG);
+
     // Check for fullbright.
     for(i = 0, psp = ddpl->pSprites; i < DDMAXPSPRITES; ++i, psp++)
     {
@@ -469,6 +466,9 @@ void Rend_Draw2DPlayerSprites(void)
             Rend_DrawPSprite(&params);
         }
     }
+
+    if(usingFog)
+        glDisable(GL_FOG);
 }
 
 /**
@@ -548,12 +548,10 @@ void Rend_RenderMaskedWall(rendmaskedwallparams_t* params)
                             GL_CLAMP_TO_EDGE);
         }
 
-        // Clamp on the vertical axis?
-        // @todo When drawing a stretched, masked middle texture we should
-        // not be clamping here. Currently this info is unknown at this point
-        // but because no maps yet make use of this feature (other than the
-        // unreleased jDoom64) we opt to clamp.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // Clamp on the vertical axis if the coords are in the normal [0, 1] range.
+        if(!(params->texCoord[0][VY] < 0 || params->texCoord[0][VY] > 1 ||
+             params->texCoord[1][VY] < 0 || params->texCoord[1][VY] > 1))
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
     GL_BlendMode(params->blendMode);
 

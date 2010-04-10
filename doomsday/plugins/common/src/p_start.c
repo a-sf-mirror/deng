@@ -376,7 +376,7 @@ void GameMap_DealPlayerStarts(map_t* map, uint entryPoint)
  */
 void GameMap_SpawnPlayer(map_t* map, int plrNum, playerclass_t pClass,
                          float x, float y, float z, angle_t angle, int spawnFlags,
-                         boolean makeCamera)
+                         boolean makeCamera, boolean pickupItems)
 {
     assert(map);
     {
@@ -491,10 +491,13 @@ void GameMap_SpawnPlayer(map_t* map, int plrNum, playerclass_t pClass,
 
     p->pendingWeapon = WT_NOCHANGE;
 
-    // Finally, check the current position so that any interactions
-    // which would occur as a result of collision happen immediately
-    // (e.g., weapon pickups at the current position will be collected).
-    P_CheckPosition3fv(mo, mo->pos);
+    if(pickupItems)
+    {
+        // Check the current position so that any interactions which would
+        // occur as a result of collision happen immediately
+        // (e.g., weapon pickups at the current position will be collected).
+        P_CheckPosition3fv(mo, mo->pos);
+    }
 
     if(p->pendingWeapon != WT_NOCHANGE)
         p->readyWeapon = p->pendingWeapon;
@@ -525,10 +528,14 @@ static void spawnPlayer(map_t* map, int plrNum, playerclass_t pClass,
 #if __JDOOM__ || __JDOOM64__
     boolean queueBody = (plrNum >= 0? true : false);
 #endif
+    boolean pickupItems = true;
 
     /* $voodoodolls */
     if(plrNum < 0)
+    {
         plrNum = -plrNum - 1;
+        pickupItems = false;
+    }
     plrNum = MINMAX_OF(0, plrNum, MAXPLAYERS-1);
 
     plr = &players[plrNum];
@@ -538,7 +545,7 @@ static void spawnPlayer(map_t* map, int plrNum, playerclass_t pClass,
         G_QueueBody(plr->plr->mo);
 #endif
 
-    GameMap_SpawnPlayer(map, plrNum, pClass, x, y, z, angle, spawnFlags, makeCamera);
+    GameMap_SpawnPlayer(map, plrNum, pClass, x, y, z, angle, spawnFlags, makeCamera, pickupItems);
 
     // Spawn a teleport fog?
     if(doTeleSpark && !makeCamera)
@@ -823,8 +830,7 @@ void GameMap_SpawnPlayers(map_t* map)
     else
     {
         int i;
-
-#if __JDOOM__ || __JDOOM64__
+#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
         if(!IS_NETGAME)
         {
             /* $voodoodolls */

@@ -353,6 +353,8 @@ static void testForWindowEffect(map_t* map, linedef_t* l)
         if(n == l || (n->buildData.sideDefs[FRONT] && n->buildData.sideDefs[BACK] &&
             n->buildData.sideDefs[FRONT]->sector == n->buildData.sideDefs[BACK]->sector) /*|| n->buildData.overlap */)
             continue;
+        if(n->inFlags & LF_POLYOBJ)
+            continue;
 
         dX2 = n->buildData.v[1]->pos[VX] - n->buildData.v[0]->pos[VX];
         dY2 = n->buildData.v[1]->pos[VY] - n->buildData.v[0]->pos[VY];

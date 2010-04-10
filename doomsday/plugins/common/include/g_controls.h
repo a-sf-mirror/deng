@@ -127,6 +127,7 @@ typedef struct playerbrain_s {
     // Bits:
     uint        speed : 1;
     uint        use : 1;
+    uint        lunge : 1;
     uint        attack : 1;
     uint        lookCenter : 1;
     uint        fallDown : 1;

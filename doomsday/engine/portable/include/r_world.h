@@ -64,6 +64,8 @@ void            R_MarkLineDefAsDrawnForViewer(linedef_t* lineDef, int pid);
 void            R_OrderVertices(const linedef_t* line, const sector_t* sector,
                                 vertex_t* verts[2]);
 
+plane_t*        R_NewPlaneForSector(sector_t* sec);
+
 surfacedecor_t* R_CreateSurfaceDecoration(decortype_t type, surface_t* suf);
 void            R_ClearSurfaceDecorations(surface_t* suf);
 

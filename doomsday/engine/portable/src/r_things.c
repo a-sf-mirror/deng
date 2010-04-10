@@ -1227,6 +1227,10 @@ void Mobj_ProjectVisSprite(const mobj_t* mo)
         // a valid state.
         return;
     }
+    if(sect->SP_floorvisheight >= sect->SP_ceilvisheight)
+    {   // Never make a vissprite when the mobj's origin sector is of zero height.
+        return;
+    }
 
     // Transform the origin point.
     pos[VX] = mo->pos[VX] - viewData->current.pos[VX];

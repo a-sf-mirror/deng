@@ -221,7 +221,7 @@ static void findContacts(objcontacttype_t type, void* obj)
 
         V3_SetFixed(params.objPos, pt->pos[VX], pt->pos[VY], pt->pos[VZ]);
         // Use a slightly smaller radius than what the obj really is.
-        params.objRadius = FIX2FLT(pt->gen->stages[pt->stage].radius) * .9f;
+        params.objRadius = FIX2FLT(pt->gen->stages[pt->stage].radius) * .98f;
         subsector = pt->subsector;
         break;
         }

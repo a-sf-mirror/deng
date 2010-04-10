@@ -849,8 +849,8 @@ boolean PIT_CheckThing(mobj_t* thing, void* data)
 #if !__JHEXEN__
     else if(overlap && solid)
     {
-        // How are we positioned?
-        if(map->tm[VZ] > thing->pos[VZ] + thing->height - 24)
+        // How are we positioned, allow step up?
+        if(!(thing->flags & MF_CORPSE) && map->tm[VZ] > thing->pos[VZ] + thing->height - 24)
         {
             map->tmThing->onMobj = thing;
             if(thing->pos[VZ] + thing->height > map->tmFloorZ)
@@ -2274,6 +2274,10 @@ static boolean P_ThingHeightClip(mobj_t* thing)
             thing->pos[VZ] = thing->floorZ;
         }
 #else
+        // Update view offset of real players $voodoodolls.
+        if(thing->player && thing->player->plr->mo == thing)
+            thing->player->viewZ += thing->floorZ - thing->pos[VZ];
+
         // Walking monsters rise and fall with the floor.
         thing->pos[VZ] = thing->floorZ;
 
@@ -2324,7 +2328,7 @@ static void P_HitSlideLine(linedef_t* ld)
     side = DMU_PointOnLineDefSide(map->slideMo->pos[VX], map->slideMo->pos[VY], ld);
     DMU_GetFloatpv(ld, DMU_DXY, d1);
     lineAngle = R_PointToAngle2(0, 0, d1[0], d1[1]);
-    moveAngle = R_PointToAngle2(0, 0, map->tmMove[MX], map->tmMove[MY]) + 10;
+    moveAngle = R_PointToAngle2(0, 0, map->tmMove[MX], map->tmMove[MY]);
 
     if(side == 1)
         lineAngle += ANG180;
@@ -2412,7 +2416,7 @@ void P_SlideMove(mobj_t* mo)
     {
         float leadpos[3], trailpos[3], newPos[3];
 
-        if(!--hitcount == 3)
+        if(--hitcount == 0)
             goto stairstep; // Don't loop forever.
 
         // Trace along the three leading corners.
@@ -2456,50 +2460,23 @@ void P_SlideMove(mobj_t* mo)
 
         // Move up to the wall.
         if(map->bestSlideFrac == 1)
-        {
-            // The move must have hit the middle, so stairstep.
+        {   // The move must have hit the middle, so stairstep. $dropoff_fix
           stairstep:
-            // $dropoff_fix
+            /**
+             * Ideally we would set the directional momentum of the mobj to zero
+             * here should a move fail (to prevent noticeable stuttering against
+             * the blocking surface/thing). However due to the mechanics of the
+             * wall side algorithm this is not possible as it results in highly
+             * unpredictable behaviour and resulting in the player sling-shoting
+             * away from the wall.
+             */
 #if __JHEXEN__
             if(!P_TryMove(mo, mo->pos[VX], mo->pos[VY] + mo->mom[MY]))
-            {
-                if(P_TryMove(mo, mo->pos[VX] + mo->mom[MX], mo->pos[VY]))
-                {
-                    // If not set to zero, the mobj will appear stuttering against
-                    // the blocking surface/thing.
-                    mo->mom[MY] = 0;
-                }
-                else
-                {
-                    // If not set to zero, the mobj will appear stuttering against
-                    // the blocking surface/thing.
-                    mo->mom[MX] = mo->mom[MY] = 0;
-                }
-            }
+                P_TryMove(mo, mo->pos[VX] + mo->mom[MX], mo->pos[VY]);
 #else
             if(!P_TryMove(mo, mo->pos[VX], mo->pos[VY] + mo->mom[MY], true, true))
-            {
-                if(P_TryMove(mo, mo->pos[VX] + mo->mom[MX], mo->pos[VY], true, true))
-                {
-                    // If not set to zero, the mobj will appear stuttering against
-                    // the blocking surface/thing.
-                    mo->mom[MY] = 0;
-                }
-                else
-                {
-                    // If not set to zero, the mobj will appear stuttering against
-                    // the blocking surface/thing.
-                    mo->mom[MX] = mo->mom[MY] = 0;
-                }
-            }
+                P_TryMove(mo, mo->pos[VX] + mo->mom[MX], mo->pos[VY], true, true);
 #endif
-            else
-            {
-                // If not set to zero, the mobj will appear stuttering against
-                // the blocking surface/thing.
-                mo->mom[MX] = 0;
-            }
-
             break;
         }
 
@@ -2568,6 +2545,10 @@ int PIT_ChangeSector(void* ptr, void* data)
     map_t* map = Thinker_Map((thinker_t*) thing);
     mobj_t* mo;
 
+    // Don't check things that aren't blocklinked (supposedly immaterial).
+    if(thing->info->flags & MF_NOBLOCKMAP)
+        return true;
+
     if(P_ThingHeightClip(thing))
         return true; // Keep checking...
 
@@ -2627,7 +2608,12 @@ int PIT_ChangeSector(void* ptr, void* data)
     map->noFit = true;
     if(map->crushChange > 0 && !(map->time & 3))
     {
+#if __JHEXEN__
+        P_DamageMobj(thing, NULL, NULL, map->crushChange, false);
+#else
         P_DamageMobj(thing, NULL, NULL, 10, false);
+#endif
+
 #if __JDOOM__ || __JDOOM64__
         if(!(thing->flags & MF_NOBLOOD))
 #elif __JHEXEN__

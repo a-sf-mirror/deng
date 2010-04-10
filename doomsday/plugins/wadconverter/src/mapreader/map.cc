@@ -219,16 +219,15 @@ void Map::createPolyobj(LineDef** lineDefs, uint lineDefCount, int tag,
  * @param lineList      @c NULL, will cause IterFindPolyLines to count
  *                      the number of _lineDefs in the polyobj.
  */
-bool Map::iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2],
-    uint* polyLineCount, LineDef** lineDefs)
+void Map::iterFindPolyLines(int16_t x, int16_t y, uint* polyLineCount, LineDef** lineDefs)
 {
-    if(x == polyStart[0] && y == polyStart[1])
-    {
-        return true;
-    }
-
     for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
     {
+        if(i->polyobjOwned)
+            continue;
+        if(i->validCount == validCount)
+            continue;
+
         int16_t v1[2], v2[2];
 
         v1[0] = (int16_t) _vertexCoords[(i->v[0] - 1) * 2];
@@ -238,17 +237,52 @@ bool Map::iterFindPolyLines(int16_t x, int16_t y, int16_t polyStart[2],
 
         if(v1[0] == x && v1[1] == y)
         {
+            i->validCount = validCount;
+
             if(!lineDefs)
                 *polyLineCount++;
             else
                 *lineDefs++ = &(*i);
 
-            iterFindPolyLines(v2[0], v2[1], polyStart, polyLineCount, lineDefs);
-            return true;
+            iterFindPolyLines(v2[0], v2[1], polyLineCount, lineDefs);
         }
     }
+}
 
-    return false;
+/**
+ * @todo This terribly inefficent (naive) algorithm may need replacing
+ * (it is far outside an exceptable polynominal range!).
+ */
+Map::LineDef** Map::collectPolyobjLineDefs(LineDef* lineDef, uint* num)
+{
+    LineDef** lineList;
+    int16_t v1[2], v2[2];
+    uint numLines;
+
+    lineDef->xType = 0;
+    lineDef->xArgs[0] = 0;
+
+    v1[0] = (int16_t) _vertexCoords[(lineDef->v[0]-1) * 2];
+    v1[1] = (int16_t) _vertexCoords[(lineDef->v[0]-1) * 2 + 1];
+    v2[0] = (int16_t) _vertexCoords[(lineDef->v[1]-1) * 2];
+    v2[1] = (int16_t) _vertexCoords[(lineDef->v[1]-1) * 2 + 1];
+
+    numLines = 1;
+    validCount++;
+    lineDef->validCount = validCount;
+    iterFindPolyLines(v2[0], v2[1], &numLines, NULL);
+
+    lineList = reinterpret_cast<LineDef**>(std::malloc((numLines+1) * sizeof(LineDef*)));
+
+    lineList[0] = lineDef; // Insert the first line.
+    numLines = 1;
+    validCount++;
+    lineDef->validCount = validCount;
+    iterFindPolyLines(v2[0], v2[1], &numLines, lineList + 1);
+    lineList[numLines] = 0; // Terminate.
+
+    *num = numLines;
+    return lineList;
 }
 
 /**
@@ -268,40 +302,24 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
 
     for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
     {
-        if(i->xType == PO_LINE_START && i->xArgs[0] == tag)
+        if(i->polyobjOwned)
+            continue;
+
+        if(!(i->xType == PO_LINE_START && i->xArgs[0] == tag))
+            continue;
+
+        LineDef** lineList;
+        uint num;
+        if((lineList = collectPolyobjLineDefs(&(*i), &num)))
         {
             byte seqType;
-            LineDef** lineList;
-            int16_t v1[2], v2[2];
-            uint polyLineCount;
-            int16_t polyStart[2];
-
-            i->xType = 0;
-            i->xArgs[0] = 0;
-            polyLineCount = 1;
-
-            v1[0] = (int16_t) _vertexCoords[(i->v[0]-1) * 2];
-            v1[1] = (int16_t) _vertexCoords[(i->v[0]-1) * 2 + 1];
-            v2[0] = (int16_t) _vertexCoords[(i->v[1]-1) * 2];
-            v2[1] = (int16_t) _vertexCoords[(i->v[1]-1) * 2 + 1];
-            polyStart[0] = v1[0];
-            polyStart[1] = v1[1];
-            if(!iterFindPolyLines(v2[0], v2[1], polyStart, &polyLineCount, NULL))
-            {
-                Con_Error("WadConverter::findAndCreatePolyobj: Found unclosed polyobj.\n");
-            }
-
-            lineList = (LineDef**) malloc((polyLineCount+1) * sizeof(LineDef*));
-
-            lineList[0] = &(*i); // Insert the first line.
-            iterFindPolyLines(v2[0], v2[1], polyStart, &polyLineCount, lineList + 1);
-            lineList[polyLineCount] = 0; // Terminate.
 
             seqType = i->xArgs[2];
             if(seqType >= SEQTYPE_NUMSEQ)
                 seqType = 0;
 
-            createPolyobj(lineList, polyLineCount, tag, seqType, anchorX, anchorY);
+            createPolyobj(lineList, num, tag, seqType, anchorX, anchorY);
+            std::free(lineList);
             return true;
         }
     }
@@ -321,6 +339,9 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
         psIndexOld = psIndex;
         for(LineDefs::iterator i = _lineDefs.begin(); i != _lineDefs.end(); ++i)
         {
+            if(i->polyobjOwned)
+                continue;
+
             if(i->xType == PO_LINE_EXPLICIT &&
                i->xArgs[0] == tag)
             {
@@ -347,6 +368,7 @@ bool Map::findAndCreatePolyobj(int16_t tag, int16_t anchorX, int16_t anchorY)
                     // Clear out any special.
                     i->xType = 0;
                     i->xArgs[0] = 0;
+                    i->polyobjOwned = true;
                 }
             }
         }

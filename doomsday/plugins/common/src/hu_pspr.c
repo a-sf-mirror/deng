@@ -91,15 +91,24 @@ float HU_PSpriteYOffset(player_t* pl)
     int viewWindowHeight = Get(DD_VIEWWINDOW_HEIGHT);
     float offy = (cfg.plrViewHeight - DEFAULT_PLAYER_VIEWHEIGHT) * 2;
 
-#if __JHERETIC__ || __JHEXEN__
+#if __JHERETIC__ 
     if(viewWindowHeight == SCREENHEIGHT)
-        offy += PSpriteSY[pl->class][pl->readyWeapon];
+        offy += PSpriteSY[pl->morphTics? PCLASS_CHICKEN : pl->class][pl->readyWeapon];
+#elif __JHEXEN__
+    if(viewWindowHeight == SCREENHEIGHT)
+        offy += PSpriteSY[pl->morphTics? PCLASS_PIG : pl->class][pl->readyWeapon];
 #endif
 
 #if __JDOOM__ || __JHERETIC__ || __JHEXEN__
     // If the status bar is visible, the sprite is moved up a bit.
     if(viewWindowHeight < SCREENHEIGHT)
-        offy -= (float) (ST_HEIGHT - 2) * (cfg.statusbarScale / 20.f) - 20;
+    {
+# if __JDOOM__
+        offy -= (float) (ST_HEIGHT) * (cfg.statusbarScale / 20.f) - 16;
+# else
+        offy -= (float) (ST_HEIGHT-1) * (cfg.statusbarScale / 20.f) - 20;
+# endif
+    }
 #endif
 
     return offy;

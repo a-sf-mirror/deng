@@ -122,15 +122,12 @@ void P_PolyobjChanged(polyobj_t* po)
 
 static void updateLineDefAABB(linedef_t* line)
 {
-    byte edge;
 
-    edge = (line->L_v1->pos[VX] < line->L_v2->pos[VX]);
-    line->bBox[BOXLEFT]  = LINE_VERTEX(line, edge^1)->pos[VX];
-    line->bBox[BOXRIGHT] = LINE_VERTEX(line, edge)->pos[VX];
+    line->bBox[BOXLEFT]  = MIN_OF(LINE_VERTEX(line, 1)->pos[VX], LINE_VERTEX(line, 0)->pos[VX]);
+    line->bBox[BOXRIGHT] = MAX_OF(LINE_VERTEX(line, 1)->pos[VX], LINE_VERTEX(line, 0)->pos[VX]);
 
-    edge = (line->L_v1->pos[VY] < line->L_v2->pos[VY]);
-    line->bBox[BOXBOTTOM] = LINE_VERTEX(line, edge^1)->pos[VY];
-    line->bBox[BOXTOP]    = LINE_VERTEX(line, edge)->pos[VY];
+    line->bBox[BOXBOTTOM] = MIN_OF(LINE_VERTEX(line, 1)->pos[VY], LINE_VERTEX(line, 0)->pos[VY]);
+    line->bBox[BOXTOP]    = MAX_OF(LINE_VERTEX(line, 1)->pos[VY], LINE_VERTEX(line, 0)->pos[VY]);
 
     // Update the line's slopetype.
     line->dX = line->L_v2->pos[VX] - line->L_v1->pos[VX];
@@ -381,9 +378,17 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
         rotatePoint(an, &pos[VX], &pos[VY], po->pos[VX], po->pos[VY]);
         line->L_v1->pos[VX] = pos[VX];
         line->L_v1->pos[VY] = pos[VY];
-        line->angle += angle;
+    }
+
+    for(count = 0; count < po->numLineDefs; ++count)
+    {
+        linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
+        sidedef_t* side = LINE_FRONTSIDE(line);
+        surface_t* surface = &side->SW_topsurface;
 
         updateLineDefAABB(line);
+        ((seg_t*) (line)->hEdges[0]->data)->angle += angle;
+        line->angle += angle >> FRACBITS;
 
         // Now update the surface normal.
         surface->normal[VY] = (line->L_v1->pos[VX] - line->L_v2->pos[VX]) / line->length;
@@ -420,13 +425,25 @@ boolean P_PolyobjRotate(struct polyobj_s* po, angle_t angle)
             line->L_v1->pos[VY] = prevPts->pos[VY];
         }
 
-
+        prevPts = po->prevPts;
         for(count = 0; count < po->numLineDefs; ++count, prevPts++)
         {
             linedef_t* line = ((objectrecord_t*) po->lineDefs[count])->obj;
+            sidedef_t* side = LINE_FRONTSIDE(line);
+            surface_t* surface = &side->SW_topsurface;
 
             updateLineDefAABB(line);
-            line->angle -= angle;
+            ((seg_t*) (line)->hEdges[0]->data)->angle -= angle;
+            line->angle -= angle >> FRACBITS;
+
+            // Now update the surface normal.
+            surface->normal[VY] = (line->L_v1->pos[VX] - line->L_v2->pos[VX]) / line->length;
+            surface->normal[VX] = (line->L_v2->pos[VY] - line->L_v1->pos[VY]) / line->length;
+            surface->normal[VZ] = 0;
+
+            // All surfaces of a sidedef have the same normal.
+            memcpy(side->SW_middlenormal, surface->normal, sizeof(surface->normal));
+            memcpy(side->SW_bottomnormal, surface->normal, sizeof(surface->normal));
         }
 
         P_PolyobjLinkLineDefs(po);

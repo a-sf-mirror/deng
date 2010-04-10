@@ -431,7 +431,7 @@ void                GameMap_SpawnSpecials(map_t* map);
 void                GameMap_SpawnPlayers(map_t* map);
 void                GameMap_SpawnPlayer(map_t* map, int plrNum, playerclass_t pClass, float x,
                                         float y, float z, angle_t angle,
-                                        int spawnFlags, boolean makeCamera);
+                                        int spawnFlags, boolean makeCamera, boolean pickupItems);
 void                GameMap_SpawnPlayerDM(map_t* map, int playernum);
 
 mobj_t*             GameMap_SpawnMobj3f(map_t* map, mobjtype_t type, float x, float y, float z, angle_t angle, int spawnFlags);

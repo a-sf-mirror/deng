@@ -5433,11 +5433,11 @@ void SV_MapTeleport(uint map, uint position)
             {
                 GameMap_SpawnPlayer(map, i, cfg.playerClass[i], start->pos[VX],
                               start->pos[VY], start->pos[VZ], start->angle,
-                              start->spawnFlags, false);
+                              start->spawnFlags, false, true);
             }
             else
             {
-                GameMap_SpawnPlayer(map, i, cfg.playerClass[i], 0, 0, 0, 0, MSF_Z_FLOOR, true);
+                GameMap_SpawnPlayer(map, i, cfg.playerClass[i], 0, 0, 0, 0, MSF_Z_FLOOR, true, true);
             }
         }
 

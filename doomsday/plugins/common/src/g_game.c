@@ -155,6 +155,8 @@ game_config_t cfg; // The global cfg.
 
 int debugSound; // Debug flag for displaying sound info.
 
+skillmode_t dSkill;
+
 skillmode_t gameSkill;
 uint gameEpisode;
 uint gameMap;
@@ -183,7 +185,7 @@ wbstartstruct_t wmInfo; // Params for world map / intermission.
 
 boolean paused;
 boolean sendPause; // Send a pause event next tic.
-boolean userGame; // Ok to save / end game.
+boolean userGame = false; // Ok to save / end game.
 boolean deathmatch; // Only if started as net death.
 player_t players[MAXPLAYERS];
 
@@ -212,7 +214,6 @@ ccmd_t gameCmds[] = {
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static skillmode_t dSkill;
 static uint dEpisode;
 static uint dMap;
 
@@ -1390,7 +1391,7 @@ void G_StartNewInit(void)
 void G_StartNewGame(skillmode_t skill)
 {
     G_StartNewInit();
-    G_InitNew(dSkill, 0, P_TranslateMap(0));
+    G_InitNew(skill, 0, P_TranslateMap(0));
 }
 #endif
 

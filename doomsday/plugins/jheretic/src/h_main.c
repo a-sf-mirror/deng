@@ -273,6 +273,7 @@ void G_PreInit(void)
     cfg.moveBlock = false;
     cfg.fallOff = true;
     cfg.fixFloorFire = false;
+    cfg.fixPlaneScrollMaterialsEastOnly = true;
 
     cfg.statusbarOpacity = 1;
     cfg.statusbarCounterAlpha = 1;
@@ -404,8 +405,8 @@ void G_PostInit(void)
 
     // Defaults for skill, episode and map.
     startSkill = SM_MEDIUM;
-    startEpisode = 1;
-    startMap = 1;
+    startEpisode = 0;
+    startMap = 0;
     autoStart = false;
 
     // Game mode specific settings.
@@ -431,16 +432,16 @@ void G_PostInit(void)
     p = ArgCheck("-episode");
     if(p && p < myargc - 1)
     {
-        startEpisode = Argv(p + 1)[0] - '0';
-        startMap = 1;
+        startEpisode = Argv(p + 1)[0] - '1';
+        startMap = 0;
         autoStart = true;
     }
 
     p = ArgCheck("-warp");
     if(p && p < myargc - 2)
     {
-        startEpisode = Argv(p + 1)[0] - '0';
-        startMap = Argv(p + 2)[0] - '0';
+        startEpisode = Argv(p + 1)[0] - '1';
+        startMap = Argv(p + 2)[0] - '1';
         autoStart = true;
     }
 
@@ -466,8 +467,8 @@ void G_PostInit(void)
     // Are we autostarting?
     if(autoStart)
     {
-        Con_Message("Warp to Episode %d, Map %d, Skill %d\n", startEpisode,
-                    startMap, startSkill + 1);
+        Con_Message("Warp to Episode %d, Map %d, Skill %d\n", startEpisode+1,
+                    startMap+1, startSkill + 1);
     }
 
     // Load a saved game?
@@ -482,12 +483,12 @@ void G_PostInit(void)
     // Check valid episode and map
     if(autoStart || IS_NETGAME)
     {
-        sprintf(mapStr, "E%d%d", startEpisode, startMap);
+        sprintf(mapStr, "E%d%d", startEpisode+1, startMap+1);
 
         if(!W_CheckNumForName(mapStr))
         {
-            startEpisode = 1;
-            startMap = 1;
+            startEpisode = 0;
+            startMap = 0;
         }
     }
 

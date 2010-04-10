@@ -722,7 +722,7 @@ void IN_DrawSingleStats(void)
 
     IN_DrawNumber(players[CONSOLEPLAYER].killCount, 200, 65, 3,
                   defFontRGB[0], defFontRGB[1], defFontRGB[2], 1);
-    IN_DrawShadowChar(248, 65, '/', GF_FONTB);
+    IN_DrawShadowChar(236, 65, '/', GF_FONTB);
     IN_DrawNumber(map->totalKills, 248, 65, 3, defFontRGB[0], defFontRGB[1],
                   defFontRGB[2], 1);
 
@@ -737,7 +737,7 @@ void IN_DrawSingleStats(void)
 
     IN_DrawNumber(players[CONSOLEPLAYER].itemCount, 200, 90, 3,
                   defFontRGB[0], defFontRGB[1], defFontRGB[2], 1);
-    IN_DrawShadowChar(248, 90, '/', GF_FONTB);
+    IN_DrawShadowChar(236, 90, '/', GF_FONTB);
     IN_DrawNumber(map->totalItems, 248, 90, 3, defFontRGB[0], defFontRGB[1],
                   defFontRGB[2], 1);
 
@@ -752,7 +752,7 @@ void IN_DrawSingleStats(void)
 
     IN_DrawNumber(players[CONSOLEPLAYER].secretCount, 200, 115, 3,
                   defFontRGB[0], defFontRGB[1], defFontRGB[2], 1);
-    IN_DrawShadowChar(248, 115, '/', GF_FONTB);
+    IN_DrawShadowChar(236, 115, '/', GF_FONTB);
     IN_DrawNumber(map->totalSecret, 248, 115, 3, defFontRGB[0], defFontRGB[1],
                   defFontRGB[2], 1);
 

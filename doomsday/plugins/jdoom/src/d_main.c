@@ -563,8 +563,8 @@ void G_PostInit(void)
 
     // Get skill / episode / map from parms.
     gameSkill = startSkill = SM_NOITEMS;
-    startEpisode = 1;
-    startMap = 1;
+    startEpisode = 0;
+    startMap = 0;
     autoStart = false;
 
     // Command line options.
@@ -588,8 +588,8 @@ void G_PostInit(void)
     p = ArgCheck("-episode");
     if(p && p < myargc - 1)
     {
-        startEpisode = Argv(p + 1)[0] - '0';
-        startMap = 1;
+        startEpisode = Argv(p + 1)[0] - '1';
+        startMap = 0;
         autoStart = true;
     }
 
@@ -610,13 +610,13 @@ void G_PostInit(void)
     {
         if(gameMode == commercial)
         {
-            startMap = atoi(Argv(p + 1));
+            startMap = atoi(Argv(p + 1)) - 1;
             autoStart = true;
         }
         else if(p < myargc - 2)
         {
-            startEpisode = Argv(p + 1)[0] - '0';
-            startMap = Argv(p + 2)[0] - '0';
+            startEpisode = Argv(p + 1)[0] - '1';
+            startMap = Argv(p + 2)[0] - '1';
             autoStart = true;
         }
     }
@@ -644,11 +644,11 @@ void G_PostInit(void)
     if(autoStart)
     {
         if(gameMode == commercial)
-            Con_Message("Warp to Map %d, Skill %d\n", startMap,
+            Con_Message("Warp to Map %d, Skill %d\n", startMap+1,
                         startSkill + 1);
         else
             Con_Message("Warp to Episode %d, Map %d, Skill %d\n",
-                        startEpisode, startMap, startSkill + 1);
+                        startEpisode+1, startMap+1, startSkill + 1);
     }
 
     // Load a saved game?
@@ -664,14 +664,14 @@ void G_PostInit(void)
     if(autoStart || IS_NETGAME)
     {
         if(gameMode == commercial)
-            sprintf(mapStr, "MAP%2.2d", startMap);
+            sprintf(mapStr, "MAP%2.2d", startMap+1);
         else
-            sprintf(mapStr, "E%d%d", startEpisode, startMap);
+            sprintf(mapStr, "E%d%d", startEpisode+1, startMap+1);
 
         if(!W_CheckNumForName(mapStr))
         {
-            startEpisode = 1;
-            startMap = 1;
+            startEpisode = 0;
+            startMap = 0;
         }
     }
 

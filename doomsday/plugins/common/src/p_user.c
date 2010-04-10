@@ -110,7 +110,7 @@ classinfo_t classInfo[NUM_PLAYER_CLASSES] = {
         {0x19, 0x32},
         {0x18, 0x28},
         2048,
-        {640, 1280, 320},
+        {640, 1280},
         24,
         SFX_NOWAY
     }
@@ -129,7 +129,7 @@ classinfo_t classInfo[NUM_PLAYER_CLASSES] = {
         {0x19, 0x32},
         {0x18, 0x28},
         2048,
-        {640, 1280, 320},
+        {640, 1280},
         24,
         SFX_NONE
     },
@@ -145,7 +145,7 @@ classinfo_t classInfo[NUM_PLAYER_CLASSES] = {
         {0x19, 0x32},
         {0x18, 0x28},
         2500,
-        {640, 1280, 320},
+        {640, 1280},
         24,
         SFX_NONE
     },
@@ -165,7 +165,7 @@ classinfo_t classInfo[NUM_PLAYER_CLASSES] = {
         {0x1D, 0x3C},
         {0x1B, 0x3B},
         2048,
-        {640, 1280, 320},
+        {640, 1280},
         18,
         SFX_PLAYER_FIGHTER_FAILED_USE,
         {25 * FRACUNIT, 20 * FRACUNIT, 15 * FRACUNIT, 5 * FRACUNIT},
@@ -184,7 +184,7 @@ classinfo_t classInfo[NUM_PLAYER_CLASSES] = {
         {0x19, 0x32},
         {0x18, 0x28},
         2048,
-        {640, 1280, 320},
+        {640, 1280},
         18,
         SFX_PLAYER_CLERIC_FAILED_USE,
         {10 * FRACUNIT, 25 * FRACUNIT, 5 * FRACUNIT, 20 * FRACUNIT},
@@ -203,7 +203,7 @@ classinfo_t classInfo[NUM_PLAYER_CLASSES] = {
         {0x16, 0x2E},
         {0x15, 0x25},
         2048,
-        {640, 1280, 320},
+        {640, 1280},
         18,
         SFX_PLAYER_MAGE_FAILED_USE,
         {5 * FRACUNIT, 15 * FRACUNIT, 10 * FRACUNIT, 25 * FRACUNIT},
@@ -222,7 +222,7 @@ classinfo_t classInfo[NUM_PLAYER_CLASSES] = {
         {0x18, 0x31},
         {0x17, 0x27},
         2048,
-        {640, 1280, 320},
+        {640, 1280},
         18,
         SFX_NONE,
         {0, 0, 0, 0},
@@ -248,57 +248,45 @@ void P_Thrust(player_t* player, angle_t angle, float move)
     mobj_t* mo = player->plr->mo;
     uint an = angle >> ANGLETOFINESHIFT;
 
-    if(player->powers[PT_FLIGHT] && !(mo->pos[VZ] <= mo->floorZ))
+    /*float xmul=1, ymul=1;
+    // How about Quake-flying? -- jk
+    if(quakeFly)
     {
-        /*float xmul=1, ymul=1;
+        float ang = LOOKDIR2RAD(player->plr->lookDir);
+        xmul = ymul = cos(ang);
+        mo->mom[MZ] += sin(ang) * move;
+    }*/
 
-           // How about Quake-flying? -- jk
-           if(quakeFly)
-           {
-           float ang = LOOKDIR2RAD(player->plr->lookDir);
-           xmul = ymul = cos(ang);
-           mo->mom[MZ] += sin(ang) * move;
-           } */
-
-        mo->mom[MX] += move * FIX2FLT(finecosine[an]);
-        mo->mom[MY] += move * FIX2FLT(finesine[an]);
-    }
-    else
+    if(!(player->powers[PT_FLIGHT] && !(mo->pos[VZ] <= mo->floorZ)))
     {
 #if __JDOOM__ || __JDOOM64__ || __JHERETIC__
         sector_t* sec = DMU_GetPtrp(mo->subsector, DMU_SECTOR);
-        float mul;
 #endif
 #if __JHEXEN__
         const terraintype_t* tt = P_MobjGetFloorTerrainType(mo);
 #endif
 
-#if __JHERETIC__
-        if(P_ToXSector(sec)->special == 15) // Friction_Low
-        {
-            mo->mom[MX] += (move / 4) * FIX2FLT(finecosine[an]);
-            mo->mom[MY] += (move / 4) * FIX2FLT(finesine[an]);
-            return;
-        }
-
-#elif __JHEXEN__
+#if __JHEXEN__
         if(tt->flags & TTF_FRICTION_LOW)
         {
-            mo->mom[MX] += (move / 2) * FIX2FLT(finecosine[an]);
-            mo->mom[MY] += (move / 2) * FIX2FLT(finesine[an]);
-            return;
+            move /= 2;
+        }
+#elif __JHERETIC__
+        if(P_ToXSector(sec)->special == 15) // Friction_Low
+        {
+            move /= 4;
+        }
+        else
+#endif
+#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
+        {
+            move *= XS_ThrustMul(sec);
         }
 #endif
-
-#if __JDOOM__ || __JDOOM64__ || __JHERETIC__
-        mul = XS_ThrustMul(sec);
-        if(mul != 1)
-            move *= mul;
-#endif
-
-        mo->mom[MX] += move * FIX2FLT(finecosine[an]);
-        mo->mom[MY] += move * FIX2FLT(finesine[an]);
     }
+
+    mo->mom[MX] += move * FIX2FLT(finecosine[an]);
+    mo->mom[MY] += move * FIX2FLT(finesine[an]);
 }
 
 /**
@@ -404,37 +392,44 @@ void P_MovePlayer(player_t *player)
     {
         // 'Move while in air' hack (server doesn't know about this!!).
         // Movement while in air traditionally disabled.
-        float           maxMove = FIX2FLT(pClassInfo->maxMove);
-        int             movemul =
-            (onground || plrmo->flags2 & MF2_FLY) ? pClassInfo->moveMul :
-                (cfg.airborneMovement) ? cfg.airborneMovement * 64 : 0;
+        float maxMove = FIX2FLT(pClassInfo->maxMove);
+        int movemul = (onground || (plrmo->flags2 & MF2_FLY))? pClassInfo->moveMul :
+                (cfg.airborneMovement? cfg.airborneMovement * 64 : 0);
 
-        forwardMove =
-            FIX2FLT(pClassInfo->forwardMove[speed]) * brain->forwardMove;
-        sideMove = FIX2FLT(pClassInfo->sideMove[speed]) * brain->sideMove;
-
-        forwardMove *= turboMul;
-        sideMove    *= turboMul;
+        if(!brain->lunge)
+        {
+            forwardMove = FIX2FLT(pClassInfo->forwardMove[speed]) * turboMul * MIN_OF(brain->forwardMove, 1);
+            sideMove    = FIX2FLT(pClassInfo->sideMove[speed])    * turboMul * MIN_OF(brain->sideMove, 1);
 
 #if __JHEXEN__
-        if(player->powers[PT_SPEED] && !player->morphTics)
-        {
-            // Adjust for a player with the speed power.
-            forwardMove = (3 * forwardMove) / 2;
-            sideMove = (3 * sideMove) / 2;
-        }
+            if(player->powers[PT_SPEED] && !player->morphTics)
+            {
+                // Adjust for a player with the speed power.
+                forwardMove = (3 * forwardMove) / 2;
+                sideMove = (3 * sideMove) / 2;
+            }
 #endif
+            // Players can opt to reduce their maximum possible movement speed.
+            if((int) cfg.playerMoveSpeed != 1)
+            {   // A divsor has been specified, apply it.
+                float m = MINMAX_OF(0.f, cfg.playerMoveSpeed, 1.f);
+                forwardMove *= m;
+                sideMove    *= m;
+            }
 
-        forwardMove = MINMAX_OF(-maxMove, forwardMove, maxMove);
-        sideMove    = MINMAX_OF(-maxMove, sideMove, maxMove);
-
-        // Players can opt to reduce their maximum possible movement speed.
-        if((int) cfg.playerMoveSpeed != 1)
-        {   // A divsor has been specified, apply it.
-            float           m = MINMAX_OF(0.f, cfg.playerMoveSpeed, 1.f);
-
-            forwardMove *= m;
-            sideMove    *= m;
+            // Make sure it's within valid bounds.
+            forwardMove = MINMAX_OF(-maxMove, forwardMove, maxMove);
+            sideMove    = MINMAX_OF(-maxMove, sideMove,    maxMove);
+        }
+        else
+        {   // Do the lunge.
+            /**
+             * \note Normal valid range clamp not used with lunge as with
+             * it; the amount of forward velocity is not sufficent to
+             * prevent the player from easily backing out while lunging.
+             */
+            forwardMove = FIX2FLT(0xc800 / 512);
+            sideMove = 0;
         }
 
         if(forwardMove != 0 && movemul)
@@ -664,8 +659,8 @@ void P_MorphThink(player_t *player)
         return;
 
     pmo = player->plr->mo;
-    //// \fixme: Replace equality to zero checks with mom in-range.
-    if(pmo->mom[MX] == 0 && pmo->mom[MY] == 0 && P_Random() < 64)
+    if(INRANGE_OF(pmo->mom[MX], 0, NOMOMENTUM_THRESHOLD) &&
+       INRANGE_OF(pmo->mom[MY], 0, NOMOMENTUM_THRESHOLD) && P_Random() < 64)
     {   // Snout sniff
         P_SetPspriteNF(player, ps_weapon, S_SNOUTATK2);
         S_StartSound(SFX_PIG_ACTIVE1, pmo); // snort
@@ -683,12 +678,17 @@ void P_MorphThink(player_t *player)
     if(player->health > 0)
         P_UpdateBeak(player, &player->pSprites[ps_weapon]); // Handle beak movement
 
+    if(player->chickenPeck)
+    {   // Chicken attack counter.
+        player->chickenPeck -= 3;
+    }
+
     if(IS_CLIENT || player->morphTics & 15)
         return;
 
     pmo = player->plr->mo;
-    //// \fixme: Replace equality to zero checks with mom in-range.
-    if(pmo->mom[MX] == 0 && pmo->mom[MY] == 0 && P_Random() < 160)
+    if(INRANGE_OF(pmo->mom[MX], 0, NOMOMENTUM_THRESHOLD) &&
+       INRANGE_OF(pmo->mom[MY], 0, NOMOMENTUM_THRESHOLD) && P_Random() < 160)
     {   // Twitch view angle
         pmo->angle += (P_Random() - P_Random()) << 19;
     }
@@ -1051,18 +1051,16 @@ void P_PlayerThinkCheat(player_t *player)
 
 void P_PlayerThinkAttackLunge(player_t *player)
 {
-    mobj_t     *plrmo = player->plr->mo;
+    mobj_t* plrmo = player->plr->mo;
+
+    // Normally we don't lunge.
+    player->brain.lunge = false;
 
     if(plrmo && (plrmo->flags & MF_JUSTATTACKED))
     {
-        ticcmd_t   *cmd = &player->plr->cmd;
-
-        cmd->angle = plrmo->angle >> 16;    // Don't turn.
-                                            // The client must know of this.
-        player->plr->flags |= DDPF_FIXANGLES;
-        cmd->forwardMove = 0xc800 / 512;
-        cmd->sideMove = 0;
+        player->brain.lunge = true;
         plrmo->flags &= ~MF_JUSTATTACKED;
+        player->plr->flags |= DDPF_FIXANGLES;
     }
 }
 
@@ -1669,14 +1667,13 @@ void P_PlayerThinkPowers(player_t* player)
  *                      Note that original game logic was always using a
  *                      tick duration of 1/35 seconds.
  */
-void P_PlayerThinkLookAround(player_t *player, timespan_t ticLength)
+void P_PlayerThinkLookAround(player_t* player, timespan_t ticLength)
 {
-    int                 playerNum = player - players;
-    ddplayer_t         *plr = player->plr;
-    //boolean             strafe = false;
-    float               vel, off, turnSpeed;
-    float               offsetSensitivity = 100; // \fixme Should be done engine-side, mouse sensitivity!
-    classinfo_t        *pClassInfo = PCLASS_INFO(player->class);
+    int playerNum = player - players;
+    ddplayer_t* plr = player->plr;
+    float vel, off, turnSpeed;
+    float offsetSensitivity = 100; /// \fixme Should be done engine-side, mouse sensitivity!
+    classinfo_t* pClassInfo = PCLASS_INFO(player->class);
 
     if(!plr->mo || player->playerState == PST_DEAD || player->viewLock)
         return; // Nothing to control.
@@ -1685,19 +1682,14 @@ void P_PlayerThinkLookAround(player_t *player, timespan_t ticLength)
 
     // Check for extra speed.
     P_GetControlState(playerNum, CTL_SPEED, &vel, NULL);
-    if(vel != 0)
-    {
-        // Hurry, good man!
+    if((vel != 0) ^ (cfg.alwaysRun != 0))
+    {   // Hurry, good man!
         turnSpeed = pClassInfo->turnSpeed[1] * TICRATE;
     }
 
-    // Check for strafe.
-    //P_GetControlState(playerNum, CTL_STRAFE, &vel, 0);
-    //strafe = (vel != 0);
-
-    //if(!strafe)
+    // Yaw.
+    if(!((plr->mo->flags & MF_JUSTATTACKED) || player->brain.lunge))
     {
-        // Yaw.
         P_GetControlState(playerNum, CTL_TURN, &vel, &off);
         plr->mo->angle -= FLT2FIX(turnSpeed * vel * ticLength) +
             (fixed_t)(offsetSensitivity * off / 180 * ANGLE_180);
@@ -1730,7 +1722,7 @@ void P_PlayerThinkLookAround(player_t *player, timespan_t ticLength)
     else
     {
         // Pitch as controlled by CTL_LOOK.
-        plr->lookDir += 110.f/85.f * (turnSpeed/65535.f*360 * vel * ticLength +
+        plr->lookDir += 110.f/85.f * ((640 * TICRATE)/65535.f*360 * vel * ticLength +
                                       offsetSensitivity * off);
         if(plr->lookDir < -110)
             plr->lookDir = -110;
@@ -1924,7 +1916,6 @@ void P_PlayerThink(player_t *player, timespan_t ticLength)
     {
         P_PlayerThinkCamera(player); // $democam
         P_PlayerThinkCheat(player);
-        P_PlayerThinkAttackLunge(player);
     }
 
     P_PlayerThinkHUD(player);
@@ -1935,6 +1926,7 @@ void P_PlayerThink(player_t *player, timespan_t ticLength)
     if(!IS_CLIENT) // Locally only.
     {
         P_PlayerThinkMorph(player);
+        P_PlayerThinkAttackLunge(player);
         P_PlayerThinkMove(player);
     }
 

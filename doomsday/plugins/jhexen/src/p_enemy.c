@@ -2180,8 +2180,8 @@ static void spawnSerpentGib(mobjtype_t type, mobj_t* mo)
 
     if((pmo = GameMap_SpawnMobj3fv(map, type, pos, P_Random() << 24, MSF_Z_FLOOR)))
     {
-        pmo->mom[MX] = (P_Random() - 128) << 6;
-        pmo->mom[MY] = (P_Random() - 128) << 6;
+        pmo->mom[MX] = FIX2FLT((P_Random() - 128) << 6);
+        pmo->mom[MY] = FIX2FLT((P_Random() - 128) << 6);
         pmo->floorClip = 6;
     }
 }
@@ -2469,7 +2469,7 @@ void C_DECL A_BishopPainBlur(mobj_t* actor)
     }
 }
 
-static void dragonSeek(mobj_t* actor, angle_t thresh, angle_t turnMax)
+static void dragonSeek(mobj_t *actor, angle_t thresh, angle_t turnMax)
 {
     map_t* map = Thinker_Map((thinker_t*) actor);
     angle_t delta, bestAngle, angleToSpot, angleToTarget;
@@ -2511,9 +2511,8 @@ static void dragonSeek(mobj_t* actor, angle_t thresh, angle_t turnMax)
         dist = P_ApproxDistance(target->pos[VX] - actor->pos[VX],
                                 target->pos[VY] - actor->pos[VY]);
         dist /= actor->info->speed;
-        if(dist < 1)
-            dist = 1;
-
+        if(dist < FIX2FLT(1))
+            dist = FIX2FLT(1);
         actor->mom[MZ] = (target->pos[VZ] - actor->pos[VZ]) / dist;
     }
     else
@@ -2550,7 +2549,7 @@ static void dragonSeek(mobj_t* actor, angle_t thresh, angle_t turnMax)
         }
     }
 
-    if(dist < 4)
+    if(dist < FIX2FLT(4))
     {   // Hit the target thing.
         if(actor->target && P_Random() < 200)
         {

@@ -1947,35 +1947,42 @@ float R_ApplySoftSurfaceDeltaToAlpha(float bottom, float top, sidedef_t* sideDef
  * Given a sidedef section, look at the neighbouring surfaces and pick the
  * best choice of material used on those surfaces to be applied to "this"
  * surface.
+ *
+ * Material on back neighbour plane has priority.
+ * Non-animated materials are preferred.
+ * Sky materials are ignored.
  */
 static material_t* chooseFixMaterial(const hedge_t* hEdge, segsection_t section)
 {
-    material_t* choice = NULL;
+    material_t* choice1 = NULL, *choice2 = NULL;
 
-    // Try the materials used on the front and back sector planes,
-    // favouring non-animated materials.
     if(section == SEG_BOTTOM || section == SEG_TOP)
     {
+        sector_t* frontSec = HE_FRONTSECTOR(hEdge);
         sector_t* backSec = HE_BACKSECTOR(hEdge);
+        surface_t* suf;
 
         if(backSec)
         {
-            surface_t* backSuf = &backSec->
-                SP_plane(section == SEG_BOTTOM? PLN_FLOOR : PLN_CEILING)->
-                    surface;
-
-            if(!(backSuf->material && backSuf->material->inAnimGroup) &&
-               !IS_SKYSURFACE(backSuf))
-                choice = backSuf->material;
+            suf = &backSec->SP_plane(section == SEG_BOTTOM? PLN_FLOOR : PLN_CEILING)->surface;
+            if(suf->material && !IS_SKYSURFACE(suf))
+                choice1 = suf->material;
         }
 
-        if(!choice)
-            choice = HE_FRONTSECTOR(hEdge)->
-                SP_plane(section == SEG_BOTTOM? PLN_FLOOR : PLN_CEILING)->
-                    surface.material;
+        suf = &frontSec->SP_plane(section == SEG_BOTTOM? PLN_FLOOR : PLN_CEILING)->surface;
+        if(suf->material && !IS_SKYSURFACE(suf))
+            choice2 = suf->material;
     }
 
-    return choice;
+    if(choice1 && !choice1->inAnimGroup)
+        return choice1;
+    if(choice2 && !choice2->inAnimGroup)
+        return choice2;
+    if(choice1)
+        return choice1;
+    if(choice2)
+        return choice2;
+    return NULL;
 }
 
 static void updateSideDefSection(hedge_t* hEdge, segsection_t section)
@@ -1989,10 +1996,10 @@ static void updateSideDefSection(hedge_t* hEdge, segsection_t section)
         suf->inFlags &= ~SUIF_MATERIAL_FIX;
     }
 
-    if(!suf->material &&
+    if(!suf->material /*&&
        !IS_SKYSURFACE(&HE_FRONTSECTOR(hEdge)->
             SP_plane(section == SEG_BOTTOM? PLN_FLOOR : PLN_CEILING)->
-                surface))
+                surface)*/)
     {
         Surface_SetMaterial(suf, chooseFixMaterial(hEdge, section), false);
         suf->inFlags |= SUIF_MATERIAL_FIX;
