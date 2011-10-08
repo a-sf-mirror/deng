@@ -9,13 +9,6 @@ echo Setting environment for building Doomsday Engine - Windows Installer...
 :: Delayed variable expansion is needed for producing the link object list.
 setlocal EnableDelayedExpansion
 
-set DOOMSDAY_MAJORVERSION=1
-set DOOMSDAY_MINORVERSION=9
-set DOOMSDAY_BUILDVERSION=7
-set DOOMSDAY_REVISIONVERSION=0
-set DOOMSDAY_BUILDNAME=build
-set DOOMSDAY_BUILD=273
-
 set PRODUCTSDIR=../products
 set WORKDIR=work
 
@@ -23,6 +16,27 @@ set WORKDIR=work
 set STARTDIR=%cd%
 
 :: Build Preparation ------------------------------------------------------
+
+:: Ensure environment has been configured
+IF %DOOMSDAY_MAJORVERSION% == "" (
+echo DOOMSDAY_MAJORVERSION is not set.
+GOTO Failure
+)
+
+IF %DOOMSDAY_MINORVERSION% == "" (
+echo DOOMSDAY_MINORVERSION is not set.
+GOTO Failure
+)
+
+IF %DOOMSDAY_BUILDVERSION% == "" (
+echo DOOMSDAY_BUILDVERSION is not set.
+GOTO Failure
+)
+
+IF %DOOMSDAY_REVISIONVERSION% == "" (
+echo DOOMSDAY_REVISIONVERSION is not set.
+GOTO Failure
+)
 
 :: Ensure products directory exists.
 pushd "%PRODUCTSDIR%" 2>NUL && popd
@@ -57,7 +71,7 @@ echo Linking WiX object files...
 
 :: Compose outfile name
 set OUTFILE=Doomsday_%DOOMSDAY_MAJORVERSION%.%DOOMSDAY_MINORVERSION%.%DOOMSDAY_BUILDVERSION%
-IF NOT %DOOMSDAY_BUILD% == 0 set OUTFILE=!OUTFILE!_%DOOMSDAY_BUILDNAME%%DOOMSDAY_BUILD%
+IF NOT %DOOMSDAY_BUILD% == "" set OUTFILE=!OUTFILE!_build%DOOMSDAY_BUILD%
 
 :: Next we need to build our link object list
 set LINKOBJECTS=
