@@ -1,22 +1,22 @@
 @echo off
-REM -- Does a complete Win32 Binary Release distribution.
+:: Does a complete Win32 Binary Release distribution.
 
-REM -- Set up the build environment.
+:: Build Environment Setup ------------------------------------------------
 call ..\..\doomsday\build\win32\envconfig.bat
 
-REM -- Build number.
+:: Build number.
 SET DOOMSDAY_BUILD=%1
 echo Doomsday build number is %DOOMSDAY_BUILD%.
 
-REM -- Package a Snowberry binary.
+:: Build and Package Snowberry --------------------------------------------
 cd ..\..\snowberry
 call build.bat
 cd ..\distrib\win32
 
-REM -- Extra dependencies.
+:: Extra dependencies.
 REM copy %windir%\system32\msvcr100.dll ..\products
 
-REM -- Recompile.
+:: Compile Doomsday -------------------------------------------------------
 SET BUILDFAILURE=0
 rd/s/q work
 md work
@@ -32,12 +32,10 @@ rd/s/q work
 
 IF %BUILDFAILURE% == 1 GOTO Failure
 
-REM -- Run the Inno Setup Compiler.
-REM "C:\Program Files\Inno Setup 5\Compil32.exe" /cc setup.iss
-echo Installer creation not presently implemented.
-set ERRORLEVEL=1
-goto Failure
-
+:: Build Installer --------------------------------------------------------
+call buildinstaller.bat
+IF NOT %ERRORLEVEL% == 0 SET BUILDFAILURE=1
+IF %BUILDFAILURE% == 1 GOTO Failure
 goto TheEnd
 
 :Failure
