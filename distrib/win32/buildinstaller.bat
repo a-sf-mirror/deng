@@ -16,8 +16,8 @@ set DOOMSDAY_REVISIONVERSION=0
 set DOOMSDAY_BUILDNAME=build
 set DOOMSDAY_BUILD=273
 
-set PRODUCTSDIR=products
-set BUILDDIR=build
+set PRODUCTSDIR=../products
+set WORKDIR=work
 
 :: Take note of the cwd so we can return there post build (tool chaining).
 set STARTDIR=%cd%
@@ -31,11 +31,11 @@ echo Unable to access products directory: %PRODUCTSDIR%
 GOTO Failure
 )
 
-:: Ensure build directory exists.
-pushd "%BUILDDIR%" 2>NUL && popd
+:: Ensure work directory exists.
+pushd "%WORKDIR%" 2>NUL && popd
 IF NOT %ERRORLEVEL% == 0 (
-echo Creating build directory: %BUILDDIR%
-md %BUILDDIR%
+echo Creating work directory: %WORKDIR%
+md %WORKDIR%
 )
 
 :: Compilation ------------------------------------------------------------
@@ -48,7 +48,7 @@ set CDEFS=!CDEFS! -dProductsDir="%PRODUCTSDIR%"
 
 echo Compiling WiX source files...
 FOR /F "tokens=1*" %%i IN (installer_component_filelist.rsp) DO (
-candle %CDEFS% -nologo -out %BUILDDIR%\ -wx0099 %%i.wxs
+candle %CDEFS% -nologo -out %WORKDIR%\ -wx0099 %%i.wxs
 IF NOT %ERRORLEVEL% == 0 GOTO Failure
 )
 
@@ -66,7 +66,7 @@ set LINKOBJECTS=!LINKOBJECTS! %%i.wixobj
 )
 
 :: Link all objects and bind our installables into cabinents.
-cd %BUILDDIR%\
+cd %WORKDIR%\
 light -b ../ -nologo -out %OUTFILE%.msi -ext WixUIExtension -ext WixUtilExtension %LINKOBJECTS%
 IF NOT %ERRORLEVEL% == 0 GOTO Failure
 
