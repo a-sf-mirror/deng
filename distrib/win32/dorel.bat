@@ -33,7 +33,10 @@ rd/s/q work
 IF %BUILDFAILURE% == 1 GOTO Failure
 
 REM -- Run the Inno Setup Compiler.
-"C:\Program Files\Inno Setup 5\Compil32.exe" /cc setup.iss
+REM "C:\Program Files\Inno Setup 5\Compil32.exe" /cc setup.iss
+echo Installer creation not presently implemented.
+set ERRORLEVEL=1
+goto Failure
 
 goto TheEnd
 
