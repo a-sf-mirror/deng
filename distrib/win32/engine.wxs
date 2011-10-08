@@ -59,17 +59,6 @@
         </Component>
     </DirectoryRef>
 
-    <!--
-    <Directory Id="ProgramMenuFolder" Name="Programs">
-        <Directory Id="ProgramMenuDir" Name="Foobar 1.0">
-            <Component Id="ProgramMenuDir" Guid="YOURGUID-7E98-44CE-B049-C477CC0A2B00">
-            <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
-            <RegistryValue Root='HKCU' Key='Software\(\[ProductName]' Type='string' Value='' KeyPath='yes' />
-            </Component>
-        </Directory>
-    </Directory>
-    -->
-
     <!-- Place all components for module engine to the following group -->
     <ComponentGroup Id="engine">
         <ComponentRef Id="ENGINE_FILE_MAINAPP" />

@@ -6,7 +6,7 @@
         <Directory Id="DOOMDIR_DATA_JDOOM" Name="jdoom" />
     </DirectoryRef>
 
-    <!-- Additional install files for component libdoom -->
+    <!-- Additional install files for component doom -->
     <Media Id="2" Cabinet="doom.cab" EmbedCab="yes" />
     <DirectoryRef Id="DOOMSDAYDIR_BIN">
         <Component Id="DOOM_FILE_LIBRARY" Guid="48F21047-B618-4370-86D4-CBDAEEC99C9A">

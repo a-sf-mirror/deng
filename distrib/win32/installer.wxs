@@ -27,7 +27,7 @@
 
     http://www.guidgen.com/
 
-  The file components for each module are compressed into separate
+  The file components for each module are compressed into a separate
   embedded cabinet particular to that module. This affords the build
   process better opportunity to optimize their creation, allowing for
   caching or indepedent threads for the production of each cabinet
