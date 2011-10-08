@@ -26,20 +26,24 @@ SET DOOMSDAY_BUILD=%5
 echo Doomsday version is: Major:%DOOMSDAY_MAJORVERSION% Minor:%DOOMSDAY_MINORVERSION% Build:%DOOMSDAY_BUILDVERSION% Revision:%DOOMSDAY_REVISIONVERSION%
 echo Doomsday logical build number is: %DOOMSDAY_BUILD%
 
-call ..\..\doomsday\build\win32\envconfig.bat
-
 :: Build and Package Snowberry --------------------------------------------
+
 cd ..\..\snowberry
 call build.bat
 cd ..\distrib\win32
 
-:: Extra dependencies.
-REM copy %windir%\system32\msvcr100.dll ..\products
+:: Build and Package Doomsday ---------------------------------------------
 
-:: Compile Doomsday -------------------------------------------------------
+echo Building Doomsday...
+:: Configure environment.
+call ..\..\doomsday\build\win32\envconfig.bat
+
+:: Prepare the work directory.
 SET BUILDFAILURE=0
 rd/s/q work
 md work
+
+:: Build!
 cd work
 qmake ..\..\..\doomsday\doomsday.pro CONFIG+=release DENG_BUILD=%DOOMSDAY_BUILD%
 IF NOT %ERRORLEVEL% == 0 SET BUILDFAILURE=1
@@ -48,11 +52,14 @@ IF NOT %ERRORLEVEL% == 0 SET BUILDFAILURE=1
 %JOM% install
 IF NOT %ERRORLEVEL% == 0 SET BUILDFAILURE=1
 cd ..
+
+:: Clean up the work directory.
 rd/s/q work
 
 IF %BUILDFAILURE% == 1 GOTO Failure
 
 :: Build Installer --------------------------------------------------------
+
 call buildinstaller.bat
 IF NOT %ERRORLEVEL% == 0 SET BUILDFAILURE=1
 IF %BUILDFAILURE% == 1 GOTO Failure
