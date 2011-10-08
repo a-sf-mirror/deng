@@ -9,8 +9,9 @@ echo Setting environment for building Doomsday Engine - Windows Installer...
 :: Delayed variable expansion is needed for producing the link object list.
 setlocal EnableDelayedExpansion
 
-set PRODUCTSDIR=../products
-set WORKDIR=work
+set PRODUCTSDIR=..\products
+set RELEASESDIR=..\releases
+set WORKDIR=%cd%\work
 
 :: Take note of the cwd so we can return there post build (tool chaining).
 set STARTDIR=%cd%
@@ -35,6 +36,13 @@ GOTO Failure
 
 IF %DOOMSDAY_REVISIONVERSION% == "" (
 echo DOOMSDAY_REVISIONVERSION is not set.
+GOTO Failure
+)
+
+:: Ensure releases directory exists.
+pushd "%RELEASESDIR%" 2>NUL && popd
+IF NOT %ERRORLEVEL% == 0 (
+echo Unable to access releases directory: %RELEASESDIR%
 GOTO Failure
 )
 
@@ -72,6 +80,7 @@ echo Linking WiX object files...
 :: Compose outfile name
 set OUTFILE=Doomsday_%DOOMSDAY_MAJORVERSION%.%DOOMSDAY_MINORVERSION%.%DOOMSDAY_BUILDVERSION%
 IF NOT %DOOMSDAY_BUILD% == "" set OUTFILE=!OUTFILE!_build%DOOMSDAY_BUILD%
+set OUTFILE=!OUTFILE!.msi
 
 :: Next we need to build our link object list
 set LINKOBJECTS=
@@ -81,11 +90,19 @@ set LINKOBJECTS=!LINKOBJECTS! %%i.wixobj
 
 :: Link all objects and bind our installables into cabinents.
 cd %WORKDIR%\
-light -b ../ -nologo -out %OUTFILE%.msi -ext WixUIExtension -ext WixUtilExtension %LINKOBJECTS%
+light -b ..\ -nologo -out %OUTFILE% -ext WixUIExtension -ext WixUtilExtension %LINKOBJECTS%
 IF NOT %ERRORLEVEL% == 0 GOTO Failure
 
 :: Return from whence we came...
 cd %STARTDIR%
+
+:: Copy installer to the release directory.
+copy %WORKDIR%\%OUTFILE% %RELEASESDIR%\%OUTFILE%
+
+:: Clean up the work directory.
+rd/s/q %WORKDIR%
+
+:: Build successful lets get out of here...
 GOTO Done
 
 :Failure

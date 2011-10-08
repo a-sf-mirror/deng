@@ -4,7 +4,7 @@
 :: executable, the necessary resource files, and the Snowberry 
 :: scripts into a self-extracting RAR archive.
 
-:: Build Preparation -----------------------------------------------------
+:: Build Preparation ------------------------------------------------------
 md dist
 del /f /q dist\*
 
