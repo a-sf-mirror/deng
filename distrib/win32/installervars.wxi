@@ -10,5 +10,5 @@
     <?define ProductUpdateUrl="http://dengine.net/update"?>
 
     <!-- Icon used in the Add/Remove Programs interface -->
-    <?define ProductIcon="$(var.ProductsDir)\doomsday.ico"?>
+    <?define ProductIcon="..\..\doomsday\engine\win32\res\doomsday.ico"?>
 </Include>

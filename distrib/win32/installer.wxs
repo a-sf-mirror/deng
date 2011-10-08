@@ -172,9 +172,6 @@
         <UIRef Id="WixUI_Mondo" />
         <UIRef Id="WixUI_ErrorProgressText" />
     </UI>
-    <!-- <WixVariable Id="WixUIBannerBmp" Value="binary\banner.bmp" />
-    <WixVariable Id="WixUIDialogBmp" Value="binary\dialog.bmp" /> -->
-    <WixVariable Id="WixUILicenseRtf" Value="$(var.ProductEULA)" />
 
     <!-- Post installation action sequence -->
     <CustomAction Id="SetInstallLocation" Property="ARPINSTALLLOCATION" Value="[DOOMSDAYDIR]" />
