@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Include>
+    <!--
+      Here we define the common application install directory structure used
+      by all components of Doomsday. Note that the directory structure for
+      the Snowberry component is not defined here. -->
+    <Directory Id="DOOMSDAYDIR" Name="$(var.ProductInstallDir)">
+        <Directory Id="DOOMSDAYDIR_BIN" Name="bin" />
+        <Directory Id="DOOMSDAYDIR_DATA" Name="data">
+            <Directory Id="DOOMSDAYDIR_DATA_GRAPHICS" Name="graphics" />
+        </Directory>
+        <Directory Id="DOOMSDAYDIR_DOC" Name="doc" />
+    </Directory>
+</Include>

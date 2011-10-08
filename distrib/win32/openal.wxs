@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Fragment>
+    <!-- Additional install files for component openal -->
+    <Media Id="8" Cabinet="openal.cab" EmbedCab="yes" />
+    <DirectoryRef Id="DOOMSDAYDIR_BIN">
+    <Component Id="OPENAL_FILE_LIBOPENALDLL" Guid="4CB81628-1878-4D3C-AEBD-DD06A7A8F09B">
+        <File Id="OPENAL_FILE_LIBOPENALDLL" DiskId="8" Source="$(var.ProductsDir)\bin\dsopenal.dll" KeyPath="yes" />
+    </Component>
+    </DirectoryRef>
+
+    <!-- Place all components for module openal to the following group -->
+    <ComponentGroup Id="openal">
+        <ComponentRef Id="OPENAL_FILE_LIBOPENALDLL" />
+    </ComponentGroup>
+</Fragment>
+</Wix>

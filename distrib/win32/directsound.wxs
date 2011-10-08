@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Fragment>
+    <!-- Additional install files for component directsound -->
+    <Media Id="7" Cabinet="directsound.cab" EmbedCab="yes" />
+    <DirectoryRef Id="DOOMSDAYDIR_BIN">
+    <Component Id="DIRECTSOUND_FILE_LIBDIRECTSOUNDDLL" Guid="56911A35-505A-4809-8955-62C35F480035">
+        <File Id="DIRECTSOUND_FILE_LIBDIRECTSOUNDDLL" DiskId="7" Source="$(var.ProductsDir)\bin\dsdirectsound.dll" KeyPath="yes" />
+    </Component>
+    <Component Id="DIRECTSOUND_FILE_EAXDLL" Guid="314F10D7-FE8E-4F72-8AE7-AB5C5E0CFE66">
+        <File Id="DIRECTSOUND_FILE_EAXDLL" DiskId="7" Source="$(var.ProductsDir)\bin\eax.dll" KeyPath="yes" />
+    </Component>
+    </DirectoryRef>
+
+    <!-- Place all components for module directsound to the following group -->
+    <ComponentGroup Id="directsound">
+        <ComponentRef Id="DIRECTSOUND_FILE_LIBDIRECTSOUNDDLL" />
+        <ComponentRef Id="DIRECTSOUND_FILE_EAXDLL" />
+    </ComponentGroup>
+</Fragment>
+</Wix>

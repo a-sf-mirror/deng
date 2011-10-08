@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Fragment>
+    <!-- Additional install paths for component heretic -->
+    <DirectoryRef Id="DOOMSDAYDIR_DATA">
+        <Directory Id="HERETICDIR_DATA_JHERETIC" Name="jheretic" />
+    </DirectoryRef>
+
+    <!-- Additional install files for component heretic -->
+    <Media Id="3" Cabinet="heretic.cab" EmbedCab="yes" />
+    <DirectoryRef Id="DOOMSDAYDIR_BIN">
+        <Component Id="HERETIC_FILE_LIBRARY" Guid="2792F370-DA21-4CEC-9AAF-2DF37624F6AB">
+            <File Id="HERETIC_FILE_LIBRARY" DiskId="3" Source="$(var.ProductsDir)\bin\jheretic.dll" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="HERETICDIR_DATA_JHERETIC">
+        <Component Id="HERETIC_FILE_DATAPACK" Guid="A806ACE2-1A93-4A96-8ECF-833DA11B4104">
+            <File Id="HERETIC_FILE_DATAPACK" DiskId="3" Source="$(var.ProductsDir)\data\jheretic\jheretic.pk3" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+
+    <!-- Place all components for module heretic to the following group -->
+    <ComponentGroup Id="heretic">
+        <ComponentRef Id="HERETIC_FILE_LIBRARY" />
+        <ComponentRef Id="HERETIC_FILE_DATAPACK" />
+    </ComponentGroup>
+
+    <!-- Features for module heretic -->
+    <Feature Id="heretic" Level="1" Absent="allow" InstallDefault="followParent"
+      Title="jHeretic" Description="Heretic/Heretic: Shadow of the Serpent Riders" >
+        <ComponentGroupRef Id="heretic" />
+    </Feature>
+</Fragment>
+</Wix>

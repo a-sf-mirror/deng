@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Fragment>
+    <!-- Additional install files for component winmm -->
+    <Media Id="10" Cabinet="winmm.cab" EmbedCab="yes" />
+    <DirectoryRef Id="DOOMSDAYDIR_BIN">
+    <Component Id="WINMM_FILE_LIBWINMMDLL" Guid="674EB87C-8616-4069-8C56-01D34EE72D0C">
+        <File Id="WINMM_FILE_LIBWINMMDLL" DiskId="10" Source="$(var.ProductsDir)\bin\dswinmm.dll" KeyPath="yes" />
+    </Component>
+    </DirectoryRef>
+
+    <!-- Place all components for module winmm to the following group -->
+    <ComponentGroup Id="winmm">
+        <ComponentRef Id="WINMM_FILE_LIBWINMMDLL" />
+    </ComponentGroup>
+</Fragment>
+</Wix>

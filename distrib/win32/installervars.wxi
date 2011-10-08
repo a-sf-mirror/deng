@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Include>
+    <?define ProjectName="deng"?>
+
+    <?define ProductName="Doomsday Engine"?>
+    <?define ProductManufacturer="deng Team"?>
+    <?define ProductVersion="$(var.ProductMajorVersion).$(var.ProductMinorVersion).$(var.ProductBuildVersion).$(var.ProductRevisionVersion)"?>
+    <?define ProductHomepageUrl="http://dengine.net"?>
+    <?define ProductSupportUrl="http://dengine.net/support"?>
+    <?define ProductUpdateUrl="http://dengine.net/update"?>
+
+    <!-- Icon used in the Add/Remove Programs interface -->
+    <?define ProductIcon="$(var.ProductsDir)\doomsday.ico"?>
+</Include>

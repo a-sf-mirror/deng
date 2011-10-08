@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<!-- Include our global value definitions -->
+<?include $(sys.CURRENTDIR)\installervars.wxi ?>
+<Fragment>
+    <!-- Additional install files for component engine -->
+    <Media Id="1" Cabinet="engine.cab" EmbedCab="yes" />
+    <DirectoryRef Id="DOOMSDAYDIR_BIN">
+        <Component Id="ENGINE_FILE_MAINAPP" Guid="E7EAF2CA-87FE-4F1C-8A69-DF67D3AEB6DA">
+            <File Id="ENGINE_FILE_MAINAPP" DiskId="1" Source="$(var.ProductsDir)\bin\doomsday.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBCURL" Guid="56EFDEE7-3718-467D-9458-55F9A0ECD1C2">
+            <File Id="ENGINE_FILE_LIBCURL" DiskId="1" Source="$(var.ProductsDir)\bin\libcurl.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBOGG" Guid="5194CB83-517E-4DE1-A026-6B827EEDCB93">
+            <File Id="ENGINE_FILE_LIBOGG" DiskId="1" Source="$(var.ProductsDir)\bin\libogg-0.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBPNG" Guid="D4C7F816-AAC6-4FF6-B095-27D3D700EE30">
+            <File Id="ENGINE_FILE_LIBPNG" DiskId="1" Source="$(var.ProductsDir)\bin\libpng15.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBVORBIS" Guid="66AB2735-EFC2-4568-91DD-FBDDF393141A">
+            <File Id="ENGINE_FILE_LIBVORBIS" DiskId="1" Source="$(var.ProductsDir)\bin\libvorbis-0.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBVORBIS1" Guid="D306292F-D42A-4AC5-A629-21118645A6BE">
+            <File Id="ENGINE_FILE_LIBVORBIS1" DiskId="1" Source="$(var.ProductsDir)\bin\libvorbisfile-3.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBLZSS" Guid="F232A398-D86D-488B-876E-1B0989C59E93">
+            <File Id="ENGINE_FILE_LIBLZSS" DiskId="1" Source="$(var.ProductsDir)\bin\lzss.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBMIKMOD" Guid="7BBE59F5-ABF9-47ED-B6B2-5B4CD3313321">
+            <File Id="ENGINE_FILE_LIBMIKMOD" DiskId="1" Source="$(var.ProductsDir)\bin\mikmod.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBSDL" Guid="853B46CA-829A-4550-B9BA-6E40D3A86919">
+            <File Id="ENGINE_FILE_LIBSDL" DiskId="1" Source="$(var.ProductsDir)\bin\SDL.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBSDLMIXER" Guid="91D3C830-5C90-4CC3-B5EA-A3ED578707F9">
+            <File Id="ENGINE_FILE_LIBSDLMIXER" DiskId="1" Source="$(var.ProductsDir)\bin\SDL_mixer.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBSDLNET" Guid="461090C3-7C2A-48EB-8C0B-5D89BAE2338E">
+            <File Id="ENGINE_FILE_LIBSDLNET" DiskId="1" Source="$(var.ProductsDir)\bin\SDL_net.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBSMPEG" Guid="F7ED52AA-87C5-4B4A-8723-B81803B968F7">
+            <File Id="ENGINE_FILE_LIBSMPEG" DiskId="1" Source="$(var.ProductsDir)\bin\smpeg.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LIBZLIB" Guid="BE70F59B-158A-44DC-A9C4-5DC24D58945C">
+            <File Id="ENGINE_FILE_LIBZLIB" DiskId="1" Source="$(var.ProductsDir)\bin\zlib1.dll" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="DOOMSDAYDIR_DATA">
+        <Component Id="ENGINE_FILE_DATAPACK" Guid="E06232AD-4E00-4413-BF84-790A9D4B5A47">
+            <File Id="ENGINE_FILE_DATAPACK" DiskId="1" Source="$(var.ProductsDir)\data\doomsday.pk3" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="DOOMSDAYDIR_DOC">
+        <Component Id="ENGINE_FILE_LICENSE" Guid="A91D6396-D681-4164-94D3-4B7CD9500CBE">
+            <File Id="ENGINE_FILE_LICENSE" DiskId="1" Source="$(var.ProductsDir)\doc\LICENSE" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+
+    <!--
+    <Directory Id="ProgramMenuFolder" Name="Programs">
+        <Directory Id="ProgramMenuDir" Name="Foobar 1.0">
+            <Component Id="ProgramMenuDir" Guid="YOURGUID-7E98-44CE-B049-C477CC0A2B00">
+            <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+            <RegistryValue Root='HKCU' Key='Software\(\[ProductName]' Type='string' Value='' KeyPath='yes' />
+            </Component>
+        </Directory>
+    </Directory>
+    -->
+
+    <!-- Place all components for module engine to the following group -->
+    <ComponentGroup Id="engine">
+        <ComponentRef Id="ENGINE_FILE_MAINAPP" />
+        <ComponentRef Id="ENGINE_FILE_LIBCURL" />
+        <ComponentRef Id="ENGINE_FILE_LIBOGG" />
+        <ComponentRef Id="ENGINE_FILE_LIBPNG" />
+        <ComponentRef Id="ENGINE_FILE_LIBVORBIS" />
+        <ComponentRef Id="ENGINE_FILE_LIBVORBIS1" />
+        <ComponentRef Id="ENGINE_FILE_LIBLZSS" />
+        <ComponentRef Id="ENGINE_FILE_LIBMIKMOD" />
+        <ComponentRef Id="ENGINE_FILE_LIBSDL" />
+        <ComponentRef Id="ENGINE_FILE_LIBSDLMIXER" />
+        <ComponentRef Id="ENGINE_FILE_LIBSDLNET" />
+        <ComponentRef Id="ENGINE_FILE_LIBSMPEG" />
+        <ComponentRef Id="ENGINE_FILE_LIBZLIB" />
+        <ComponentRef Id="ENGINE_FILE_LICENSE" />
+        <ComponentRef Id="ENGINE_FILE_DATAPACK" />
+    </ComponentGroup>
+</Fragment>
+</Wix>

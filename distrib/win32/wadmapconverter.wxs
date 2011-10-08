@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Fragment>
+    <!-- Additional install files for component wadmapconverter -->
+    <Media Id="9" Cabinet="wadmapconverter.cab" EmbedCab="yes" />
+    <DirectoryRef Id="DOOMSDAYDIR_BIN">
+    <Component Id="WADMAPCONVERTER_FILE_LIBWADMAPCONVERTERDLL" Guid="2372C34A-697C-413A-83AE-54D5D4EF901B">
+        <File Id="WADMAPCONVERTER_FILE_LIBWADMAPCONVERTERDLL" DiskId="9" Source="$(var.ProductsDir)\bin\dpwadmapconverter.dll" KeyPath="yes" />
+    </Component>
+    </DirectoryRef>
+
+    <!-- Place all components for module wadmapconverter to the following group -->
+    <ComponentGroup Id="wadmapconverter">
+        <ComponentRef Id="WADMAPCONVERTER_FILE_LIBWADMAPCONVERTERDLL" />
+    </ComponentGroup>
+</Fragment>
+</Wix>

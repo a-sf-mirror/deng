@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Doomsday Engine Installer
+  Copyright (c) 2011 Daniel Swanson <danij@dengine.net>
+
+  This source file and related components define WiX rulesets for the
+  production of a Windows Install executable for the Doomsday Engine.
+
+  Conventions used:
+
+  Major version releases are to be granted a new product GUID so that
+  they may be installed side-by-side with previous versions. Minor
+  version upgrades share the product code of their base Major version.
+
+  Installable modules are defined using a Fragment per module scheme
+  allowing the otherwise monolithic install to be split up into multiple
+  source files. Files are named according to the convention:
+
+    FileName = <ComponentGroup:Id>.wxs
+
+  Within each module a scheme which maps files to components on a 1:1
+  basis is used. Doomsday's directory and file naming conventions allow
+  for this straightforward translation. Each installed file therefore
+  has it's own GUID.
+
+  Note: A convenient method for generating GUIDs can be found here:
+
+    http://www.guidgen.com/
+
+  The file components for each module are compressed into separate
+  embedded cabinet particular to that module. This affords the build
+  process better opportunity to optimize their creation, allowing for
+  caching or indepedent threads for the production of each cabinet
+  (and therefore accelerating the development cycle).
+
+  The highest used DiskId ordinal is presently: >10<
+
+  -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<!-- Include our global value definitions -->
+<?include $(sys.CURRENTDIR)/installervars.wxi ?>
+
+<!-- Define constants scoped to this file -->
+<?define ProductFullName="$(var.ProductName) $(var.ProductMajorVersion).$(var.ProductMinorVersion).$(var.ProductBuildVersion)" ?>
+<?define ProductInstallDir="$(var.ProductFullName)" ?>
+
+<!-- Here begins the Doomsday Engine product -->
+<Product
+  Manufacturer="$(var.ProductManufacturer)"
+  Name="$(var.ProductFullName)"
+  Version="$(var.ProductVersion)"
+  Id="5370A49F-9D67-4414-9FD3-CC0E7F2FB7AE"
+  UpgradeCode="4383E8C1-C26F-4550-BBBB-E6DDE5D3047E"
+  Language="1033">
+    <Package
+      Id="*"
+      Manufacturer="$(var.ProductManufacturer)"
+      Description="Installer for $(var.ProductInstallDir)"
+      Keywords="Installer;$(var.ProductFullName)"
+      Comments="This installer database contains the logic and data required to install $(var.ProductFullName)"
+      InstallerVersion="200"
+      Compressed="yes" />
+
+    <Property Id="DOOMSDAYURL_HOMEPAGE" Value="$(var.ProductHomepageUrl)" />
+    <Property Id="DOOMSDAYURL_SUPPORT" Value="$(var.ProductSupportUrl)" />
+    <Property Id="DOOMSDAYURL_UPDATE" Value="$(var.ProductUpdateUrl)" />
+
+    <!--
+      Here we define the values used to derive elements visible in the
+      Add/Remove Programs interface on the host system (links to help
+      information, icons, etc...) The actual values for which have been
+      moved out into the global installervars include for convenience.
+      -->
+    <Icon Id="ProductIcon" SourceFile="$(var.ProductIcon)" />
+    <Property Id="ARPCOMMENTS" Value="$(var.ProductName)" />
+    <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
+    <Property Id="ARPHELPLINK" Value="$(var.ProductSupportUrl)" />
+    <Property Id="ARPURLINFOABOUT" Value="$(var.ProductHomepageUrl)" />
+    <Property Id="ARPURLUPDATEINFO" Value="$(var.ProductUpdateUrl)" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <!-- Value of ARPINSTALLLOCATION will be set post installation -->
+
+    <!--
+      Here we define the install target directory and startmenu structures
+      used by all installable modules.
+      -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+        <Directory Id="ProgramFilesFolder">
+        <!--
+          Include the global product installation directory map (this
+          is used to map file content embedded in the final installer
+          to installation directory).
+          -->
+        <?include $(sys.CURRENTDIR)/installerdirs.wxi ?>
+        </Directory>
+
+        <Directory Id="ProgramMenuFolder">
+            <Directory Id="DoomsdayStartMenu" Name="$(var.ProductName)">
+                <Directory Id="DoomsdayStartMenuSupport" Name="Support" />
+            </Directory>
+        </Directory>
+
+        <Directory Id="DesktopFolder" Name="Desktop" />
+    </Directory>
+
+    <DirectoryRef Id="DoomsdayStartMenu">
+        <Component Id="CoreProductComponents" Guid="C916341A-D390-4090-AE12-AE567F0B969F">
+            <!--
+              Here we define the manufacturer product hierarchy within
+              the registry which we use for managing side-by-side product
+              versions (and more).
+              -->
+            <RegistryKey
+              Root="HKCU"
+              Key="Software\$(var.ProductManufacturer)"
+              Action="create">
+                <RegistryKey Key="$(var.ProductName)">
+                    <RegistryKey Key="$(var.ProductMajorVersion).0">
+                        <RegistryValue Name="InstallPath" Type="string" Value="[DOOMSDAYDIR]" KeyPath="yes" />
+                    </RegistryKey>
+                </RegistryKey>
+            </RegistryKey>
+
+            <!-- Handy shortcut to quickly access the install configurator -->
+            <Shortcut Id="ConfigureProduct"
+              Name="Configure Install"
+              Target="[System64Folder]msiexec.exe"
+              Arguments="/i [ProductCode]"
+              Description="Configure $(var.ProductName) installation" />
+
+            <!-- Here we define the contents of the Support submenu -->
+            <CreateFolder Directory="DoomsdayStartMenuSupport" />
+            <Shortcut Id="ProductHomepageShortcut" Directory="DoomsdayStartMenuSupport"
+              Name="Visit Homepage"
+              Description="Visit the $(var.ProductName) homepage"
+              Target="[DOOMSDAYURL_HOMEPAGE]" />
+            <Shortcut Id="ProductSupportShortcut" Directory="DoomsdayStartMenuSupport"
+              Name="Get Support"
+              Description="Get support for $(var.ProductName)"
+              Target="[DOOMSDAYURL_SUPPORT]" />
+            <Shortcut Id="ProductUpdateShortcut" Directory="DoomsdayStartMenuSupport"
+              Name="Get Updates"
+              Description="Get updates for $(var.ProductName)"
+              Target="[DOOMSDAYURL_UPDATE]" />
+            <RemoveFolder Directory="DoomsdayStartMenuSupport" Id="RemoveDoomsdayStartMenuSupport" On="uninstall" />
+
+            <RemoveFolder Id="RemoveDoomsdayStartMenu" On="uninstall" />
+        </Component>
+    </DirectoryRef>
+
+    <Feature Id="Complete" ConfigurableDirectory="DOOMSDAYDIR" Level="1" Absent="disallow"
+      Title="$(var.ProductName)"
+      Display="expand">
+        <!-- Core components -->
+        <ComponentRef Id="CoreProductComponents" />
+        <ComponentGroupRef Id="engine" />
+        <ComponentGroupRef Id="dehread" />
+        <ComponentGroupRef Id="wadmapconverter" />
+        <ComponentGroupRef Id="directsound" />
+        <ComponentGroupRef Id="openal" />
+        <ComponentGroupRef Id="winmm" />
+
+        <!-- Optional components -->
+        <FeatureRef Id="doom" />
+        <FeatureRef Id="heretic" />
+        <FeatureRef Id="hexen" />
+    </Feature>
+    <FeatureRef Id="snowberry" />
+
+    <!-- UI configuration -->
+    <UI>
+        <UIRef Id="WixUI_Mondo" />
+        <UIRef Id="WixUI_ErrorProgressText" />
+    </UI>
+    <!-- <WixVariable Id="WixUIBannerBmp" Value="binary\banner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="binary\dialog.bmp" /> -->
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.ProductEULA)" />
+
+    <!-- Post installation action sequence -->
+    <CustomAction Id="SetInstallLocation" Property="ARPINSTALLLOCATION" Value="[DOOMSDAYDIR]" />
+    <InstallExecuteSequence>
+        <Custom Action="SetInstallLocation" After="InstallValidate" />
+    </InstallExecuteSequence>
+
+</Product>
+</Wix>

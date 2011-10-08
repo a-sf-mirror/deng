@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Fragment>
+    <!-- Additional install paths for component hexen -->
+    <DirectoryRef Id="DOOMSDAYDIR_DATA">
+        <Directory Id="HEXENDIR_DATA_JHEXEN" Name="jhexen" />
+    </DirectoryRef>
+
+    <!-- Additional install files for component hexen -->
+    <Media Id="4" Cabinet="hexen.cab" EmbedCab="yes" />
+    <DirectoryRef Id="DOOMSDAYDIR_BIN">
+        <Component Id="HEXEN_FILE_LIBRARY" Guid="A516A39C-0C8C-4283-8D90-11C3A6E881C1">
+            <File Id="HEXEN_FILE_LIBRARY" DiskId="4" Source="$(var.ProductsDir)\bin\jhexen.dll" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="HEXENDIR_DATA_JHEXEN">
+        <Component Id="HEXEN_FILE_DATAPACK" Guid="7CC9859E-A2AE-42F0-9E17-4558FFC8188F">
+            <File Id="HEXEN_FILE_DATAPACK" DiskId="4" Source="$(var.ProductsDir)\data\jhexen\jhexen.pk3" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+
+    <!-- Place all components for module hexen to the following group -->
+    <ComponentGroup Id="hexen">
+        <ComponentRef Id="HEXEN_FILE_LIBRARY" />
+        <ComponentRef Id="HEXEN_FILE_DATAPACK" />
+    </ComponentGroup>
+
+    <!-- Features for module hexen -->
+    <Feature Id="hexen" Level="1" Absent="allow" InstallDefault="followParent"
+      Title="jHexen" Description="Hexen/Hexen: Death Kings of the Dark Citadel">
+        <ComponentGroupRef Id="hexen" />
+    </Feature>
+</Fragment>
+</Wix>

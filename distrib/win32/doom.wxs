@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Fragment>
+    <!-- Additional install paths for component doom -->
+    <DirectoryRef Id="DOOMSDAYDIR_DATA">
+        <Directory Id="DOOMDIR_DATA_JDOOM" Name="jdoom" />
+    </DirectoryRef>
+
+    <!-- Additional install files for component libdoom -->
+    <Media Id="2" Cabinet="doom.cab" EmbedCab="yes" />
+    <DirectoryRef Id="DOOMSDAYDIR_BIN">
+        <Component Id="DOOM_FILE_LIBRARY" Guid="48F21047-B618-4370-86D4-CBDAEEC99C9A">
+            <File Id="DOOM_FILE_LIBRARY" DiskId="2" Source="$(var.ProductsDir)\bin\jdoom.dll" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="DOOMDIR_DATA_JDOOM">
+        <Component Id="DOOM_FILE_DATAPACK" Guid="645331E1-2417-40A8-8487-B5D548E607DC">
+            <File Id="DOOM_FILE_DATAPACK" DiskId="2" Source="$(var.ProductsDir)\data\jdoom\jdoom.pk3" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+
+    <!-- Place all components for module doom to the following group -->
+    <ComponentGroup Id="doom">
+        <ComponentRef Id="DOOM_FILE_LIBRARY" />
+        <ComponentRef Id="DOOM_FILE_DATAPACK" />
+    </ComponentGroup>
+
+    <!-- Features for module doom -->
+    <Feature Id="doom" Level="1" Absent="allow" InstallDefault="followParent"
+      Title="jDoom"
+      Description="DOOM/Ultimate DOOM/DOOM II/Final DOOM">
+        <ComponentGroupRef Id="doom" />
+    </Feature>
+</Fragment>
+</Wix>
