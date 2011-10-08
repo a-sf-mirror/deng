@@ -220,17 +220,9 @@ def win_release():
         print "Creating the products/doc directory."
         os.mkdir(PROD_DOC_DIR)
 
-    # Generate the Inno Setup configuration file.
-    script = file('win32\setup.iss.template', 'rt').read()
-    file('win32\setup.iss', 'wt').write(script
-        .replace('${YEAR}', time.strftime('%Y'))
-        .replace('${BUILD}', DOOMSDAY_BUILD)
-        .replace('${VERSION}', DOOMSDAY_VERSION)
-        .replace('${VERSION_PLAIN}', DOOMSDAY_VERSION_PLAIN))
-    
     # Execute the win32 release script.
     os.chdir('win32')
-    if os.system('dorel.bat ' + DOOMSDAY_BUILD_NUMBER):
+    if os.system('dorel.bat ' + DOOMSDAY_VERSION_MAJOR + ' ' + DOOMSDAY_VERSION_MINOR + ' ' + DOOMSDAY_VERSION_REVISION + ' 0 ' + DOOMSDAY_BUILD_NUMBER):
         raise Exception("Failure in the Windows release script.")
         
         
