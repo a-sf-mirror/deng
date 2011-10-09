@@ -30,9 +30,6 @@ DOOMSDAY_BUILD_NUMBER = str((now.tm_year - 2011)*365 + now.tm_yday)
 DOOMSDAY_BUILD = 'build' + DOOMSDAY_BUILD_NUMBER
 TIMESTAMP = time.strftime('%y-%m-%d')
 
-# Build Tools Setup
-print 'Setting environment for building Doomsday Engine - Windows Installer...'
-
 
 def exit_with_error():
     os.chdir(LAUNCH_DIR)
@@ -116,9 +113,11 @@ def link_wix_sources(files, outFile):
         objFileList += os.path.normpath(os.path.join(WORK_DIR, fileWithExt)) + ' '
 
     # Link all objects and bind our installables into cabinents.
+    cwd = os.getcwd()
     os.chdir(WORK_DIR)
     if os.system('light -b ..\ -nologo -out ' + outFile + ' -ext WixUIExtension -ext WixUtilExtension ' + objFileList):
         raise Exception("Failed linking WiX object files.")
+    os.chdir(cwd)
 
 
 def win_installer():
@@ -176,8 +175,6 @@ def main():
         exit_with_error()
 
     os.chdir(LAUNCH_DIR)
-    print "Done."
-
 
 if __name__ == '__main__':
     main()
