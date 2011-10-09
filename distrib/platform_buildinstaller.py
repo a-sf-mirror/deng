@@ -90,6 +90,8 @@ def compile_wix_sources(files):
           + '-dProductRevisionVersion="' + str(DOOMSDAY_BUILD_NUMBER) + '" ' \
           + '-dProductsDir="' + PRODUCTS_DIR + '"'
 
+    sys.stdout.flush()
+
     cwd = os.getcwd()
     os.chdir(SOURCE_DIR)
     for file in files:
@@ -111,6 +113,8 @@ def link_wix_sources(files, outFile):
         fileWithExt = file + '.wixobj'
         print "  %s..." % os.path.normpath(fileWithExt)
         objFileList += os.path.normpath(os.path.join(WORK_DIR, fileWithExt)) + ' '
+
+    sys.stdout.flush()
 
     # Link all objects and bind our installables into cabinents.
     cwd = os.getcwd()
