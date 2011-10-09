@@ -104,7 +104,7 @@ def compile_wix_sources(files):
     os.chdir(cwd)
 
 """ Linking of WiX source files and installable binding """
-def link_wix_sources(files, outFile):
+def link_wix_objfiles(files, outFile):
     print 'Linking WiX object files:'
 
     # Compose the link object file list.
@@ -117,11 +117,11 @@ def link_wix_sources(files, outFile):
     sys.stdout.flush()
 
     # Link all objects and bind our installables into cabinents.
-    cwd = os.getcwd()
-    os.chdir(WORK_DIR)
-    if os.system('light -b ..\ -nologo -out ' + outFile + ' -ext WixUIExtension -ext WixUtilExtension ' + objFileList):
+    if os.system('light -nologo -b ' + SOURCE_DIR
+               + ' -out ' + os.path.join(OUTPUT_DIR, outFile + '.msi')
+               + ' -pdbout ' + os.path.join(WORK_DIR, outFile + '.wixpdb')
+               + ' -ext WixUIExtension -ext WixUtilExtension ' + objFileList):
         raise Exception("Failed linking WiX object files.")
-    os.chdir(cwd)
 
 
 def win_installer():
@@ -134,7 +134,6 @@ def win_installer():
     OUTFILE = 'doomsday_' + DOOMSDAY_VERSION_MAJOR + '.' + DOOMSDAY_VERSION_MINOR + '.' + DOOMSDAY_VERSION_REVISION
     if DOOMSDAY_BUILD != '':
         OUTFILE += '_' + DOOMSDAY_BUILD
-    OUTFILE += '.msi'
 
     # Compose the file list.
     files = ['engine',
@@ -149,18 +148,16 @@ def win_installer():
              'winmm',
              'snowberry']
 
-    compile_wix_sources(files)
-    link_wix_sources(files, OUTFILE)
+    prepare_work_dir()
 
-    # Copy the resultant installer to the release directory.
-    shutil.copy(os.path.join(WORK_DIR, OUTFILE), os.path.join(OUTPUT_DIR, OUTFILE))
+    compile_wix_sources(files)
+    link_wix_objfiles(files, OUTFILE)
 
     # Cleanup
     clean_work_dir()
 
 
 def main():
-    prepare_work_dir()
     find_version()
 
     print "Checking OS...",
