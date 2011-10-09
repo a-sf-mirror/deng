@@ -85,10 +85,10 @@ def compile_wix_sources(files):
     print 'Compiling WiX source files:'
     sys.stdout.flush()
 
-    CDEFS = '-dProductMajorVersion="' + str(DOOMSDAY_VERSION_MAJOR) + '"' \
-         + ' -dProductMinorVersion="' + str(DOOMSDAY_VERSION_MINOR) + '"' \
-         + ' -dProductBuildVersion="' + str(DOOMSDAY_VERSION_REVISION) + '"' \
-         + ' -dProductRevisionVersion="' + str(DOOMSDAY_BUILD_NUMBER) + '"'
+    CDEFS = '-dProductVersionMajor="' + str(DOOMSDAY_VERSION_MAJOR) + '"' \
+         + ' -dProductVersionMinor="' + str(DOOMSDAY_VERSION_MINOR) + '"' \
+         + ' -dProductVersionRevision="' + str(DOOMSDAY_VERSION_REVISION) + '"' \
+         + ' -dProductBuildNumber="' + str(DOOMSDAY_BUILD_NUMBER) + '"'
 
     # Compile sources.
     for file in files:

@@ -41,7 +41,7 @@
 <?include installervars.wxi ?>
 
 <!-- Define constants scoped to this file -->
-<?define ProductFullName="$(var.ProductName) $(var.ProductMajorVersion).$(var.ProductMinorVersion).$(var.ProductBuildVersion)" ?>
+<?define ProductFullName="$(var.ProductName) $(var.ProductVersionMajor).$(var.ProductVersionMinor).$(var.ProductVersionRevision)" ?>
 <?define ProductInstallDir="$(var.ProductFullName)" ?>
 
 <!-- Here begins the Doomsday Engine product -->
@@ -115,7 +115,7 @@
               Key="Software\$(var.ProductManufacturer)"
               Action="create">
                 <RegistryKey Key="$(var.ProductName)">
-                    <RegistryKey Key="$(var.ProductMajorVersion).0">
+                    <RegistryKey Key="$(var.ProductVersionMajor).0">
                         <RegistryValue Name="InstallPath" Type="string" Value="[DOOMSDAYDIR]" KeyPath="yes" />
                     </RegistryKey>
                 </RegistryKey>

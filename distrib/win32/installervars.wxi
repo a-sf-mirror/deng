@@ -4,7 +4,7 @@
 
     <?define ProductName="Doomsday Engine"?>
     <?define ProductManufacturer="deng Team"?>
-    <?define ProductVersion="$(var.ProductMajorVersion).$(var.ProductMinorVersion).$(var.ProductBuildVersion).$(var.ProductRevisionVersion)"?>
+    <?define ProductVersion="$(var.ProductVersionMajor).$(var.ProductVersionMinor).$(var.ProductVersionRevision)"?>
     <?define ProductHomepageUrl="http://dengine.net"?>
     <?define ProductSupportUrl="http://dengine.net/support"?>
     <?define ProductUpdateUrl="http://dengine.net/update"?>
