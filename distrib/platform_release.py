@@ -102,6 +102,9 @@ def mac_release():
         import py2app
     except ImportError:
         raise Exception("Python: py2app not found!")
+
+    prepare_work_dir()
+
     # First we need to make a release build.
     print "Building the release..."
     # Must work in the deng root for qmake (resource bundling apparently
@@ -207,6 +210,8 @@ def mac_release():
 def win_release():
     global DOOMSDAY_BUILD_NUMBER
 
+    prepare_work_dir()
+
     PROD_DIR = os.path.join(LAUNCH_DIR, 'products')
     if not os.path.exists(PROD_DIR):
         print 'Creating the products directory.'
@@ -222,6 +227,8 @@ def win_release():
         print 'Creating the products/doc directory.'
         os.mkdir(PROD_DOC_DIR)
 
+    sys.stdout.flush()
+
     # Execute the win32 release script.
     cwd = os.getcwd()
     os.chdir('win32')
@@ -236,6 +243,8 @@ def win_release():
 
 """The Linux release procedure."""
 def linux_release():
+    prepare_work_dir()
+
     os.chdir(LAUNCH_DIR)
 
     # Generate a launcher script.
@@ -264,7 +273,6 @@ import snowberry"""
 
 
 def main():
-    prepare_work_dir()
     find_version()
 
     print "Checking OS...",
