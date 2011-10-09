@@ -163,7 +163,7 @@ def list_package_files(name):
     buildDir = os.path.join(EVENT_DIR, name)
 
     files = glob.glob(os.path.join(buildDir, '*.dmg')) + \
-            glob.glob(os.path.join(buildDir, '*.exe')) + \
+            glob.glob(os.path.join(buildDir, '*.msi')) + \
             glob.glob(os.path.join(buildDir, '*.deb'))
             
     return [os.path.basename(f) for f in files]
@@ -202,7 +202,7 @@ def html_build_description(name, encoded=True):
     for f in glob.glob(os.path.join(buildDir, 'build*txt')):
         os.system('gzip -9 %s' % f)    
     
-    oses = [('Windows (x86)', '.exe', ['win32', 'win32-32bit']),
+    oses = [('Windows (x86)', '.msi', ['win32', 'win32-32bit']),
             ('Mac OS X 10.4+ (i386/ppc)', '.dmg', ['darwin', 'darwin-32bit']),
             ('Ubuntu (x86)', 'i386.deb', ['linux2', 'linux2-32bit']),
             ('Ubuntu (x86_64)', 'amd64.deb', ['linux2-64bit'])]
