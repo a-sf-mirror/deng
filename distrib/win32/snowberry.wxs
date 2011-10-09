@@ -36,280 +36,280 @@
     <Media Id="5" Cabinet="snowberry.cab" EmbedCab="yes" />
     <DirectoryRef Id="SNOWBERRYDIR">
         <Component Id="SNOWBERRY_FILE_GDIPLUSDLL" Guid="492D3511-BF05-4070-BDA6-CAB351770E0A">
-            <File Id="SNOWBERRY_FILE_GDIPLUSDLL" DiskId="5" Source="$(var.ProductsDir)\snowberry\gdiplus.dll" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_GDIPLUSDLL" DiskId="5" Source="SourceDir\snowberry\gdiplus.dll" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_LIBRARYZIP" Guid="5C8B61E8-A673-4D90-B2C4-06AB03209D52">
-            <File Id="SNOWBERRY_FILE_LIBRARYZIP" DiskId="5" Source="$(var.ProductsDir)\snowberry\library.zip" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_LIBRARYZIP" DiskId="5" Source="SourceDir\snowberry\library.zip" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_MSVCP71DLL" Guid="1F66F792-B4C4-47EC-9353-F86BA0922AFE">
-            <File Id="SNOWBERRY_FILE_MSVCP71DLL" DiskId="5" Source="$(var.ProductsDir)\snowberry\msvcp71.dll" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_MSVCP71DLL" DiskId="5" Source="SourceDir\snowberry\msvcp71.dll" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_MSVCR71DLL" Guid="0C9F9AF9-CED8-4FF1-B6EB-441A87AB96DB">
-            <File Id="SNOWBERRY_FILE_MSVCR71DLL" DiskId="5" Source="$(var.ProductsDir)\snowberry\msvcr71.dll" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_MSVCR71DLL" DiskId="5" Source="SourceDir\snowberry\msvcr71.dll" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_MAINAPP" Guid="A8090022-8F7B-4E85-B981-DBABA94ED12F">
-            <File Id="SNOWBERRY_FILE_MAINAPP" DiskId="5" Source="$(var.ProductsDir)\snowberry\snowberry.exe" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_MAINAPP" DiskId="5" Source="SourceDir\snowberry\snowberry.exe" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_W9XPOPENEXE" Guid="DEE3B359-6E1A-4658-A640-D89348F0C2B3">
-            <File Id="SNOWBERRY_FILE_W9XPOPENEXE" DiskId="5" Source="$(var.ProductsDir)\snowberry\w9xpopen.exe" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_W9XPOPENEXE" DiskId="5" Source="SourceDir\snowberry\w9xpopen.exe" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="SNOWBERRYDIR_CONF">
         <Component Id="SNOWBERRY_FILE_APPEARANCECONF" Guid="61FFED35-A6F9-4F1D-B1B1-DC9E3B6BE0C2">
-            <File Id="SNOWBERRY_FILE_APPEARANCECONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\appearance.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_APPEARANCECONF" DiskId="5" Source="SourceDir\snowberry\conf\appearance.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_COMPONENTSCONF" Guid="A506863D-6CAD-4696-BBCC-1F7879B3CA02">
-            <File Id="SNOWBERRY_FILE_COMPONENTSCONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\components.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_COMPONENTSCONF" DiskId="5" Source="SourceDir\snowberry\conf\components.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DOOMSDAYCONF" Guid="5209C5C0-0396-4194-A387-2CF762436256">
-            <File Id="SNOWBERRY_FILE_DOOMSDAYCONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\doomsday.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DOOMSDAYCONF" DiskId="5" Source="SourceDir\snowberry\conf\doomsday.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_OSX_APPEARANCECONF" Guid="AE353E30-48C6-4858-AEE5-35B7560B58D4">
-            <File Id="SNOWBERRY_FILE_OSX_APPEARANCECONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\osx-appearance.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_OSX_APPEARANCECONF" DiskId="5" Source="SourceDir\snowberry\conf\osx-appearance.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_OSX_COMPONENTSCONF" Guid="166882F9-244F-4304-AF9A-F04BD91DA017">
-            <File Id="SNOWBERRY_FILE_OSX_COMPONENTSCONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\osx-components.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_OSX_COMPONENTSCONF" DiskId="5" Source="SourceDir\snowberry\conf\osx-components.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_OSX_DOOMSDAYCONF" Guid="93CE5A3A-9623-4918-A178-3ED2A316A1CA">
-            <File Id="SNOWBERRY_FILE_OSX_DOOMSDAYCONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\osx-doomsday.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_OSX_DOOMSDAYCONF" DiskId="5" Source="SourceDir\snowberry\conf\osx-doomsday.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_SNOWBERRYCONF" Guid="9B8D7E41-9024-423A-97FE-C335B346EE15">
-            <File Id="SNOWBERRY_FILE_SNOWBERRYCONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\snowberry.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_SNOWBERRYCONF" DiskId="5" Source="SourceDir\snowberry\conf\snowberry.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_WIN_ACCELCONF" Guid="BDA941E3-3105-4620-8423-5E7396565A56">
-            <File Id="SNOWBERRY_FILE_WIN_ACCELCONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\win-accel.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_WIN_ACCELCONF" DiskId="5" Source="SourceDir\snowberry\conf\win-accel.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_X_APPEARANCECONF" Guid="57E30B9B-C746-4A9A-9A58-C9ABFDDF7549">
-            <File Id="SNOWBERRY_FILE_X_APPEARANCECONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\x-appearance.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_X_APPEARANCECONF" DiskId="5" Source="SourceDir\snowberry\conf\x-appearance.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_X_COMPONENTSCONF" Guid="4035D527-F8B2-4290-97E4-7D45AC521A0B">
-            <File Id="SNOWBERRY_FILE_X_COMPONENTSCONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\x-components.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_X_COMPONENTSCONF" DiskId="5" Source="SourceDir\snowberry\conf\x-components.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_X_DOOMSDAYCONF" Guid="9B6EAA97-5126-417D-BC51-A87DAFC5CA92">
-            <File Id="SNOWBERRY_FILE_X_DOOMSDAYCONF" DiskId="5" Source="$(var.ProductsDir)\snowberry\conf\x-doomsday.conf" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_X_DOOMSDAYCONF" DiskId="5" Source="SourceDir\snowberry\conf\x-doomsday.conf" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="SNOWBERRYDIR_GRAPHICS">
         <Component Id="SNOWBERRY_FILE_ABOUTJPG" Guid="0A3E4B83-E25F-4812-B572-4CD2BDB7C427">
-            <File Id="SNOWBERRY_FILE_ABOUTJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\about.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_ABOUTJPG" DiskId="5" Source="SourceDir\snowberry\graphics\about.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_ADDONSPNG" Guid="7114B246-1C4D-46CE-A54E-3376CC58AB47">
-            <File Id="SNOWBERRY_FILE_ADDONSPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\addons.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_ADDONSPNG" DiskId="5" Source="SourceDir\snowberry\graphics\addons.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_DEFAULTPNG" Guid="AEC458E6-14B7-439E-BCC1-869B4B3F9061">
-            <File Id="SNOWBERRY_FILE_BANNER_DEFAULTPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-default.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_DEFAULTPNG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-default.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_DOOM1JPG" Guid="81F3026A-1417-4D94-9F2F-6265777A934E">
-            <File Id="SNOWBERRY_FILE_BANNER_DOOM1JPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-doom1.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_DOOM1JPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-doom1.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_DOOM1_SHAREJPG" Guid="A6E4E6B3-0779-4D5B-A8B7-B927E1A9FDC0">
-            <File Id="SNOWBERRY_FILE_BANNER_DOOM1_SHAREJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-doom1-share.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_DOOM1_SHAREJPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-doom1-share.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_DOOM1_ULTIMATEJPG" Guid="EB2708B5-7D71-4A33-832A-C03114BC1DF5">
-            <File Id="SNOWBERRY_FILE_BANNER_DOOM1_ULTIMATEJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-doom1-ultimate.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_DOOM1_ULTIMATEJPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-doom1-ultimate.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_DOOM2JPG" Guid="B6452838-8C1E-4DA3-BE58-D5A5621498BB">
-            <File Id="SNOWBERRY_FILE_BANNER_DOOM2JPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-doom2.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_DOOM2JPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-doom2.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_DOOM2_PLUTJPG" Guid="428DA641-022C-4522-90AD-1D9DDE3B2F0B">
-            <File Id="SNOWBERRY_FILE_BANNER_DOOM2_PLUTJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-doom2-plut.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_DOOM2_PLUTJPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-doom2-plut.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_DOOM2_TNTJPG" Guid="BD2C941D-D5AF-4A6A-9320-285F722DF24B">
-            <File Id="SNOWBERRY_FILE_BANNER_DOOM2_TNTJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-doom2-tnt.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_DOOM2_TNTJPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-doom2-tnt.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_HERETICJPG" Guid="55E86024-697D-4CAF-A893-4602444E481E">
-            <File Id="SNOWBERRY_FILE_BANNER_HERETICJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-heretic.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_HERETICJPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-heretic.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_HEXENJPG" Guid="18372636-CB65-4C3B-9B22-E9D5B0570C3E">
-            <File Id="SNOWBERRY_FILE_BANNER_HEXENJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-hexen.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_HEXENJPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-hexen.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_HEXEN_DEMOJPG" Guid="3B89914B-36A4-491F-B36B-F42974ABFD4B">
-            <File Id="SNOWBERRY_FILE_BANNER_HEXEN_DEMOJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-hexen-demo.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_HEXEN_DEMOJPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-hexen-demo.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_BANNER_HEXEN_DKJPG" Guid="12E4EA80-042F-4904-AFED-B2874EAE5728">
-            <File Id="SNOWBERRY_FILE_BANNER_HEXEN_DKJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\banner-hexen-dk.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_BANNER_HEXEN_DKJPG" DiskId="5" Source="SourceDir\snowberry\graphics\banner-hexen-dk.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_CHECKEDBMP" Guid="76420D8D-C316-46CA-936D-6DDAE6D6BBE3">
-            <File Id="SNOWBERRY_FILE_CHECKEDBMP" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\checked.bmp" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_CHECKEDBMP" DiskId="5" Source="SourceDir\snowberry\graphics\checked.bmp" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_CLOSEDFOLDERBMP" Guid="93C2F022-F5DF-4BB2-9B3B-23B9F0AFC7DB">
-            <File Id="SNOWBERRY_FILE_CLOSEDFOLDERBMP" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\closedfolder.bmp" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_CLOSEDFOLDERBMP" DiskId="5" Source="SourceDir\snowberry\graphics\closedfolder.bmp" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DEFAULTSPNG" Guid="4AD4694C-52C8-439C-920D-95A0D504D3AA">
-            <File Id="SNOWBERRY_FILE_DEFAULTSPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\defaults.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DEFAULTSPNG" DiskId="5" Source="SourceDir\snowberry\graphics\defaults.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DEFCHECKBMP" Guid="32686EFE-8265-4644-ADBD-6141EF4E09FD">
-            <File Id="SNOWBERRY_FILE_DEFCHECKBMP" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\defcheck.bmp" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DEFCHECKBMP" DiskId="5" Source="SourceDir\snowberry\graphics\defcheck.bmp" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DENGPNG" Guid="B9E3BCFE-7AF0-475C-89B3-CA602A5A001E">
-            <File Id="SNOWBERRY_FILE_DENGPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\deng.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DENGPNG" DiskId="5" Source="SourceDir\snowberry\graphics\deng.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DENG2BMP" Guid="55FBF542-7A7D-464E-8709-008A2C56A33A">
-            <File Id="SNOWBERRY_FILE_DENG2BMP" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\deng2.bmp" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DENG2BMP" DiskId="5" Source="SourceDir\snowberry\graphics\deng2.bmp" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DENG3BMP" Guid="F8B748A0-73FB-430D-AF3E-1CAC43F74097">
-            <File Id="SNOWBERRY_FILE_DENG3BMP" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\deng3.bmp" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DENG3BMP" DiskId="5" Source="SourceDir\snowberry\graphics\deng3.bmp" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DENG4BMP" Guid="D792E2B3-68F2-4E0D-8F81-E62DAD3C169F">
-            <File Id="SNOWBERRY_FILE_DENG4BMP" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\deng4.bmp" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DENG4BMP" DiskId="5" Source="SourceDir\snowberry\graphics\deng4.bmp" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DEVELOPERPNG" Guid="F7625B93-A056-4AAA-9E25-050E649CF0F8">
-            <File Id="SNOWBERRY_FILE_DEVELOPERPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\developer.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DEVELOPERPNG" DiskId="5" Source="SourceDir\snowberry\graphics\developer.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DISPLAYPNG" Guid="9EED484C-1D4F-4ABD-BDEB-069AD7CAF14E">
-            <File Id="SNOWBERRY_FILE_DISPLAYPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\display.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DISPLAYPNG" DiskId="5" Source="SourceDir\snowberry\graphics\display.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_GENERALPNG" Guid="41376B69-75C6-4A6C-806C-9D00A1AD2B02">
-            <File Id="SNOWBERRY_FILE_GENERALPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\general.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_GENERALPNG" DiskId="5" Source="SourceDir\snowberry\graphics\general.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_GRAPHICSPNG" Guid="5B55BB2E-30FD-450F-8E37-6A86F7322F83">
-            <File Id="SNOWBERRY_FILE_GRAPHICSPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\graphics.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_GRAPHICSPNG" DiskId="5" Source="SourceDir\snowberry\graphics\graphics.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_HELP_LOGOJPG" Guid="093021E6-2A44-4C7F-848C-CE0324650329">
-            <File Id="SNOWBERRY_FILE_HELP_LOGOJPG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\help-logo.jpg" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_HELP_LOGOJPG" DiskId="5" Source="SourceDir\snowberry\graphics\help-logo.jpg" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_INPUTPNG" Guid="CED977D9-81FA-4139-B2FD-D29A17462EB9">
-            <File Id="SNOWBERRY_FILE_INPUTPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\input.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_INPUTPNG" DiskId="5" Source="SourceDir\snowberry\graphics\input.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_OPENFOLDERBMP" Guid="5B39E3B8-2BF9-40C3-AEF9-179687D54A46">
-            <File Id="SNOWBERRY_FILE_OPENFOLDERBMP" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\openfolder.bmp" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_OPENFOLDERBMP" DiskId="5" Source="SourceDir\snowberry\graphics\openfolder.bmp" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_ORB_DOOMPNG" Guid="173738D4-BA64-45C8-A88D-ECA455F76130">
-            <File Id="SNOWBERRY_FILE_ORB_DOOMPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\orb-doom.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_ORB_DOOMPNG" DiskId="5" Source="SourceDir\snowberry\graphics\orb-doom.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_ORB_HERETICPNG" Guid="62548D0C-8D6A-4EF2-9EB7-96476CA4D387">
-            <File Id="SNOWBERRY_FILE_ORB_HERETICPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\orb-heretic.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_ORB_HERETICPNG" DiskId="5" Source="SourceDir\snowberry\graphics\orb-heretic.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_ORB_HEXENPNG" Guid="8BCE213E-CC7E-456B-B89F-C6ADA491AF0A">
-            <File Id="SNOWBERRY_FILE_ORB_HEXENPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\orb-hexen.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_ORB_HEXENPNG" DiskId="5" Source="SourceDir\snowberry\graphics\orb-hexen.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_SCALED27X27_DEFAULTSPNG" Guid="EE286390-F679-4F94-AEDA-1E3BA6701630">
-            <File Id="SNOWBERRY_FILE_SCALED27X27_DEFAULTSPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\scaled27x27-defaults.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_SCALED27X27_DEFAULTSPNG" DiskId="5" Source="SourceDir\snowberry\graphics\scaled27x27-defaults.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_SCALED27X27_ORB_DOOMPNG" Guid="4001E0CE-6DEB-45EE-B0D9-01F57485897C">
-            <File Id="SNOWBERRY_FILE_SCALED27X27_ORB_DOOMPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\scaled27x27-orb-doom.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_SCALED27X27_ORB_DOOMPNG" DiskId="5" Source="SourceDir\snowberry\graphics\scaled27x27-orb-doom.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_SCALED27X27_ORB_HERETICPNG" Guid="B58BEB44-6353-4033-9A7A-6E3DACA39454">
-            <File Id="SNOWBERRY_FILE_SCALED27X27_ORB_HERETICPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\scaled27x27-orb-heretic.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_SCALED27X27_ORB_HERETICPNG" DiskId="5" Source="SourceDir\snowberry\graphics\scaled27x27-orb-heretic.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_SCALED27X27_ORB_HEXENPNG" Guid="366AF037-16A8-4336-A1ED-C3035D431C51">
-            <File Id="SNOWBERRY_FILE_SCALED27X27_ORB_HEXENPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\scaled27x27-orb-hexen.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_SCALED27X27_ORB_HEXENPNG" DiskId="5" Source="SourceDir\snowberry\graphics\scaled27x27-orb-hexen.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_SNOWBERRYICO" Guid="D75DD2CC-776B-4592-A8E3-A239511D66B6">
-            <File Id="SNOWBERRY_FILE_SNOWBERRYICO" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\snowberry.ico" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_SNOWBERRYICO" DiskId="5" Source="SourceDir\snowberry\graphics\snowberry.ico" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_SNOWBERRYPNG" Guid="61522071-338D-4E1B-AD87-D9E35CB19495">
-            <File Id="SNOWBERRY_FILE_SNOWBERRYPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\snowberry.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_SNOWBERRYPNG" DiskId="5" Source="SourceDir\snowberry\graphics\snowberry.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_SOUNDPNG" Guid="0BA084DA-2F30-4CF6-94B9-C1F6E8AC0200">
-            <File Id="SNOWBERRY_FILE_SOUNDPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\sound.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_SOUNDPNG" DiskId="5" Source="SourceDir\snowberry\graphics\sound.png" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_UNCHECKEDBMP" Guid="91392666-8A80-48EA-A439-E225B7062094">
-            <File Id="SNOWBERRY_FILE_UNCHECKEDBMP" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\unchecked.bmp" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_UNCHECKEDBMP" DiskId="5" Source="SourceDir\snowberry\graphics\unchecked.bmp" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_WIZARDPNG" Guid="BBF68105-D14D-446A-B5F6-309C28FF173C">
-            <File Id="SNOWBERRY_FILE_WIZARDPNG" DiskId="5" Source="$(var.ProductsDir)\snowberry\graphics\wizard.png" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_WIZARDPNG" DiskId="5" Source="SourceDir\snowberry\graphics\wizard.png" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="SNOWBERRYDIR_LANG">
         <Component Id="SNOWBERRY_FILE_ENGLISHLANG" Guid="AA982089-0FB3-4C1E-B00B-5D94AE86B097">
-            <File Id="SNOWBERRY_FILE_ENGLISHLANG" DiskId="5" Source="$(var.ProductsDir)\snowberry\lang\english.lang" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_ENGLISHLANG" DiskId="5" Source="SourceDir\snowberry\lang\english.lang" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_FINNISHLANG" Guid="38427E3B-1E9B-456D-AD83-D7C55DDCC055">
-            <File Id="SNOWBERRY_FILE_FINNISHLANG" DiskId="5" Source="$(var.ProductsDir)\snowberry\lang\finnish.lang" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_FINNISHLANG" DiskId="5" Source="SourceDir\snowberry\lang\finnish.lang" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_GERMANLANG" Guid="967053DC-BE34-46C1-8021-7BD81F304321">
-            <File Id="SNOWBERRY_FILE_GERMANLANG" DiskId="5" Source="$(var.ProductsDir)\snowberry\lang\german.lang" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_GERMANLANG" DiskId="5" Source="SourceDir\snowberry\lang\german.lang" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_PORTUGUESE_BRLANG" Guid="52FC4256-54F9-4BF1-AE3C-64FEDE156592">
-            <File Id="SNOWBERRY_FILE_PORTUGUESE_BRLANG" DiskId="5" Source="$(var.ProductsDir)\snowberry\lang\portuguese-br.lang" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_PORTUGUESE_BRLANG" DiskId="5" Source="SourceDir\snowberry\lang\portuguese-br.lang" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="SNOWBERRYDIR_PLUGINS">
         <Component Id="SNOWBERRY_FILE_ABOUTPY" Guid="FA80A725-EBCF-4EBE-B605-A454333AABB6">
-            <File Id="SNOWBERRY_FILE_ABOUTPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\about.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_ABOUTPY" DiskId="5" Source="SourceDir\snowberry\plugins\about.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_HELPPY" Guid="CD0CE06D-623B-4ED7-A397-A8E855AA70D8">
-            <File Id="SNOWBERRY_FILE_HELPPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\help.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_HELPPY" DiskId="5" Source="SourceDir\snowberry\plugins\help.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_LAUNCHERPY" Guid="9988E140-0605-437C-8BC6-BE0BC2335194">
-            <File Id="SNOWBERRY_FILE_LAUNCHERPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\launcher.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_LAUNCHERPY" DiskId="5" Source="SourceDir\snowberry\plugins\launcher.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_PREFERENCESPY" Guid="853A2D0E-0722-4EDD-A3B2-8A15C9557045">
-            <File Id="SNOWBERRY_FILE_PREFERENCESPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\preferences.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_PREFERENCESPY" DiskId="5" Source="SourceDir\snowberry\plugins\preferences.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_PROFILELISTPY" Guid="359687DF-4223-467B-BADC-1F134A239A6A">
-            <File Id="SNOWBERRY_FILE_PROFILELISTPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\profilelist.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_PROFILELISTPY" DiskId="5" Source="SourceDir\snowberry\plugins\profilelist.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_TAB10_SUMMARYPY" Guid="C36D9E2C-8489-40D8-9007-9E89159FE710">
-            <File Id="SNOWBERRY_FILE_TAB10_SUMMARYPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\tab10_summary.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_TAB10_SUMMARYPY" DiskId="5" Source="SourceDir\snowberry\plugins\tab10_summary.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_TAB20_MAPSPY" Guid="59FBCAEA-D6A8-4CD2-8E6E-1231CE197DC3">
-            <File Id="SNOWBERRY_FILE_TAB20_MAPSPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\tab20_maps.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_TAB20_MAPSPY" DiskId="5" Source="SourceDir\snowberry\plugins\tab20_maps.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_TAB40_SETTINGSPY" Guid="9EE83303-0BC8-4B0F-B03F-2B54B770119E">
-            <File Id="SNOWBERRY_FILE_TAB40_SETTINGSPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\tab40_settings.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_TAB40_SETTINGSPY" DiskId="5" Source="SourceDir\snowberry\plugins\tab40_settings.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_WIZARDPY" Guid="823A421F-E5AE-4CE8-96BD-71A805306DAB">
-            <File Id="SNOWBERRY_FILE_WIZARDPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\wizard.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_WIZARDPY" DiskId="5" Source="SourceDir\snowberry\plugins\wizard.py" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="SNOWBERRYDIR_PLUGINS_TAB30.PLUGIN_CONTENTS_TAB30">
         <Component Id="SNOWBERRY_FILE___INIT__PY" Guid="C3391E1F-1FCE-46A7-9A16-E949DD519500">
-            <File Id="SNOWBERRY_FILE___INIT__PY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\tab30.plugin\Contents\tab30\__init__.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE___INIT__PY" DiskId="5" Source="SourceDir\snowberry\plugins\tab30.plugin\Contents\tab30\__init__.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_INSPECTORPY" Guid="F6197851-DBB0-4F5A-B335-56E0850CEFB9">
-            <File Id="SNOWBERRY_FILE_INSPECTORPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\tab30.plugin\Contents\tab30\inspector.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_INSPECTORPY" DiskId="5" Source="SourceDir\snowberry\plugins\tab30.plugin\Contents\tab30\inspector.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_INSTALLERPY" Guid="C98B5719-AA7F-4A4D-BFD5-439021891634">
-            <File Id="SNOWBERRY_FILE_INSTALLERPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\tab30.plugin\Contents\tab30\installer.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_INSTALLERPY" DiskId="5" Source="SourceDir\snowberry\plugins\tab30.plugin\Contents\tab30\installer.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_LOADORDERPY" Guid="0CA43A39-05A8-4C07-8C83-111DADB9BD76">
-            <File Id="SNOWBERRY_FILE_LOADORDERPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\tab30.plugin\Contents\tab30\loadorder.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_LOADORDERPY" DiskId="5" Source="SourceDir\snowberry\plugins\tab30.plugin\Contents\tab30\loadorder.py" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_MAINPY" Guid="81D88C9F-E9C4-425D-9130-C5CE4DE64976">
-            <File Id="SNOWBERRY_FILE_MAINPY" DiskId="5" Source="$(var.ProductsDir)\snowberry\plugins\tab30.plugin\Contents\tab30\main.py" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_MAINPY" DiskId="5" Source="SourceDir\snowberry\plugins\tab30.plugin\Contents\tab30\main.py" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="SNOWBERRYDIR_PROFILES">
         <Component Id="SNOWBERRY_FILE_DEFAULTSPROF" Guid="E76FF69C-222A-4DAE-8741-3126C42C776C">
-            <File Id="SNOWBERRY_FILE_DEFAULTSPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\defaults.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DEFAULTSPROF" DiskId="5" Source="SourceDir\snowberry\profiles\defaults.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DOOM1PROF" Guid="211EC26E-151A-426D-9A05-61514335A0E7">
-            <File Id="SNOWBERRY_FILE_DOOM1PROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\doom1.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DOOM1PROF" DiskId="5" Source="SourceDir\snowberry\profiles\doom1.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DOOM1_SHAREPROF" Guid="3CD91772-D5E7-4C8F-A59D-88CAB7CA626E">
-            <File Id="SNOWBERRY_FILE_DOOM1_SHAREPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\doom1-share.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DOOM1_SHAREPROF" DiskId="5" Source="SourceDir\snowberry\profiles\doom1-share.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DOOM1_ULTIMATEPROF" Guid="706E4DA2-85DA-404E-B07A-B0D9F8E46B8E">
-            <File Id="SNOWBERRY_FILE_DOOM1_ULTIMATEPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\doom1-ultimate.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DOOM1_ULTIMATEPROF" DiskId="5" Source="SourceDir\snowberry\profiles\doom1-ultimate.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DOOM2PROF" Guid="9A6BA183-C5FE-4AED-96D4-65BD6DEE56D2">
-            <File Id="SNOWBERRY_FILE_DOOM2PROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\doom2.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DOOM2PROF" DiskId="5" Source="SourceDir\snowberry\profiles\doom2.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DOOM2_PLUTPROF" Guid="2A0E0686-B1D2-4CEC-9F3E-57BE762C165B">
-            <File Id="SNOWBERRY_FILE_DOOM2_PLUTPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\doom2-plut.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DOOM2_PLUTPROF" DiskId="5" Source="SourceDir\snowberry\profiles\doom2-plut.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_DOOM2_TNTPROF" Guid="836054AA-2369-4881-922C-9D4A589308D2">
-            <File Id="SNOWBERRY_FILE_DOOM2_TNTPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\doom2-tnt.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_DOOM2_TNTPROF" DiskId="5" Source="SourceDir\snowberry\profiles\doom2-tnt.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_HERETICPROF" Guid="70523BDD-578D-402C-B6CC-64DA3DDA48D9">
-            <File Id="SNOWBERRY_FILE_HERETICPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\heretic.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_HERETICPROF" DiskId="5" Source="SourceDir\snowberry\profiles\heretic.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_HERETIC_EXTPROF" Guid="74DE4EF2-17FD-4375-93E2-9A1EBA1E044E">
-            <File Id="SNOWBERRY_FILE_HERETIC_EXTPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\heretic-ext.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_HERETIC_EXTPROF" DiskId="5" Source="SourceDir\snowberry\profiles\heretic-ext.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_HERETIC_SHAREPROF" Guid="7353F775-37A5-482D-8857-38323A5AC4FC">
-            <File Id="SNOWBERRY_FILE_HERETIC_SHAREPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\heretic-share.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_HERETIC_SHAREPROF" DiskId="5" Source="SourceDir\snowberry\profiles\heretic-share.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_HEXENPROF" Guid="1C2803AF-1802-47D6-89F5-72AD2D9979AF">
-            <File Id="SNOWBERRY_FILE_HEXENPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\hexen.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_HEXENPROF" DiskId="5" Source="SourceDir\snowberry\profiles\hexen.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_HEXEN_DEMOPROF" Guid="05FC1288-D7DA-43E1-A215-DDADB2065C4B">
-            <File Id="SNOWBERRY_FILE_HEXEN_DEMOPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\hexen-demo.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_HEXEN_DEMOPROF" DiskId="5" Source="SourceDir\snowberry\profiles\hexen-demo.prof" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_HEXEN_DKPROF" Guid="6FCA53E1-650E-43E0-B083-C4CF383020BE">
-            <File Id="SNOWBERRY_FILE_HEXEN_DKPROF" DiskId="5" Source="$(var.ProductsDir)\snowberry\profiles\hexen-dk.prof" KeyPath="yes" />
+            <File Id="SNOWBERRY_FILE_HEXEN_DKPROF" DiskId="5" Source="SourceDir\snowberry\profiles\hexen-dk.prof" KeyPath="yes" />
         </Component>
     </DirectoryRef>
 

@@ -5,7 +5,7 @@
     <Media Id="10" Cabinet="winmm.cab" EmbedCab="yes" />
     <DirectoryRef Id="DOOMSDAYDIR_BIN">
     <Component Id="WINMM_FILE_LIBWINMMDLL" Guid="674EB87C-8616-4069-8C56-01D34EE72D0C">
-        <File Id="WINMM_FILE_LIBWINMMDLL" DiskId="10" Source="$(var.ProductsDir)\bin\dswinmm.dll" KeyPath="yes" />
+        <File Id="WINMM_FILE_LIBWINMMDLL" DiskId="10" Source="SourceDir\bin\dswinmm.dll" KeyPath="yes" />
     </Component>
     </DirectoryRef>
 

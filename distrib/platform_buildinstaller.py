@@ -14,10 +14,10 @@ import build_version
 
 LAUNCH_DIR = os.path.abspath(os.getcwd())
 # \fixme Allow out of tree building
-SOURCE_DIR = os.path.join(LAUNCH_DIR, 'win32')
-WORK_DIR = os.path.join(LAUNCH_DIR, 'work')
-PRODUCTS_DIR = os.path.join(LAUNCH_DIR, 'products')
-OUTPUT_DIR = os.path.join(LAUNCH_DIR, 'releases')
+SOURCE_DIR = os.path.join(LAUNCH_DIR, 'win32\\')
+WORK_DIR = os.path.join(LAUNCH_DIR, 'work\\')
+PRODUCTS_DIR = os.path.join(LAUNCH_DIR, 'products\\')
+OUTPUT_DIR = os.path.join(LAUNCH_DIR, 'releases\\')
 
 DOOMSDAY_VERSION_FULL = "0.0.0-Name"
 DOOMSDAY_VERSION_FULL_PLAIN = "0.0.0"
@@ -84,24 +84,21 @@ def compile_wix_sources(files):
     global DOOMSDAY_BUILD_NUMBER
 
     print 'Compiling WiX source files:'
-    CDEFS = '-dProductMajorVersion="' + str(DOOMSDAY_VERSION_MAJOR) + '" ' \
-          + '-dProductMinorVersion="' + str(DOOMSDAY_VERSION_MINOR) + '" ' \
-          + '-dProductBuildVersion="' + str(DOOMSDAY_VERSION_REVISION) + '" ' \
-          + '-dProductRevisionVersion="' + str(DOOMSDAY_BUILD_NUMBER) + '" ' \
-          + '-dProductsDir="' + PRODUCTS_DIR + '"'
-
     sys.stdout.flush()
 
-    cwd = os.getcwd()
-    os.chdir(SOURCE_DIR)
+    CDEFS = '-dProductMajorVersion="' + str(DOOMSDAY_VERSION_MAJOR) + '"' \
+         + ' -dProductMinorVersion="' + str(DOOMSDAY_VERSION_MINOR) + '"' \
+         + ' -dProductBuildVersion="' + str(DOOMSDAY_VERSION_REVISION) + '"' \
+         + ' -dProductRevisionVersion="' + str(DOOMSDAY_BUILD_NUMBER) + '"'
+
+    # Compile sources.
     for file in files:
         fileWithExt = file + '.wxs'
         print "  %s..." % os.path.normpath(fileWithExt)
         srcFile = os.path.normpath(os.path.join(SOURCE_DIR, fileWithExt))
-        if os.system('candle ' + CDEFS + ' -nologo -out ' + WORK_DIR + '\ -wx0099 ' + srcFile):
+        if os.system('candle -nologo ' + CDEFS + ' -out ' + WORK_DIR + ' -wx0099 ' + srcFile):
             raise Exception("Failed compiling %s" % srcFile)
 
-    os.chdir(cwd)
 
 """ Linking of WiX source files and installable binding """
 def link_wix_objfiles(files, outFile):
@@ -117,7 +114,7 @@ def link_wix_objfiles(files, outFile):
     sys.stdout.flush()
 
     # Link all objects and bind our installables into cabinents.
-    if os.system('light -nologo -b ' + SOURCE_DIR
+    if os.system('light -nologo -b ' + PRODUCTS_DIR
                + ' -out ' + os.path.join(OUTPUT_DIR, outFile + '.msi')
                + ' -pdbout ' + os.path.join(WORK_DIR, outFile + '.wixpdb')
                + ' -ext WixUIExtension -ext WixUtilExtension ' + objFileList):

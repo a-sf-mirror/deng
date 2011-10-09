@@ -10,12 +10,12 @@
     <Media Id="2" Cabinet="doom.cab" EmbedCab="yes" />
     <DirectoryRef Id="DOOMSDAYDIR_BIN">
         <Component Id="DOOM_FILE_LIBRARY" Guid="48F21047-B618-4370-86D4-CBDAEEC99C9A">
-            <File Id="DOOM_FILE_LIBRARY" DiskId="2" Source="$(var.ProductsDir)\bin\jdoom.dll" KeyPath="yes" />
+            <File Id="DOOM_FILE_LIBRARY" DiskId="2" Source="SourceDir\bin\jdoom.dll" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="DOOMDIR_DATA_JDOOM">
         <Component Id="DOOM_FILE_DATAPACK" Guid="645331E1-2417-40A8-8487-B5D548E607DC">
-            <File Id="DOOM_FILE_DATAPACK" DiskId="2" Source="$(var.ProductsDir)\data\jdoom\jdoom.pk3" KeyPath="yes" />
+            <File Id="DOOM_FILE_DATAPACK" DiskId="2" Source="SourceDir\data\jdoom\jdoom.pk3" KeyPath="yes" />
         </Component>
     </DirectoryRef>
 

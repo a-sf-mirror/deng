@@ -10,12 +10,12 @@
     <Media Id="4" Cabinet="hexen.cab" EmbedCab="yes" />
     <DirectoryRef Id="DOOMSDAYDIR_BIN">
         <Component Id="HEXEN_FILE_LIBRARY" Guid="A516A39C-0C8C-4283-8D90-11C3A6E881C1">
-            <File Id="HEXEN_FILE_LIBRARY" DiskId="4" Source="$(var.ProductsDir)\bin\jhexen.dll" KeyPath="yes" />
+            <File Id="HEXEN_FILE_LIBRARY" DiskId="4" Source="SourceDir\bin\jhexen.dll" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="HEXENDIR_DATA_JHEXEN">
         <Component Id="HEXEN_FILE_DATAPACK" Guid="7CC9859E-A2AE-42F0-9E17-4558FFC8188F">
-            <File Id="HEXEN_FILE_DATAPACK" DiskId="4" Source="$(var.ProductsDir)\data\jhexen\jhexen.pk3" KeyPath="yes" />
+            <File Id="HEXEN_FILE_DATAPACK" DiskId="4" Source="SourceDir\data\jhexen\jhexen.pk3" KeyPath="yes" />
         </Component>
     </DirectoryRef>
 

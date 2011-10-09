@@ -10,12 +10,12 @@
     <Media Id="3" Cabinet="heretic.cab" EmbedCab="yes" />
     <DirectoryRef Id="DOOMSDAYDIR_BIN">
         <Component Id="HERETIC_FILE_LIBRARY" Guid="2792F370-DA21-4CEC-9AAF-2DF37624F6AB">
-            <File Id="HERETIC_FILE_LIBRARY" DiskId="3" Source="$(var.ProductsDir)\bin\jheretic.dll" KeyPath="yes" />
+            <File Id="HERETIC_FILE_LIBRARY" DiskId="3" Source="SourceDir\bin\jheretic.dll" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="HERETICDIR_DATA_JHERETIC">
         <Component Id="HERETIC_FILE_DATAPACK" Guid="A806ACE2-1A93-4A96-8ECF-833DA11B4104">
-            <File Id="HERETIC_FILE_DATAPACK" DiskId="3" Source="$(var.ProductsDir)\data\jheretic\jheretic.pk3" KeyPath="yes" />
+            <File Id="HERETIC_FILE_DATAPACK" DiskId="3" Source="SourceDir\data\jheretic\jheretic.pk3" KeyPath="yes" />
         </Component>
     </DirectoryRef>
 

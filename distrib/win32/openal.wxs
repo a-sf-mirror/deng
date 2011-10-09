@@ -5,7 +5,7 @@
     <Media Id="8" Cabinet="openal.cab" EmbedCab="yes" />
     <DirectoryRef Id="DOOMSDAYDIR_BIN">
     <Component Id="OPENAL_FILE_LIBOPENALDLL" Guid="4CB81628-1878-4D3C-AEBD-DD06A7A8F09B">
-        <File Id="OPENAL_FILE_LIBOPENALDLL" DiskId="8" Source="$(var.ProductsDir)\bin\dsopenal.dll" KeyPath="yes" />
+        <File Id="OPENAL_FILE_LIBOPENALDLL" DiskId="8" Source="SourceDir\bin\dsopenal.dll" KeyPath="yes" />
     </Component>
     </DirectoryRef>
 

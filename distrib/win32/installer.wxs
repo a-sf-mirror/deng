@@ -38,7 +38,7 @@
   -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 <!-- Include our global value definitions -->
-<?include $(sys.CURRENTDIR)/installervars.wxi ?>
+<?include installervars.wxi ?>
 
 <!-- Define constants scoped to this file -->
 <?define ProductFullName="$(var.ProductName) $(var.ProductMajorVersion).$(var.ProductMinorVersion).$(var.ProductBuildVersion)" ?>
@@ -91,7 +91,7 @@
           is used to map file content embedded in the final installer
           to installation directory).
           -->
-        <?include $(sys.CURRENTDIR)/installerdirs.wxi ?>
+        <?include installerdirs.wxi ?>
         </Directory>
 
         <Directory Id="ProgramMenuFolder">

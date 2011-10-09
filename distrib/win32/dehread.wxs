@@ -5,7 +5,7 @@
     <Media Id="6" Cabinet="dehread.cab" EmbedCab="yes" />
     <DirectoryRef Id="DOOMSDAYDIR_BIN">
     <Component Id="DEHREAD_FILE_LIBDEHREADDLL" Guid="D1727F6D-1930-4346-8B2B-148A3DC75D88">
-        <File Id="DEHREAD_FILE_LIBDEHREADDLL" DiskId="6" Source="$(var.ProductsDir)\bin\dpdehread.dll" KeyPath="yes" />
+        <File Id="DEHREAD_FILE_LIBDEHREADDLL" DiskId="6" Source="SourceDir\bin\dpdehread.dll" KeyPath="yes" />
     </Component>
     </DirectoryRef>
 
