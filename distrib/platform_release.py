@@ -29,29 +29,29 @@ print 'Build:', DOOMSDAY_BUILD, 'on', TIMESTAMP
 def exit_with_error():
     os.chdir(LAUNCH_DIR)
     sys.exit(1)
-    
-    
+
+
 def mkdir(n):
     try:
         os.mkdir(n)
     except OSError:
         print 'Directory', n, 'already exists.'
-        
-        
+
+
 def remkdir(n):
     if os.path.exists(n):
         print n, 'exists, clearing it...'
         shutil.rmtree(n, True)
     os.mkdir(n)
-        
-        
+
+
 def remove(n):
     try:
         os.remove(n)
     except OSError:
         print 'Cannot remove', n
-        
-        
+
+
 def copytree(s, d):
     try:
         shutil.copytree(s, d)
@@ -62,18 +62,18 @@ def copytree(s, d):
 
 def duptree(s, d):
     os.system('cp -fRp "%s" "%s"' % (s, d))
-   
-    
+
+
 def find_version():
     build_version.find_version()
-    
+
     global DOOMSDAY_VERSION_FULL
     global DOOMSDAY_VERSION_FULL_PLAIN
     global DOOMSDAY_VERSION_MAJOR
     global DOOMSDAY_VERSION_MINOR
     global DOOMSDAY_VERSION_REVISION
     global DOOMSDAY_RELEASE_TYPE
-    
+
     DOOMSDAY_RELEASE_TYPE = build_version.DOOMSDAY_RELEASE_TYPE
     DOOMSDAY_VERSION_FULL_PLAIN = build_version.DOOMSDAY_VERSION_FULL_PLAIN
     DOOMSDAY_VERSION_FULL = build_version.DOOMSDAY_VERSION_FULL
@@ -83,13 +83,13 @@ def find_version():
 
 
 def prepare_work_dir():
-    remkdir(WORK_DIR)    
+    remkdir(WORK_DIR)
     print "Work directory prepared."
 
 
 def mac_os_version():
     return platform.mac_ver()[0][:4]
-       
+
 
 """The Mac OS X release procedure."""
 def mac_release():
@@ -104,16 +104,16 @@ def mac_release():
         raise Exception("Python: py2app not found!")
     # First we need to make a release build.
     print "Building the release..."
-    # Must work in the deng root for qmake (resource bundling apparently 
+    # Must work in the deng root for qmake (resource bundling apparently
     # fails otherwise).
     MAC_WORK_DIR = os.path.abspath(os.path.join(DOOMSDAY_DIR, '../macx_release_build'))
     remkdir(MAC_WORK_DIR)
     os.chdir(MAC_WORK_DIR)
-    if os.system('qmake -r -spec macx-g++ CONFIG+=release DENG_BUILD=%s ' % (DOOMSDAY_BUILD_NUMBER) + 
-                 '../doomsday/doomsday.pro && make -w ' + 
+    if os.system('qmake -r -spec macx-g++ CONFIG+=release DENG_BUILD=%s ' % (DOOMSDAY_BUILD_NUMBER) +
+                 '../doomsday/doomsday.pro && make -w ' +
                  '&& ../doomsday/build/mac/bundleapp.sh ../doomsday'):
         raise Exception("Failed to build from source.")
-        
+
     # Now we can proceed to packaging.
     target = OUTPUT_DIR + "/doomsday_" + DOOMSDAY_VERSION_FULL + "_" + DOOMSDAY_BUILD + ".dmg"
     try:
@@ -121,11 +121,11 @@ def mac_release():
         print 'Removed existing target file', target
     except:
         print 'Target:', target
-    
+
     os.chdir(SNOWBERRY_DIR)
     remkdir('dist')
     remkdir('build')
-    
+
     print 'Copying resources...'
     remkdir('build/addons')
     remkdir('build/conf')
@@ -139,13 +139,13 @@ def mac_release():
               '/conf/osx-doomsday.conf',
               '/conf/snowberry.conf']:
         shutil.copy(SNOWBERRY_DIR + f, 'build/conf')
-        
+
     for f in (glob.glob(SNOWBERRY_DIR + '/graphics/*.jpg') +
               glob.glob(SNOWBERRY_DIR + '/graphics/*.png') +
               glob.glob(SNOWBERRY_DIR + '/graphics/*.bmp') +
               glob.glob(SNOWBERRY_DIR + '/graphics/*.ico')):
         shutil.copy(f, 'build/graphics')
-   
+
     for f in glob.glob(SNOWBERRY_DIR + '/lang/*.lang'):
         shutil.copy(f, 'build/lang')
 
@@ -167,20 +167,20 @@ def mac_release():
     f.write(DOOMSDAY_VERSION_FULL)
     f.close()
     os.system('python buildapp.py py2app')
-    
+
     # Back to the normal work dir.
     os.chdir(WORK_DIR)
     copytree(SNOWBERRY_DIR + '/dist/Doomsday Engine.app', 'Doomsday Engine.app')
-    
+
     print 'Coping release binaries into the launcher bundle.'
     duptree(os.path.join(MAC_WORK_DIR, 'engine/Doomsday.app'), 'Doomsday Engine.app/Contents/Doomsday.app')
     for f in glob.glob(os.path.join(MAC_WORK_DIR, 'engine/*.bundle')):
         # Exclude jDoom64.
         if not 'jDoom64' in f:
             duptree(f, 'Doomsday Engine.app/Contents/' + os.path.basename(f))
-        
+
     print 'Creating disk image:', target
-    
+
     masterDmg = target
     volumeName = "Doomsday Engine " + DOOMSDAY_VERSION_FULL
     templateFile = os.path.join(SNOWBERRY_DIR, 'template-image/template.dmg')
@@ -194,10 +194,10 @@ def mac_release():
     remove('imaging/Read Me.rtf')
     duptree('Doomsday Engine.app', 'imaging/Doomsday Engine.app')
     shutil.copy(LAUNCH_DIR + "/mac/Read Me.rtf", 'imaging/Read Me.rtf')
-    
-    os.system('/usr/sbin/diskutil rename ' + os.path.abspath('imaging') + 
+
+    os.system('/usr/sbin/diskutil rename ' + os.path.abspath('imaging') +
         ' "' + "Doomsday Engine " + DOOMSDAY_VERSION_FULL + '"')
-    
+
     os.system('hdiutil detach -quiet imaging')
     os.system('hdiutil convert imaging.dmg -format UDZO -imagekey zlib-level=9 -o "' + target + '"')
     remove('imaging.dmg')
@@ -205,31 +205,39 @@ def mac_release():
 
 """The Windows release procedure."""
 def win_release():
+    global DOOMSDAY_BUILD_NUMBER
+
     PROD_DIR = os.path.join(LAUNCH_DIR, 'products')
     if not os.path.exists(PROD_DIR):
-        print "Creating the products directory."
+        print 'Creating the products directory.'
         os.mkdir(PROD_DIR)
 
     PROD_DATA_DIR = os.path.join(PROD_DIR, 'data')
     if not os.path.exists(PROD_DATA_DIR):
-        print "Creating the products/data directory."
+        print 'Creating the products/data directory.'
         os.mkdir(PROD_DATA_DIR)
 
     PROD_DOC_DIR = os.path.join(PROD_DIR, 'doc')
     if not os.path.exists(PROD_DOC_DIR):
-        print "Creating the products/doc directory."
+        print 'Creating the products/doc directory.'
         os.mkdir(PROD_DOC_DIR)
 
     # Execute the win32 release script.
+    cwd = os.getcwd()
     os.chdir('win32')
-    if os.system('dorel.bat ' + DOOMSDAY_VERSION_MAJOR + ' ' + DOOMSDAY_VERSION_MINOR + ' ' + DOOMSDAY_VERSION_REVISION + ' 0 ' + DOOMSDAY_BUILD_NUMBER):
+    if os.system('dorel.bat ' + DOOMSDAY_BUILD_NUMBER):
         raise Exception("Failure in the Windows release script.")
-        
-        
+    os.chdir(cwd)
+
+    # Execute the build installer script.
+    if os.system('python platform_buildinstaller.py'):
+        raise Exception("Failure in the buildinstaller script.")
+
+
 """The Linux release procedure."""
 def linux_release():
     os.chdir(LAUNCH_DIR)
-    
+
     # Generate a launcher script.
     f = file('linux/launch-doomsday', 'wt')
     print >> f, """#!/usr/bin/python
@@ -239,21 +247,21 @@ sys.path += '.'
 
 import snowberry"""
     f.close()
-    
+
     def clean_products():
         # Remove previously build deb packages.
         os.system('rm -f ../doomsday*.deb ../doomsday*.changes ../doomsday*.tar.gz ../doomsday*.dsc')
-        
+
     clean_products()
-       
+
     if os.system('linux/gencontrol.sh && dpkg-buildpackage -b'):
         raise Exception("Failure to build from source.")
-        
+
     # Place the result in the output directory.
     shutil.copy(glob.glob('../doomsday*.deb')[0], OUTPUT_DIR)
-    shutil.copy(glob.glob('../doomsday*.changes')[0], OUTPUT_DIR)  
+    shutil.copy(glob.glob('../doomsday*.changes')[0], OUTPUT_DIR)
     clean_products()
-           
+
 
 def main():
     prepare_work_dir()
@@ -282,7 +290,7 @@ def main():
 
     os.chdir(LAUNCH_DIR)
     print "Done."
-   
-   
+
+
 if __name__ == '__main__':
     main()
