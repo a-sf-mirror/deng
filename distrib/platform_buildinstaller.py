@@ -13,7 +13,6 @@ import time
 import build_version
 
 LAUNCH_DIR = os.path.abspath(os.getcwd())
-# \fixme Allow out of tree building
 SOURCE_DIR = os.path.join(LAUNCH_DIR, 'win32\\')
 WORK_DIR = os.path.join(LAUNCH_DIR, 'work\\')
 PRODUCTS_DIR = os.path.join(LAUNCH_DIR, 'products\\')
