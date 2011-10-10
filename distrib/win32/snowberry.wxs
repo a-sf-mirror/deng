@@ -64,29 +64,11 @@
         <Component Id="SNOWBERRY_FILE_DOOMSDAYCONF" Guid="5209C5C0-0396-4194-A387-2CF762436256">
             <File Id="SNOWBERRY_FILE_DOOMSDAYCONF" DiskId="5" Source="SourceDir\snowberry\conf\doomsday.conf" KeyPath="yes" />
         </Component>
-        <Component Id="SNOWBERRY_FILE_OSX_APPEARANCECONF" Guid="AE353E30-48C6-4858-AEE5-35B7560B58D4">
-            <File Id="SNOWBERRY_FILE_OSX_APPEARANCECONF" DiskId="5" Source="SourceDir\snowberry\conf\osx-appearance.conf" KeyPath="yes" />
-        </Component>
-        <Component Id="SNOWBERRY_FILE_OSX_COMPONENTSCONF" Guid="166882F9-244F-4304-AF9A-F04BD91DA017">
-            <File Id="SNOWBERRY_FILE_OSX_COMPONENTSCONF" DiskId="5" Source="SourceDir\snowberry\conf\osx-components.conf" KeyPath="yes" />
-        </Component>
-        <Component Id="SNOWBERRY_FILE_OSX_DOOMSDAYCONF" Guid="93CE5A3A-9623-4918-A178-3ED2A316A1CA">
-            <File Id="SNOWBERRY_FILE_OSX_DOOMSDAYCONF" DiskId="5" Source="SourceDir\snowberry\conf\osx-doomsday.conf" KeyPath="yes" />
-        </Component>
         <Component Id="SNOWBERRY_FILE_SNOWBERRYCONF" Guid="9B8D7E41-9024-423A-97FE-C335B346EE15">
             <File Id="SNOWBERRY_FILE_SNOWBERRYCONF" DiskId="5" Source="SourceDir\snowberry\conf\snowberry.conf" KeyPath="yes" />
         </Component>
         <Component Id="SNOWBERRY_FILE_WIN_ACCELCONF" Guid="BDA941E3-3105-4620-8423-5E7396565A56">
             <File Id="SNOWBERRY_FILE_WIN_ACCELCONF" DiskId="5" Source="SourceDir\snowberry\conf\win-accel.conf" KeyPath="yes" />
-        </Component>
-        <Component Id="SNOWBERRY_FILE_X_APPEARANCECONF" Guid="57E30B9B-C746-4A9A-9A58-C9ABFDDF7549">
-            <File Id="SNOWBERRY_FILE_X_APPEARANCECONF" DiskId="5" Source="SourceDir\snowberry\conf\x-appearance.conf" KeyPath="yes" />
-        </Component>
-        <Component Id="SNOWBERRY_FILE_X_COMPONENTSCONF" Guid="4035D527-F8B2-4290-97E4-7D45AC521A0B">
-            <File Id="SNOWBERRY_FILE_X_COMPONENTSCONF" DiskId="5" Source="SourceDir\snowberry\conf\x-components.conf" KeyPath="yes" />
-        </Component>
-        <Component Id="SNOWBERRY_FILE_X_DOOMSDAYCONF" Guid="9B6EAA97-5126-417D-BC51-A87DAFC5CA92">
-            <File Id="SNOWBERRY_FILE_X_DOOMSDAYCONF" DiskId="5" Source="SourceDir\snowberry\conf\x-doomsday.conf" KeyPath="yes" />
         </Component>
     </DirectoryRef>
     <DirectoryRef Id="SNOWBERRYDIR_GRAPHICS">
@@ -325,14 +307,8 @@
         <ComponentRef Id="SNOWBERRY_FILE_APPEARANCECONF" />
         <ComponentRef Id="SNOWBERRY_FILE_COMPONENTSCONF" />
         <ComponentRef Id="SNOWBERRY_FILE_DOOMSDAYCONF" />
-        <ComponentRef Id="SNOWBERRY_FILE_OSX_APPEARANCECONF" />
-        <ComponentRef Id="SNOWBERRY_FILE_OSX_COMPONENTSCONF" />
-        <ComponentRef Id="SNOWBERRY_FILE_OSX_DOOMSDAYCONF" />
         <ComponentRef Id="SNOWBERRY_FILE_SNOWBERRYCONF" />
         <ComponentRef Id="SNOWBERRY_FILE_WIN_ACCELCONF" />
-        <ComponentRef Id="SNOWBERRY_FILE_X_APPEARANCECONF" />
-        <ComponentRef Id="SNOWBERRY_FILE_X_COMPONENTSCONF" />
-        <ComponentRef Id="SNOWBERRY_FILE_X_DOOMSDAYCONF" />
         <ComponentRef Id="SNOWBERRY_FILE_ABOUTJPG" />
         <ComponentRef Id="SNOWBERRY_FILE_ADDONSPNG" />
         <ComponentRef Id="SNOWBERRY_FILE_BANNER_DEFAULTPNG" />

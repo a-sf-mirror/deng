@@ -20,12 +20,6 @@ goto Failure
 SET BUILDFAILURE=0
 SET DOOMSDAY_BUILD=%1
 
-:: Build and Package Snowberry --------------------------------------------
-
-cd ..\..\snowberry
-call build.bat
-cd ..\distrib\win32
-
 :: Build and Package Doomsday ---------------------------------------------
 
 :: Configure environment.

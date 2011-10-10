@@ -1,4 +1,4 @@
-#!/usr/bin/python
+﻿#!/usr/bin/python
 import sys
 import os
 import platform
@@ -208,32 +208,99 @@ def mac_release():
 
 """The Windows release procedure."""
 def win_release():
-    global DOOMSDAY_BUILD_NUMBER
+    # Check Python dependencies.
+    try:
+        import wx
+    except ImportError:
+        raise Exception("Python: wx not found!")
+    try:
+        import py2exe
+    except ImportError:
+        raise Exception("Python: py2exe not found!")
+    try:
+        from distutils.sysconfig import get_python_lib
+    except ImportError:
+        raise Exception("Python: get_python_lib not found!")
 
     prepare_work_dir()
 
+    PYTHON_LIB_DIR = str(get_python_lib())
+
     PROD_DIR = os.path.join(LAUNCH_DIR, 'products')
-    if not os.path.exists(PROD_DIR):
-        print 'Creating the products directory.'
-        os.mkdir(PROD_DIR)
+    remkdir(PROD_DIR)
+    remkdir(os.path.join(PROD_DIR, 'bin'))
+    remkdir(os.path.join(PROD_DIR, 'data'))
+    remkdir(os.path.join(PROD_DIR, 'doc'))
 
-    PROD_DATA_DIR = os.path.join(PROD_DIR, 'data')
-    if not os.path.exists(PROD_DATA_DIR):
-        print 'Creating the products/data directory.'
-        os.mkdir(PROD_DATA_DIR)
+    cwd = os.getcwd()
 
-    PROD_DOC_DIR = os.path.join(PROD_DIR, 'doc')
-    if not os.path.exists(PROD_DOC_DIR):
-        print 'Creating the products/doc directory.'
-        os.mkdir(PROD_DOC_DIR)
+    # Build and package Snowberry.
+    print 'Building Snowberry...'
+    os.chdir(SNOWBERRY_DIR)
+    remkdir('dist')
+    remkdir('build')
 
     sys.stdout.flush()
+    if os.system('python setup.py py2exe'):
+        raise Exception("Failure in the Windows build Snowberry script.")
 
-    # Execute the win32 release script.
-    cwd = os.getcwd()
-    os.chdir('win32')
+    # Install Snowberry to /products/snowberry
+    PROD_SNOWBERRY_DIR = os.path.join(PROD_DIR, 'snowberry')
+    remkdir(PROD_SNOWBERRY_DIR)
+    os.chdir(PROD_SNOWBERRY_DIR)
+    remkdir('conf')
+    remkdir('graphics')
+    remkdir('lang')
+    remkdir('plugins')
+    remkdir('profiles')
+
+    for f in ['/conf/appearance.conf',
+              '/conf/components.conf',
+              '/conf/doomsday.conf',
+              '/conf/snowberry.conf',
+              '/conf/win-accel.conf']:
+        shutil.copy(os.path.normpath(SNOWBERRY_DIR + f), 'conf')
+
+    for f in (glob.glob(SNOWBERRY_DIR + '/graphics/*.jpg') +
+              glob.glob(SNOWBERRY_DIR + '/graphics/*.png') +
+              glob.glob(SNOWBERRY_DIR + '/graphics/*.bmp') +
+              glob.glob(SNOWBERRY_DIR + '/graphics/*.ico')):
+        shutil.copy(f, 'graphics')
+
+    for f in glob.glob(SNOWBERRY_DIR + '/lang/*.lang'):
+        shutil.copy(f, 'lang')
+
+    for f in glob.glob(SNOWBERRY_DIR + '/profiles/*.prof'):
+        shutil.copy(f, 'profiles')
+
+    for f in glob.glob(SNOWBERRY_DIR + '/plugins/tab*.py'):
+        shutil.copy(f, 'plugins')
+
+    for f in ['tab30.plugin', 'about.py', 'help.py', 'launcher.py',
+              'preferences.py', 'profilelist.py', 'wizard.py']:
+        src = SNOWBERRY_DIR + '/plugins/' + f
+        if os.path.isdir(src):
+            copytree(src, 'plugins/' + f)
+        else:
+            shutil.copy(src, 'plugins')
+
+    for f in ['/library.zip',
+              '/msvcr71.dll',
+              '/snowberry.exe',
+              '/w9xpopen.exe']:
+        shutil.copy(SNOWBERRY_DIR + '/dist' + f, '.')
+
+    # Additional dependencies.
+    for f in ['/wx-2.8-msw-ansi/wx/MSVCP71.dll',
+              '/wx-2.8-msw-ansi/wx/gdiplus.dll']:
+        shutil.copy(PYTHON_LIB_DIR + f, '.')
+
+    # Build and package Doomsday.
+    os.chdir(os.path.join(cwd, 'win32'))
+    sys.stdout.flush()
     if os.system('dorel.bat ' + DOOMSDAY_BUILD_NUMBER):
         raise Exception("Failure in the Windows release script.")
+
     os.chdir(cwd)
 
     # Execute the build installer script.
