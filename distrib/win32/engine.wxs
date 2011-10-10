@@ -51,6 +51,21 @@
         </Component>
     </DirectoryRef>
 
+    <DirectoryRef Id="DOOMSDAYDIR_DATA_GRAPHICS">
+        <Component Id="ENGINE_FILE_BACKGROUND" Guid="EC50E686-ADFB-44CE-83A5-28F49417732E">
+            <File Id="ENGINE_FILE_BACKGROUND" DiskId="1" Source="SourceDir\data\graphics\background.pcx" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LOADING1" Guid="BE831A0A-0F52-40A3-97A0-A6150CF14615">
+            <File Id="ENGINE_FILE_LOADING1" DiskId="1" Source="SourceDir\data\graphics\loading1.png" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LOADING2" Guid="1767F910-B907-4F44-A0B5-780476306654">
+            <File Id="ENGINE_FILE_LOADING2" DiskId="1" Source="SourceDir\data\graphics\loading2.png" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_LOGO" Guid="268B203E-1434-4888-9B52-ACE6D5FF80D7">
+            <File Id="ENGINE_FILE_LOGO" DiskId="1" Source="SourceDir\data\graphics\logo.png" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+
     <DirectoryRef Id="DOOMSDAYDIR_DOC">
         <Component Id="ENGINE_FILE_LICENSE" Guid="A91D6396-D681-4164-94D3-4B7CD9500CBE">
             <File Id="ENGINE_FILE_LICENSE" DiskId="1" Source="SourceDir\doc\LICENSE" KeyPath="yes" />
@@ -74,6 +89,10 @@
         <ComponentRef Id="ENGINE_FILE_LIBZLIB" />
         <ComponentRef Id="ENGINE_FILE_LICENSE" />
         <ComponentRef Id="ENGINE_FILE_DATAPACK" />
+        <ComponentRef Id="ENGINE_FILE_BACKGROUND" />
+        <ComponentRef Id="ENGINE_FILE_LOADING1" />
+        <ComponentRef Id="ENGINE_FILE_LOADING2" />
+        <ComponentRef Id="ENGINE_FILE_LOGO" />
     </ComponentGroup>
 </Fragment>
 </Wix>

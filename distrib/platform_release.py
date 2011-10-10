@@ -1,4 +1,4 @@
-#!/usr/bin/python
+﻿#!/usr/bin/python
 import sys
 import os
 import platform
@@ -223,17 +223,18 @@ def win_release():
     except ImportError:
         raise Exception("Python: get_python_lib not found!")
 
+    cwd = os.getcwd()
     prepare_work_dir()
 
     PYTHON_LIB_DIR = str(get_python_lib())
 
     PROD_DIR = os.path.join(LAUNCH_DIR, 'products')
+
     remkdir(PROD_DIR)
     remkdir(os.path.join(PROD_DIR, 'bin'))
     remkdir(os.path.join(PROD_DIR, 'data'))
+    remkdir(os.path.join(PROD_DIR, 'data', 'graphics'))
     remkdir(os.path.join(PROD_DIR, 'doc'))
-
-    cwd = os.getcwd()
 
     # Build and package Snowberry.
     print 'Building Snowberry...'
