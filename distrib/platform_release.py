@@ -233,6 +233,7 @@ def win_release():
     remkdir(PROD_DIR)
     remkdir(os.path.join(PROD_DIR, 'bin'))
     remkdir(os.path.join(PROD_DIR, 'data'))
+    remkdir(os.path.join(PROD_DIR, 'data', 'fonts'))
     remkdir(os.path.join(PROD_DIR, 'data', 'graphics'))
     remkdir(os.path.join(PROD_DIR, 'doc'))
 

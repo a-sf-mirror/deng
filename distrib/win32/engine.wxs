@@ -51,6 +51,15 @@
         </Component>
     </DirectoryRef>
 
+    <DirectoryRef Id="DOOMSDAYDIR_DATA_FONTS">
+        <Component Id="ENGINE_FILE_NORMAL12" Guid="07417417-99EE-4870-850D-835C00FBF16E">
+            <File Id="ENGINE_FILE_NORMAL12" DiskId="1" Source="SourceDir\data\fonts\normal12.dfn" KeyPath="yes" />
+        </Component>
+        <Component Id="ENGINE_FILE_NORMAL18" Guid="1E5B1E5C-8FB4-47B5-9701-D51049811739">
+            <File Id="ENGINE_FILE_NORMAL18" DiskId="1" Source="SourceDir\data\fonts\normal18.dfn" KeyPath="yes" />
+        </Component>
+    </DirectoryRef>
+
     <DirectoryRef Id="DOOMSDAYDIR_DATA_GRAPHICS">
         <Component Id="ENGINE_FILE_BACKGROUND" Guid="EC50E686-ADFB-44CE-83A5-28F49417732E">
             <File Id="ENGINE_FILE_BACKGROUND" DiskId="1" Source="SourceDir\data\graphics\background.pcx" KeyPath="yes" />
@@ -89,6 +98,8 @@
         <ComponentRef Id="ENGINE_FILE_LIBZLIB" />
         <ComponentRef Id="ENGINE_FILE_LICENSE" />
         <ComponentRef Id="ENGINE_FILE_DATAPACK" />
+        <ComponentRef Id="ENGINE_FILE_NORMAL12" />
+        <ComponentRef Id="ENGINE_FILE_NORMAL18" />
         <ComponentRef Id="ENGINE_FILE_BACKGROUND" />
         <ComponentRef Id="ENGINE_FILE_LOADING1" />
         <ComponentRef Id="ENGINE_FILE_LOADING2" />
