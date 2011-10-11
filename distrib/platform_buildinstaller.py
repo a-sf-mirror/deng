@@ -77,11 +77,14 @@ def clean_work_dir():
 
 
 """ Compilation of WiX source files """
-def compile_wix_sources(files):
+def compile_wix_sources(files, locale=None):
     global DOOMSDAY_VERSION_MAJOR
     global DOOMSDAY_VERSION_MINOR
     global DOOMSDAY_VERSION_REVISION
     global DOOMSDAY_BUILD_NUMBER
+
+    if not (files and isinstance(files, list)):
+       raise Exception("compile_wix_sources: Expected a list for Arg0 but received something else.")
 
     print 'Compiling WiX source files:'
     sys.stdout.flush()
@@ -90,26 +93,35 @@ def compile_wix_sources(files):
          + ' -dProductVersionMinor="' + str(DOOMSDAY_VERSION_MINOR) + '"' \
          + ' -dProductVersionRevision="' + str(DOOMSDAY_VERSION_REVISION) + '"' \
          + ' -dProductBuildNumber="' + str(DOOMSDAY_BUILD_NUMBER) + '"'
+    if locale and isinstance(locale, dict):
+        CDEFS += " -dLanguage=%i" % locale['language']
+        CDEFS += " -dCodepage=%i" % locale['codepage']
+    else:
+        # Assume en-us
+        CDEFS += " -dLanguage=1033"
+        CDEFS += " -dCodepage=1252"
 
     # Compile sources.
     for file in files:
-        fileWithExt = file + '.wxs'
-        print "  %s..." % os.path.normpath(fileWithExt)
-        srcFile = os.path.normpath(os.path.join(SOURCE_DIR, fileWithExt))
-        if os.system('candle -nologo ' + CDEFS + ' -out ' + WORK_DIR + ' -wx0099 ' + srcFile):
+        # Compose source file name.
+        print "  %s..." % os.path.normpath(file['source'] + '.wxs')
+        srcFile = os.path.join(SOURCE_DIR, file['source'] + '.wxs')
+
+        # Compose out file name
+        outFile = os.path.join(WORK_DIR, file['source'])
+        if locale and isinstance(locale, dict):
+            outFile += '_' + locale['culture']
+        outFile += '.wixobj'
+
+        # Compile.
+        if os.system('candle -nologo ' + CDEFS + ' -out ' + outFile + ' -wx0099 ' + srcFile):
             raise Exception("Failed compiling %s" % srcFile)
 
 
 """ Linking of WiX source files and installable binding """
-def link_wix_objfiles(files, outFileName):
-    print 'Linking WiX object files:'
-
-    # Compose the link object file list.
-    objFileList = '';
-    for file in files:
-        fileWithExt = file + '.wixobj'
-        print "  %s..." % os.path.normpath(fileWithExt)
-        objFileList += os.path.normpath(os.path.join(WORK_DIR, fileWithExt)) + ' '
+def link_wix_objfiles(outFileName, files, locale=None):
+    if not (files and isinstance(files, list)):
+       raise Exception("link_wix_objfiles: Expected a list for Arg1 but received something else.")
 
     # Compose the full path to the target file.
     target = os.path.join(OUTPUT_DIR, outFileName + '.msi')
@@ -119,13 +131,38 @@ def link_wix_objfiles(files, outFileName):
     except:
         print 'Target:', target
 
-    sys.stdout.flush()
+    print 'Linking WiX object files:'
+
+    # Compose the link object file list.
+    objFileList = ' ';
+    for file in files:
+        # Compose link object file name.
+        fileWithExt = file['source']
+        if locale and isinstance(locale, dict):
+            fileWithExt += '_' + locale['culture']
+        fileWithExt += '.wixobj'
+
+        print "  %s..." % os.path.normpath(fileWithExt)
+        objFileList += os.path.join(WORK_DIR, fileWithExt) + ' '
+
+        # Is there a localization file to go with this?
+        if 'locale' in file:
+            objFileList += '-loc ' + file['locale'] + ' '
+
+    # Compose link arguments.
+    LARGS = '-nologo -b ' + PRODUCTS_DIR \
+         + ' -out ' + target \
+         + ' -pdbout ' + os.path.join(WORK_DIR, outFileName + '.wixpdb') \
+         + ' -ext WixUIExtension -ext WixUtilExtension'
+
+    if locale and isinstance(locale, dict):
+        LARGS += ' -cultures:' + locale['culture']
+    else:
+        LARGS += ' -cultures:' + 'en-us'
 
     # Link all objects and bind our installables into cabinents.
-    if os.system('light -nologo -b ' + PRODUCTS_DIR
-               + ' -out ' + target
-               + ' -pdbout ' + os.path.join(WORK_DIR, outFileName + '.wixpdb')
-               + ' -ext WixUIExtension -ext WixUtilExtension ' + objFileList):
+    sys.stdout.flush()
+    if os.system('light ' + LARGS + objFileList):
         raise Exception("Failed linking WiX object files.")
 
 
@@ -140,7 +177,7 @@ def win_installer():
     if DOOMSDAY_BUILD != '':
         OUTFILE += '_' + DOOMSDAY_BUILD
 
-    # Compose the file list.
+    # Compose the source file list.
     files = ['engine',
              'installer',
              'dehread',
@@ -155,8 +192,32 @@ def win_installer():
 
     prepare_work_dir()
 
-    compile_wix_sources(files)
-    link_wix_objfiles(files, OUTFILE)
+    # Compile all locale versions.
+    locales = [dict(culture = 'en-us', codepage = 1252, language = 1033, base = True)]
+
+    for l in locales:
+        fl = []
+        # Compose the file list for this locale.
+        for f in files:
+            locd = dict(source = f)
+
+            # Is there a localization for this file?
+            locf = os.path.join(SOURCE_DIR, l['culture'], f + '.wxl')
+            if os.path.exists(locf):
+                locd['locale'] = locf
+
+            # Add this to the list of files for this locale
+            fl.append(locd)
+
+        if 'base' in l and l['base'] == True:
+            print 'Compiling default-/base- language installer...'
+            outFile = OUTFILE
+        else:
+            print 'Compiling %s localized installer...' % l['culture']
+            outFile = OUTFILE + '_' + l['culture']
+
+        compile_wix_sources(fl, l)
+        link_wix_objfiles(outFile, fl, l)
 
     # Cleanup
     clean_work_dir()

@@ -51,7 +51,8 @@
   Version="$(var.ProductVersion)"
   Id="5370A49F-9D67-4414-9FD3-CC0E7F2FB7AE"
   UpgradeCode="4383E8C1-C26F-4550-BBBB-E6DDE5D3047E"
-  Language="1033">
+  Language="$(var.Language)"
+  Codepage="$(var.Codepage)">
     <Package
       Id="*"
       Manufacturer="$(var.ProductManufacturer)"
@@ -59,6 +60,8 @@
       Keywords="Installer;$(var.ProductFullName)"
       Comments="This installer database contains the logic and data required to install $(var.ProductFullName)"
       InstallerVersion="200"
+      Languages="$(var.Language)"
+      SummaryCodepage="$(var.Codepage)"
       Compressed="yes" />
 
     <Property Id="DOOMSDAYURL_HOMEPAGE" Value="$(var.ProductHomepageUrl)" />
@@ -149,7 +152,8 @@
     </DirectoryRef>
 
     <Feature Id="Complete" ConfigurableDirectory="DOOMSDAYDIR" Level="1" Absent="disallow"
-      Title="$(var.ProductName)"
+      Title="!(loc.ProductName)"
+      Description="!(loc.ProductDescription)"
       Display="expand">
         <!-- Core components -->
         <ComponentRef Id="CoreProductComponents" />
