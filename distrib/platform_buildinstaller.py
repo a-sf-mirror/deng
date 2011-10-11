@@ -101,7 +101,7 @@ def compile_wix_sources(files):
 
 
 """ Linking of WiX source files and installable binding """
-def link_wix_objfiles(files, outFile):
+def link_wix_objfiles(files, outFileName):
     print 'Linking WiX object files:'
 
     # Compose the link object file list.
@@ -111,12 +111,20 @@ def link_wix_objfiles(files, outFile):
         print "  %s..." % os.path.normpath(fileWithExt)
         objFileList += os.path.normpath(os.path.join(WORK_DIR, fileWithExt)) + ' '
 
+    # Compose the full path to the target file.
+    target = os.path.join(OUTPUT_DIR, outFileName + '.msi')
+    try:
+        os.remove(target)
+        print 'Removed existing target file', target
+    except:
+        print 'Target:', target
+
     sys.stdout.flush()
 
     # Link all objects and bind our installables into cabinents.
     if os.system('light -nologo -b ' + PRODUCTS_DIR
-               + ' -out ' + os.path.join(OUTPUT_DIR, outFile + '.msi')
-               + ' -pdbout ' + os.path.join(WORK_DIR, outFile + '.wixpdb')
+               + ' -out ' + target
+               + ' -pdbout ' + os.path.join(WORK_DIR, outFileName + '.wixpdb')
                + ' -ext WixUIExtension -ext WixUtilExtension ' + objFileList):
         raise Exception("Failed linking WiX object files.")
 
