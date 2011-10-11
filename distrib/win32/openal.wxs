@@ -13,5 +13,12 @@
     <ComponentGroup Id="openal">
         <ComponentRef Id="OPENAL_FILE_LIBOPENALDLL" />
     </ComponentGroup>
+
+    <!-- Features for module openal -->
+    <Feature Id="openal" Level="1" Absent="allow" InstallDefault="followParent"
+      Title="OpenAL Plugin"
+      Description="Audio plugin for 3D surround sound using the OpenAL API.">
+        <ComponentGroupRef Id="openal" />
+    </Feature>
 </Fragment>
 </Wix>

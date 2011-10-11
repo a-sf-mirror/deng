@@ -13,5 +13,12 @@
     <ComponentGroup Id="winmm">
         <ComponentRef Id="WINMM_FILE_LIBWINMMDLL" />
     </ComponentGroup>
+
+    <!-- Features for module winmm -->
+    <Feature Id="winmm" Level="1" Absent="allow" InstallDefault="followParent"
+      Title="Windows Multimedia Plugin"
+      Description="Audio plugin for MIDI and CDAudio playback using the Windows Multimedia API.">
+        <ComponentGroupRef Id="winmm" />
+    </Feature>
 </Fragment>
 </Wix>

@@ -156,14 +156,15 @@
         <ComponentGroupRef Id="engine" />
         <ComponentGroupRef Id="dehread" />
         <ComponentGroupRef Id="wadmapconverter" />
-        <ComponentGroupRef Id="directsound" />
-        <ComponentGroupRef Id="openal" />
-        <ComponentGroupRef Id="winmm" />
 
         <!-- Optional components -->
         <FeatureRef Id="doom" />
         <FeatureRef Id="heretic" />
         <FeatureRef Id="hexen" />
+
+        <FeatureRef Id="directsound" />
+        <FeatureRef Id="openal" />
+        <FeatureRef Id="winmm" />
     </Feature>
     <FeatureRef Id="snowberry" />
 
