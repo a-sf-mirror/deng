@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<!-- Include our global value definitions -->
+<?include installervars.wxi ?>
 <Fragment>
     <!-- Additional install paths for component snowberry -->
     <DirectoryRef Id="DOOMSDAYDIR">
@@ -19,18 +21,19 @@
         </Directory>
     </DirectoryRef>
 
-    <!-- Additional start menu shortcuts for component snowberry
-    <DirectoryRef Id="DOOMSDAYMENU">
+    <!-- Additional start menu shortcuts for component snowberry -->
+    <DirectoryRef Id="DoomsdayStartMenu">
         <Component Id="SNOWBERRY_SHORTCUTS" Guid="CD8ED481-DE43-481F-B897-FA69A0758EF3">
+            <RegistryKey Root="HKCU" Key="Software\$(var.ProductManufacturer)\Snowberry">
+                <RegistryValue Name="InstallPath" Type="string" Value="[SNOWBERRYDIR]" KeyPath="yes" />
+            </RegistryKey>
             <Shortcut Id="SNOWBERRY_SHORTCUT_RUN"
-              Name="Doomsday Engine"
-              Description="Doomsday Engine Frontend"
+              Name="Doomsday Engine Frontend"
+              Description="Launch the Doomsday Engine Frontend"
               Target="[SNOWBERRYDIR]snowberry.exe"
               WorkingDirectory="SNOWBERRYDIR"/>
-            <RemoveFolder Id="DOOMSDAYMENU" On="uninstall"/>
         </Component>
     </DirectoryRef>
-      -->
 
     <!-- Additional install files for component snowberry -->
     <Media Id="5" Cabinet="snowberry.cab" EmbedCab="yes" />
@@ -297,7 +300,7 @@
 
     <!-- Place all components for module snowberry to the following group -->
     <ComponentGroup Id="snowberry">
-        <!-- <ComponentRef Id="SNOWBERRY_SHORTCUT_RUN" /> -->
+        <ComponentRef Id="SNOWBERRY_SHORTCUTS" />
         <ComponentRef Id="SNOWBERRY_FILE_GDIPLUSDLL" />
         <ComponentRef Id="SNOWBERRY_FILE_LIBRARYZIP" />
         <ComponentRef Id="SNOWBERRY_FILE_MSVCP71DLL" />
