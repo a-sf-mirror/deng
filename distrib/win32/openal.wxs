@@ -16,8 +16,7 @@
 
     <!-- Features for module openal -->
     <Feature Id="openal" Level="1" Absent="allow" InstallDefault="followParent"
-      Title="OpenAL Plugin"
-      Description="Audio plugin for 3D surround sound using the OpenAL API.">
+      Title="!(loc.OpenALFeatureTitle)" Description="!(loc.OpenALFeatureDescription)">
         <ComponentGroupRef Id="openal" />
     </Feature>
 </Fragment>

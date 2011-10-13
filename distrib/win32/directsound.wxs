@@ -20,8 +20,8 @@
 
     <!-- Features for module directsound -->
     <Feature Id="directsound" Level="1" Absent="allow" InstallDefault="followParent"
-      Title="DirectSound Plugin"
-      Description="Audio plugin for 3D surround sound and EAX effects using the DirectSound API.">
+      Title="!(loc.DirectSoundFeatureTitle)"
+      Description="!(loc.DirectSoundFeatureDescription)">
         <ComponentGroupRef Id="directsound" />
     </Feature>
 </Fragment>

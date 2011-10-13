@@ -386,7 +386,7 @@
     </ComponentGroup>
 
     <!-- Features for module snowberry -->
-    <Feature Id="snowberry" Title="Doomsday Engine Frontend" Description="Graphical frontend/launcher for the Doomsday Engine." Level="1" Absent="allow">
+    <Feature Id="snowberry" Title="!(loc.SnowberryFeatureTitle)" Description="!(loc.SnowberryFeatureDescription)" Level="1" Absent="allow">
         <ComponentGroupRef Id="snowberry" />
     </Feature>
 </Fragment>

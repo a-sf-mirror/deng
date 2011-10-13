@@ -27,7 +27,7 @@
 
     <!-- Features for module hexen -->
     <Feature Id="hexen" Level="1" Absent="allow" InstallDefault="followParent"
-      Title="jHexen" Description="Hexen/Hexen: Death Kings of the Dark Citadel">
+      Title="!(loc.HexenFeatureTitle)" Description="!(loc.HexenFeatureDescription)">
         <ComponentGroupRef Id="hexen" />
     </Feature>
 </Fragment>

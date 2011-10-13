@@ -27,7 +27,7 @@
 
     <!-- Features for module heretic -->
     <Feature Id="heretic" Level="1" Absent="allow" InstallDefault="followParent"
-      Title="jHeretic" Description="Heretic/Heretic: Shadow of the Serpent Riders" >
+      Title="!(loc.HereticFeatureTitle)" Description="!(loc.HereticFeatureDescription)" >
         <ComponentGroupRef Id="heretic" />
     </Feature>
 </Fragment>

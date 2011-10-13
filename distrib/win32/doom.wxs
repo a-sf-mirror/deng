@@ -27,8 +27,8 @@
 
     <!-- Features for module doom -->
     <Feature Id="doom" Level="1" Absent="allow" InstallDefault="followParent"
-      Title="jDoom"
-      Description="DOOM/Ultimate DOOM/DOOM II/Final DOOM">
+      Title="!(loc.DoomFeatureTitle)"
+      Description="!(loc.DoomFeatureDescription)">
         <ComponentGroupRef Id="doom" />
     </Feature>
 </Fragment>
