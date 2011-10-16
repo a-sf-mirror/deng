@@ -5,9 +5,17 @@
 :: Directory Config -------------------------------------------------------
 
 :: Modify these paths for your system.
-set MSVC9_DIR=c:\Program Files\Microsoft Visual Studio 9.0
-set QTCREATOR_DIR=c:\QtSDK\QtCreator
-set QT_BIN_DIR=c:\QtSDK\Desktop\Qt\4.7.4\msvc2008\bin
+set MSVC9_DIR=C:/Program Files/Microsoft Visual Studio 9.0
+
+set QTCREATOR_DIR=c:/QtSDK/QtCreator
+
+set QT_BIN_DIR=C:/QtSDK/Desktop/Qt/4.7.4/msvc2008/bin
+
+set PYTHON_DIR=C:/Python25
+
+set WIX_DIR=C:/Program Files/Windows Installer XML v3.5
+
+set WINDOWS_SDK_DIR=C:/Program Files/Microsoft SDKs/Windows/v7.0
 
 :: Build Tools Setup ------------------------------------------------------
 
