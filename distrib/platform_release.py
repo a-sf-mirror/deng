@@ -3,6 +3,7 @@ import sys
 import os
 import platform
 import shutil
+import subprocess
 import time
 import glob
 import build_version
@@ -86,6 +87,10 @@ def find_version():
 def prepare_work_dir():
     remkdir(WORK_DIR)
     print "Work directory prepared."
+
+
+def clean_work_dir():
+    os.system('rd/s/q ' + WORK_DIR)
 
 
 def mac_os_version():
@@ -223,8 +228,9 @@ def win_release():
     except ImportError:
         raise Exception("Python: get_python_lib not found!")
 
-    cwd = os.getcwd()
-    prepare_work_dir()
+    QTCREATOR_DIR = os.getenv('QTCREATOR_DIR')
+    if not os.path.exists(QTCREATOR_DIR):
+        raise Exception("Failed to locate Qt Creator install. Check QTCREATOR_DIR is set and correct.\nQTCREATOR_DIR=%s" % QTCREATOR_DIR)
 
     PYTHON_LIB_DIR = str(get_python_lib())
 
@@ -298,17 +304,35 @@ def win_release():
               '/wx-2.8-msw-ansi/wx/gdiplus.dll']:
         shutil.copy(PYTHON_LIB_DIR + f, '.')
 
-    # Build and package Doomsday.
-    os.chdir(os.path.join(cwd, 'win32'))
-    sys.stdout.flush()
-    if os.system('dorel.bat ' + DOOMSDAY_BUILD_NUMBER):
-        raise Exception("Failure in the Windows release script.")
+    # Return from whence we came.
+    os.chdir(LAUNCH_DIR)
 
-    os.chdir(cwd)
+    # Build and package Doomsday.
+    prepare_work_dir()
+    os.chdir(WORK_DIR)
+
+    cmd = ['qmake', '../../doomsday\doomsday.pro', 'CONFIG+=release', 'DENG_BUILD=%s' % str(DOOMSDAY_BUILD_NUMBER)]
+    if subprocess.call(cmd):
+        raise Exception("Failed processing the Windows qmake script.")
+
+    cmd = [os.path.join(QTCREATOR_DIR, 'bin', 'jom.exe')]
+    if subprocess.call(cmd):
+        raise Exception("Failed processing the Windows make script.")
+
+    cmd += ['install']
+    if subprocess.call(cmd):
+        raise Exception("Failed processing the Windows make INSTALLS script.")
+
+    # Return from whence we came.
+    os.chdir(LAUNCH_DIR)
+
+    # Cleanup.
+    clean_work_dir()
 
     # Execute the build installer script.
-    if os.system('python platform_buildinstaller.py'):
-        raise Exception("Failure in the buildinstaller script.")
+    cmd = ['python', 'platform_buildinstaller.py']
+    if subprocess.call(cmd):
+        raise Exception("Failed processing the Windows build-installer script.")
 
 
 """The Linux release procedure."""
