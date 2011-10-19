@@ -1,4 +1,4 @@
-﻿#!/usr/bin/python
+#!/usr/bin/python
 import sys
 import os
 import platform
@@ -118,7 +118,7 @@ def mac_release():
     MAC_WORK_DIR = os.path.abspath(os.path.join(DOOMSDAY_DIR, '../macx_release_build'))
     remkdir(MAC_WORK_DIR)
     os.chdir(MAC_WORK_DIR)
-    if os.system('qmake -r -spec macx-g++ CONFIG+=release DENG_BUILD=%s ' % (DOOMSDAY_BUILD_NUMBER) +
+    if os.system('qmake -r -spec macx-g++ CONFIG+="release deng_packres" DENG_BUILD=%s ' % (DOOMSDAY_BUILD_NUMBER) +
                  '../doomsday/doomsday.pro && make -w ' +
                  '&& ../doomsday/build/mac/bundleapp.sh ../doomsday'):
         raise Exception("Failed to build from source.")
@@ -311,7 +311,7 @@ def win_release():
     prepare_work_dir()
     os.chdir(WORK_DIR)
 
-    cmd = ['qmake', '../../doomsday\doomsday.pro', 'CONFIG+=release', 'DENG_BUILD=%s' % str(DOOMSDAY_BUILD_NUMBER)]
+    cmd = ['qmake', '../../doomsday\doomsday.pro', 'CONFIG+="release deng_packres"', 'DENG_BUILD=%s' % str(DOOMSDAY_BUILD_NUMBER)]
     if subprocess.call(cmd):
         raise Exception("Failed processing the Windows qmake script.")
 
