@@ -77,6 +77,10 @@ internal
 // HEdge frame flags
 #define HEDGEINF_FACINGFRONT      0x0001
 
+typedef struct hedgeedge_s {
+    walldivs_t wallDivs;
+} HEdgeEdge;
+
 /// @todo Refactor me away.
 typedef struct mhedge_s {
     uint                index;
@@ -104,6 +108,7 @@ struct HEdge
     BYTE    byte        side /// On which side of the LineDef (0=front, 1=back)?
     DOUBLE  coord_t     length /// Accurate length of the segment (v1 -> v2).
     DOUBLE  coord_t     offset
+    -       HEdgeEdge[3][2] edges /// For each @ref SideDefSection edge, left and right.
     -       biassurface_t*[3] bsuf /// For each @ref SideDefSection.
     -       short       frameFlags
     -       uint        index /// Unique. Set when saving the BSP.

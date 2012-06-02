@@ -573,14 +573,14 @@ static void updateSideSectionDecorations(LineDef* line, byte side, SideDefSectio
     surface = &line->L_sidedef(side)->SW_surface(section);
     if(surface->material)
     {
-        coord_t low, hi;
-        visible = R_FindBottomTop(line, side, section,
+        walldivnode_t* bottomLeft, *topLeft;
+        visible = R_WallSectionEdge(line, side, section, false/*left edge*/,
                                   line->L_sector(side), line->L_sector(side^1), line->L_sidedef(side),
-                                  &low, &hi, matOffset);
+                                  &bottomLeft, &topLeft, matOffset, line->L_side(side).hedgeLeft);
         if(visible)
         {
-            V3d_Set(v1, line->L_vorigin(side  )[VX], line->L_vorigin(side  )[VY], hi);
-            V3d_Set(v2, line->L_vorigin(side^1)[VX], line->L_vorigin(side^1)[VY], low);
+            V3d_Set(v1, line->L_vorigin(side  )[VX], line->L_vorigin(side  )[VY], WallDivNode_Height(topLeft));
+            V3d_Set(v2, line->L_vorigin(side^1)[VX], line->L_vorigin(side^1)[VY], WallDivNode_Height(bottomLeft));
         }
     }
 

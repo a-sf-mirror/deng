@@ -156,23 +156,6 @@ void LineDef_LightLevelDelta(LineDef* lineDef, int side, float* deltaL, float* d
 boolean LineDef_MiddleMaterialCoversOpening(LineDef* lineDef, int side, boolean ignoreAlpha);
 
 /**
- * Calculate coordinates for a "middle" Material if present.
- *
- * @param lineDef  LineDef instance.
- * @param side  Side of the LineDef we are interested in.
- * @param bottomLeft  Z map space coordinate of the bottom left of the Material written here.
- * @param bottomRight  Z map space coordinate of the bottom right of the Material written here.
- * @param topLeft  Z map space coordinate of the top left of the Material written here.
- * @param topRight Z map space coordinate of the top right of the Material written here.
- * @param texOffY  Offset to the top of the Material written here.
- *
- * @return  @c true iff the middle Material is visible (in the opening).
- */
-int LineDef_MiddleMaterialCoords(LineDef* lineDef, int side,
-    coord_t* bottomLeft, coord_t* bottomRight, coord_t* topLeft, coord_t* topRight, float* texOffY,
-    boolean lowerUnpeg, boolean clipBottom, boolean clipTop);
-
-/**
  * Get a property value, selected by DMU_* name.
  *
  * @param lineDef  LineDef instance.

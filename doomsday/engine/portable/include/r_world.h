@@ -89,15 +89,39 @@ void R_UpdatePlanes(void);
 void R_ClearSectorFlags(void);
 void R_MapInitSurfaceLists(void);
 
-void            R_OrderVertices(const LineDef* line, const Sector* sector,
-                                Vertex* verts[2]);
+void R_OrderVertices(const LineDef* line, const Sector* sector, Vertex* verts[2]);
+
+/**
+ * Calculate coordinates for a "middle" section if a material is present.
+ *
+ * @param lineDef  LineDef instance.
+ * @param side  Side of the LineDef we are interested in.
+ * @param bottomLeft  Z map space coordinate of the bottom left of the Material written here.
+ * @param bottomRight  Z map space coordinate of the bottom right of the Material written here.
+ * @param topLeft  Z map space coordinate of the top left of the Material written here.
+ * @param topRight Z map space coordinate of the top right of the Material written here.
+ * @param texOffY  Offset to the top of the Material written here.
+ *
+ * @return  @c true iff the middle Material is visible (in the opening).
+ */
+int R_MiddleSectionCoords(LineDef* lineDef, int side,
+    Sector* frontSec, Sector* backSec,
+    coord_t* bottomLeft, coord_t* bottomRight, coord_t* topLeft, coord_t* topRight, float* texOffY);
 
 /**
  * @param matOffset  Can be @c NULL.
  */
-boolean R_FindBottomTop(LineDef* line, int side, SideDefSection section,
+boolean R_WallSectionEdge(LineDef* line, int side, SideDefSection section, int edge,
     Sector* frontSec, Sector* backSec, SideDef* frontSideDef,
-    coord_t* low, coord_t* hi, float matOffset[2]);
+    walldivnode_t** bottom, walldivnode_t** top, float matOffset[2], HEdge* hedge);
+
+/**
+ * @param matOffset  Can be @c NULL.
+ */
+boolean R_WallSectionEdges(LineDef* line, int side, SideDefSection section,
+    Sector* frontSec, Sector* backSec, SideDef* frontSideDef,
+    walldivnode_t** bottomLeft, walldivnode_t** topLeft, walldivnode_t** bottomRight, walldivnode_t** topRight,
+    float matOffset[2], HEdge* hedge);
 
 Plane*          R_NewPlaneForSector(Sector* sec);
 void            R_DestroyPlaneOfSector(uint id, Sector* sec);

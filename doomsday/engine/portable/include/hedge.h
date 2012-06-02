@@ -30,17 +30,11 @@
 extern "C" {
 #endif
 
-struct bsphedgeinfo_s;
-
 HEdge* HEdge_New(void);
 
 HEdge* HEdge_NewCopy(const HEdge* other);
 
 void HEdge_Delete(HEdge* hedge);
-
-boolean HEdge_PrepareWallDivs(HEdge* hedge, SideDefSection section,
-    Sector* frontSector, Sector* backSector,
-    walldivs_t* leftWallDivs, walldivs_t* rightWallDivs, float matOffset[2]);
 
 /**
  * Get a property value, selected by DMU_* name.

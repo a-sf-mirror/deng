@@ -135,6 +135,7 @@ DENG_API_HEADERS = \
 # Convenience headers.
 DENG_HEADERS += \
     portable/include/BspBuilder \
+    portable/include/WallDivs
 
 # Private headers.
 DENG_HEADERS += \
@@ -160,6 +161,7 @@ DENG_HEADERS += \
     portable/include/map/bsp/partitioncost.h \
     portable/include/map/bsp/partitioner.h \
     portable/include/map/bsp/superblockmap.h \
+    portable/include/map/walldivs.h \
     portable/include/bspleaf.h \
     portable/include/bspnode.h \
     portable/include/canvas.h \
@@ -453,6 +455,7 @@ SOURCES += \
     portable/src/map/bsp/hplane.cpp \
     portable/src/map/bsp/partitioner.cpp \
     portable/src/map/bsp/superblockmap.cpp \
+    portable/src/map/walldivs.cpp \
     portable/src/bspleaf.cpp \
     portable/src/bspnode.c \
     portable/src/busytask.cpp \

@@ -20,29 +20,6 @@ typedef struct lineowner_s {
     shadowvert_t    shadowOffsets;
 } lineowner_t;
 
-struct walldivs_s;
-
-typedef struct walldivnode_s {
-    struct walldivs_s* divs;
-    coord_t height;
-} walldivnode_t;
-
-coord_t WallDivNode_Height(walldivnode_t* node);
-walldivnode_t* WallDivNode_Next(walldivnode_t* node);
-walldivnode_t* WallDivNode_Prev(walldivnode_t* node);
-
-/// Maximum number of walldivnode_ts in a walldivs_t dataset.
-#define WALLDIVS_MAX_NODES          64
-
-typedef struct walldivs_s {
-    uint num;
-    struct walldivnode_s nodes[WALLDIVS_MAX_NODES];
-} walldivs_t;
-
-uint WallDivs_Size(const walldivs_t* wallDivs);
-walldivnode_t* WallDivs_First(walldivs_t* wallDivs);
-walldivnode_t* WallDivs_Last(walldivs_t* wallDivs);
-
 typedef struct mvertex_s {
     // Vertex index. Always valid after loading and pruning of unused
     // vertices has occurred.
@@ -86,6 +63,10 @@ typedef struct vertex_s {
 // HEdge frame flags
 #define HEDGEINF_FACINGFRONT      0x0001
 
+typedef struct hedgeedge_s {
+    walldivs_t wallDivs;
+} HEdgeEdge;
+
 /// @todo Refactor me away.
 typedef struct mhedge_s {
     uint                index;
@@ -109,6 +90,7 @@ typedef struct hedge_s {
     byte                side; /// On which side of the LineDef (0=front, 1=back)?
     coord_t             length; /// Accurate length of the segment (v1 -> v2).
     coord_t             offset;
+    HEdgeEdge           edges[3][2]; /// For each @ref SideDefSection edge, left and right.
     biassurface_t*      bsuf[3]; /// For each @ref SideDefSection.
     short               frameFlags;
     uint                index; /// Unique. Set when saving the BSP.
@@ -248,6 +230,8 @@ typedef struct plane_s {
 
 // Helper macros for accessing sector floor/ceiling plane data elements.
 #define SP_plane(n)             planes[(n)]
+#define SP_floor                SP_plane(PLN_FLOOR)
+#define SP_ceil                 SP_plane(PLN_CEILING)
 
 #define SP_planesurface(n)      SP_plane(n)->surface
 #define SP_planeheight(n)       SP_plane(n)->height

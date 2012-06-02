@@ -516,17 +516,20 @@ static void SB_AddAffected(affection_t* aff, uint k, float intensity)
 
 void SB_InitVertexIllum(vertexillum_t* villum)
 {
-    int                 i;
+    int i;
 
     villum->flags |= VIF_STILL_UNSEEN;
 
     for(i = 0; i < MAX_BIAS_AFFECTED; ++i)
+    {
         villum->casted[i].source = -1;
+    }
 }
 
 void SB_SurfaceInit(biassurface_t* bsuf)
 {
     uint i;
+    if(!bsuf) return;
     for(i = 0; i < bsuf->size; ++i)
     {
         SB_InitVertexIllum(&bsuf->illum[i]);
@@ -536,6 +539,7 @@ void SB_SurfaceInit(biassurface_t* bsuf)
 void SB_SurfaceMoved(biassurface_t* bsuf)
 {
     int i;
+    if(!bsuf) return;
     for(i = 0; i < MAX_BIAS_AFFECTED && bsuf->affected[i].source >= 0; ++i)
     {
         sources[bsuf->affected[i].source].flags |= BLF_CHANGED;

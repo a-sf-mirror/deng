@@ -909,133 +909,449 @@ void R_SetupFogDefaults(void)
  */
 void R_OrderVertices(const LineDef* line, const Sector* sector, Vertex* verts[2])
 {
-    byte edge = (sector == line->L_frontsector? 0:1);
+    int edge = (sector == line->L_frontsector? 0:1);
     verts[0] = line->L_v(edge);
     verts[1] = line->L_v(edge^1);
 }
 
-boolean R_FindBottomTop(LineDef* line, int side, SideDefSection section,
-    Sector* frontSec, Sector* backSec, SideDef* frontSideDef,
-    coord_t* low, coord_t* hi, float matOffset[2])
+int R_MiddleSectionCoords(LineDef* lineDef, int side,
+    Sector* frontSec, Sector* backSec,
+    coord_t* bottomLeft, coord_t* bottomRight, coord_t* topLeft, coord_t* topRight,
+    float* texOffY)
 {
-    const boolean unpegBottom = !!(line->flags & DDLF_DONTPEGBOTTOM);
-    const boolean unpegTop    = !!(line->flags & DDLF_DONTPEGTOP);
+    const boolean clipBottom = !(!(devRendSkyMode || P_IsInVoid(viewPlayer)) && Surface_IsSkyMasked(&frontSec->SP_floorsurface) && Surface_IsSkyMasked(&backSec->SP_floorsurface));
+    const boolean clipTop    = !(!(devRendSkyMode || P_IsInVoid(viewPlayer)) && Surface_IsSkyMasked(&frontSec->SP_ceilsurface)  && Surface_IsSkyMasked(&backSec->SP_ceilsurface));
+    const boolean unpegBottom = !!(lineDef->flags & DDLF_DONTPEGBOTTOM);
+    coord_t* top[2], *bottom[2], openingTop[2], openingBottom[2]; // {left, right}
+    coord_t tcYOff;
+    SideDef* sideDef;
+    int i, texHeight;
+    assert(lineDef && bottomLeft && bottomRight && topLeft && topRight);
+
+    if(texOffY) *texOffY  = 0;
+
+    sideDef = lineDef->L_sidedef(side);
+    if(!sideDef || !sideDef->SW_middlematerial) return false;
+
+    texHeight = Material_Height(sideDef->SW_middlematerial);
+    tcYOff = sideDef->SW_middlevisoffset[VY];
+
+    top[0] = topLeft;
+    top[1] = topRight;
+    bottom[0] = bottomLeft;
+    bottom[1] = bottomRight;
+
+    openingTop[0] = *top[0];
+    openingTop[1] = *top[1];
+    openingBottom[0] = *bottom[0];
+    openingBottom[1] = *bottom[1];
+
+    if(openingTop[0] <= openingBottom[0] &&
+       openingTop[1] <= openingBottom[1]) return false;
+
+    // For each edge (left then right).
+    for(i = 0; i < 2; ++i)
+    {
+        if(unpegBottom)
+        {
+            *bottom[i] += tcYOff;
+            *top[i] = *bottom[i] + texHeight;
+        }
+        else
+        {
+            *top[i] += tcYOff;
+            *bottom[i] = *top[i] - texHeight;
+        }
+    }
+
+    if(texOffY)
+    {
+        if(*top[0] > openingTop[0] || *top[1] > openingTop[1])
+        {
+            if(*top[1] > *top[0])
+                *texOffY += *top[1] - openingTop[1];
+            else
+                *texOffY += *top[0] - openingTop[0];
+        }
+        else
+        {
+            *texOffY = 0;
+        }
+    }
+
+    // Clip it.
+    if(clipTop || clipBottom)
+    {
+        // For each edge (left then right).
+        for(i = 0; i < 2; ++i)
+        {
+            if(clipBottom && *bottom[i] < openingBottom[i])
+                *bottom[i] = openingBottom[i];
+
+            if(clipTop && *top[i] > openingTop[i])
+                *top[i] = openingTop[i];
+        }
+    }
+
+    if(!clipTop && texOffY) *texOffY = 0;
+
+    return true;
+}
+
+static void addWallDivNodesForPlaneIntercepts(HEdge* hedge, walldivs_t* wallDivs,
+    SideDefSection section, Plane* bottom, Plane* top, int edge)
+{
+    const LineDef* line = hedge->lineDef;
+    const Sector* frontSec = (line? line->L_sector(hedge->side) : NULL);
+    const boolean isTwoSided = (line && line->L_frontsidedef && line->L_backsidedef);
+    const boolean clockwise = (edge == 0);
+    lineowner_t* base, *own;
+    coord_t bottomZ, topZ;
+    boolean stopScan;
+
+    if(!line) return;
+
+    // Polyobj edges are never split.
+    if(line->inFlags & LF_POLYOBJ) return;
+
+    // Requires neighborhood division?
+    if(section == SS_MIDDLE && isTwoSided) return;
+
+    // Only edges at sidedef ends can/should be split.
+    if(!((hedge == HEDGE_SIDE(hedge)->hedgeLeft  && !edge) ||
+         (hedge == HEDGE_SIDE(hedge)->hedgeRight &&  edge)))
+        return;
+
+    bottomZ = bottom->visHeight;
+    topZ = top->visHeight;
+    if(bottomZ >= topZ) return; // Obviously no division.
+
+    // Retrieve the start owner node.
+    base = R_GetVtxLineOwner(line->L_v(hedge->side^edge), line);
+    own = base;
+    stopScan = false;
+    do
+    {
+        own = own->link[clockwise];
+
+        if(own == base)
+        {
+            stopScan = true;
+        }
+        else
+        {
+            LineDef* iter = own->lineDef;
+            uint i;
+
+            if(LINE_SELFREF(iter))
+                continue;
+
+            i = 0;
+            do
+            {   // First front, then back.
+                Sector* scanSec = NULL;
+                if(!i && iter->L_frontsidedef && iter->L_frontsector != frontSec)
+                    scanSec = iter->L_frontsector;
+                else if(i && iter->L_backsidedef && iter->L_backsector != frontSec)
+                    scanSec = iter->L_backsector;
+
+                if(scanSec)
+                {
+                    if(scanSec->SP_ceilvisheight - scanSec->SP_floorvisheight > 0)
+                    {
+                        uint j;
+                        for(j = 0; j < scanSec->planeCount && !stopScan; ++j)
+                        {
+                            Plane* pln = scanSec->SP_plane(j);
+
+                            if(pln->visHeight > bottomZ && pln->visHeight < topZ)
+                            {
+                                if(!WallDivs_AtHeight(wallDivs, pln->visHeight))
+                                {
+                                    WallDivs_AppendPlaneIntercept(wallDivs, pln, hedge);
+
+                                    // Have we reached the div limit?
+                                    if(wallDivs->num == WALLDIVS_MAX_NODES)
+                                        stopScan = true;
+                                }
+                            }
+
+                            if(!stopScan)
+                            {
+                                // Clip a range bound to this height?
+                                if(pln->type == PLN_FLOOR && pln->visHeight > bottomZ)
+                                    bottomZ = pln->visHeight;
+                                else if(pln->type == PLN_CEILING && pln->visHeight < topZ)
+                                    topZ = pln->visHeight;
+
+                                // All clipped away?
+                                if(bottomZ >= topZ)
+                                    stopScan = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        /**
+                         * A zero height sector is a special case. In this
+                         * instance, the potential division is at the height
+                         * of the back ceiling. This is because elsewhere
+                         * we automatically fix the case of a floor above a
+                         * ceiling by lowering the floor.
+                         */
+                        Plane* pln = scanSec->SP_ceil;
+
+                        if(pln->visHeight > bottomZ && pln->visHeight < topZ)
+                        {
+                            if(!WallDivs_AtHeight(wallDivs, pln->visHeight))
+                            {
+                                WallDivs_AppendPlaneIntercept(wallDivs, pln, hedge);
+
+                                // All clipped away.
+                                stopScan = true;
+                            }
+                        }
+                    }
+                }
+            } while(!stopScan && ++i < 2);
+
+            // Stop the scan when a single sided line is reached.
+            if(!iter->L_frontsidedef || !iter->L_backsidedef)
+                stopScan = true;
+        }
+    } while(!stopScan);
+}
+
+static int C_DECL sortWallDivNode(const void* e1, const void* e2)
+{
+    const coord_t h1 = WallDivNode_Height((walldivnode_t*)e1);
+    const coord_t h2 = WallDivNode_Height((walldivnode_t*)e2);
+    if(h1 > h2) return  1;
+    if(h2 > h1) return -1;
+    return 0;
+}
+
+static void findBottomTop(LineDef* line, int side, SideDefSection section,
+    Sector* frontSec, Sector* backSec, Plane** low, Plane** hi)
+{
+    *low = *hi = NULL;
 
     // Single sided?
     if(!frontSec || !backSec || !line->L_sidedef(side^1)/*front side of a "window"*/)
     {
-        *low = frontSec->SP_floorvisheight;
-        *hi  = frontSec->SP_ceilvisheight;
-
-        if(matOffset)
-        {
-            Surface* suf = &frontSideDef->SW_middlesurface;
-            matOffset[0] = suf->visOffset[0];
-            matOffset[1] = suf->visOffset[1];
-            if(unpegBottom)
-            {
-                matOffset[1] -= *hi - *low;
-            }
-        }
+        *low = frontSec->SP_floor;
+        *hi  = frontSec->SP_ceil;
     }
     else
     {
-        const boolean stretchMiddle = !!(frontSideDef->flags & SDF_MIDDLE_STRETCH);
-        Plane* ffloor = frontSec->SP_plane(PLN_FLOOR);
-        Plane* fceil  = frontSec->SP_plane(PLN_CEILING);
-        Plane* bfloor = backSec->SP_plane(PLN_FLOOR);
-        Plane* bceil  = backSec->SP_plane(PLN_CEILING);
-        Surface* suf = &frontSideDef->SW_surface(section);
+        Plane* ffloor = frontSec->SP_floor;
+        Plane* fceil  = frontSec->SP_ceil;
+        Plane* bfloor = backSec->SP_floor;
+        Plane* bceil  = backSec->SP_ceil;
 
         switch(section)
         {
         case SS_TOP:
             // Can't go over front ceiling (would induce geometry flaws).
             if(bceil->visHeight < ffloor->visHeight)
-                *low = ffloor->visHeight;
+                *low = ffloor;
             else
-                *low = bceil->visHeight;
-            *hi = fceil->visHeight;
-
-            if(matOffset)
-            {
-                matOffset[0] = suf->visOffset[0];
-                matOffset[1] = suf->visOffset[1];
-                if(!unpegTop)
-                {
-                    // Align with normal middle texture.
-                    matOffset[1] -= fceil->visHeight - bceil->visHeight;
-                }
-            }
+                *low = bceil;
+            *hi = fceil;
             break;
 
         case SS_BOTTOM: {
             const boolean raiseToBackFloor = (Surface_IsSkyMasked(&fceil->surface) && Surface_IsSkyMasked(&bceil->surface) && fceil->visHeight < bceil->visHeight);
-            coord_t t = bfloor->visHeight;
+            Plane* t = bfloor;
 
-            *low = ffloor->visHeight;
+            *low = ffloor;
             // Can't go over the back ceiling, would induce polygon flaws.
             if(bfloor->visHeight > bceil->visHeight)
-                t = bceil->visHeight;
+                t = bceil;
 
             // Can't go over front ceiling, would induce polygon flaws.
             // In the special case of a sky masked upper we must extend the bottom
             // section up to the height of the back floor.
-            if(t > fceil->visHeight && !raiseToBackFloor)
-                t = fceil->visHeight;
+            if(t->visHeight > fceil->visHeight && !raiseToBackFloor)
+                t = fceil;
             *hi = t;
-
-            if(matOffset)
-            {
-                matOffset[0] = suf->visOffset[0];
-                matOffset[1] = suf->visOffset[1];
-                if(bfloor->visHeight > fceil->visHeight)
-                {
-                    matOffset[1] -= (raiseToBackFloor? t : fceil->visHeight) - bfloor->visHeight;
-                }
-
-                if(unpegBottom)
-                {
-                    // Align with normal middle texture.
-                    matOffset[1] += (raiseToBackFloor? t : fceil->visHeight) - bfloor->visHeight;
-                }
-            }
             break; }
 
         case SS_MIDDLE:
-            *low = MAX_OF(bfloor->visHeight, ffloor->visHeight);
-            *hi  = MIN_OF(bceil->visHeight,  fceil->visHeight);
-
-            if(!stretchMiddle)
-            {
-                const boolean clipBottom = !(!(devRendSkyMode || P_IsInVoid(viewPlayer)) && Surface_IsSkyMasked(&ffloor->surface) && Surface_IsSkyMasked(&bfloor->surface));
-                const boolean clipTop    = !(!(devRendSkyMode || P_IsInVoid(viewPlayer)) && Surface_IsSkyMasked(&fceil->surface)  && Surface_IsSkyMasked(&bceil->surface));
-                coord_t bottomRight = *low, topRight = *hi;
-
-                if(LineDef_MiddleMaterialCoords(line, side, low, &bottomRight, hi,
-                                                &topRight, matOffset? &matOffset[1] : NULL,
-                                                unpegBottom, clipBottom, clipTop))
-                {
-                    if(matOffset)
-                    {
-                        matOffset[0] = suf->visOffset[0];
-                        if(!clipTop) matOffset[1] = 0;
-                    }
-                }
-            }
-            else
-            {
-                if(matOffset)
-                {
-                    matOffset[0] = suf->visOffset[0];
-                    matOffset[1] = 0; /// @todo Always??
-                }
-            }
+            *low = (bfloor->visHeight > ffloor->visHeight? bfloor : ffloor);
+            *hi  = (bceil->visHeight  <  fceil->visHeight? bceil  : fceil);
             break;
         }
     }
+}
 
-    return /*is_visible=*/ *hi > *low;
+static void findMaterialOffset(LineDef* line, int side, SideDefSection section,
+    Sector* frontSec, Sector* backSec, SideDef* frontSideDef, float matOffset[2])
+{
+    const boolean unpegBottom = !!(line->flags & DDLF_DONTPEGBOTTOM);
+    const boolean unpegTop    = !!(line->flags & DDLF_DONTPEGTOP);
+    Plane* low = NULL, *hi = NULL;
+
+    Surface* suf = &frontSideDef->SW_surface(section);
+    matOffset[0] = suf->visOffset[0];
+    matOffset[1] = suf->visOffset[1];
+
+    findBottomTop(line, side, section, frontSec, backSec, &low, &hi);
+
+    // Single sided?
+    if(!frontSec || !backSec || !line->L_sidedef(side^1)/*front side of a "window"*/)
+    {
+        if(unpegBottom)
+        {
+            matOffset[1] -= hi->visHeight - low->visHeight;
+        }
+    }
+    else
+    {
+        switch(section)
+        {
+        case SS_TOP:
+            // Can't go over front ceiling (would induce geometry flaws).
+            if(!unpegTop)
+            {
+                // Align with normal middle texture.
+                matOffset[1] -= hi->visHeight - low->visHeight;
+            }
+            break;
+
+        case SS_BOTTOM: {
+            Plane* ffloor = frontSec->SP_floor;
+            Plane* fceil  = frontSec->SP_ceil;
+            Plane* bfloor = backSec->SP_floor;
+            Plane* bceil  = backSec->SP_ceil;
+            const boolean raiseToBackFloor = (Surface_IsSkyMasked(&fceil->surface) && Surface_IsSkyMasked(&bceil->surface) && fceil->visHeight < bceil->visHeight);
+            Plane* t = bfloor;
+
+            // Can't go over the back ceiling, would induce polygon flaws.
+            if(bfloor->visHeight > bceil->visHeight)
+                t = bceil;
+
+            // Can't go over front ceiling, would induce polygon flaws.
+            // In the special case of a sky masked upper we must extend the bottom
+            // section up to the height of the back floor.
+            if(t->visHeight > fceil->visHeight && !raiseToBackFloor)
+                t = fceil;
+
+            if(bfloor->visHeight > fceil->visHeight)
+            {
+                matOffset[1] -= (raiseToBackFloor? t->visHeight : fceil->visHeight) - bfloor->visHeight;
+            }
+
+            if(unpegBottom)
+            {
+                // Align with normal middle texture.
+                matOffset[1] += (raiseToBackFloor? t->visHeight : fceil->visHeight) - bfloor->visHeight;
+            }
+            break; }
+
+        case SS_MIDDLE: {
+            const boolean stretchMiddle = !!(frontSideDef->flags & SDF_MIDDLE_STRETCH);
+            if(!stretchMiddle)
+            {
+                coord_t bottomLeft = low->visHeight, bottomRight = low->visHeight;
+                coord_t topLeft = hi->visHeight, topRight = hi->visHeight;
+
+                R_MiddleSectionCoords(line, side, frontSec, backSec,
+                                      &bottomLeft, &bottomRight, &topLeft, &topRight,
+                                      &matOffset[1]);
+            }
+            break; }
+        }
+    }
+}
+
+boolean R_WallSectionEdge(LineDef* line, int side, SideDefSection section, int edge,
+    Sector* frontSec, Sector* backSec, SideDef* frontSideDef,
+    walldivnode_t** lowDiv, walldivnode_t** hiDiv, float matOffset[2], HEdge* hedge)
+{
+    walldivs_t* wallDivs;
+    assert(VALID_SIDEDEFSECTION(section) && VALID_WALLEDGE(edge));
+
+    wallDivs = &hedge->edges[section][edge].wallDivs;
+    if(wallDivs->lastBuildCount != rFrameCount)
+    {
+        const boolean isOneSided = !frontSec || !backSec || !line->L_sidedef(side^1)/*front side of a "window"*/;
+        const boolean stretchMiddle = !!(frontSideDef->flags & SDF_MIDDLE_STRETCH);
+        Plane* low = NULL, *hi = NULL;
+
+        findBottomTop(line, side, section, frontSec, backSec, &low, &hi);
+
+        // Nodes are arranged according to their Z axis height in ascending order.
+        // Special case: Non-stretched middle surfaces of two-sided lines.
+        if(!isOneSided && section == SS_MIDDLE && !stretchMiddle)
+        {
+            coord_t bottomLeft = low->visHeight, bottomRight = low->visHeight;
+            coord_t topLeft = hi->visHeight, topRight = hi->visHeight;
+
+            if(R_MiddleSectionCoords(line, side, frontSec, backSec,
+                                     &bottomLeft, &bottomRight, &topLeft, &topRight,
+                                     matOffset? &matOffset[1] : NULL))
+            {
+                // The first node is the bottom.
+                wallDivs->num = 0;
+                WallDivs_AppendAbsoluteHeight(wallDivs, edge == 0? bottomLeft : bottomRight);
+
+                // The last node is the top.
+                WallDivs_AppendAbsoluteHeight(wallDivs, edge == 0? topLeft : topRight);
+            }
+        }
+        else
+        {
+            wallDivs->num = 0;
+
+            // The first node is the bottom.
+            WallDivs_AppendPlaneIntercept(wallDivs, low, hedge);
+
+            // Add nodes for intercepts.
+            addWallDivNodesForPlaneIntercepts(hedge, wallDivs, section, low, hi, edge);
+
+            // The last node is the top.
+            WallDivs_AppendPlaneIntercept(wallDivs, hi, hedge);
+
+            if(wallDivs->num > 2)
+            {
+                // Sorting is required. This shouldn't take too long...
+                // There seldom are more than two or three nodes.
+                qsort(wallDivs->nodes, wallDivs->num, sizeof(*wallDivs->nodes), sortWallDivNode);
+
+                WallDivs_AssertSorted(wallDivs);
+                WallDivs_AssertInRange(wallDivs, low->visHeight, hi->visHeight);
+            }
+        }
+
+        wallDivs->lastBuildCount = rFrameCount;
+    }
+
+    if(lowDiv) *lowDiv = WallDivs_First(wallDivs);
+    if(hiDiv)   *hiDiv = WallDivs_Last(wallDivs);
+    if(matOffset)
+    {
+        findMaterialOffset(line, side, section, frontSec, backSec, frontSideDef, matOffset);
+    }
+
+    if(!WallDivs_Size(wallDivs)) return false;
+
+    return /*is_visible=*/ WallDivNode_Height(WallDivs_Last(wallDivs)) >
+                           WallDivNode_Height(WallDivs_First(wallDivs));
+}
+
+boolean R_WallSectionEdges(LineDef* line, int side, SideDefSection section,
+    Sector* frontSec, Sector* backSec, SideDef* frontSideDef,
+    walldivnode_t** bottomLeft, walldivnode_t** topLeft, walldivnode_t** bottomRight, walldivnode_t** topRight,
+    float matOffset[2], HEdge* hedge)
+{
+    int is_visible = R_WallSectionEdge(line, side, section, 0/*left edge*/,
+                                       frontSec, backSec, frontSideDef,
+                                       bottomLeft, topLeft, matOffset, hedge)
+                   | R_WallSectionEdge(line, side, section, 1/*right edge*/,
+                                       frontSec, backSec, frontSideDef,
+                                       bottomRight, topRight, NULL, hedge);
+    return !!is_visible;
 }
 
 LineDef* R_FindLineNeighbor(const Sector* sector, const LineDef* line,
@@ -1098,10 +1414,10 @@ LineDef* R_FindSolidLineNeighbor(const Sector* sector, const LineDef* line,
         side = (other->L_frontsector == sector? 0 : 1);
         if(other->L_sidedef(side)->SW_middlematerial)
         {
-            float oFCeil  = other->L_frontsector->SP_ceilvisheight;
-            float oFFloor = other->L_frontsector->SP_floorvisheight;
-            float oBCeil  = other->L_backsector->SP_ceilvisheight;
-            float oBFloor = other->L_backsector->SP_floorvisheight;
+            coord_t oFCeil  = other->L_frontsector->SP_ceilvisheight;
+            coord_t oFFloor = other->L_frontsector->SP_floorvisheight;
+            coord_t oBCeil  = other->L_backsector->SP_ceilvisheight;
+            coord_t oBFloor = other->L_backsector->SP_floorvisheight;
 
             if((side == 0 &&
                 ((oBCeil > sector->SP_floorvisheight &&

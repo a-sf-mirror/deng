@@ -814,10 +814,14 @@ typedef enum sidedefsection_e {
     SS_TOP
 } SideDefSection;
 
+#define VALID_SIDEDEFSECTION(v) ((v) >= SS_MIDDLE && (v) <= SS_TOP)
+
 /// Helper macro for converting SideDefSection indices to their associated DMU flag. @ingroup map
 #define DMU_FLAG_FOR_SIDEDEFSECTION(s) (\
     (s) == SS_MIDDLE? DMU_MIDDLE_OF_SIDEDEF : \
     (s) == SS_BOTTOM? DMU_BOTTOM_OF_SIDEDEF : DMU_TOP_OF_SIDEDEF)
+
+#define VALID_WALLEDGE(v) ((v) == 0/*left*/ || (v) == 1/*right*/)
 
 typedef struct {
     fixed_t origin[2];

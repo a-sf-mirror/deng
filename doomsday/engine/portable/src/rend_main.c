@@ -1254,7 +1254,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
 static boolean doRenderHEdge(HEdge* hedge, const pvec3f_t normal,
     float alpha, float lightLevel, float lightLevelDL, float lightLevelDR,
     const float* lightColor, uint lightListIdx, uint shadowListIdx,
-    walldivs_t* leftWallDivs, walldivs_t* rightWallDivs,
+    walldivnode_t* bottomLeft, walldivnode_t* topLeft, walldivnode_t* bottomRight, walldivnode_t* topRight,
     boolean skyMask, boolean addFakeRadio, vec3d_t texTL, vec3d_t texBR,
     float const texOffset[2], float const texScale[2],
     blendmode_t blendMode, const float* color, const float* color2,
@@ -1265,6 +1265,8 @@ static boolean doRenderHEdge(HEdge* hedge, const pvec3f_t normal,
     rendworldpoly_params_t params;
     SideDef* side = (hedge->lineDef? HEDGE_SIDEDEF(hedge) : NULL);
     rvertex_t* rvertices;
+    walldivs_t* leftWallDivs = WallDivNode_WallDivs(bottomLeft);
+    walldivs_t* rightWallDivs = WallDivNode_WallDivs(bottomRight);
 
     // Init the params.
     memset(&params, 0, sizeof(params));
@@ -1292,9 +1294,9 @@ static boolean doRenderHEdge(HEdge* hedge, const pvec3f_t normal,
     params.texScale = texScale;
     params.lightListIdx = lightListIdx;
     params.shadowListIdx = shadowListIdx;
-    params.wall.left.firstDiv = WallDivNode_Next(WallDivs_First(leftWallDivs)); // Step over first node.
+    params.wall.left.firstDiv = WallDivNode_Next(bottomLeft); // Step over first node.
     params.wall.left.divCount = WallDivs_Size(leftWallDivs)-2;
-    params.wall.right.firstDiv = WallDivNode_Prev(WallDivs_Last(rightWallDivs)); // Step over last node.
+    params.wall.right.firstDiv = WallDivNode_Prev(topRight); // Step over last node.
     params.wall.right.divCount = WallDivs_Size(rightWallDivs)-2;
 
     // Allocate enough vertices for the divisions too.
@@ -1312,19 +1314,19 @@ static boolean doRenderHEdge(HEdge* hedge, const pvec3f_t normal,
     // Vertex coords.
     // Bottom Left.
     V2f_Copyd(rvertices[0].pos, hedge->HE_v1origin);
-    rvertices[0].pos[VZ] = (float)WallDivNode_Height(WallDivs_First(leftWallDivs));
+    rvertices[0].pos[VZ] = (float)WallDivNode_Height(bottomLeft);
 
     // Top Left.
     V2f_Copyd(rvertices[1].pos, hedge->HE_v1origin);
-    rvertices[1].pos[VZ] = (float)WallDivNode_Height(WallDivs_Last(leftWallDivs));
+    rvertices[1].pos[VZ] = (float)WallDivNode_Height(topLeft);
 
     // Bottom Right.
     V2f_Copyd(rvertices[2].pos, hedge->HE_v2origin);
-    rvertices[2].pos[VZ] = (float)WallDivNode_Height(WallDivs_First(rightWallDivs));
+    rvertices[2].pos[VZ] = (float)WallDivNode_Height(bottomRight);
 
     // Top Right.
     V2f_Copyd(rvertices[3].pos, hedge->HE_v2origin);
-    rvertices[3].pos[VZ] = (float)WallDivNode_Height(WallDivs_Last(rightWallDivs));
+    rvertices[3].pos[VZ] = (float)WallDivNode_Height(topRight);
 
     // Draw this hedge.
     if(renderWorldPoly(rvertices, 4, &params, msA, inter, msB))
@@ -1362,19 +1364,19 @@ static boolean doRenderHEdge(HEdge* hedge, const pvec3f_t normal,
 
             // Bottom Left.
             V2f_Copyd(rvertices[0].pos, hedge->HE_v1origin);
-            rvertices[0].pos[VZ] = (float)WallDivNode_Height(WallDivs_First(leftWallDivs));
+            rvertices[0].pos[VZ] = (float)WallDivNode_Height(bottomLeft);
 
             // Top Left.
             V2f_Copyd(rvertices[1].pos, hedge->HE_v1origin);
-            rvertices[1].pos[VZ] = (float)WallDivNode_Height(WallDivs_Last(leftWallDivs));
+            rvertices[1].pos[VZ] = (float)WallDivNode_Height(topLeft);
 
             // Bottom Right.
             V2f_Copyd(rvertices[2].pos, hedge->HE_v2origin);
-            rvertices[2].pos[VZ] = (float)WallDivNode_Height(WallDivs_First(rightWallDivs));
+            rvertices[2].pos[VZ] = (float)WallDivNode_Height(bottomRight);
 
             // Top Right.
             V2f_Copyd(rvertices[3].pos, hedge->HE_v2origin);
-            rvertices[3].pos[VZ] = (float)WallDivNode_Height(WallDivs_Last(rightWallDivs));
+            rvertices[3].pos[VZ] = (float)WallDivNode_Height(topRight);
 
             // kludge end.
 
@@ -1575,10 +1577,9 @@ static void Rend_RenderPlane(planetype_t type, coord_t height,
 #define RHF_FORCE_OPAQUE        0x10 ///< Force the geometry to be opaque.
 ///@}
 
-static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section,
-    int flags, float lightLevel, const float* lightColor,
-    walldivs_t* leftWallDivs, walldivs_t* rightWallDivs,
-    float const matOffset[2])
+static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section, int flags,
+    walldivnode_t* bottomLeft, walldivnode_t* topLeft, walldivnode_t* bottomRight, walldivnode_t* topRight,
+    float lightLevel, const float* lightColor, float const matOffset[2])
 {
     SideDef* frontSide = HEDGE_SIDEDEF(hedge);
     Surface* surface = &frontSide->SW_surface(section);
@@ -1586,8 +1587,8 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section,
     float alpha;
 
     if(!Surface_IsDrawable(surface)) return false;
-    if(WallDivNode_Height(WallDivs_First(leftWallDivs)) >=
-       WallDivNode_Height(WallDivs_Last(rightWallDivs))) return true;
+    if(WallDivNode_Height(bottomLeft)  >= WallDivNode_Height(topLeft) &&
+       WallDivNode_Height(bottomRight) >= WallDivNode_Height(topRight)) return true;
 
     alpha = (section == SS_MIDDLE? surface->rgba[3] : 1.0f);
 
@@ -1603,8 +1604,8 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section,
          * an opaque waterfall).
          */
 
-        if(viewData->current.origin[VZ] >  WallDivNode_Height(WallDivs_First(leftWallDivs)) &&
-           viewData->current.origin[VZ] < WallDivNode_Height(WallDivs_Last(rightWallDivs)))
+        if(viewData->current.origin[VZ] > WallDivNode_Height(bottomLeft) &&
+           viewData->current.origin[VZ] < WallDivNode_Height(topRight))
         {
             LineDef* lineDef = hedge->lineDef;
             vec2d_t result;
@@ -1647,10 +1648,10 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section,
         texScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
 
         V2d_Copy(texTL,  hedge->HE_v1origin);
-        texTL[VZ] =  WallDivNode_Height(WallDivs_Last(leftWallDivs));
+        texTL[VZ] =  WallDivNode_Height(topLeft);
 
         V2d_Copy(texBR, hedge->HE_v2origin);
-        texBR[VZ] = WallDivNode_Height(WallDivs_First(rightWallDivs));
+        texBR[VZ] = WallDivNode_Height(bottomRight);
 
         // Determine which Material to use.
         if(devRendSkyMode && HEDGE_BACK_SECTOR(hedge) &&
@@ -1772,7 +1773,7 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section,
                                surface->normal, ((flags & RHF_FORCE_OPAQUE)? -1 : alpha),
                                lightLevel, deltaL, deltaR, lightColor,
                                lightListIdx, shadowListIdx,
-                               leftWallDivs, rightWallDivs,
+                               bottomLeft, topLeft, bottomRight, topRight,
                                !!(rpFlags & RPF_SKYMASK), !!(flags & RHF_ADD_RADIO),
                                texTL, texBR, matOffset, texScale, blendMode,
                                color, color2,
@@ -1819,17 +1820,20 @@ static boolean Rend_RenderHEdge(HEdge* hedge)
     // Only a "middle" section.
     if(frontSide->SW_middleinflags & SUIF_PVIS)
     {
-        walldivs_t leftWallDivs, rightWallDivs;
+        walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
         boolean opaque = false;
 
-        if(HEdge_PrepareWallDivs(hedge, SS_MIDDLE, frontSec, backSec,
-                                 &leftWallDivs, &rightWallDivs, matOffset))
+        if(R_WallSectionEdges(hedge->lineDef, hedge->side, SS_MIDDLE,
+                            frontSec, backSec, frontSide,
+                            &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset, hedge))
         {
+            matOffset[0] += (float)(hedge->offset);
+
             Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
             opaque = rendHEdgeSection(hedge, SS_MIDDLE, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
-                                      frontSec->lightLevel, R_GetSectorLightColor(frontSec),
-                                      &leftWallDivs, &rightWallDivs, matOffset);
+                                      bottomLeft, topLeft, bottomRight, topRight,
+                                      frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
         }
 
         reportLineDefDrawn(hedge->lineDef);
@@ -1881,11 +1885,12 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
     // Middle section.
     if(frontSide->SW_middleinflags & SUIF_PVIS)
     {
-        walldivs_t leftWallDivs, rightWallDivs;
+        walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
 
-        if(HEdge_PrepareWallDivs(hedge, SS_MIDDLE, leaf->sector, HEDGE_BACK_SECTOR(hedge),
-                                 &leftWallDivs, &rightWallDivs, matOffset))
+        if(R_WallSectionEdges(hedge->lineDef, hedge->side, SS_MIDDLE,
+                            leaf->sector, HEDGE_BACK_SECTOR(hedge), HEDGE_SIDEDEF(hedge),
+                            &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset, hedge))
         {
             int rhFlags = RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO;
 
@@ -1893,33 +1898,15 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
                !(line->flags & DDLF_BLOCKING))
                 rhFlags |= RHF_VIEWER_NEAR_BLEND;
 
+            matOffset[0] += (float)(hedge->offset);
             Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
             solidSeg = rendHEdgeSection(hedge, SS_MIDDLE, rhFlags,
-                                        frontSec->lightLevel, R_GetSectorLightColor(frontSec),
-                                        &leftWallDivs, &rightWallDivs, matOffset);
+                                        bottomLeft, topLeft, bottomRight, topRight,
+                                        frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
             if(solidSeg)
             {
-                Surface* suf = &frontSide->SW_middlesurface;
-                coord_t xbottom, xtop;
-
-                if(LINE_SELFREF(line))
-                {
-                    xbottom = MIN_OF(bfloor->visHeight, ffloor->visHeight);
-                    xtop    = MAX_OF(bceil->visHeight,  fceil->visHeight);
-                }
-                else
-                {
-                    xbottom = MAX_OF(bfloor->visHeight, ffloor->visHeight);
-                    xtop    = MIN_OF(bceil->visHeight,  fceil->visHeight);
-                }
-
-                xbottom += suf->visOffset[VY];
-                xtop    += suf->visOffset[VY];
-
-                // Can we make this a solid segment?
-                if(!(WallDivNode_Height(WallDivs_Last(&rightWallDivs)) >= xtop &&
-                     WallDivNode_Height(WallDivs_First(&leftWallDivs)) <= xbottom))
-                     solidSeg = false;
+                solidSeg = LineDef_MiddleMaterialCoversOpening(hedge->lineDef, hedge->side,
+                                                               false/*do not ignore material alpha*/);
             }
         }
     }
@@ -1927,32 +1914,36 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
     // Upper section.
     if(frontSide->SW_topinflags & SUIF_PVIS)
     {
-        walldivs_t leftWallDivs, rightWallDivs;
+        walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
 
-        if(HEdge_PrepareWallDivs(hedge, SS_TOP, leaf->sector, HEDGE_BACK_SECTOR(hedge),
-                                 &leftWallDivs, &rightWallDivs, matOffset))
+        if(R_WallSectionEdges(hedge->lineDef, hedge->side, SS_TOP,
+                            leaf->sector, HEDGE_BACK_SECTOR(hedge), HEDGE_SIDEDEF(hedge),
+                            &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset, hedge))
         {
+            matOffset[0] += (float)(hedge->offset);
             Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
             rendHEdgeSection(hedge, SS_TOP, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
-                             frontSec->lightLevel, R_GetSectorLightColor(frontSec),
-                             &leftWallDivs, &rightWallDivs, matOffset);
+                             bottomLeft, topLeft, bottomRight, topRight,
+                             frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
         }
     }
 
     // Lower section.
     if(frontSide->SW_bottominflags & SUIF_PVIS)
     {
-        walldivs_t leftWallDivs, rightWallDivs;
+        walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
 
-        if(HEdge_PrepareWallDivs(hedge, SS_BOTTOM, leaf->sector, HEDGE_BACK_SECTOR(hedge),
-                                 &leftWallDivs, &rightWallDivs, matOffset))
+        if(R_WallSectionEdges(hedge->lineDef, hedge->side, SS_BOTTOM,
+                            leaf->sector, HEDGE_BACK_SECTOR(hedge), HEDGE_SIDEDEF(hedge),
+                            &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset, hedge))
         {
+            matOffset[0] += (float)(hedge->offset);
             Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
             rendHEdgeSection(hedge, SS_BOTTOM, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
-                             frontSec->lightLevel, R_GetSectorLightColor(frontSec),
-                             &leftWallDivs, &rightWallDivs, matOffset);
+                             bottomLeft, topLeft, bottomRight, topRight,
+                             frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
         }
     }
 
