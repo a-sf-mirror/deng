@@ -574,9 +574,9 @@ static void updateSideSectionDecorations(LineDef* line, byte side, SideDefSectio
     if(surface->material)
     {
         walldivnode_t* bottomLeft, *topLeft;
-        visible = R_WallSectionEdge(line, side, section, false/*left edge*/,
-                                  line->L_sector(side), line->L_sector(side^1), line->L_sidedef(side),
-                                  &bottomLeft, &topLeft, matOffset, line->L_side(side).hedgeLeft);
+        visible = R_WallSectionEdge(line->L_side(side).hedgeLeft, section, false/*left edge*/,
+                                    line->L_sector(side), line->L_sector(side^1),
+                                    &bottomLeft, &topLeft, matOffset);
         if(visible)
         {
             V3d_Set(v1, line->L_vorigin(side  )[VX], line->L_vorigin(side  )[VY], WallDivNode_Height(topLeft));

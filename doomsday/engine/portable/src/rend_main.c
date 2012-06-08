@@ -1813,20 +1813,19 @@ static boolean Rend_RenderHEdge(HEdge* hedge)
     BspLeaf* leaf = currentBspLeaf;
     Sector* frontSec = leaf->sector;
     Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
-    SideDef* frontSide = HEDGE_SIDEDEF(hedge);
+    SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
 
-    if(!frontSide) return false;
+    if(!frontSideDef) return false;
 
     // Only a "middle" section.
-    if(frontSide->SW_middleinflags & SUIF_PVIS)
+    if(frontSideDef->SW_middleinflags & SUIF_PVIS)
     {
         walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
         boolean opaque = false;
 
-        if(R_WallSectionEdges(hedge->lineDef, hedge->side, SS_MIDDLE,
-                            frontSec, backSec, frontSide,
-                            &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset, hedge))
+        if(R_WallSectionEdges(hedge, SS_MIDDLE, frontSec, backSec,
+                              &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset))
         {
             matOffset[0] += (float)(hedge->offset);
 
@@ -1870,10 +1869,10 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
        !frontSide->SW_middlematerial)
        return false; // Ugh... an obvious wall hedge hack. Best take no chances...
 
-    ffloor = leaf->sector->SP_plane(PLN_FLOOR);
-    fceil  = leaf->sector->SP_plane(PLN_CEILING);
-    bfloor = backSec->SP_plane(PLN_FLOOR);
-    bceil  = backSec->SP_plane(PLN_CEILING);
+    ffloor = leaf->sector->SP_floor;
+    fceil  = leaf->sector->SP_ceil;
+    bfloor = backSec->SP_floor;
+    bceil  = backSec->SP_ceil;
 
     /**
      * Create the wall sections.
@@ -1888,9 +1887,8 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
         walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
 
-        if(R_WallSectionEdges(hedge->lineDef, hedge->side, SS_MIDDLE,
-                            leaf->sector, HEDGE_BACK_SECTOR(hedge), HEDGE_SIDEDEF(hedge),
-                            &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset, hedge))
+        if(R_WallSectionEdges(hedge, SS_MIDDLE, leaf->sector, HEDGE_BACK_SECTOR(hedge),
+                              &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset))
         {
             int rhFlags = RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO;
 
@@ -1917,9 +1915,8 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
         walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
 
-        if(R_WallSectionEdges(hedge->lineDef, hedge->side, SS_TOP,
-                            leaf->sector, HEDGE_BACK_SECTOR(hedge), HEDGE_SIDEDEF(hedge),
-                            &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset, hedge))
+        if(R_WallSectionEdges(hedge, SS_TOP, leaf->sector, HEDGE_BACK_SECTOR(hedge),
+                              &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset))
         {
             matOffset[0] += (float)(hedge->offset);
             Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
@@ -1935,9 +1932,8 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
         walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
 
-        if(R_WallSectionEdges(hedge->lineDef, hedge->side, SS_BOTTOM,
-                            leaf->sector, HEDGE_BACK_SECTOR(hedge), HEDGE_SIDEDEF(hedge),
-                            &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset, hedge))
+        if(R_WallSectionEdges(hedge, SS_BOTTOM, leaf->sector, HEDGE_BACK_SECTOR(hedge),
+                              &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset))
         {
             matOffset[0] += (float)(hedge->offset);
             Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);

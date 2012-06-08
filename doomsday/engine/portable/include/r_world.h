@@ -111,17 +111,17 @@ int R_MiddleSectionCoords(LineDef* lineDef, int side,
 /**
  * @param matOffset  Can be @c NULL.
  */
-boolean R_WallSectionEdge(LineDef* line, int side, SideDefSection section, int edge,
-    Sector* frontSec, Sector* backSec, SideDef* frontSideDef,
-    walldivnode_t** bottom, walldivnode_t** top, float matOffset[2], HEdge* hedge);
+boolean R_WallSectionEdge(HEdge* hedge, SideDefSection section, int edge,
+    Sector* frontSec, Sector* backSec,
+    walldivnode_t** bottom, walldivnode_t** top, float matOffset[2]);
 
 /**
  * @param matOffset  Can be @c NULL.
  */
-boolean R_WallSectionEdges(LineDef* line, int side, SideDefSection section,
-    Sector* frontSec, Sector* backSec, SideDef* frontSideDef,
+boolean R_WallSectionEdges(HEdge* hedge, SideDefSection section,
+    Sector* frontSec, Sector* backSec,
     walldivnode_t** bottomLeft, walldivnode_t** topLeft, walldivnode_t** bottomRight, walldivnode_t** topRight,
-    float matOffset[2], HEdge* hedge);
+    float matOffset[2]);
 
 Plane*          R_NewPlaneForSector(Sector* sec);
 void            R_DestroyPlaneOfSector(uint id, Sector* sec);

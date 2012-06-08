@@ -1265,14 +1265,23 @@ static void findMaterialOffset(LineDef* line, int side, SideDefSection section,
     }
 }
 
-boolean R_WallSectionEdge(LineDef* line, int side, SideDefSection section, int edge,
-    Sector* frontSec, Sector* backSec, SideDef* frontSideDef,
-    walldivnode_t** lowDiv, walldivnode_t** hiDiv, float matOffset[2], HEdge* hedge)
+boolean R_WallSectionEdge(HEdge* hedge, SideDefSection section, int edge,
+    Sector* frontSec, Sector* backSec,
+    walldivnode_t** lowDiv, walldivnode_t** hiDiv, float matOffset[2])
 {
+    SideDef* frontSideDef;
     walldivs_t* wallDivs;
+    LineDef* line;
+    int side;
     assert(VALID_SIDEDEFSECTION(section) && VALID_WALLEDGE(edge));
 
+    if(!hedge) return false;
+
+    line = hedge->lineDef;
+    side = hedge->side;
+    frontSideDef = HEDGE_SIDEDEF(hedge);
     wallDivs = &hedge->edges[section][edge].wallDivs;
+
     if(wallDivs->lastBuildCount != rFrameCount)
     {
         const boolean isOneSided = !frontSec || !backSec || !line->L_sidedef(side^1)/*front side of a "window"*/;
@@ -1289,8 +1298,7 @@ boolean R_WallSectionEdge(LineDef* line, int side, SideDefSection section, int e
             coord_t topLeft = hi->visHeight, topRight = hi->visHeight;
 
             if(R_MiddleSectionCoords(line, side, frontSec, backSec,
-                                     &bottomLeft, &bottomRight, &topLeft, &topRight,
-                                     matOffset? &matOffset[1] : NULL))
+                                     &bottomLeft, &bottomRight, &topLeft, &topRight, NULL))
             {
                 // The first node is the bottom.
                 wallDivs->num = 0;
@@ -1340,17 +1348,15 @@ boolean R_WallSectionEdge(LineDef* line, int side, SideDefSection section, int e
                            WallDivNode_Height(WallDivs_First(wallDivs));
 }
 
-boolean R_WallSectionEdges(LineDef* line, int side, SideDefSection section,
-    Sector* frontSec, Sector* backSec, SideDef* frontSideDef,
+boolean R_WallSectionEdges(HEdge* hedge, SideDefSection section,
+    Sector* frontSec, Sector* backSec,
     walldivnode_t** bottomLeft, walldivnode_t** topLeft, walldivnode_t** bottomRight, walldivnode_t** topRight,
-    float matOffset[2], HEdge* hedge)
+    float matOffset[2])
 {
-    int is_visible = R_WallSectionEdge(line, side, section, 0/*left edge*/,
-                                       frontSec, backSec, frontSideDef,
-                                       bottomLeft, topLeft, matOffset, hedge)
-                   | R_WallSectionEdge(line, side, section, 1/*right edge*/,
-                                       frontSec, backSec, frontSideDef,
-                                       bottomRight, topRight, NULL, hedge);
+    int is_visible = R_WallSectionEdge(hedge, section, 0/*left edge */, frontSec, backSec,
+                                       bottomLeft, topLeft, matOffset)
+                   | R_WallSectionEdge(hedge, section, 1/*right edge*/, frontSec, backSec,
+                                       bottomRight, topRight, NULL);
     return !!is_visible;
 }
 
