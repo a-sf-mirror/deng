@@ -1211,11 +1211,12 @@ static void findMaterialOffset(LineDef* line, int side, SideDefSection section,
         switch(section)
         {
         case SS_TOP:
-            // Can't go over front ceiling (would induce geometry flaws).
             if(!unpegTop)
             {
                 // Align with normal middle texture.
-                matOffset[1] -= hi->visHeight - low->visHeight;
+                Plane* fceil  = frontSec->SP_ceil;
+                Plane* bceil  = backSec->SP_ceil;
+                matOffset[1] -= fceil->visHeight - bceil->visHeight;
             }
             break;
 
