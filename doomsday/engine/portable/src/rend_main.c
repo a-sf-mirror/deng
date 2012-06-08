@@ -772,7 +772,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
     uint realNumVertices = ((p->isWall && (p->wall.left.divCount || p->wall.right.divCount))? 3 + p->wall.left.divCount + 3 + p->wall.right.divCount : numVertices);
     ColorRawf* rcolors = NULL;
     ColorRawf* shinyColors = NULL;
-    rtexcoord_t* shinyTexCoords = NULL;
+    rtexcoord_t* shinyCoords = NULL;
     float modTexTC[2][2] = {{ 0, 0 }, { 0, 0 }};
     ColorRawf modColor = { 0, 0, 0, 0 };
     DGLuint modTex = 0;
@@ -808,7 +808,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             shinyColors = R_AllocRendColors(realNumVertices);
             // The normal texcoords are used with the mask.
             // New texcoords are required for shiny texture.
-            shinyTexCoords = R_AllocRendTexCoords(realNumVertices);
+            shinyCoords = R_AllocRendTexCoords(realNumVertices);
         }
 
         if(glowing < 1)
@@ -852,7 +852,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
 
         // Shiny texture coordinates.
         if(shinyRTU && !drawAsVisSprite)
-            quadShinyTexCoords(shinyTexCoords, &rvertices[1], &rvertices[2], *p->wall.segLength);
+            quadShinyTexCoords(shinyCoords, &rvertices[1], &rvertices[2], *p->wall.segLength);
 
         // First light texture coordinates.
         if(modTex && RL_IsMTexLights())
@@ -892,7 +892,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             // Shiny texture coordinates.
             if(shinyRTU)
             {
-                flatShinyTexCoords(&shinyTexCoords[i], vtx->pos);
+                flatShinyTexCoords(&shinyCoords[i], vtx->pos);
             }
 
             // First light texture coordinates.
@@ -1056,7 +1056,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
         R_FreeRendColors(rcolors);
         R_FreeRendTexCoords(interCoords);
         R_FreeRendTexCoords(modCoords);
-        R_FreeRendTexCoords(shinyTexCoords);
+        R_FreeRendTexCoords(shinyCoords);
         R_FreeRendColors(shinyColors);
 
         return false; // We HAD to use a vissprite, so it MUST not be opaque.
@@ -1157,9 +1157,9 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
     if(p->isWall && (p->wall.left.divCount || p->wall.right.divCount))
     {
         float bL, tL, bR, tR;
-        rvertex_t origVerts[4];
-        ColorRawf origColors[4];
-        rtexcoord_t origTexCoords[4];
+        rvertex_t quadVerts[4];
+        ColorRawf quadColors[4];
+        rtexcoord_t quadCoords[4];
 
         /**
          * Need to swap indices around into fans set the position
@@ -1167,69 +1167,70 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
          * color.
          */
 
-        memcpy(origVerts, rvertices, sizeof(rvertex_t) * 4);
-        memcpy(origTexCoords, primaryCoords, sizeof(rtexcoord_t) * 4);
+        memcpy(quadVerts, rvertices, sizeof(rvertex_t) * 4);
+        memcpy(quadCoords, primaryCoords, sizeof(rtexcoord_t) * 4);
         if(rcolors || shinyColors)
         {
-            memcpy(origColors, rcolors, sizeof(ColorRawf) * 4);
+            memcpy(quadColors, rcolors, sizeof(ColorRawf) * 4);
         }
 
-        bL = origVerts[0].pos[VZ];
-        tL = origVerts[1].pos[VZ];
-        bR = origVerts[2].pos[VZ];
-        tR = origVerts[3].pos[VZ];
+        bL = quadVerts[0].pos[VZ];
+        tL = quadVerts[1].pos[VZ];
+        bR = quadVerts[2].pos[VZ];
+        tR = quadVerts[3].pos[VZ];
 
-        R_DivVerts(rvertices, origVerts, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount);
-        R_DivTexCoords(primaryCoords, origTexCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+        R_DivVerts(rvertices, quadVerts, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount);
+        R_DivTexCoords(primaryCoords, quadCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
 
         if(rcolors)
         {
-            R_DivVertColors(rcolors, origColors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
-        }
-
-        if(interCoords)
-        {
-            rtexcoord_t origTexCoords2[4];
-
-            memcpy(origTexCoords2, interCoords, sizeof(rtexcoord_t) * 4);
-            R_DivTexCoords(interCoords, origTexCoords2, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            R_DivVertColors(rcolors, quadColors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
         }
 
         if(modCoords)
         {
-            rtexcoord_t origTexCoords5[4];
+            rtexcoord_t quadModCoords[4];
 
-            memcpy(origTexCoords5, modCoords, sizeof(rtexcoord_t) * 4);
-            R_DivTexCoords(modCoords, origTexCoords5, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            memcpy(quadModCoords, modCoords, sizeof(rtexcoord_t) * 4);
+            R_DivTexCoords(modCoords, quadModCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
         }
 
-        if(shinyTexCoords)
+        if(interCoords)
         {
-            rtexcoord_t origShinyTexCoords[4];
+            rtexcoord_t quadCoords2[4];
 
-            memcpy(origShinyTexCoords, shinyTexCoords, sizeof(rtexcoord_t) * 4);
-            R_DivTexCoords(shinyTexCoords, origShinyTexCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            memcpy(quadCoords2, interCoords, sizeof(rtexcoord_t) * 4);
+            R_DivTexCoords(interCoords, quadCoords2, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+        }
+
+        if(shinyCoords)
+        {
+            rtexcoord_t quadCoords3[4];
+
+            memcpy(quadCoords3, shinyCoords, sizeof(rtexcoord_t) * 4);
+            R_DivTexCoords(shinyCoords, quadCoords3, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
         }
 
         if(shinyColors)
         {
-            ColorRawf origShinyColors[4];
-            memcpy(origShinyColors, shinyColors, sizeof(ColorRawf) * 4);
-            R_DivVertColors(shinyColors, origShinyColors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            ColorRawf quadShinyColors[4];
+
+            memcpy(quadShinyColors, shinyColors, sizeof(ColorRawf) * 4);
+            R_DivVertColors(shinyColors, quadShinyColors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
         }
 
         RL_AddPolyWithCoordsModulationReflection(PT_FAN, p->flags | (hasDynlights? RPF_HAS_DYNLIGHTS : 0),
             3 + p->wall.right.divCount, rvertices + 3 + p->wall.left.divCount, rcolors? rcolors + 3 + p->wall.left.divCount : NULL,
             primaryCoords + 3 + p->wall.left.divCount, interCoords? interCoords + 3 + p->wall.left.divCount : NULL,
             modTex, &modColor, modCoords? modCoords + 3 + p->wall.left.divCount : NULL,
-            shinyColors + 3 + p->wall.left.divCount, shinyTexCoords? shinyTexCoords + 3 + p->wall.left.divCount : NULL,
+            shinyColors + 3 + p->wall.left.divCount, shinyCoords? shinyCoords + 3 + p->wall.left.divCount : NULL,
             shinyMaskRTU? primaryCoords + 3 + p->wall.left.divCount : NULL);
 
         RL_AddPolyWithCoordsModulationReflection(PT_FAN, p->flags | (hasDynlights? RPF_HAS_DYNLIGHTS : 0),
             3 + p->wall.left.divCount, rvertices, rcolors,
             primaryCoords, interCoords,
             modTex, &modColor, modCoords,
-            shinyColors, shinyTexCoords, shinyMaskRTU? primaryCoords : NULL);
+            shinyColors, shinyCoords, shinyMaskRTU? primaryCoords : NULL);
     }
     else
     {
@@ -1237,13 +1238,13 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             numVertices, rvertices, rcolors,
             primaryCoords, interCoords,
             modTex, &modColor, modCoords,
-            shinyColors, shinyTexCoords, shinyMaskRTU? primaryCoords : NULL);
+            shinyColors, shinyCoords, shinyMaskRTU? primaryCoords : NULL);
     }
 
     R_FreeRendTexCoords(primaryCoords);
     R_FreeRendTexCoords(interCoords);
     R_FreeRendTexCoords(modCoords);
-    R_FreeRendTexCoords(shinyTexCoords);
+    R_FreeRendTexCoords(shinyCoords);
     R_FreeRendColors(rcolors);
     R_FreeRendColors(shinyColors);
 
