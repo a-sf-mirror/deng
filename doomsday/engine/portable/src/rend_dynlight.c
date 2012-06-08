@@ -59,7 +59,7 @@ int RIT_RenderLightProjectionIterator(const dynlight_t* dyn, void* paramaters)
             rtexcoords[3].st[0] = rtexcoords[2].st[0] = dyn->s[1];
             rtexcoords[2].st[1] = rtexcoords[0].st[1] = dyn->t[1];
 
-            if(p->wall.left.divCount || p->wall.right.divCount)
+            if(p->wall.left.divCount > 2 || p->wall.right.divCount > 2)
             {
                 // We need to subdivide the projection quad.
                 float bL, tL, bR, tR;
@@ -82,9 +82,9 @@ int RIT_RenderLightProjectionIterator(const dynlight_t* dyn, void* paramaters)
                 bR = p->rvertices[2].pos[VZ];
                 tR = p->rvertices[3].pos[VZ];
 
-                R_DivVerts(rvertices, origVerts, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount);
-                R_DivTexCoords(rtexcoords, origTexCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
-                R_DivVertColors(rcolors, origColors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+                R_DivVerts(rvertices, origVerts[0].pos, p->wall.left.firstDiv, p->wall.left.divCount, origVerts[2].pos, p->wall.right.firstDiv, p->wall.right.divCount);
+                R_DivTexCoords(rtexcoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, origTexCoords, bL, tL, bR, tR);
+                R_DivVertColors(rcolors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, origColors, bL, tL, bR, tR);
             }
             else
             {
@@ -114,13 +114,13 @@ int RIT_RenderLightProjectionIterator(const dynlight_t* dyn, void* paramaters)
         RL_LoadDefaultRtus();
         RL_Rtu_SetTextureUnmanaged(RTU_PRIMARY, dyn->texture);
 
-        if(p->isWall && (p->wall.left.divCount || p->wall.right.divCount))
+        if(p->isWall && (p->wall.left.divCount > 2 || p->wall.right.divCount > 2))
         {
             RL_AddPolyWithCoords(PT_FAN, RPF_DEFAULT|RPF_LIGHT,
-                3 + p->wall.right.divCount, rvertices + 3 + p->wall.left.divCount,
-                rcolors + 3 + p->wall.left.divCount, rtexcoords + 3 + p->wall.left.divCount, NULL);
+                1 + p->wall.right.divCount, rvertices + 1 + p->wall.left.divCount,
+                rcolors + 1 + p->wall.left.divCount, rtexcoords + 1 + p->wall.left.divCount, NULL);
             RL_AddPolyWithCoords(PT_FAN, RPF_DEFAULT|RPF_LIGHT,
-                3 + p->wall.left.divCount, rvertices, rcolors, rtexcoords, NULL);
+                1 + p->wall.left.divCount, rvertices, rcolors, rtexcoords, NULL);
         }
         else
         {

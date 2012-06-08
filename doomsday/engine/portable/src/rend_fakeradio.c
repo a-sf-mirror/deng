@@ -972,8 +972,8 @@ static void renderShadowSeg(const rvertex_t* origVertices, const rendershadowseg
     rtexcoord_t* rtexcoords;
     uint realNumVertices = 4;
 
-    if(p->wall.left.divCount || p->wall.right.divCount)
-        realNumVertices = 3 + p->wall.left.divCount + 3 + p->wall.right.divCount;
+    if(p->wall.left.divCount > 2 || p->wall.right.divCount > 2)
+        realNumVertices = 1 + p->wall.left.divCount + 1 + p->wall.right.divCount;
     else
         realNumVertices = 4;
 
@@ -1003,7 +1003,7 @@ static void renderShadowSeg(const rvertex_t* origVertices, const rendershadowseg
         RL_LoadDefaultRtus();
         RL_Rtu_SetTextureUnmanaged(RTU_PRIMARY, GL_PrepareLSTexture(segp->texture));
 
-        if(p->wall.left.divCount || p->wall.right.divCount)
+        if(p->wall.left.divCount > 2 || p->wall.right.divCount > 2)
         {
             float bL, tL, bR, tR;
             rvertex_t* rvertices;
@@ -1026,15 +1026,15 @@ static void renderShadowSeg(const rvertex_t* origVertices, const rendershadowseg
             bR = origVertices[2].pos[VZ];
             tR = origVertices[3].pos[VZ];
 
-            R_DivVerts(rvertices, origVertices, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount);
-            R_DivTexCoords(rtexcoords, origTexCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
-            R_DivVertColors(rcolors, origColors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            R_DivVerts(rvertices, origVertices[0].pos, p->wall.left.firstDiv, p->wall.left.divCount, origVertices[2].pos, p->wall.right.firstDiv, p->wall.right.divCount);
+            R_DivTexCoords(rtexcoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, origTexCoords, bL, tL, bR, tR);
+            R_DivVertColors(rcolors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, origColors, bL, tL, bR, tR);
 
             RL_AddPolyWithCoords(PT_FAN, RPF_DEFAULT|RPF_SHADOW,
-                3 + p->wall.right.divCount, rvertices + 3 + p->wall.left.divCount, rcolors + 3 + p->wall.left.divCount,
-                rtexcoords + 3 + p->wall.left.divCount, NULL);
+                1 + p->wall.right.divCount, rvertices + 1 + p->wall.left.divCount, rcolors + 1 + p->wall.left.divCount,
+                rtexcoords + 1 + p->wall.left.divCount, NULL);
             RL_AddPolyWithCoords(PT_FAN, RPF_DEFAULT|RPF_SHADOW,
-                3 + p->wall.left.divCount, rvertices, rcolors, rtexcoords, NULL);
+                1 + p->wall.left.divCount, rvertices, rcolors, rtexcoords, NULL);
 
             R_FreeRendVertices(rvertices);
         }

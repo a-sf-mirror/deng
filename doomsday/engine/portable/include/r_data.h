@@ -149,6 +149,8 @@ typedef struct rvertex_s {
     float           pos[3];
 } rvertex_t;
 
+rvertex_t* RVertex_Copy(rvertex_t* vertex, const rvertex_t* other);
+
 /**
  * ColorRawf. Color Raw (f)loating point. Is intended as a handy POD
  * structure for easy manipulation of four component, floating point
@@ -173,12 +175,15 @@ typedef struct ColorRawf_s {
     };
 } ColorRawf;
 
+ColorRawf* ColorRawf_Copy(ColorRawf* c, const ColorRawf* other);
 float ColorRawf_AverageColor(ColorRawf* color);
 float ColorRawf_AverageColorMulAlpha(ColorRawf* color);
 
 typedef struct rtexcoord_s {
     float           st[2];
 } rtexcoord_t;
+
+rtexcoord_t* RTexCoord_Copy(rtexcoord_t* texcoord, const rtexcoord_t* other);
 
 typedef struct shadowlink_s {
     struct shadowlink_s* next;
@@ -292,15 +297,48 @@ void            R_FreeRendColors(ColorRawf* rcolors);
 void            R_FreeRendTexCoords(rtexcoord_t* rtexcoords);
 void            R_InfoRendVerticesPool(void);
 
-void R_DivVerts(rvertex_t* dst, const rvertex_t* src,
-    walldivnode_t* leftDivFirst, uint leftDivCount, walldivnode_t* rightDivFirst, uint rightDivCount);
+/**
+ * @param verts  Final vertices are written here.
+ * @param leftXY  XY map space coordinates for the left edge.
+ * @param leftDivFirst  First Z axis intercept for the left edge (bottom-left).
+ * @param leftDivCount  Number of Z axis intercepts for the left edge (inclusive).
+ * @param rightXY  XY map space coordinates for the right edge.
+ * @param rightDivFirst  First Z axis intercept for the right edge (top-right).
+ * @param rightDivCount  Number of Z axis intercepts for the right edge (inclusive).
+ */
+void R_DivVerts(rvertex_t* verts, float const* leftXY, walldivnode_t* leftDivFirst, uint leftDivCount,
+    float const* rightXY, walldivnode_t* rightDivFirst, uint rightDivCount);
 
-void R_DivTexCoords(rtexcoord_t* dst, const rtexcoord_t* src,
-    walldivnode_t* leftDivFirst, uint leftDivCount, walldivnode_t* rightDivFirst, uint rightDivCount,
+/**
+ * @param coords  Final coordinates are written here.
+ * @param leftDivFirst  First Z axis intercept for the left edge (bottom-left).
+ * @param leftDivCount  Number of Z axis intercepts for the left edge (inclusive).
+ * @param rightDivFirst  First Z axis intercept for the right edge (top-right).
+ * @param rightDivCount  Number of Z axis intercepts for the right edge (inclusive).
+ * @param quadCoords  Texture coordinates for the mapping quad.
+ * @param bL  Z map space coordinate for the bottom-left corner of the mapping quad.
+ * @param tL  Z map space coordinate for the top-left corner of the mapping quad.
+ * @param bR  Z map space coordinate for the bottom-right corner of the mapping quad.
+ * @param tR  Z map space coordinate for the top-left corner of the mapping quad.
+ */
+void R_DivTexCoords(rtexcoord_t* coords, walldivnode_t* leftDivFirst, uint leftDivCount,
+    walldivnode_t* rightDivFirst, uint rightDivCount, rtexcoord_t const* quadCoords,
     float bL, float tL, float bR, float tR);
 
-void R_DivVertColors(ColorRawf* dst, const ColorRawf* src,
-    walldivnode_t* leftDivFirst, uint leftDivCount, walldivnode_t* rightDivFirst, uint rightDivCount,
+/**
+ * @param colors  Final colors are written here.
+ * @param leftDivFirst  First Z axis intercept for the left edge (bottom-left).
+ * @param leftDivCount  Number of Z axis intercepts for the left edge (inclusive).
+ * @param rightDivFirst  First Z axis intercept for the right edge (top-right).
+ * @param rightDivCount  Number of Z axis intercepts for the right edge (inclusive).
+ * @param quadColors  Color values for the mapping quad.
+ * @param bL  Z map space coordinate for the bottom-left corner of the mapping quad.
+ * @param tL  Z map space coordinate for the top-left corner of the mapping quad.
+ * @param bR  Z map space coordinate for the bottom-right corner of the mapping quad.
+ * @param tR  Z map space coordinate for the top-left corner of the mapping quad.
+ */
+void R_DivVertColors(ColorRawf* colors, walldivnode_t* leftDivFirst, uint leftDivCount,
+    walldivnode_t* rightDivFirst, uint rightDivCount, ColorRawf const* quadColors,
     float bL, float tL, float bR, float tR);
 
 void R_InitTranslationTables(void);

@@ -769,7 +769,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
 {
     boolean useLights = false, useShadows = false, hasDynlights = false;
     rtexcoord_t* primaryCoords = NULL, *interCoords = NULL, *modCoords = NULL;
-    uint realNumVertices = ((p->isWall && (p->wall.left.divCount || p->wall.right.divCount))? 3 + p->wall.left.divCount + 3 + p->wall.right.divCount : numVertices);
+    uint realNumVertices = ((p->isWall && (p->wall.left.divCount > 2 || p->wall.right.divCount > 2))? 1 + p->wall.left.divCount + 1 + p->wall.right.divCount : numVertices);
     ColorRawf* rcolors = NULL;
     ColorRawf* shinyColors = NULL;
     rtexcoord_t* shinyCoords = NULL;
@@ -1154,7 +1154,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
     }
 
     // Write multiple polys depending on rend params.
-    if(p->isWall && (p->wall.left.divCount || p->wall.right.divCount))
+    if(p->isWall && (p->wall.left.divCount > 2 || p->wall.right.divCount > 2))
     {
         float bL, tL, bR, tR;
         rvertex_t quadVerts[4];
@@ -1179,12 +1179,12 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
         bR = quadVerts[2].pos[VZ];
         tR = quadVerts[3].pos[VZ];
 
-        R_DivVerts(rvertices, quadVerts, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount);
-        R_DivTexCoords(primaryCoords, quadCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+        R_DivVerts(rvertices, quadVerts[0].pos, p->wall.left.firstDiv, p->wall.left.divCount, quadVerts[2].pos, p->wall.right.firstDiv, p->wall.right.divCount);
+        R_DivTexCoords(primaryCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, quadCoords, bL, tL, bR, tR);
 
         if(rcolors)
         {
-            R_DivVertColors(rcolors, quadColors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            R_DivVertColors(rcolors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, quadColors, bL, tL, bR, tR);
         }
 
         if(modCoords)
@@ -1192,7 +1192,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             rtexcoord_t quadModCoords[4];
 
             memcpy(quadModCoords, modCoords, sizeof(rtexcoord_t) * 4);
-            R_DivTexCoords(modCoords, quadModCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            R_DivTexCoords(modCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, quadModCoords, bL, tL, bR, tR);
         }
 
         if(interCoords)
@@ -1200,7 +1200,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             rtexcoord_t quadCoords2[4];
 
             memcpy(quadCoords2, interCoords, sizeof(rtexcoord_t) * 4);
-            R_DivTexCoords(interCoords, quadCoords2, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            R_DivTexCoords(interCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, quadCoords2, bL, tL, bR, tR);
         }
 
         if(shinyCoords)
@@ -1208,7 +1208,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             rtexcoord_t quadCoords3[4];
 
             memcpy(quadCoords3, shinyCoords, sizeof(rtexcoord_t) * 4);
-            R_DivTexCoords(shinyCoords, quadCoords3, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            R_DivTexCoords(shinyCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, quadCoords3, bL, tL, bR, tR);
         }
 
         if(shinyColors)
@@ -1216,18 +1216,18 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
             ColorRawf quadShinyColors[4];
 
             memcpy(quadShinyColors, shinyColors, sizeof(ColorRawf) * 4);
-            R_DivVertColors(shinyColors, quadShinyColors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, bL, tL, bR, tR);
+            R_DivVertColors(shinyColors, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, quadShinyColors, bL, tL, bR, tR);
         }
 
         RL_AddPolyWithCoordsModulationReflection(PT_FAN, p->flags | (hasDynlights? RPF_HAS_DYNLIGHTS : 0),
-            3 + p->wall.right.divCount, rvertices + 3 + p->wall.left.divCount, rcolors? rcolors + 3 + p->wall.left.divCount : NULL,
-            primaryCoords + 3 + p->wall.left.divCount, interCoords? interCoords + 3 + p->wall.left.divCount : NULL,
-            modTex, &modColor, modCoords? modCoords + 3 + p->wall.left.divCount : NULL,
-            shinyColors + 3 + p->wall.left.divCount, shinyCoords? shinyCoords + 3 + p->wall.left.divCount : NULL,
-            shinyMaskRTU? primaryCoords + 3 + p->wall.left.divCount : NULL);
+            1 + p->wall.right.divCount, rvertices + 1 + p->wall.left.divCount, rcolors? rcolors + 1 + p->wall.left.divCount : NULL,
+            primaryCoords + 1 + p->wall.left.divCount, interCoords? interCoords + 1 + p->wall.left.divCount : NULL,
+            modTex, &modColor, modCoords? modCoords + 1 + p->wall.left.divCount : NULL,
+            shinyColors + 1 + p->wall.left.divCount, shinyCoords? shinyCoords + 1 + p->wall.left.divCount : NULL,
+            shinyMaskRTU? primaryCoords + 1 + p->wall.left.divCount : NULL);
 
         RL_AddPolyWithCoordsModulationReflection(PT_FAN, p->flags | (hasDynlights? RPF_HAS_DYNLIGHTS : 0),
-            3 + p->wall.left.divCount, rvertices, rcolors,
+            1 + p->wall.left.divCount, rvertices, rcolors,
             primaryCoords, interCoords,
             modTex, &modColor, modCoords,
             shinyColors, shinyCoords, shinyMaskRTU? primaryCoords : NULL);
@@ -1295,10 +1295,10 @@ static boolean doRenderHEdge(HEdge* hedge, const pvec3f_t normal,
     params.texScale = texScale;
     params.lightListIdx = lightListIdx;
     params.shadowListIdx = shadowListIdx;
-    params.wall.left.firstDiv = WallDivNode_Next(bottomLeft); // Step over first node.
-    params.wall.left.divCount = WallDivs_Size(leftWallDivs)-2;
-    params.wall.right.firstDiv = WallDivNode_Prev(topRight); // Step over last node.
-    params.wall.right.divCount = WallDivs_Size(rightWallDivs)-2;
+    params.wall.left.firstDiv = bottomLeft;
+    params.wall.left.divCount = WallDivs_Size(leftWallDivs);
+    params.wall.right.firstDiv = topRight;
+    params.wall.right.divCount = WallDivs_Size(rightWallDivs);
 
     // Allocate enough vertices for the divisions too.
     if(WallDivs_Size(leftWallDivs) > 2 || WallDivs_Size(rightWallDivs) > 2)

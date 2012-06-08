@@ -896,160 +896,142 @@ void Rtu_TranslateOffsetv(rtexmapunit_t* rtu, float const st[2])
     Rtu_TranslateOffset(rtu, st[0], st[1]);
 }
 
-void R_DivVerts(rvertex_t* dst, const rvertex_t* src,
-    walldivnode_t* leftDivFirst, uint leftDivCount, walldivnode_t* rightDivFirst, uint rightDivCount)
+static __inline void buildWallEdgeVerts(rvertex_t* verts, int edge, float const* xy,
+    walldivnode_t* divFirst, uint divCount)
 {
-#define COPYVERT(d, s)  (d)->pos[VX] = (s)->pos[VX]; \
-    (d)->pos[VY] = (s)->pos[VY]; \
-    (d)->pos[VZ] = (s)->pos[VZ];
-
-    uint const numR = 3 + (rightDivFirst && rightDivCount? rightDivCount : 0);
-    uint const numL = 3 +  (leftDivFirst && leftDivCount ? leftDivCount  : 0);
-
-    if(numR + numL == 6) return; // Nothing to do.
-
-    // Right fan:
-    COPYVERT(&dst[numL + 0], &src[0])
-    COPYVERT(&dst[numL + 1], &src[3]);
-    COPYVERT(&dst[numL + numR - 1], &src[2]);
-
-    if(numR > 3)
+    walldivnode_t* wdn = divFirst;
+    uint n;
+    assert(xy && divFirst);
+    for(n = 0; n < divCount; ++n, wdn = (edge? WallDivNode_Prev(wdn) /*right edge*/
+                                             : WallDivNode_Next(wdn)))
     {
-        walldivnode_t* wdn = rightDivFirst;
-        uint n;
-        for(n = 0; n < numR - 3; ++n, wdn = WallDivNode_Prev(wdn))
-        {
-            dst[numL + 2 + n].pos[VX] = src[2].pos[VX];
-            dst[numL + 2 + n].pos[VY] = src[2].pos[VY];
-            dst[numL + 2 + n].pos[VZ] = (float)WallDivNode_Height(wdn);
-        }
+        assert(wdn);
+        V2f_Copy(verts[n].pos, xy); verts[n].pos[VZ] = (float)WallDivNode_Height(wdn);
     }
-
-    // Left fan:
-    COPYVERT(&dst[0], &src[3]);
-    COPYVERT(&dst[1], &src[0]);
-    COPYVERT(&dst[numL - 1], &src[1]);
-
-    if(numL > 3)
-    {
-        walldivnode_t* wdn = leftDivFirst;
-        uint n;
-        for(n = 0; n < numL - 3; ++n, wdn = WallDivNode_Next(wdn))
-        {
-            dst[2 + n].pos[VX] = src[0].pos[VX];
-            dst[2 + n].pos[VY] = src[0].pos[VY];
-            dst[2 + n].pos[VZ] = (float)WallDivNode_Height(wdn);
-        }
-    }
-
-#undef COPYVERT
 }
 
-void R_DivTexCoords(rtexcoord_t* dst, const rtexcoord_t* src,
-    walldivnode_t* leftDivFirst, uint leftDivCount, walldivnode_t* rightDivFirst, uint rightDivCount,
-    float bL, float tL, float bR, float tR)
+void R_DivVerts(rvertex_t* verts, float const* leftXY, walldivnode_t* leftDivFirst, uint leftDivCount,
+    float const* rightXY, walldivnode_t* rightDivFirst, uint rightDivCount)
 {
-#define COPYTEXCOORD(d, s)    (d)->st[0] = (s)->st[0]; \
-    (d)->st[1] = (s)->st[1];
+    uint const numL =  (leftDivFirst && leftDivCount  ? 1 + leftDivCount  : 2);
+    uint const numR = (rightDivFirst && rightDivCount ? 1 + rightDivCount : 2);
 
-    uint const numR = 3 + (rightDivFirst && rightDivCount? rightDivCount : 0);
-    uint const numL = 3 +  (leftDivFirst && leftDivCount ? leftDivCount  : 0);
-
-    if(numR + numL == 6) return; // Nothing to do.
-
-    // Right fan:
-    COPYTEXCOORD(&dst[numL + 0], &src[0]);
-    COPYTEXCOORD(&dst[numL + 1], &src[3]);
-    COPYTEXCOORD(&dst[numL + numR-1], &src[2]);
-
-    if(numR > 3)
-    {
-        walldivnode_t* wdn = rightDivFirst;
-        float height = tR - bR, inter;
-        uint n;
-        for(n = 0; n < numR - 3; ++n, wdn = WallDivNode_Prev(wdn))
-        {
-            inter = ((float)WallDivNode_Height(wdn) - bR) / height;
-            dst[numL + 2 + n].st[0] = src[3].st[0];
-            dst[numL + 2 + n].st[1] = src[2].st[1] + (src[3].st[1] - src[2].st[1]) * inter;
-        }
-    }
+    if(!verts || !leftXY || !rightXY) return;
+    if(numL + numR == 4) return; // Nothing to do.
 
     // Left fan:
-    COPYTEXCOORD(&dst[0], &src[3]);
-    COPYTEXCOORD(&dst[1], &src[0]);
-    COPYTEXCOORD(&dst[numL - 1], &src[1]);
-
-    if(numL > 3)
-    {
-        walldivnode_t* wdn = leftDivFirst;
-        float height = tL - bL, inter;
-        uint n;
-        for(n = 0; n < numL - 3; ++n, wdn = WallDivNode_Next(wdn))
-        {
-            inter = ((float)WallDivNode_Height(wdn) - bL) / height;
-            dst[2 + n].st[0] = src[0].st[0];
-            dst[2 + n].st[1] = src[0].st[1] + (src[1].st[1] - src[0].st[1]) * inter;
-        }
-    }
-#undef COPYTEXCOORD
-}
-
-void R_DivVertColors(ColorRawf* dst, const ColorRawf* src,
-    walldivnode_t* leftDivFirst, uint leftDivCount, walldivnode_t* rightDivFirst, uint rightDivCount,
-    float bL, float tL, float bR, float tR)
-{
-#define COPYVCOLOR(d, s)    (d)->rgba[CR] = (s)->rgba[CR]; \
-    (d)->rgba[CG] = (s)->rgba[CG]; \
-    (d)->rgba[CB] = (s)->rgba[CB]; \
-    (d)->rgba[CA] = (s)->rgba[CA];
-
-    uint const numR = 3 + (rightDivFirst && rightDivCount? rightDivCount : 0);
-    uint const numL = 3 +  (leftDivFirst && leftDivCount ? leftDivCount  : 0);
-
-    if(numR + numL == 6) return; // Nothing to do.
+    V2f_Copy(verts[0].pos, rightXY); verts[0].pos[VZ] = (float)WallDivNode_Height(rightDivFirst);
+    buildWallEdgeVerts(verts + 1, false/*left edge*/, leftXY, leftDivFirst, leftDivCount);
 
     // Right fan:
-    COPYVCOLOR(&dst[numL + 0], &src[0]);
-    COPYVCOLOR(&dst[numL + 1], &src[3]);
-    COPYVCOLOR(&dst[numL + numR-1], &src[2]);
+    V2f_Copy(verts[numL].pos, leftXY); verts[numL].pos[VZ] = (float)WallDivNode_Height(leftDivFirst);
+    buildWallEdgeVerts(verts + numL + 1, true/*right edge*/, rightXY, rightDivFirst, rightDivCount);
+}
 
-    if(numR > 3)
+static __inline void buildWallEdgeCoords(rtexcoord_t* coords, int edge,
+    float tcS, walldivnode_t* divFirst, uint divCount,
+    rtexcoord_t const* quadCoords, float bL, float tL, float bR, float tR)
+{
+    const rtexcoord_t* bottom = (edge? &quadCoords[2] : &quadCoords[0]);
+    const rtexcoord_t* top    = (edge? &quadCoords[3] : &quadCoords[1]);
+    const float height = (edge? tR - bR : tL - bL);
+    walldivnode_t* wdn = divFirst;
+    uint n;
+    assert(divFirst);
+    for(n = 0; n < divCount; ++n, wdn = (edge? WallDivNode_Prev(wdn) /*right edge*/
+                                             : WallDivNode_Next(wdn)))
     {
-        walldivnode_t* wdn = rightDivFirst;
-        float height = tR - bR, inter;
-        uint n, c;
-        for(n = 0; n < numR - 3; ++n, wdn = WallDivNode_Prev(wdn))
+        assert(wdn);
+        coords[n].st[0] = tcS;
+        if(n == 0)
         {
-            inter = ((float)WallDivNode_Height(wdn) - bR) / height;
+            coords[n].st[1] = (edge? top : bottom)->st[1];
+        }
+        else if(n == divCount-1)
+        {
+            coords[n].st[1] = (edge? bottom : top)->st[1];
+        }
+        else
+        {
+            float inter = ((float)WallDivNode_Height(wdn) - (edge? bR : bL)) / height;
+            coords[n].st[1] = bottom->st[1] + (top->st[1] - bottom->st[1]) * inter;
+        }
+    }
+}
+
+void R_DivTexCoords(rtexcoord_t* coords,
+    walldivnode_t* leftDivFirst, uint leftDivCount, walldivnode_t* rightDivFirst, uint rightDivCount,
+    rtexcoord_t const* quadCoords, float bL, float tL, float bR, float tR)
+{
+    const float leftS  = quadCoords[0].st[0], bottomLeftT = quadCoords[0].st[1];
+    const float rightS = quadCoords[2].st[0], topRightT   = quadCoords[3].st[1];
+    uint const numL =  (leftDivFirst && leftDivCount  ? 1 + leftDivCount  : 2);
+    uint const numR = (rightDivFirst && rightDivCount ? 1 + rightDivCount : 2);
+
+    if(numL + numR == 4) return; // Nothing to do.
+
+    // Left fan:
+    coords[0].st[0] = rightS; coords[0].st[1] = topRightT;
+    buildWallEdgeCoords(coords + 1, false/*left edge*/, leftS, leftDivFirst, leftDivCount, quadCoords, bL, tL, bR, tR);
+
+    // Right fan:
+    coords[numL].st[0] = leftS; coords[numL].st[1] = bottomLeftT;
+    buildWallEdgeCoords(coords + numL + 1, true/*right edge*/, rightS, rightDivFirst, rightDivCount, quadCoords, bL, tL, bR, tR);
+}
+
+static __inline void buildWallEdgeColors(ColorRawf* colors, int edge,
+    walldivnode_t* divFirst, uint divCount,
+    ColorRawf const* quadColors, float bL, float tL, float bR, float tR)
+{
+    const ColorRawf* bottom = edge? &quadColors[2] : &quadColors[0];
+    const ColorRawf* top    = edge? &quadColors[3] : &quadColors[1];
+    const float height = (edge? tR - bR : tL - bL);
+    walldivnode_t* wdn = divFirst;
+    uint n, c;
+    assert(divFirst);
+    for(n = 0; n < divCount; ++n, wdn = (edge? WallDivNode_Prev(wdn) /*right edge*/
+                                             : WallDivNode_Next(wdn)))
+    {
+        assert(wdn);
+        if(n == 0)
+        {
+            ColorRawf_Copy(&colors[n], edge? top : bottom);
+        }
+        else if(n == divCount-1)
+        {
+            ColorRawf_Copy(&colors[n], edge? bottom : top);
+        }
+        else
+        {
+            float inter = ((float)WallDivNode_Height(wdn) - (edge? bR : bL)) / height;
             for(c = 0; c < 4; ++c)
             {
-                dst[numL + 2 + n].rgba[c] = src[2].rgba[c] + (src[3].rgba[c] - src[2].rgba[c]) * inter;
+                colors[n].rgba[c] = bottom->rgba[c] + (top->rgba[c] - bottom->rgba[c]) * inter;
             }
         }
     }
+}
+
+void R_DivVertColors(ColorRawf* dst, walldivnode_t* leftDivFirst, uint leftDivCount,
+    walldivnode_t* rightDivFirst, uint rightDivCount,
+    ColorRawf const* quadColors, float bL, float tL, float bR, float tR)
+{
+    const ColorRawf* bottomLeft  = &quadColors[0];
+    //const ColorRawf* topLeft     = &quadColors[1];
+    //const ColorRawf* bottomRight = &quadColors[2];
+    const ColorRawf* topRight    = &quadColors[3];
+    uint const numL =  (leftDivFirst && leftDivCount  ? 1 + leftDivCount  : 2);
+    uint const numR = (rightDivFirst && rightDivCount ? 1 + rightDivCount : 2);
+
+    if(numL + numR == 4) return; // Nothing to do.
 
     // Left fan:
-    COPYVCOLOR(&dst[0], &src[3]);
-    COPYVCOLOR(&dst[1], &src[0]);
-    COPYVCOLOR(&dst[numL - 1], &src[1]);
+    ColorRawf_Copy(&dst[0], topRight);
+    buildWallEdgeColors(dst + 1, false/*left edge*/, leftDivFirst, leftDivCount, quadColors, bL, tL, bR, tR);
 
-    if(numL > 3)
-    {
-        walldivnode_t* wdn = leftDivFirst;
-        float height = tL - bL, inter;
-        uint n, c;
-        for(n = 0; n < numL - 3; ++n, wdn = WallDivNode_Next(wdn))
-        {
-            inter = ((float)WallDivNode_Height(wdn) - bL) / height;
-            for(c = 0; c < 4; ++c)
-            {
-                dst[2 + n].rgba[c] = src[0].rgba[c] + (src[1].rgba[c] - src[0].rgba[c]) * inter;
-            }
-        }
-    }
-
-#undef COPYVCOLOR
+    // Right fan:
+    ColorRawf_Copy(&dst[numL], bottomLeft);
+    buildWallEdgeColors(dst + numL + 1, true/*right edge*/, rightDivFirst, rightDivCount, quadColors, bL, tL, bR, tR);
 }
 
 /// \note Part of the Doomsday public API.
@@ -3295,6 +3277,26 @@ boolean R_DrawVLightVector(const vlight_t* light, void* context)
     return true; // Continue iteration.
 }
 
+rvertex_t* RVertex_Copy(rvertex_t* v, const rvertex_t* other)
+{
+    assert(v);
+    if(other)
+    {
+        V3f_Copy(v->pos, other->pos);
+    }
+    return v;
+}
+
+ColorRawf* ColorRawf_Copy(ColorRawf* c, const ColorRawf* other)
+{
+    assert(c);
+    if(other)
+    {
+        V4f_Copy(c->rgba, other->rgba);
+    }
+    return c;
+}
+
 float ColorRawf_AverageColor(ColorRawf* c)
 {
     assert(c);
@@ -3305,4 +3307,14 @@ float ColorRawf_AverageColorMulAlpha(ColorRawf* c)
 {
     assert(c);
     return (c->red + c->green + c->blue) / 3 * c->alpha;
+}
+
+rtexcoord_t* RTexCoord_Copy(rtexcoord_t* t, const rtexcoord_t* other)
+{
+    assert(t);
+    if(other)
+    {
+        V2f_Copy(t->st, other->st);
+    }
+    return t;
 }
