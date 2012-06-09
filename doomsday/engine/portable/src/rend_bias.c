@@ -559,110 +559,132 @@ static float SB_Dot(source_t* src, const coord_t* point, const vectorcompf_t* no
     return V3d_DotProductf(delta, normal);
 }
 
-static void updateAffected(biassurface_t* bsuf, coord_t const from[2],
-                           coord_t const to[2], const vectorcompf_t* normal)
+static void updateAffectedHEdge(HEdge* hedge, SideDefSection section)
 {
+    coord_t const* from = hedge->HE_v1origin;
+    coord_t const* to   = hedge->HE_v2origin;
     int i, k;
     vec2f_t delta;
     source_t* src;
     float distance = 0, len;
     float intensity;
     affection_t aff;
+    biassurface_t* bsuf;
+    float const* normal;
+
+    assert(VALID_SIDEDEFSECTION(section));
+
+    if(!HEDGE_SIDEDEF(hedge)) return;
+    normal = HEDGE_SIDEDEF(hedge)->SW_surfacenormal(section);
+    bsuf = hedge->bsuf[section];
 
     // If the data is already up to date, nothing needs to be done.
-    if(bsuf->updated == lastChangeOnFrame)
-        return;
-
+    if(bsuf->updated == lastChangeOnFrame) return;
     bsuf->updated = lastChangeOnFrame;
+
     aff.affected = bsuf->affected;
     aff.numFound = 0;
     memset(aff.affected, -1, sizeof(bsuf->affected));
 
+    /**
+     * @todo This could be enhanced so that only the lights on the
+     *       right side of the surface are taken into consideration.
+     */
     for(k = 0, src = sources; k < numSources; ++k, ++src)
     {
-        if(src->intensity <= 0)
-            continue;
+        if(src->intensity <= 0) continue;
 
         // Calculate minimum 2D distance to the hedge.
         for(i = 0; i < 2; ++i)
         {
             if(!i)
+            {
                 V2f_Set(delta, from[VX] - src->origin[VX],
                                from[VY] - src->origin[VY]);
+            }
             else
+            {
                 V2f_Set(delta, to[VX] - src->origin[VX],
                                to[VY] - src->origin[VY]);
+            }
             len = V2f_Normalize(delta);
 
             if(i == 0 || len < distance)
                 distance = len;
         }
 
-        if(V3f_DotProduct(delta, normal) >= 0)
-            continue;
+        if(V3f_DotProduct(delta, normal) >= 0) continue;
 
-        if(distance < 1)
-            distance = 1;
-
+        distance = MAX_OF(distance, 1);
         intensity = src->intensity / distance;
 
         // Is the source is too weak, ignore it entirely.
-        if(intensity < biasIgnoreLimit)
-            continue;
+        if(intensity < biasIgnoreLimit) continue;
 
         SB_AddAffected(&aff, k, intensity);
     }
 }
 
-static void updateAffected2(biassurface_t* bsuf, const struct rvertex_s* rvertices,
-    size_t numVertices, const coord_t* point, const vectorcompf_t* normal)
+static void updateAffectedBspLeaf(BspLeaf* bspLeaf, uint planeIdx)
 {
     int i;
-    uint k;
     coord_t delta[2];
     source_t* src;
     coord_t distance = 0, len;
     float dot, intensity;
     affection_t aff;
+    vec3d_t point;
+    HEdge const* hedge;
+    Plane const* plane;
+    biassurface_t* bsuf;
+
+    assert(planeIdx < bspLeaf->sector->planeCount);
+    bsuf = bspLeaf->bsuf[planeIdx];
 
     // If the data is already up to date, nothing needs to be done.
-    if(bsuf->updated == lastChangeOnFrame)
-        return;
-
+    if(bsuf->updated == lastChangeOnFrame) return;
     bsuf->updated = lastChangeOnFrame;
+
     aff.affected = bsuf->affected;
     aff.numFound = 0;
     memset(aff.affected, -1, sizeof(aff.affected));
 
+    plane = bspLeaf->sector->SP_plane(planeIdx);
+    V3d_Set(point, bspLeaf->midPoint[VX], bspLeaf->midPoint[VY], plane->height);
+
+    /**
+     * @todo This could be enhanced so that only the lights on the
+     *       right side of the surface are taken into consideration.
+     */
     for(i = 0, src = sources; i < numSources; ++i, ++src)
     {
-        if(src->intensity <= 0)
-            continue;
+        if(src->intensity <= 0) continue;
 
         // Calculate minimum 2D distance to the BSP leaf.
         /// @todo This is probably too accurate an estimate.
-        for(k = 0; k < bsuf->size; ++k)
+        distance = DDMAXFLOAT;
+        hedge = bspLeaf->hedge;
+        do
         {
-            V2d_Set(delta, rvertices[k].pos[VX] - src->origin[VX],
-                           rvertices[k].pos[VY] - src->origin[VY]);
+            V2d_Set(delta, hedge->HE_v1origin[VX] - src->origin[VX],
+                           hedge->HE_v1origin[VY] - src->origin[VY]);
             len = V2d_Length(delta);
-
-            if(k == 0 || len < distance)
+            if(len < distance)
                 distance = len;
-        }
+
+        } while((hedge = hedge->next) != bspLeaf->hedge);
+
         if(distance < 1)
             distance = 1;
 
         // Estimate the effect on this surface.
-        dot = SB_Dot(src, point, normal);
-        if(dot <= 0)
-            continue;
+        dot = SB_Dot(src, point, plane->PS_normal);
+        if(dot <= 0) continue;
 
         intensity = /*dot * */ src->intensity / distance;
 
         // Is the source is too weak, ignore it entirely.
-        if(intensity < biasIgnoreLimit)
-            continue;
+        if(intensity < biasIgnoreLimit) continue;
 
         SB_AddAffected(&aff, i, intensity);
     }
@@ -911,36 +933,45 @@ static boolean SB_CheckColorOverride(biasaffection_t *affected)
 }
 #endif
 
-/**
- * Surface can be a either a wall or a plane (ceiling or a floor).
- *
- * @param colors        Array of colors to be written to.
- * @param bsuf          Bias data for this surface.
- * @param vertices      Array of vertices to be lit.
- * @param numVertices   Number of vertices (in the array) to be lit.
- * @param normal        Surface normal.
- * @param sectorLightLevel Sector light level.
- * @param mapObject     Ptr to either a HEdge or BspLeaf.
- * @param elmIdx        Used with BspLeafs to select a specific plane.
- * @param isHEdge       @c true, if @a mapObject is a HEdge ELSE a BspLeaf.
- */
-void SB_RendPoly(struct ColorRawf_s* rcolors, biassurface_t* bsuf,
-                 const struct rvertex_s* rvertices,
-                 size_t numVertices, const vectorcompf_t* normal,
-                 float sectorLightLevel,
-                 void* mapObject, uint elmIdx, boolean isHEdge)
+void SB_LightVertices(struct ColorRawf_s* rcolors,
+    const struct rvertex_s* rvertices, size_t numVertices,
+    float sectorLightLevel, void* mapObject, uint subelementIndex)
 {
-    uint                i;
-    boolean             forced;
+    int surfaceType = DMU_GetType(mapObject);
+    biassurface_t* bsuf;
+    float const* normal;
+//    boolean colorOverride;
 
-    // Apply sectorlight bias.  Note: Distance darkening is not used
-    // with bias lights.
+    switch(surfaceType)
+    {
+    case DMU_HEDGE: {
+        HEdge* hedge = (HEdge*)mapObject;
+        assert(VALID_SIDEDEFSECTION(subelementIndex));
+        assert(HEDGE_SIDEDEF(hedge));
+
+        bsuf = hedge->bsuf[subelementIndex];
+        normal = HEDGE_SIDEDEF(hedge)->SW_surfacenormal(subelementIndex);
+        break; }
+
+    case DMU_BSPLEAF: {
+        BspLeaf* bspLeaf = (BspLeaf*)mapObject;
+        assert(subelementIndex < bspLeaf->sector->planeCount);
+
+        bsuf = bspLeaf->bsuf[subelementIndex];
+        normal = bspLeaf->sector->SP_planenormal(subelementIndex);
+        break; }
+
+    default:
+        Con_Error("SB_LightVertices: Internal error, invalid/unknown DMU type %i (%s) for object %p.",
+                  (int)DMU_GetType(mapObject), DMU_Str(DMU_GetType(mapObject)), (void*)mapObject);
+        exit(1); // Unreachable.
+    }
+
+    // Apply sectorlight bias.
+    /// @note Distance darkening is not applied with bias lighting.
     if(sectorLightLevel > biasMin && biasMax > biasMin)
     {
-        biasAmount = (sectorLightLevel - biasMin) / (biasMax - biasMin);
-
-        if(biasAmount > 1)
-            biasAmount = 1;
+        biasAmount = MIN_OF(1, (sectorLightLevel - biasMin) / (biasMax - biasMin));
     }
     else
     {
@@ -951,35 +982,21 @@ void SB_RendPoly(struct ColorRawf_s* rcolors, biassurface_t* bsuf,
     memset(&trackApplied, 0, sizeof(trackApplied));
 
     // Has any of the old affected lights changed?
-    forced = false;
-
     if(doUpdateAffected)
     {
-        /**
-         * @todo This could be enhanced so that only the lights on the
-         * right side of the surface are taken into consideration.
-         */
-        if(isHEdge)
+        if(surfaceType == DMU_HEDGE)
         {
-            HEdge* hedge = (HEdge*) mapObject;
-
-            updateAffected(bsuf, hedge->HE_v1origin, hedge->HE_v2origin, normal);
+            updateAffectedHEdge((HEdge*)mapObject, (SideDefSection)subelementIndex);
         }
-        else
+        else //DMU_BSPLEAF
         {
-            BspLeaf* bspLeaf = (BspLeaf*) mapObject;
-            vec3d_t point;
-
-            V3d_Set(point, bspLeaf->midPoint[VX], bspLeaf->midPoint[VY],
-                           bspLeaf->sector->planes[elmIdx]->height);
-
-            updateAffected2(bsuf, rvertices, numVertices, point, normal);
+            updateAffectedBspLeaf((BspLeaf*)mapObject, subelementIndex);
         }
     }
 
 /*#if _DEBUG
     // Assign primary colors rather than the real values.
-    if(isHEdge)
+    if(surfaceType == DMU_HEDGE)
     {
         rcolors[0].rgba[CR] = 1; rcolors[0].rgba[CG] = 0; rcolors[0].rgba[CB] = 0; rcolors[0].rgba[CA] = 1;
         rcolors[1].rgba[CR] = 0; rcolors[1].rgba[CG] = 1; rcolors[1].rgba[CB] = 0; rcolors[1].rgba[CA] = 1;
@@ -990,6 +1007,7 @@ void SB_RendPoly(struct ColorRawf_s* rcolors, biassurface_t* bsuf,
 #endif*/
     {
         vec3d_t point;
+        uint i;
         for(i = 0; i < numVertices; ++i)
         {
             V3d_Copyf(point, rvertices[i].pos);

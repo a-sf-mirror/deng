@@ -723,6 +723,101 @@ static float getSnapshots(const materialsnapshot_t** msA,
     return interPos;
 }
 
+static void buildWallSectionColors(ColorRawf* rcolors, uint numVertices, rvertex_t* rvertices,
+    const float* sectorLightColor, float sectorLightLevel, float surfaceLightLevelDL, float surfaceLightLevelDR,
+    const float* surfaceColor, const float* surfaceColor2, float glowing, float alpha,
+    void* mapObject, uint elmIdx, boolean isWall)
+{
+    if(levelFullBright || !(glowing < 1))
+    {
+        // Uniform colour. Apply to all vertices.
+        Rend_VertexColorsGlow(rcolors, numVertices, sectorLightLevel + (levelFullBright? 1 : glowing));
+    }
+    else
+    {
+        // Non-uniform color.
+        if(useBias)
+        {
+            // Do BIAS lighting for this poly.
+            SB_LightVertices(rcolors, rvertices, numVertices, sectorLightLevel, mapObject, elmIdx);
+            if(glowing > 0)
+            {
+                uint i;
+                for(i = 0; i < numVertices; ++i)
+                {
+                    rcolors[i].rgba[CR] = MINMAX_OF(0, rcolors[i].rgba[CR] + glowing, 1);
+                    rcolors[i].rgba[CG] = MINMAX_OF(0, rcolors[i].rgba[CG] + glowing, 1);
+                    rcolors[i].rgba[CB] = MINMAX_OF(0, rcolors[i].rgba[CB] + glowing, 1);
+                }
+            }
+        }
+        else
+        {
+            float llL = MINMAX_OF(0, sectorLightLevel + surfaceLightLevelDL + glowing, 1);
+            float llR = MINMAX_OF(0, sectorLightLevel + surfaceLightLevelDR + glowing, 1);
+
+            // Calculate the color for each vertex, blended with plane color?
+            if(surfaceColor[0] < 1 || surfaceColor[1] < 1 || surfaceColor[2] < 1)
+            {
+                float vColor[4];
+
+                // Blend sector light+color+surfacecolor
+                vColor[CR] = surfaceColor[CR] * sectorLightColor[CR];
+                vColor[CG] = surfaceColor[CG] * sectorLightColor[CG];
+                vColor[CB] = surfaceColor[CB] * sectorLightColor[CB];
+                vColor[CA] = 1;
+
+                if(isWall && llL != llR)
+                {
+                    lightVertex(&rcolors[0], &rvertices[0], llL, vColor);
+                    lightVertex(&rcolors[1], &rvertices[1], llL, vColor);
+                    lightVertex(&rcolors[2], &rvertices[2], llR, vColor);
+                    lightVertex(&rcolors[3], &rvertices[3], llR, vColor);
+                }
+                else
+                {
+                    lightVertices(numVertices, rcolors, rvertices, llL, vColor);
+                }
+            }
+            else
+            {
+                // Use sector light+color only.
+                if(isWall && llL != llR)
+                {
+                    lightVertex(&rcolors[0], &rvertices[0], llL, sectorLightColor);
+                    lightVertex(&rcolors[1], &rvertices[1], llL, sectorLightColor);
+                    lightVertex(&rcolors[2], &rvertices[2], llR, sectorLightColor);
+                    lightVertex(&rcolors[3], &rvertices[3], llR, sectorLightColor);
+                }
+                else
+                {
+                    lightVertices(numVertices, rcolors, rvertices, llL, sectorLightColor);
+                }
+            }
+
+            // Bottom color (if different from top)?
+            if(isWall && surfaceColor2)
+            {
+                float vColor[4];
+
+                // Blend sector light+color+surfacecolor
+                vColor[CR] = surfaceColor2[CR] * sectorLightColor[CR];
+                vColor[CG] = surfaceColor2[CG] * sectorLightColor[CG];
+                vColor[CB] = surfaceColor2[CB] * sectorLightColor[CB];
+                vColor[CA] = 1;
+
+                lightVertex(&rcolors[0], &rvertices[0], llL, vColor);
+                lightVertex(&rcolors[2], &rvertices[2], llR, vColor);
+            }
+        }
+
+        Rend_VertexColorsApplyTorchLight(rcolors, rvertices, numVertices);
+    }
+
+    // Apply uniform alpha.
+    Rend_VertexColorsAlpha(rcolors, numVertices, alpha);
+}
+
 typedef struct {
     boolean         isWall;
     int             flags; /// @see rendpolyFlags
@@ -730,7 +825,6 @@ typedef struct {
     pvec3d_t        texTL, texBR;
     const float*    texOffset;
     const float*    texScale;
-    const float*    normal; // Surface normal.
     float           alpha;
     float           sectorLightLevel;
     float           surfaceLightLevelDL;
@@ -746,7 +840,6 @@ typedef struct {
 // For bias:
     void*           mapObject;
     uint            elmIdx;
-    biassurface_t*  bsuf;
 
 // Wall only:
     struct {
@@ -913,87 +1006,10 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
     // Light this polygon.
     if(!skyMaskedMaterial)
     {
-        if(levelFullBright || !(glowing < 1))
-        {   // Uniform colour. Apply to all vertices.
-            Rend_VertexColorsGlow(rcolors, numVertices, p->sectorLightLevel + (levelFullBright? 1 : glowing));
-        }
-        else
-        {   // Non-uniform color.
-            if(useBias && p->bsuf)
-            {   // Do BIAS lighting for this poly.
-                SB_RendPoly(rcolors, p->bsuf, rvertices, numVertices, p->normal, p->sectorLightLevel, p->mapObject, p->elmIdx, p->isWall);
-                if(glowing > 0)
-                {
-                    uint i;
-                    for(i = 0; i < numVertices; ++i)
-                    {
-                        rcolors[i].rgba[CR] = MINMAX_OF(0, rcolors[i].rgba[CR] + glowing, 1);
-                        rcolors[i].rgba[CG] = MINMAX_OF(0, rcolors[i].rgba[CG] + glowing, 1);
-                        rcolors[i].rgba[CB] = MINMAX_OF(0, rcolors[i].rgba[CB] + glowing, 1);
-                    }
-                }
-            }
-            else
-            {
-                float llL = MINMAX_OF(0, p->sectorLightLevel + p->surfaceLightLevelDL + glowing, 1);
-                float llR = MINMAX_OF(0, p->sectorLightLevel + p->surfaceLightLevelDR + glowing, 1);
-
-                // Calculate the color for each vertex, blended with plane color?
-                if(p->surfaceColor[0] < 1 || p->surfaceColor[1] < 1 || p->surfaceColor[2] < 1)
-                {
-                    float vColor[4];
-
-                    // Blend sector light+color+surfacecolor
-                    vColor[CR] = p->surfaceColor[CR] * p->sectorLightColor[CR];
-                    vColor[CG] = p->surfaceColor[CG] * p->sectorLightColor[CG];
-                    vColor[CB] = p->surfaceColor[CB] * p->sectorLightColor[CB];
-                    vColor[CA] = 1;
-
-                    if(p->isWall && llL != llR)
-                    {
-                        lightVertex(&rcolors[0], &rvertices[0], llL, vColor);
-                        lightVertex(&rcolors[1], &rvertices[1], llL, vColor);
-                        lightVertex(&rcolors[2], &rvertices[2], llR, vColor);
-                        lightVertex(&rcolors[3], &rvertices[3], llR, vColor);
-                    }
-                    else
-                    {
-                        lightVertices(numVertices, rcolors, rvertices, llL, vColor);
-                    }
-                }
-                else
-                {   // Use sector light+color only.
-                    if(p->isWall && llL != llR)
-                    {
-                        lightVertex(&rcolors[0], &rvertices[0], llL, p->sectorLightColor);
-                        lightVertex(&rcolors[1], &rvertices[1], llL, p->sectorLightColor);
-                        lightVertex(&rcolors[2], &rvertices[2], llR, p->sectorLightColor);
-                        lightVertex(&rcolors[3], &rvertices[3], llR, p->sectorLightColor);
-                    }
-                    else
-                    {
-                        lightVertices(numVertices, rcolors, rvertices, llL, p->sectorLightColor);
-                    }
-                }
-
-                // Bottom color (if different from top)?
-                if(p->isWall && p->wall.surfaceColor2)
-                {
-                    float vColor[4];
-
-                    // Blend sector light+color+surfacecolor
-                    vColor[CR] = p->wall.surfaceColor2[CR] * p->sectorLightColor[CR];
-                    vColor[CG] = p->wall.surfaceColor2[CG] * p->sectorLightColor[CG];
-                    vColor[CB] = p->wall.surfaceColor2[CB] * p->sectorLightColor[CB];
-                    vColor[CA] = 1;
-
-                    lightVertex(&rcolors[0], &rvertices[0], llL, vColor);
-                    lightVertex(&rcolors[2], &rvertices[2], llR, vColor);
-                }
-            }
-
-            Rend_VertexColorsApplyTorchLight(rcolors, rvertices, numVertices);
-        }
+        buildWallSectionColors(rcolors, numVertices, rvertices, p->sectorLightColor,
+                               p->sectorLightLevel, p->surfaceLightLevelDL, p->surfaceLightLevelDR,
+                               p->surfaceColor, p->wall.surfaceColor2, glowing, p->alpha,
+                               p->mapObject, p->elmIdx, p->isWall);
 
         if(shinyRTU && !drawAsVisSprite)
         {
@@ -1008,9 +1024,6 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
                 shinyColors[i].rgba[CA] = shinyRTU->opacity;
             }
         }
-
-        // Apply uniform alpha.
-        Rend_VertexColorsAlpha(rcolors, numVertices, p->alpha);
     }
 
     if(useLights || useShadows)
@@ -1252,14 +1265,14 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
         !(p->alpha < 1 || !msA->isOpaque || p->blendMode > 0));
 }
 
-static boolean doRenderHEdge(HEdge* hedge, const pvec3f_t normal,
+static boolean doRenderHEdge(HEdge* hedge,
     float alpha, float lightLevel, float lightLevelDL, float lightLevelDR,
     const float* lightColor, uint lightListIdx, uint shadowListIdx,
     walldivnode_t* bottomLeft, walldivnode_t* topLeft, walldivnode_t* bottomRight, walldivnode_t* topRight,
     boolean skyMask, boolean addFakeRadio, vec3d_t texTL, vec3d_t texBR,
     float const texOffset[2], float const texScale[2],
     blendmode_t blendMode, const float* color, const float* color2,
-    biassurface_t* bsuf, uint elmIdx /*tmp*/,
+    SideDefSection section,
     const materialsnapshot_t* msA, float inter, const materialsnapshot_t* msB,
     boolean isTwosidedMiddle)
 {
@@ -1278,9 +1291,7 @@ static boolean doRenderHEdge(HEdge* hedge, const pvec3f_t normal,
     params.forceOpaque = (alpha < 0? true : false);
     params.alpha = (alpha < 0? 1 : alpha);
     params.mapObject = hedge;
-    params.elmIdx = elmIdx;
-    params.bsuf = bsuf;
-    params.normal = normal;
+    params.elmIdx = (uint)section;
     params.texTL = texTL;
     params.texBR = texBR;
     params.sectorLightLevel = lightLevel;
@@ -1433,8 +1444,6 @@ static void renderPlane(BspLeaf* bspLeaf, planetype_t type, coord_t height,
     params.isWall = false;
     params.mapObject = bspLeaf;
     params.elmIdx = elmIdx;
-    params.bsuf = bsuf;
-    params.normal = normal;
     params.texTL = texTL;
     params.texBR = texBR;
     params.sectorLightLevel = sec->lightLevel;
@@ -1771,14 +1780,14 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section, int flags,
         deltaL += (hedge->offset / hedge->lineDef->length) * diff;
 
         opaque = doRenderHEdge(hedge,
-                               surface->normal, ((flags & RHF_FORCE_OPAQUE)? -1 : alpha),
+                               ((flags & RHF_FORCE_OPAQUE)? -1 : alpha),
                                lightLevel, deltaL, deltaR, lightColor,
                                lightListIdx, shadowListIdx,
                                bottomLeft, topLeft, bottomRight, topRight,
                                !!(rpFlags & RPF_SKYMASK), !!(flags & RHF_ADD_RADIO),
                                texTL, texBR, matOffset, texScale, blendMode,
                                color, color2,
-                               hedge->bsuf[section], (uint) section,
+                               section,
                                msA, inter, msB,
                                (section == SS_MIDDLE && isTwoSided));
         }

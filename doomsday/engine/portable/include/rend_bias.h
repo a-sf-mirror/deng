@@ -96,12 +96,24 @@ void            SB_DestroySurface(struct biassurface_s* bsuf);
 void            SB_SurfaceMoved(struct biassurface_s* bsuf);
 
 void            SB_BeginFrame(void);
-void            SB_RendPoly(struct ColorRawf_s* rcolors,
-                            struct biassurface_s* bsuf,
-                            const struct rvertex_s* rvertices,
-                            size_t numVertices, const vectorcompf_t* normal,
-                            float sectorLightLevel,
-                            void* mapObject, uint elmIdx, boolean isHEdge);
+
+/**
+ * Calculate color information for a geometry produced from a map surface.
+ *
+ * @param colors        Array of colors to be written to.
+ * @param vertices      Array of vertices to be lit.
+ * @param numVertices   Number of vertices (in the array) to be lit.
+ * @param sectorLightLevel Sector light level.
+ * @param mapObject     Pointer to either a HEdge or a BspLeaf.
+ * @param elmIdx        Index to the surface subelement:
+ *                          Wall section id when @a mapObject is a HEdge.
+ *                      OR
+ *                          Plane id when @a mapObject is a BspLeaf.
+ */
+void SB_LightVertices(struct ColorRawf_s* colors,
+    const struct rvertex_s* vertices, size_t numVertices,
+    float sectorLightLevel, void* mapObject, uint subelementIndex);
+
 void            SB_EndFrame(void);
 
 int             SB_NewSourceAt(coord_t x, coord_t y, coord_t z, float size, float minLight,
