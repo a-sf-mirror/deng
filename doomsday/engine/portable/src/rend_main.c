@@ -2850,7 +2850,7 @@ static material_t* chooseHEdgeMaterial(HEdge* hedge, SideDefSection section)
 
 static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
     coord_t v1Z, coord_t v2Z, float texS, float texT,
-    rvertex_t* v1, rvertex_t* v2, rtexcoord_t* t1, rtexcoord_t* t2)
+    rvertex_t* v1, rvertex_t* v2, rtexcoord_t* t1, rtexcoord_t* t2, rtexcoord_t* tb1, rtexcoord_t* tb2)
 {
     if(v1)
     {
@@ -2864,6 +2864,8 @@ static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
         V2f_Copyd(v2->pos, vXY);
         v2->pos[VZ] = v2Z;
     }
+
+    // Primary texture coordinates.
     if(t1)
     {
         t1->st[0] = texS;
@@ -2873,6 +2875,18 @@ static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
     {
         t2->st[0] = texS;
         t2->st[1] = texT;
+    }
+
+    // Blend primary texture coordinates.
+    if(tb1)
+    {
+        tb1->st[0] = texS;
+        tb1->st[1] = texT + (v2Z - v1Z);
+    }
+    if(tb2)
+    {
+        tb2->st[0] = texS;
+        tb2->st[1] = texT;
     }
 }
 
@@ -2884,7 +2898,7 @@ static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
  */
 static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
     HEdge* endNode, boolean antiClockwise, SideDefSection section, float matOffset[2],
-    rvertex_t** verts, uint* vertsSize, rtexcoord_t** coords)
+    rvertex_t** verts, uint* vertsSize, rtexcoord_t** coords, rtexcoord_t** interCoords)
 {
     HEdge* node;
     float texS;
@@ -2916,6 +2930,10 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
     if(coords)
     {
         *coords = R_AllocRendTexCoords(*vertsSize);
+    }
+    if(interCoords)
+    {
+        *interCoords = R_AllocRendTexCoords(*vertsSize);
     }
 
     node = startNode;
@@ -2951,10 +2969,12 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
             rvertex_t* v2 = &(*verts)[n + antiClockwise^1];
             rtexcoord_t* t1 = coords? &(*coords)[n + antiClockwise^0] : NULL;
             rtexcoord_t* t2 = coords? &(*coords)[n + antiClockwise^1] : NULL;
+            rtexcoord_t* tb1 = interCoords? &(*interCoords)[n + antiClockwise^0] : NULL;
+            rtexcoord_t* tb2 = interCoords? &(*interCoords)[n + antiClockwise^1] : NULL;
 
             Rend_BuildBspLeafWallStripEdge(node->HE_v1origin,
                                            WallDivNode_Height(bottom), WallDivNode_Height(top), texS, matOffset[1],
-                                           v1, v2, t1, t2);
+                                           v1, v2, t1, t2, tb1, tb2);
 
             if(coords)
             {
@@ -2970,10 +2990,12 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
             rvertex_t* v2 = &(*verts)[n + antiClockwise^1];
             rtexcoord_t* t1 = coords? &(*coords)[n + antiClockwise^0] : NULL;
             rtexcoord_t* t2 = coords? &(*coords)[n + antiClockwise^1] : NULL;
+            rtexcoord_t* tb1 = interCoords? &(*interCoords)[n + antiClockwise^0] : NULL;
+            rtexcoord_t* tb2 = interCoords? &(*interCoords)[n + antiClockwise^1] : NULL;
 
             Rend_BuildBspLeafWallStripEdge((antiClockwise? node->prev : node->next)->HE_v1origin,
                                            WallDivNode_Height(bottom), WallDivNode_Height(top), texS, matOffset[1],
-                                           v1, v2, t1, t2);
+                                           v1, v2, t1, t2, tb1, tb2);
 
             if(coords)
             {
@@ -3013,25 +3035,32 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
 
 //#if 0
     const int rendPolyFlags = RPF_DEFAULT;// | (!devRendSkyMode? RPF_SKYMASK : 0);
-    rtexcoord_t* coords = 0;
+    rtexcoord_t* coords = 0, *interCoords = 0;
     rvertex_t* verts;
     uint vertsSize;
+    boolean blended = false;
+    const materialsnapshot_t* msA = 0, *msB = 0;
+    float inter = 0;
+
+    // Smooth Texture Animation?
+    if(smoothTexAnim)
+        blended = true;
+
+    inter = getSnapshots(&msA, blended? &msB : NULL, material);
 
     Rend_BuildBspLeafWallStripGeometry(leaf, startNode, endNode, antiClockwise, section, matOffset,
-                                       &verts, &vertsSize, &coords);
+                                       &verts, &vertsSize, &coords, msB? &interCoords : 0);
 
     {
-        // Map RTU configuration from prepared MaterialSnapshot(s).
-        const materialvariantspecification_t* spec = mapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
-        const materialsnapshot_t* ms = Materials_Prepare(material, spec, true);
-
+        // Map RTU configuration from prepared MaterialSnapshot(s).       
         RL_LoadDefaultRtus();
-        mapRTUStateFromMaterialSnapshots(ms, 0, NULL, NULL, NULL);
-        RL_AddPolyWithCoords(PT_TRIANGLE_STRIP, rendPolyFlags, vertsSize, verts, NULL, coords, NULL);
+        mapRTUStateFromMaterialSnapshots(msA, inter, msB, NULL, NULL);
+        RL_AddPolyWithCoords(PT_TRIANGLE_STRIP, rendPolyFlags, vertsSize, verts, NULL, coords, msB? interCoords : 0);
     }
 
     R_FreeRendVertices(verts);
     R_FreeRendTexCoords(coords);
+    R_FreeRendTexCoords(interCoords);
 //#endif
 }
 
