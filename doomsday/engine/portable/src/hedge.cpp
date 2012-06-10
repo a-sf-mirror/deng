@@ -52,6 +52,13 @@ void HEdge_Delete(HEdge* hedge)
     Z_Free(hedge);
 }
 
+boolean HEdge_HasDrawableSurfaces(HEdge* hedge)
+{
+    assert(hedge);
+    return hedge->lineDef /* "mini-hedges" have no linedefs */
+           && HEDGE_SIDEDEF(hedge) /* "windows" have no sidedef */;
+}
+
 int HEdge_SetProperty(HEdge* hedge, const setargs_t* args)
 {
     DENG_UNUSED(hedge);

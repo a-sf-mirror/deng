@@ -36,6 +36,8 @@ HEdge* HEdge_NewCopy(const HEdge* other);
 
 void HEdge_Delete(HEdge* hedge);
 
+boolean HEdge_HasDrawableSurfaces(HEdge* hedge);
+
 /**
  * Get a property value, selected by DMU_* name.
  *

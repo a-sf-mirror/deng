@@ -1275,7 +1275,10 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
     // Write multiple polys depending on rend params.
     if(p->isWall && (p->wall.left.divCount > 2 || p->wall.right.divCount > 2))
     {
-        float bL, tL, bR, tR;
+        const float bL = rvertices[0].pos[VZ];
+        const float tL = rvertices[1].pos[VZ];
+        const float bR = rvertices[2].pos[VZ];
+        const float tR = rvertices[3].pos[VZ];
         rvertex_t quadVerts[4];
         ColorRawf quadColors[4];
         rtexcoord_t quadCoords[4];
@@ -1292,11 +1295,6 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
         {
             memcpy(quadColors, rcolors, sizeof(ColorRawf) * 4);
         }
-
-        bL = quadVerts[0].pos[VZ];
-        tL = quadVerts[1].pos[VZ];
-        bR = quadVerts[2].pos[VZ];
-        tR = quadVerts[3].pos[VZ];
 
         R_DivVerts(rvertices, quadVerts[0].pos, p->wall.left.firstDiv, p->wall.left.divCount, quadVerts[2].pos, p->wall.right.firstDiv, p->wall.right.divCount);
         R_DivTexCoords(primaryCoords, p->wall.left.firstDiv, p->wall.left.divCount, p->wall.right.firstDiv, p->wall.right.divCount, quadCoords, bL, tL, bR, tR);
@@ -1921,14 +1919,14 @@ static void reportLineDefDrawn(LineDef* line)
 /**
  * @param hedge  HEdge to draw wall surfaces for.
  */
-static boolean Rend_RenderHEdge(HEdge* hedge)
+static void Rend_RenderPolyobjHEdge(HEdge* hedge)
 {
     BspLeaf* leaf = currentBspLeaf;
     Sector* frontSec = leaf->sector;
     Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
     SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
 
-    if(!frontSideDef) return false;
+    if(!frontSideDef) return;
 
     // Only a "middle" section.
     if(frontSideDef->SW_middleinflags & SUIF_PVIS)
@@ -1937,38 +1935,39 @@ static boolean Rend_RenderHEdge(HEdge* hedge)
         float matOffset[2];
         boolean opaque = false;
 
-        if(R_WallSectionEdges(hedge, SS_MIDDLE, frontSec, backSec,
-                              &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset))
-        {
-            matOffset[0] += (float)(hedge->offset);
+        if(!R_WallSectionEdges(hedge, SS_MIDDLE, frontSec, backSec,
+                               &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset)) return;
 
-            Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
-            opaque = rendHEdgeSection(hedge, SS_MIDDLE, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
-                                      bottomLeft, topLeft, bottomRight, topRight,
-                                      frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
+        matOffset[0] += (float)(hedge->offset);
+        Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
+        opaque = rendHEdgeSection(hedge, SS_MIDDLE, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
+                                  bottomLeft, topLeft, bottomRight, topRight,
+                                  frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
+
+        // When the viewer is in the void do not range-occlude.
+        if(opaque && !P_IsInVoid(viewPlayer))
+        {
+            C_AddRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin);
         }
 
         reportLineDefDrawn(hedge->lineDef);
-        return opaque;
     }
-
-    return false;
 }
 
 /**
  * Render wall sections for a HEdge belonging to a two-sided LineDef.
  */
-static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
+static void Rend_RenderHEdgeTwosided(HEdge* hedge)
 {
     BspLeaf* leaf = currentBspLeaf;
     Sector* frontSec, *backSec;
     SideDef* frontSide, *backSide;
     Plane* ffloor, *fceil, *bfloor, *bceil;
     LineDef* line;
-    int solidSeg = false;
+    int opaque = false;
 
     line = hedge->lineDef;
-    if(!line) return false;
+    if(!line) return;
 
     frontSide = HEDGE_SIDEDEF(hedge);
     backSide = HEDGE_SIDEDEF(hedge->twin);
@@ -1980,7 +1979,7 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
     if(backSec == frontSec &&
        !frontSide->SW_topmaterial && !frontSide->SW_bottommaterial &&
        !frontSide->SW_middlematerial)
-       return false; // Ugh... an obvious wall hedge hack. Best take no chances...
+       return; // Ugh... an obvious wall hedge hack. Best take no chances...
 
     ffloor = leaf->sector->SP_floor;
     fceil  = leaf->sector->SP_ceil;
@@ -2011,13 +2010,13 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
 
             matOffset[0] += (float)(hedge->offset);
             Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
-            solidSeg = rendHEdgeSection(hedge, SS_MIDDLE, rhFlags,
-                                        bottomLeft, topLeft, bottomRight, topRight,
-                                        frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
-            if(solidSeg)
+            opaque = rendHEdgeSection(hedge, SS_MIDDLE, rhFlags,
+                                      bottomLeft, topLeft, bottomRight, topRight,
+                                      frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
+            if(opaque)
             {
-                solidSeg = LineDef_MiddleMaterialCoversOpening(hedge->lineDef, hedge->side,
-                                                               false/*do not ignore material alpha*/);
+                opaque = LineDef_MiddleMaterialCoversOpening(hedge->lineDef, hedge->side,
+                                                             false/*do not ignore material alpha*/);
             }
         }
     }
@@ -2057,14 +2056,10 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
     }
 
     // Can we make this a solid segment in the clipper?
-    if(solidSeg == -1)
-        return false; // NEVER (we have a hole we couldn't fix).
+    if(line->L_frontsector == line->L_backsector)
+       return; // NEVER.
 
-    if(line->L_frontsidedef && line->L_backsidedef &&
-       line->L_frontsector == line->L_backsector)
-       return false;
-
-    if(!solidSeg) // We'll have to determine whether we can...
+    if(!opaque) // We'll have to determine whether we can...
     {
         if(backSec == frontSec)
         {
@@ -2079,19 +2074,19 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
             // A closed gap?
             if(FEQUAL(fceil->visHeight, bfloor->visHeight))
             {
-                solidSeg = (bceil->visHeight <= bfloor->visHeight) ||
-                           !(Surface_IsSkyMasked(&fceil->surface) &&
-                             Surface_IsSkyMasked(&bceil->surface));
+                opaque = (bceil->visHeight <= bfloor->visHeight) ||
+                          !(Surface_IsSkyMasked(&fceil->surface) &&
+                            Surface_IsSkyMasked(&bceil->surface));
             }
             else if(FEQUAL(ffloor->visHeight, bceil->visHeight))
             {
-                solidSeg = (bfloor->visHeight >= bceil->visHeight) ||
-                           !(Surface_IsSkyMasked(&ffloor->surface) &&
-                             Surface_IsSkyMasked(&bfloor->surface));
+                opaque = (bfloor->visHeight >= bceil->visHeight) ||
+                          !(Surface_IsSkyMasked(&ffloor->surface) &&
+                            Surface_IsSkyMasked(&bfloor->surface));
             }
             else
             {
-                solidSeg = true;
+                opaque = true;
             }
         }
         /// @todo Is this still necessary?
@@ -2101,17 +2096,45 @@ static boolean Rend_RenderHEdgeTwosided(HEdge* hedge)
                 (frontSide->SW_bottommaterial)))
         {
             // A zero height back segment
-            solidSeg = true;
+            opaque = true;
         }
     }
 
-    if(solidSeg && !P_IsInVoid(viewPlayer))
-        return true;
-
-    return false;
+    // Mark this half-edge as potentially occluding by the angle clipper.
+    if(opaque)
+    {
+        hedge->frameFlags |= HEDGEINF_OCCLUDE;
+    }
 }
 
-static void Rend_MarkSegsFacingFront(BspLeaf* leaf)
+static void Rend_ClearFrameFlagsForBspLeaf(BspLeaf* leaf)
+{
+    if(!leaf) return;
+
+    if(leaf->hedge)
+    {
+        HEdge* hedge = leaf->hedge;
+        do
+        {
+            hedge->frameFlags &= ~(HEDGEINF_FACINGFRONT|HEDGEINF_OCCLUDE);
+        } while((hedge = hedge->next) != leaf->hedge);
+    }
+
+    if(leaf->polyObj)
+    {
+        LineDef** lineIt = leaf->polyObj->lines;
+        uint i;
+        for(i = 0; i < leaf->polyObj->lineCount; ++i, lineIt++)
+        {
+            LineDef* line = *lineIt;
+            HEdge* hedge = line->L_frontside.hedgeLeft;
+
+            hedge->frameFlags &= ~(HEDGEINF_FACINGFRONT|HEDGEINF_OCCLUDE);
+        }
+    }
+}
+
+static void Rend_MarkHEdgesFacingFront(BspLeaf* leaf)
 {
     if(leaf->hedge)
     {
@@ -2124,8 +2147,6 @@ static void Rend_MarkSegsFacingFront(BspLeaf* leaf)
                 // Which way should it be facing?
                 if(!(viewFacingDot(hedge->HE_v1origin, hedge->HE_v2origin) < 0))
                     hedge->frameFlags |= HEDGEINF_FACINGFRONT;
-                else
-                    hedge->frameFlags &= ~HEDGEINF_FACINGFRONT;
 
                 Rend_MarkSideDefSectionsPVisible(hedge);
             }
@@ -2134,19 +2155,16 @@ static void Rend_MarkSegsFacingFront(BspLeaf* leaf)
 
     if(leaf->polyObj)
     {
-        LineDef* line;
-        HEdge* hedge;
+        LineDef** lineIt = leaf->polyObj->lines;
         uint i;
-        for(i = 0; i < leaf->polyObj->lineCount; ++i)
+        for(i = 0; i < leaf->polyObj->lineCount; ++i, lineIt++)
         {
-            line = leaf->polyObj->lines[i];
-            hedge = line->L_frontside.hedgeLeft;
+            LineDef* line = *lineIt;
+            HEdge* hedge = line->L_frontside.hedgeLeft;
 
             // Which way should it be facing?
             if(!(viewFacingDot(hedge->HE_v1origin, hedge->HE_v2origin) < 0))
                 hedge->frameFlags |= HEDGEINF_FACINGFRONT;
-            else
-                hedge->frameFlags &= ~HEDGEINF_FACINGFRONT;
 
             Rend_MarkSideDefSectionsPVisible(hedge);
         }
@@ -2794,40 +2812,383 @@ static void Rend_RenderSkySurfaces(int skyCap)
     }
 }
 
-static void Rend_RenderWalls(void)
+static __inline boolean isOneSided(HEdge* hedge, Sector* frontSec, Sector* backSec)
+{
+    return !frontSec || !backSec || (hedge->twin && !HEDGE_SIDEDEF(hedge->twin)) /* front side of a "window" */;
+}
+
+static material_t* chooseHEdgeMaterial(HEdge* hedge, SideDefSection section)
+{
+    SideDef* frontSide = HEDGE_SIDEDEF(hedge);
+    Surface* surface = &frontSide->SW_surface(section);
+
+    // Determine which Material to use.
+    if(devRendSkyMode && HEDGE_BACK_SECTOR(hedge) &&
+       ((section == SS_BOTTOM && Surface_IsSkyMasked(&hedge->sector->SP_floorsurface) &&
+                                 Surface_IsSkyMasked(&HEDGE_BACK_SECTOR(hedge)->SP_floorsurface)) ||
+        (section == SS_TOP    && Surface_IsSkyMasked(&hedge->sector->SP_ceilsurface) &&
+                                 Surface_IsSkyMasked(&HEDGE_BACK_SECTOR(hedge)->SP_ceilsurface))))
+    {
+        // Geometry not normally rendered however we do so in dev sky mode.
+        return hedge->sector->SP_planematerial(section == SS_TOP? PLN_CEILING : PLN_FLOOR);
+    }
+
+    if(renderTextures == 2)
+    {
+        // Lighting debug mode; render using System:gray.
+        return Materials_ToMaterial(Materials_ResolveUriCString(MN_SYSTEM_NAME":gray"));
+    }
+
+    if(!surface->material || ((surface->inFlags & SUIF_FIX_MISSING_MATERIAL) && devNoTexFix))
+    {
+        // Missing material debug mode; render using System:missing.
+        return Materials_ToMaterial(Materials_ResolveUriCString(MN_SYSTEM_NAME":missing"));
+    }
+
+    return surface->material;
+}
+
+static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
+    coord_t v1Z, coord_t v2Z, float texS, float texT,
+    rvertex_t* v1, rvertex_t* v2, rtexcoord_t* t1, rtexcoord_t* t2)
+{
+    if(v1)
+    {
+        assert(vXY);
+        V2f_Copyd(v1->pos, vXY);
+        v1->pos[VZ] = v1Z;
+    }
+    if(v2)
+    {
+        assert(vXY);
+        V2f_Copyd(v2->pos, vXY);
+        v2->pos[VZ] = v2Z;
+    }
+    if(t1)
+    {
+        t1->st[0] = texS;
+        t1->st[1] = texT + (v2Z - v1Z);
+    }
+    if(t2)
+    {
+        t2->st[0] = texS;
+        t2->st[1] = texT;
+    }
+}
+
+/**
+ * Vertex layout:
+ *   1--3    2--0
+ *   |  | or |  | if antiClockwise
+ *   0--2    3--1
+ */
+static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
+    HEdge* endNode, boolean antiClockwise, SideDefSection section, float matOffset[2],
+    rvertex_t** verts, uint* vertsSize, rtexcoord_t** coords)
+{
+    HEdge* node;
+    float texS;
+    uint n;
+
+    *vertsSize = 0;
+    *verts = 0;
+
+    if(!startNode || !endNode) return;
+
+    // Count verts.
+    if(startNode == endNode)
+    {
+        // Special case: the whole edge loop.
+        *vertsSize += 2 * (leaf->hedgeCount + 1);
+    }
+    else
+    {
+        HEdge* afterEndNode = antiClockwise? endNode->prev : endNode->next;
+        HEdge* node = startNode;
+        do
+        {
+            *vertsSize += 2;
+        } while((node = antiClockwise? node->prev : node->next) != afterEndNode);
+    }
+
+    // Build geometry.
+    *verts = R_AllocRendVertices(*vertsSize);
+    if(coords)
+    {
+        *coords = R_AllocRendTexCoords(*vertsSize);
+    }
+
+    node = startNode;
+    texS = matOffset[0];
+    n = 0;
+    do
+    {
+        HEdge* hedge = (antiClockwise? node->prev : node);
+        Sector* frontSec = leaf->sector;
+        Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
+        walldivnode_t* bottom, *top;
+
+        R_WallSectionEdge(hedge, SS_MIDDLE, 0/*left edge */, frontSec, backSec,
+                          &bottom, &top, NULL);
+
+        assert(WallDivNode_Height(bottom) < WallDivNode_Height(top));
+
+        // kludge: Does not belong here.
+        // Mark this half-edge as potentially occluding by the angle clipper.
+        //if(opaque)
+        {
+            hedge->frameFlags |= HEDGEINF_OCCLUDE;
+        }
+        reportLineDefDrawn(hedge->lineDef);
+        // kludge end.
+
+        texS += (float)(hedge->offset);
+
+        if(n == 0)
+        {
+            // Add the first edge.
+            rvertex_t* v1 = &(*verts)[n + antiClockwise^0];
+            rvertex_t* v2 = &(*verts)[n + antiClockwise^1];
+            rtexcoord_t* t1 = coords? &(*coords)[n + antiClockwise^0] : NULL;
+            rtexcoord_t* t2 = coords? &(*coords)[n + antiClockwise^1] : NULL;
+
+            Rend_BuildBspLeafWallStripEdge(node->HE_v1origin,
+                                           WallDivNode_Height(bottom), WallDivNode_Height(top), texS, matOffset[1],
+                                           v1, v2, t1, t2);
+
+            if(coords)
+            {
+                texS += antiClockwise? -node->prev->length : hedge->length;
+            }
+
+            n += 2;
+        }
+
+        // Add the next edge.
+        {
+            rvertex_t* v1 = &(*verts)[n + antiClockwise^0];
+            rvertex_t* v2 = &(*verts)[n + antiClockwise^1];
+            rtexcoord_t* t1 = coords? &(*coords)[n + antiClockwise^0] : NULL;
+            rtexcoord_t* t2 = coords? &(*coords)[n + antiClockwise^1] : NULL;
+
+            Rend_BuildBspLeafWallStripEdge((antiClockwise? node->prev : node->next)->HE_v1origin,
+                                           WallDivNode_Height(bottom), WallDivNode_Height(top), texS, matOffset[1],
+                                           v1, v2, t1, t2);
+
+            if(coords)
+            {
+                texS += antiClockwise? -hedge->length : hedge->next->length;
+            }
+
+            n += 2;
+        }
+    } while((node = antiClockwise? node->prev : node->next) != endNode);
+}
+
+static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection section,
+    HEdge* startNode, HEdge* endNode, boolean antiClockwise,
+    material_t* material, float matOffset[2])
+{
+    walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
+    boolean opaque = false;
+    HEdge* hedge = startNode;
+    Sector* frontSec = leaf->sector;
+    Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
+
+#if 0
+    matOffset[0] += (float)(hedge->offset);
+    Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
+    opaque = rendHEdgeSection(hedge, SS_MIDDLE, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
+                              bottomLeft, topLeft, bottomRight, topRight,
+                              frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
+
+    // Mark this half-edge as potentially occluding by the angle clipper.
+    if(opaque)
+    {
+        hedge->frameFlags |= HEDGEINF_OCCLUDE;
+    }
+
+    reportLineDefDrawn(hedge->lineDef);
+#endif
+
+//#if 0
+    const int rendPolyFlags = RPF_DEFAULT;// | (!devRendSkyMode? RPF_SKYMASK : 0);
+    rtexcoord_t* coords = 0;
+    rvertex_t* verts;
+    uint vertsSize;
+
+    Rend_BuildBspLeafWallStripGeometry(leaf, startNode, endNode, antiClockwise, section, matOffset,
+                                       &verts, &vertsSize, &coords);
+
+    {
+        // Map RTU configuration from prepared MaterialSnapshot(s).
+        const materialvariantspecification_t* spec = mapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
+        const materialsnapshot_t* ms = Materials_Prepare(material, spec, true);
+
+        RL_LoadDefaultRtus();
+        mapRTUStateFromMaterialSnapshots(ms, 0, NULL, NULL, NULL);
+        RL_AddPolyWithCoords(PT_TRIANGLE_STRIP, rendPolyFlags, vertsSize, verts, NULL, coords, NULL);
+    }
+
+    R_FreeRendVertices(verts);
+    R_FreeRendTexCoords(coords);
+//#endif
+}
+
+static void Rend_RenderWallsOneSided(void)
+{
+    const SideDefSection section = SS_MIDDLE;
+    BspLeaf* leaf = currentBspLeaf;
+    const boolean antiClockwise = false;
+    HEdge* baseNode, *startNode, *node;
+    walldivnode_t* stripBottom, *stripTop;
+    material_t* stripMaterial;
+    float stripMaterialOffset[2];
+
+    if(!leaf || !leaf->hedge) return;
+
+    baseNode = leaf->hedge;
+
+    // We may need to break the loop into multiple strips.
+    startNode = 0;
+    stripBottom = stripTop = 0;
+    stripMaterial = 0;
+    stripMaterialOffset[0] = stripMaterialOffset[1] = 0;
+
+    for(node = baseNode;;)
+    {
+        HEdge* hedge = (antiClockwise? node->prev : node);
+        boolean endStrip = false;
+        boolean beginNewStrip = false;
+
+        if((hedge->frameFlags & HEDGEINF_FACINGFRONT) &&
+           HEdge_HasDrawableSurfaces(hedge) &&
+           isOneSided(hedge, hedge->sector, HEDGE_BACK_SECTOR(hedge)))
+        {
+            Sector* frontSec = leaf->sector;
+            Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
+            SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
+            walldivnode_t* bottom, *top;
+            material_t* material = 0;
+            float matOffset[2];
+
+            // Only a "middle" section.
+            if((frontSideDef->SW_middleinflags & SUIF_PVIS) &&
+               R_WallSectionEdge(hedge, section, 0/*left edge */, frontSec, backSec,
+                                 &bottom, &top, matOffset))
+            {
+                material = chooseHEdgeMaterial(hedge, section);
+
+                if(WallDivNode_Height(bottom) >= WallDivNode_Height(top))
+                {
+                    // End the current strip.
+                    endStrip = true;
+                }
+                /// @todo Also end the strip if the coords are non-contiguous.
+                else if(startNode && (!FEQUAL(WallDivNode_Height(bottom), WallDivNode_Height(stripBottom)) ||
+                                      !FEQUAL(WallDivNode_Height(top),    WallDivNode_Height(stripTop)) ||
+                                      (material != stripMaterial)))
+                {
+                    // End the current strip and start another.
+                    endStrip = true;
+                    beginNewStrip = true;
+                }
+                else if(!startNode)
+                {
+                    // A new strip begins.
+                    startNode = node;
+
+                    stripBottom = bottom;
+                    stripTop = top;
+                    stripMaterial = material;
+                    stripMaterialOffset[0] = matOffset[0];
+                    stripMaterialOffset[1] = matOffset[1];
+                }
+            }
+            else
+            {
+                // End the current strip.
+                endStrip = true;
+            }
+        }
+        else
+        {
+            // End the current strip.
+            endStrip = true;
+        }
+
+        if(endStrip && startNode)
+        {
+            // We have complete strip; build and write it.
+            Rend_WriteBspLeafWallStripGeometry(leaf, section, startNode, node, antiClockwise,
+                                               stripMaterial, stripMaterialOffset);
+
+            // End the current strip.
+            startNode = 0;
+        }
+
+        // Start a new strip from this node?
+        if(beginNewStrip) continue;
+
+        // On to the next node.
+        node = antiClockwise? node->prev : node->next;
+
+        // Are we done?
+        if(node == baseNode) break;
+    }
+
+    // Have we an unwritten strip? - build it.
+    if(startNode)
+    {
+        Rend_WriteBspLeafWallStripGeometry(leaf, section, startNode, baseNode, antiClockwise,
+                                           stripMaterial, stripMaterialOffset);
+    }
+}
+
+static void Rend_RenderWallsTwoSided(void)
 {
     BspLeaf* leaf = currentBspLeaf;
     HEdge* hedge;
+
     if(!leaf || !leaf->hedge) return;
 
     hedge = leaf->hedge;
     do
     {
         if((hedge->frameFlags & HEDGEINF_FACINGFRONT) &&
-           hedge->lineDef && /* "mini-hedges" have no linedefs */
-           HEDGE_SIDEDEF(hedge) /* "windows" have no sidedef */)
+           HEdge_HasDrawableSurfaces(hedge) &&
+           !isOneSided(hedge, hedge->sector, HEDGE_BACK_SECTOR(hedge)))
         {
-            Sector* frontSec = hedge->sector;
-            Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
-            boolean opaque;
+            Rend_RenderHEdgeTwosided(hedge);
+        }
+    } while((hedge = hedge->next) != leaf->hedge);
+}
 
-            if(!frontSec || !backSec ||
-               (hedge->twin && !HEDGE_SIDEDEF(hedge->twin)) /* front side of a "window" */)
-            {
-                opaque = Rend_RenderHEdge(hedge);
-            }
-            else
-            {
-                opaque = Rend_RenderHEdgeTwosided(hedge);
-            }
+static void Rend_RenderWalls(void)
+{
+    BspLeaf* leaf = currentBspLeaf;
 
-            // When the viewer is in the void do not range-occlude.
-            if(opaque && !P_IsInVoid(viewPlayer))
+    if(!leaf || !leaf->hedge) return;
+
+    // First the "one-sided" wall sections.
+    Rend_RenderWallsOneSided();
+
+    // Then the "two-sided" wall sections.
+    Rend_RenderWallsTwoSided();
+
+    // Add occludable ranges to the angle clipper.
+    // (Except when the viewer is in the void).
+    if(!P_IsInVoid(viewPlayer))
+    {
+        HEdge* hedge = leaf->hedge;
+        do
+        {
+            if(hedge->frameFlags & HEDGEINF_OCCLUDE)
             {
                 C_AddRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin);
             }
-        }
-    } while((hedge = hedge->next) != leaf->hedge);
+        } while((hedge = hedge->next) != leaf->hedge);
+    }
 }
 
 static void Rend_RenderPolyobjs(void)
@@ -2845,16 +3206,9 @@ static void Rend_RenderPolyobjs(void)
         hedge = line->L_frontside.hedgeLeft;
 
         // Let's first check which way this hedge is facing.
-        if(hedge->frameFlags & HEDGEINF_FACINGFRONT)
-        {
-            boolean opaque = Rend_RenderHEdge(hedge);
+        if(!(hedge->frameFlags & HEDGEINF_FACINGFRONT)) continue;
 
-            // When the viewer is in the void do not range-occlude.
-            if(opaque && !P_IsInVoid(viewPlayer))
-            {
-                C_AddRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin);
-            }
-        }
+        Rend_RenderPolyobjHEdge(hedge);
     }
 }
 
@@ -3033,7 +3387,8 @@ static void Rend_RenderBspLeaf(BspLeaf* bspLeaf)
     sec = bspLeaf->sector;
     sec->frameFlags |= SIF_VISIBLE;
 
-    Rend_MarkSegsFacingFront(bspLeaf);
+    Rend_ClearFrameFlagsForBspLeaf(bspLeaf);
+    Rend_MarkHEdgesFacingFront(bspLeaf);
 
     R_InitForBspLeaf(bspLeaf);
     Rend_RadioBspLeafEdges(bspLeaf);
