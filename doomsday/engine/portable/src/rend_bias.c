@@ -627,6 +627,7 @@ static void updateAffectedHEdge(HEdge* hedge, SideDefSection section)
 
 static void updateAffectedBspLeaf(BspLeaf* bspLeaf, uint planeIdx)
 {
+    biassurface_t* bsuf = BspLeaf_BiasSurfaceForGeometryGroup(bspLeaf, planeIdx);
     int i;
     coord_t delta[2];
     source_t* src;
@@ -636,10 +637,6 @@ static void updateAffectedBspLeaf(BspLeaf* bspLeaf, uint planeIdx)
     vec3d_t point;
     HEdge const* hedge;
     Plane const* plane;
-    biassurface_t* bsuf;
-
-    assert(planeIdx < bspLeaf->sector->planeCount);
-    bsuf = bspLeaf->bsuf[planeIdx];
 
     // If the data is already up to date, nothing needs to be done.
     if(bsuf->updated == lastChangeOnFrame) return;
@@ -934,8 +931,8 @@ static boolean SB_CheckColorOverride(biasaffection_t *affected)
 #endif
 
 void SB_LightVertices(struct ColorRawf_s* rcolors,
-    const struct rvertex_s* rvertices, size_t numVertices,
-    float sectorLightLevel, void* mapObject, uint subelementIndex)
+    const struct rvertex_s* rvertices, size_t numVertices, float sectorLightLevel,
+    runtime_mapdata_header_t* mapObject, uint subelementIndex)
 {
     int surfaceType = DMU_GetType(mapObject);
     biassurface_t* bsuf;
@@ -957,7 +954,7 @@ void SB_LightVertices(struct ColorRawf_s* rcolors,
         BspLeaf* bspLeaf = (BspLeaf*)mapObject;
         assert(subelementIndex < bspLeaf->sector->planeCount);
 
-        bsuf = bspLeaf->bsuf[subelementIndex];
+        bsuf = BspLeaf_BiasSurfaceForGeometryGroup(bspLeaf, subelementIndex);
         normal = bspLeaf->sector->SP_planenormal(subelementIndex);
         break; }
 

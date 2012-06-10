@@ -38,6 +38,7 @@ extern "C" {
 struct rendpoly_s;
 struct rvertex_s;
 struct ColorRawf_s;
+struct runtime_mapdata_header_s;
 
 #define MAX_BIAS_LIGHTS     (8 * 32) // Hard limit due to change tracking.
 #define MAX_BIAS_TRACKED    (MAX_BIAS_LIGHTS / 8)
@@ -111,8 +112,8 @@ void            SB_BeginFrame(void);
  *                          Plane id when @a mapObject is a BspLeaf.
  */
 void SB_LightVertices(struct ColorRawf_s* colors,
-    const struct rvertex_s* vertices, size_t numVertices,
-    float sectorLightLevel, void* mapObject, uint subelementIndex);
+    const struct rvertex_s* vertices, size_t numVertices, float sectorLightLevel,
+    struct runtime_mapdata_header_s* mapObject, uint subelementIndex);
 
 void            SB_EndFrame(void);
 
