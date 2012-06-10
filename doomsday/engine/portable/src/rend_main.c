@@ -3009,7 +3009,7 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
 
 static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection section,
     HEdge* startNode, HEdge* endNode, boolean antiClockwise,
-    material_t* material, float matOffset[2])
+    int surfaceFlags, material_t* material, float matOffset[2])
 {
     walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
     boolean opaque = false;
@@ -3041,6 +3041,10 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
     boolean blended = false;
     const materialsnapshot_t* msA = 0, *msB = 0;
     float inter = 0;
+    float matScale[2];
+
+    matScale[0] = ((surfaceFlags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
+    matScale[1] = ((surfaceFlags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
 
     // Smooth Texture Animation?
     if(smoothTexAnim)
@@ -3054,7 +3058,7 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
     {
         // Map RTU configuration from prepared MaterialSnapshot(s).       
         RL_LoadDefaultRtus();
-        mapRTUStateFromMaterialSnapshots(msA, inter, msB, NULL, NULL);
+        mapRTUStateFromMaterialSnapshots(msA, inter, msB, NULL/*no offset; already applied to coords*/, matScale);
         RL_AddPolyWithCoords(PT_TRIANGLE_STRIP, rendPolyFlags, vertsSize, verts, NULL, coords, msB? interCoords : 0);
     }
 
@@ -3072,6 +3076,7 @@ static void Rend_RenderWallsOneSided(void)
     HEdge* baseNode, *startNode, *node;
     walldivnode_t* stripBottom, *stripTop;
     material_t* stripMaterial;
+    int stripSurfaceFlags;
     float stripMaterialOffset[2];
 
     if(!leaf || !leaf->hedge) return;
@@ -3081,6 +3086,7 @@ static void Rend_RenderWallsOneSided(void)
     // We may need to break the loop into multiple strips.
     startNode = 0;
     stripBottom = stripTop = 0;
+    stripSurfaceFlags = 0;
     stripMaterial = 0;
     stripMaterialOffset[0] = stripMaterialOffset[1] = 0;
 
@@ -3097,12 +3103,13 @@ static void Rend_RenderWallsOneSided(void)
             Sector* frontSec = leaf->sector;
             Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
             SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
+            Surface* surface = &frontSideDef->SW_surface(section);
             walldivnode_t* bottom, *top;
             material_t* material = 0;
             float matOffset[2];
 
             // Only a "middle" section.
-            if((frontSideDef->SW_middleinflags & SUIF_PVIS) &&
+            if((surface->inFlags & SUIF_PVIS) &&
                R_WallSectionEdge(hedge, section, 0/*left edge */, frontSec, backSec,
                                  &bottom, &top, matOffset))
             {
@@ -3116,7 +3123,8 @@ static void Rend_RenderWallsOneSided(void)
                 /// @todo Also end the strip if the coords are non-contiguous.
                 else if(startNode && (!FEQUAL(WallDivNode_Height(bottom), WallDivNode_Height(stripBottom)) ||
                                       !FEQUAL(WallDivNode_Height(top),    WallDivNode_Height(stripTop)) ||
-                                      (material != stripMaterial)))
+                                      material != stripMaterial ||
+                                      surface->flags != stripSurfaceFlags))
                 {
                     // End the current strip and start another.
                     endStrip = true;
@@ -3129,6 +3137,7 @@ static void Rend_RenderWallsOneSided(void)
 
                     stripBottom = bottom;
                     stripTop = top;
+                    stripSurfaceFlags = surface->flags;
                     stripMaterial = material;
                     stripMaterialOffset[0] = matOffset[0];
                     stripMaterialOffset[1] = matOffset[1];
@@ -3150,7 +3159,7 @@ static void Rend_RenderWallsOneSided(void)
         {
             // We have complete strip; build and write it.
             Rend_WriteBspLeafWallStripGeometry(leaf, section, startNode, node, antiClockwise,
-                                               stripMaterial, stripMaterialOffset);
+                                               stripSurfaceFlags, stripMaterial, stripMaterialOffset);
 
             // End the current strip.
             startNode = 0;
@@ -3170,7 +3179,7 @@ static void Rend_RenderWallsOneSided(void)
     if(startNode)
     {
         Rend_WriteBspLeafWallStripGeometry(leaf, section, startNode, baseNode, antiClockwise,
-                                           stripMaterial, stripMaterialOffset);
+                                           stripSurfaceFlags, stripMaterial, stripMaterialOffset);
     }
 }
 
