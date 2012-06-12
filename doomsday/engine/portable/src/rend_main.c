@@ -2420,7 +2420,7 @@ static void Rend_BuildBspLeafSkyFixStripGeometry(BspLeaf* leaf, HEdge* startNode
     }
 
     node = startNode;
-    texS = 0;
+    texS = (float)(hedge->offset);
     n = 0;
     do
     {
@@ -2448,8 +2448,6 @@ static void Rend_BuildBspLeafSkyFixStripGeometry(BspLeaf* leaf, HEdge* startNode
 
             n += 2;
         }
-
-        texS += (float)(hedge->offset);
 
         // Add the next edge.
         {
