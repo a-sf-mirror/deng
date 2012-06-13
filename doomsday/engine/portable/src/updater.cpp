@@ -60,6 +60,7 @@
 #include <de/App>
 #include <de/LegacyCore>
 #include <de/Time>
+#include <de/Date>
 #include <de/Log>
 
 static Updater* updater = 0;
@@ -125,6 +126,7 @@ struct Updater::Instance
     QNetworkAccessManager* network;
     DownloadDialog* download;
     bool alwaysShowNotification;
+    UpdateAvailableDialog* availableDlg;
     UpdaterSettingsDialog* settingsDlg;
     bool backToFullscreen;
 
@@ -132,7 +134,7 @@ struct Updater::Instance
     QString latestPackageUri;
     QString latestLogUri;
 
-    Instance(Updater* up) : self(up), network(0), download(0), settingsDlg(0), backToFullscreen(false)
+    Instance(Updater* up) : self(up), network(0), download(0), availableDlg(0), settingsDlg(0), backToFullscreen(false)
     {
         network = new QNetworkAccessManager(self);
 
@@ -182,6 +184,10 @@ struct Updater::Instance
         float dayInterval = 30;
         switch(st.frequency())
         {
+        case UpdaterSettings::AtStartup:
+            dayInterval = 0;
+            break;
+
         case UpdaterSettings::Daily:
             dayInterval = 1;
             break;
@@ -200,8 +206,10 @@ struct Updater::Instance
 
         de::Time now;
 
-        // Check always when the day interval has passed.
-        if(st.lastCheckTime().deltaTo(now).asDays() >= dayInterval)
+        // Check always when the day interval has passed. Note that this
+        // doesn't check the actual time interval since the last check, but the
+        // difference in "calendar" days.
+        if(st.lastCheckTime().asDate().daysTo(de::Date()) >= dayInterval)
             return true;
 
         if(st.frequency() == UpdaterSettings::Biweekly)
@@ -234,6 +242,11 @@ struct Updater::Instance
     {
         UpdaterSettings().setLastCheckTime(de::Time());
         alwaysShowNotification = notifyAlways;
+        doCheckRequest();
+    }
+
+    void doCheckRequest()
+    {
         network->get(QNetworkRequest(composeCheckUri()));
     }
 
@@ -266,6 +279,13 @@ struct Updater::Instance
                 << currentVersion.asText()
                 << latestPackageUri << latestLogUri;
 
+        if(availableDlg)
+        {
+            // This was a recheck.
+            availableDlg->showResult(latestVersion, latestLogUri);
+            return;
+        }
+
         // Is this newer than what we're running?
         if(latestVersion > currentVersion || alwaysShowNotification)
         {
@@ -275,8 +295,11 @@ struct Updater::Instance
             bool wasFull = switchToWindowedMode();
 
             UpdateAvailableDialog dlg(latestVersion, latestLogUri, Window_Widget(Window_Main()));
+            QObject::connect(&dlg, SIGNAL(checkAgain()), self, SLOT(recheck()));
+            availableDlg = &dlg;
             if(dlg.exec())
             {
+                availableDlg = 0;
                 LOG_MSG("Download and install.");
                 download = new DownloadDialog(latestPackageUri);
                 QObject::connect(download, SIGNAL(finished(int)), self, SLOT(downloadCompleted(int)));
@@ -284,6 +307,7 @@ struct Updater::Instance
             }
             else
             {
+                availableDlg = 0;
                 switchBackToFullscreen(wasFull);
             }
         }
@@ -447,6 +471,11 @@ void Updater::settingsDialogClosed(int /*result*/)
     }
 }
 
+void Updater::recheck()
+{
+    d->doCheckRequest();
+}
+
 void Updater::showSettings()
 {
     d->showSettingsNonModal();
@@ -458,6 +487,19 @@ void Updater::checkNow(bool notify)
     if(d->download) return;
 
     d->queryLatestVersion(notify);
+}
+
+void Updater::checkNowShowingProgress()
+{
+    // Not if there is an ongoing download.
+    if(d->download) return;
+
+    d->availableDlg = new UpdateAvailableDialog;
+    connect(d->availableDlg, SIGNAL(checkAgain()), this, SLOT(recheck()));
+    d->queryLatestVersion(true);
+    d->availableDlg->exec();
+    delete d->availableDlg;
+    d->availableDlg = 0;
 }
 
 void Updater_Init(void)

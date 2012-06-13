@@ -49,6 +49,7 @@ public slots:
     void downloadCompleted(int result);
     void settingsDialogClosed(int result);
 
+    void recheck();
     void showSettings();
 
     /**
@@ -58,6 +59,8 @@ public slots:
      *                the current version is up to date.
      */
     void checkNow(bool notify = true);
+
+    void checkNowShowingProgress();
 
 private:
     struct Instance;
