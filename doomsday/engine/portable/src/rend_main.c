@@ -2420,7 +2420,7 @@ static void Rend_BuildBspLeafSkyFixStripGeometry(BspLeaf* leaf, HEdge* startNode
     }
 
     node = startNode;
-    texS = (float)(hedge->offset);
+    texS = (float)(node->offset);
     n = 0;
     do
     {
