@@ -1160,7 +1160,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
 
         if(shinyColors)
         {
-            uint i;           
+            uint i;
             for(i = 0; i < numVertices; ++i)
             {
                 shinyColors[i].rgba[CR] = MAX_OF(rcolors[i].rgba[CR], msA->shinyMinColor[CR]);
@@ -2848,7 +2848,11 @@ static material_t* chooseHEdgeMaterial(HEdge* hedge, SideDefSection section)
 
 static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
     coord_t v1Z, coord_t v2Z, float texS, float texT,
-    rvertex_t* v1, rvertex_t* v2, rtexcoord_t* t1, rtexcoord_t* t2, rtexcoord_t* tb1, rtexcoord_t* tb2)
+    const float* sectorLightColor, float sectorLightLevel, float surfaceLightLevelDelta,
+    const float* surfaceColor, const float* surfaceColor2, float glowing, float alpha,
+    void* mapObject, uint subelementIndex,
+    rvertex_t* v1, rvertex_t* v2, ColorRawf* c1, ColorRawf* c2, rtexcoord_t* t1, rtexcoord_t* t2,
+    rtexcoord_t* tb1, rtexcoord_t* tb2, rtexcoord_t* tc1, rtexcoord_t* tc2)
 {
     if(v1)
     {
@@ -2861,6 +2865,85 @@ static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
         assert(vXY);
         V2f_Copyd(v2->pos, vXY);
         v2->pos[VZ] = v2Z;
+    }
+
+    // Vertex colors.
+    if(c1 || c2)
+    {
+        if(levelFullBright || !(glowing < 1))
+        {
+            // Uniform color. Apply to all vertices.
+            Rend_VertexColorsGlow(c1, 1, sectorLightLevel + (levelFullBright? 1 : glowing));
+            Rend_VertexColorsGlow(c2, 1, sectorLightLevel + (levelFullBright? 1 : glowing));
+        }
+        else
+        {
+            // Non-uniform color.
+            if(useBias)
+            {
+                // Do BIAS lighting for this poly.
+                SB_LightVertices(c1, v1, 1, sectorLightLevel, mapObject, subelementIndex);
+                SB_LightVertices(c2, v2, 1, sectorLightLevel, mapObject, subelementIndex);
+
+                if(glowing > 0)
+                {
+                    c1->rgba[CR] = MINMAX_OF(0, c1->rgba[CR] + glowing, 1);
+                    c1->rgba[CG] = MINMAX_OF(0, c1->rgba[CG] + glowing, 1);
+                    c1->rgba[CB] = MINMAX_OF(0, c1->rgba[CB] + glowing, 1);
+
+                    c2->rgba[CR] = MINMAX_OF(0, c2->rgba[CR] + glowing, 1);
+                    c2->rgba[CG] = MINMAX_OF(0, c2->rgba[CG] + glowing, 1);
+                    c2->rgba[CB] = MINMAX_OF(0, c2->rgba[CB] + glowing, 1);
+                }
+            }
+            else
+            {
+                float ll = MINMAX_OF(0, sectorLightLevel + surfaceLightLevelDelta + glowing, 1);
+
+                // Calculate the color for each vertex, blended with plane color?
+                if(surfaceColor[0] < 1 || surfaceColor[1] < 1 || surfaceColor[2] < 1)
+                {
+                    float vColor[4];
+
+                    // Blend sector light+color+surfacecolor
+                    vColor[CR] = surfaceColor[CR] * sectorLightColor[CR];
+                    vColor[CG] = surfaceColor[CG] * sectorLightColor[CG];
+                    vColor[CB] = surfaceColor[CB] * sectorLightColor[CB];
+                    vColor[CA] = 1;
+
+                    lightVertices(1, c1, v1, ll, vColor);
+                    lightVertices(1, c2, v2, ll, vColor);
+                }
+                else
+                {
+                    // Use sector light+color only.
+                    lightVertices(1, c1, v1, ll, sectorLightColor);
+                    lightVertices(1, c2, v2, ll, sectorLightColor);
+                }
+
+                // Bottom color (if different from top)?
+                if(surfaceColor2)
+                {
+                    float vColor[4];
+
+                    // Blend sector light+color+surfacecolor
+                    vColor[CR] = surfaceColor2[CR] * sectorLightColor[CR];
+                    vColor[CG] = surfaceColor2[CG] * sectorLightColor[CG];
+                    vColor[CB] = surfaceColor2[CB] * sectorLightColor[CB];
+                    vColor[CA] = 1;
+
+                    lightVertex(c1, v1, ll, vColor);
+                    lightVertex(c2, v2, ll, vColor);
+                }
+            }
+
+            Rend_VertexColorsApplyTorchLight(c1, v1, 1);
+            Rend_VertexColorsApplyTorchLight(c2, v2, 1);
+        }
+
+        // Apply uniform alpha.
+        Rend_VertexColorsAlpha(c1, 1, alpha);
+        Rend_VertexColorsAlpha(c2, 1, alpha);
     }
 
     // Primary texture coordinates.
@@ -2886,6 +2969,40 @@ static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
         tb2->st[0] = texS;
         tb2->st[1] = texT;
     }
+
+    // Shiny texture coordinates.
+    /*if(tc1)
+    {
+        quadShinyTexCoords(shinyCoords, &verts[1], &verts[2], hedgeLength);
+    }
+    if(tc2)
+    {
+        quadShinyTexCoords(shinyCoords, &verts[1], &verts[2], hedgeLength);
+    }*/
+}
+
+static void wallEdgeLightLevelDeltas(HEdge* hedge, SideDefSection section, float* deltaL, float* deltaR)
+{
+    SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
+    Surface* surface = &frontSideDef->SW_surface(section);
+    boolean isTwoSided = (hedge->lineDef && hedge->lineDef->L_frontsidedef && hedge->lineDef->L_backsidedef)? true:false;
+    float left = 0, right = 0, diff;
+
+    // Do not apply an angle based lighting delta if this surface's material
+    // has been chosen as a HOM fix (we must remain consistent with the lighting
+    // applied to the back plane (on this half-edge's back side)).
+    if(!(frontSideDef && isTwoSided && section != SS_MIDDLE && (surface->inFlags & SUIF_FIX_MISSING_MATERIAL)))
+    {
+        LineDef_LightLevelDelta(hedge->lineDef, hedge->side, &left, &right);
+    }
+
+    // Linear interpolation of the linedef light deltas to the edges of the hedge.
+    diff = right - left;
+    right = left + ((hedge->offset + hedge->length) / hedge->lineDef->length) * diff;
+    left += (hedge->offset / hedge->lineDef->length) * diff;
+
+    if(deltaL) *deltaL = left;
+    if(deltaR) *deltaR = right;
 }
 
 /**
@@ -2895,8 +3012,11 @@ static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
  *   0--2    3--1
  */
 static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
-    HEdge* endNode, boolean antiClockwise, SideDefSection section, float matOffset[2],
-    rvertex_t** verts, uint* vertsSize, rtexcoord_t** coords, rtexcoord_t** interCoords)
+    HEdge* endNode, boolean antiClockwise, SideDefSection section,
+    const float* sectorLightColor, float sectorLightLevel, float glowing, float alpha,
+    const float* surfaceColor, const float* surfaceColor2, float matOffset[2],
+    uint* vertsSize, rvertex_t** verts, ColorRawf** colors, rtexcoord_t** coords, rtexcoord_t** interCoords,
+    ColorRawf** shinyColors, rtexcoord_t** shinyCoords)
 {
     HEdge* node;
     float texS;
@@ -2925,6 +3045,10 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
 
     // Build geometry.
     *verts = R_AllocRendVertices(*vertsSize);
+    if(colors)
+    {
+        *colors = R_AllocRendColors(*vertsSize);
+    }
     if(coords)
     {
         *coords = R_AllocRendTexCoords(*vertsSize);
@@ -2932,6 +3056,14 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
     if(interCoords)
     {
         *interCoords = R_AllocRendTexCoords(*vertsSize);
+    }
+    if(shinyColors)
+    {
+        *shinyColors = R_AllocRendColors(*vertsSize);
+    }
+    if(shinyCoords)
+    {
+        *shinyCoords = R_AllocRendTexCoords(*vertsSize);
     }
 
     node = startNode;
@@ -2965,14 +3097,23 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
             // Add the first edge.
             rvertex_t* v1 = &(*verts)[n + antiClockwise^0];
             rvertex_t* v2 = &(*verts)[n + antiClockwise^1];
+            ColorRawf* c1 = &(*colors)[n + antiClockwise^0];
+            ColorRawf* c2 = &(*colors)[n + antiClockwise^1];
             rtexcoord_t* t1 = coords? &(*coords)[n + antiClockwise^0] : NULL;
             rtexcoord_t* t2 = coords? &(*coords)[n + antiClockwise^1] : NULL;
             rtexcoord_t* tb1 = interCoords? &(*interCoords)[n + antiClockwise^0] : NULL;
             rtexcoord_t* tb2 = interCoords? &(*interCoords)[n + antiClockwise^1] : NULL;
+            rtexcoord_t* tc1 = shinyCoords? &(*shinyCoords)[n + antiClockwise^0] : NULL;
+            rtexcoord_t* tc2 = shinyCoords? &(*shinyCoords)[n + antiClockwise^1] : NULL;
+            float deltaL, deltaR;
+
+            wallEdgeLightLevelDeltas(hedge, section, &deltaL, &deltaR);
 
             Rend_BuildBspLeafWallStripEdge(node->HE_v1origin,
                                            WallDivNode_Height(bottom), WallDivNode_Height(top), texS, matOffset[1],
-                                           v1, v2, t1, t2, tb1, tb2);
+                                           sectorLightColor, sectorLightLevel, antiClockwise? deltaR : deltaL, surfaceColor, surfaceColor2, glowing, alpha,
+                                           hedge, section,
+                                           v1, v2, c1, c2, t1, t2, tb1, tb2, tc1, tc2);
 
             if(coords)
             {
@@ -2986,14 +3127,23 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
         {
             rvertex_t* v1 = &(*verts)[n + antiClockwise^0];
             rvertex_t* v2 = &(*verts)[n + antiClockwise^1];
+            ColorRawf* c1 = &(*colors)[n + antiClockwise^0];
+            ColorRawf* c2 = &(*colors)[n + antiClockwise^1];
             rtexcoord_t* t1 = coords? &(*coords)[n + antiClockwise^0] : NULL;
             rtexcoord_t* t2 = coords? &(*coords)[n + antiClockwise^1] : NULL;
             rtexcoord_t* tb1 = interCoords? &(*interCoords)[n + antiClockwise^0] : NULL;
             rtexcoord_t* tb2 = interCoords? &(*interCoords)[n + antiClockwise^1] : NULL;
+            rtexcoord_t* tc1 = shinyCoords? &(*shinyCoords)[n + antiClockwise^0] : NULL;
+            rtexcoord_t* tc2 = shinyCoords? &(*shinyCoords)[n + antiClockwise^1] : NULL;
+            float deltaL, deltaR;
+
+            wallEdgeLightLevelDeltas(hedge, section, &deltaL, &deltaR);
 
             Rend_BuildBspLeafWallStripEdge((antiClockwise? node->prev : node->next)->HE_v1origin,
                                            WallDivNode_Height(bottom), WallDivNode_Height(top), texS, matOffset[1],
-                                           v1, v2, t1, t2, tb1, tb2);
+                                           sectorLightColor, sectorLightLevel, antiClockwise? deltaL : deltaR, surfaceColor, surfaceColor2, glowing, alpha,
+                                           hedge, section,
+                                           v1, v2, c1, c2, t1, t2, tb1, tb2, tc1, tc2);
 
             if(coords)
             {
@@ -3003,6 +3153,18 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
             n += 2;
         }
     } while((node = antiClockwise? node->prev : node->next) != endNode);
+
+    /*if(shinyColors)
+    {
+        uint i;
+        for(i = 0; i < *vertsSize; ++i)
+        {
+            (*shinyColors)[i].rgba[CR] = MAX_OF(colors[i].rgba[CR], msA->shinyMinColor[CR]);
+            (*shinyColors)[i].rgba[CG] = MAX_OF(colors[i].rgba[CG], msA->shinyMinColor[CG]);
+            (*shinyColors)[i].rgba[CB] = MAX_OF(colors[i].rgba[CB], msA->shinyMinColor[CB]);
+            (*shinyColors)[i].rgba[CA] = MSU(msA, MTU_REFLECTION).opacity; // Strength of the shine.
+        }
+    }*/
 }
 
 static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection section,
@@ -3014,32 +3176,32 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
     HEdge* hedge = startNode;
     Sector* frontSec = leaf->sector;
     Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
+    SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
+    Surface* surface = &frontSideDef->SW_surface(section);
 
 #if 0
-    matOffset[0] += (float)(hedge->offset);
     Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
     opaque = rendHEdgeSection(hedge, SS_MIDDLE, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
                               bottomLeft, topLeft, bottomRight, topRight,
                               frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
-
-    // Mark this half-edge as potentially occluding by the angle clipper.
-    if(opaque)
-    {
-        hedge->frameFlags |= HEDGEINF_OCCLUDE;
-    }
-
-    reportLineDefDrawn(hedge->lineDef);
 #endif
 
-//#if 0
     const int rendPolyFlags = RPF_DEFAULT;// | (!devRendSkyMode? RPF_SKYMASK : 0);
-    rtexcoord_t* coords = 0, *interCoords = 0;
+    const float* sectorLightColor = R_GetSectorLightColor(frontSec);
+    float sectorLightLevel = frontSec->lightLevel;
+    float alpha = (section == SS_MIDDLE? surface->rgba[3] : 1.0f);
+    const float* surfaceColor = 0, *surfaceColor2 = 0;
+
+    boolean skyMaskedMaterial, drawAsVisSprite = false;
+    rtexcoord_t* coords = 0, *interCoords = 0, *shinyCoords = 0;
+    ColorRawf* colors = 0, *shinyColors = 0;
     rvertex_t* verts;
     uint vertsSize;
     boolean blended = false;
     const materialsnapshot_t* msA = 0, *msB = 0;
     float inter = 0;
     float matScale[2];
+    float glowing;
 
     matScale[0] = ((surfaceFlags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
     matScale[1] = ((surfaceFlags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
@@ -3048,22 +3210,47 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
     if(smoothTexAnim)
         blended = true;
 
-    inter = getSnapshots(&msA, blended? &msB : NULL, material);
+    if(!(rendPolyFlags & RPF_SKYMASK))
+    {
+        inter = getSnapshots(&msA, blended? &msB : NULL, material);
 
-    Rend_BuildBspLeafWallStripGeometry(leaf, startNode, endNode, antiClockwise, section, matOffset,
-                                       &verts, &vertsSize, &coords, msB? &interCoords : 0);
+        selectSurfaceColors(&surfaceColor, &surfaceColor2, frontSideDef, section);
+    }
+
+    skyMaskedMaterial = ((rendPolyFlags & RPF_SKYMASK) || (msA && Material_IsSkyMasked(MaterialVariant_GeneralCase(msA->material))));
+
+    glowing = msA? msA->glowing : 0;
+
+    Rend_BuildBspLeafWallStripGeometry(leaf, startNode, endNode, antiClockwise, section,
+                                       sectorLightColor, sectorLightLevel, glowing, (alpha < 0? 1 : alpha),
+                                       surfaceColor, surfaceColor2, matOffset,
+                                       &vertsSize, &verts,
+                                       (!skyMaskedMaterial)? &colors : 0,
+                                       &coords,
+                                       (!drawAsVisSprite && !skyMaskedMaterial && msB && Rtu_HasTexture(&MSU(msB, MTU_PRIMARY)))? &interCoords : 0,
+                                       (!drawAsVisSprite && !skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? &shinyColors : 0,
+                                       (!drawAsVisSprite && !skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? &shinyCoords : 0);
 
     {
-        // Map RTU configuration from prepared MaterialSnapshot(s).       
+        // Map RTU configuration from prepared MaterialSnapshot(s).
         RL_LoadDefaultRtus();
         mapRTUStateFromMaterialSnapshots(msA, inter, msB, NULL/*no offset; already applied to coords*/, matScale);
-        RL_AddPolyWithCoords(PT_TRIANGLE_STRIP, rendPolyFlags, vertsSize, verts, NULL, coords, msB? interCoords : 0);
+        RL_AddPolyWithCoordsModulationReflection(PT_TRIANGLE_STRIP, rendPolyFlags, vertsSize, verts,
+                                                 (!skyMaskedMaterial)? colors : 0,
+                                                 coords,
+                                                 (!drawAsVisSprite && !skyMaskedMaterial && msB && Rtu_HasTexture(&MSU(msB, MTU_PRIMARY)))? interCoords : 0,
+                                                 0, NULL, NULL,
+                                                 (!drawAsVisSprite && !skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? shinyColors : 0,
+                                                 (!drawAsVisSprite && !skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? shinyCoords : 0,
+                                                 coords);
     }
 
     R_FreeRendVertices(verts);
+    R_FreeRendColors(colors);
     R_FreeRendTexCoords(coords);
     R_FreeRendTexCoords(interCoords);
-//#endif
+    R_FreeRendTexCoords(shinyCoords);
+    R_FreeRendColors(shinyColors);
 }
 
 static void Rend_RenderWallsOneSided(void)
@@ -3075,7 +3262,7 @@ static void Rend_RenderWallsOneSided(void)
     walldivnode_t* stripBottom, *stripTop;
     material_t* stripMaterial;
     int stripSurfaceFlags;
-    float stripMaterialOffset[2];
+    float stripMaterialOffset[2], stripSurfaceLightLevelDelta;
 
     if(!leaf || !leaf->hedge) return;
 
@@ -3085,6 +3272,7 @@ static void Rend_RenderWallsOneSided(void)
     startNode = 0;
     stripBottom = stripTop = 0;
     stripSurfaceFlags = 0;
+    stripSurfaceLightLevelDelta = 0;
     stripMaterial = 0;
     stripMaterialOffset[0] = stripMaterialOffset[1] = 0;
 
@@ -3104,7 +3292,7 @@ static void Rend_RenderWallsOneSided(void)
             Surface* surface = &frontSideDef->SW_surface(section);
             walldivnode_t* bottom, *top;
             material_t* material = 0;
-            float matOffset[2];
+            float matOffset[2], llDeltaL, llDeltaR;
 
             // Only a "middle" section.
             if((surface->inFlags & SUIF_PVIS) &&
@@ -3112,17 +3300,24 @@ static void Rend_RenderWallsOneSided(void)
                                  &bottom, &top, matOffset))
             {
                 material = chooseHEdgeMaterial(hedge, section);
+                wallEdgeLightLevelDeltas(hedge, section, &llDeltaL, &llDeltaR);
 
                 if(WallDivNode_Height(bottom) >= WallDivNode_Height(top))
                 {
                     // End the current strip.
                     endStrip = true;
                 }
-                /// @todo Also end the strip if the coords are non-contiguous.
+                /// @todo Also end the strip if:
+                ///
+                ///   a) texture coords are non-contiguous.
+                ///   b) surface colors are not equal.
+                ///   c) surface alpha is not equal (or edge-contiguous?).
+                ///
                 else if(startNode && (!FEQUAL(WallDivNode_Height(bottom), WallDivNode_Height(stripBottom)) ||
                                       !FEQUAL(WallDivNode_Height(top),    WallDivNode_Height(stripTop)) ||
                                       material != stripMaterial ||
-                                      surface->flags != stripSurfaceFlags))
+                                      surface->flags != stripSurfaceFlags ||
+                                      !FEQUAL((antiClockwise? llDeltaR : llDeltaL), stripSurfaceLightLevelDelta))/*non-contiguous surface lightlevel deltas?*/)
                 {
                     // End the current strip and start another.
                     endStrip = true;
@@ -3139,6 +3334,11 @@ static void Rend_RenderWallsOneSided(void)
                     stripMaterial = material;
                     stripMaterialOffset[0] = matOffset[0];
                     stripMaterialOffset[1] = matOffset[1];
+                }
+
+                if(!endStrip)
+                {
+                    stripSurfaceLightLevelDelta = (antiClockwise? llDeltaL : llDeltaR);
                 }
             }
             else
