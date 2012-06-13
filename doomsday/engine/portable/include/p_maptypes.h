@@ -55,10 +55,11 @@ typedef struct vertex_s {
 #define HE_v2                     HE_v(1)
 #define HE_v2origin               HE_v(1)->origin
 
-#define HEDGE_BACK_SECTOR(h)      ((h)->twin ? (h)->twin->sector : NULL)
-
 #define HEDGE_SIDE(h)             ((h)->lineDef ? &(h)->lineDef->L_side((h)->side) : NULL)
 #define HEDGE_SIDEDEF(h)          ((h)->lineDef ? (h)->lineDef->L_sidedef((h)->side) : NULL)
+
+#define HEDGE_BACK_SIDEDEF(h)     ((h)->twin ? HEDGE_SIDEDEF(h) : NULL)
+#define HEDGE_BACK_SECTOR(h)      ((h)->twin ? (h)->twin->sector : NULL)
 
 // HEdge frame flags
 #define HEDGEINF_FACINGFRONT      0x0001

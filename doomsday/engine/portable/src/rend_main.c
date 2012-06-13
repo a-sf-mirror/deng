@@ -1202,11 +1202,6 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
     {
         assert(p->isWall);
 
-        /**
-         * Masked polys (walls) get a special treatment (=> vissprite).
-         * This is needed because all masked polys must be sorted (sprites
-         * are masked polys). Otherwise there will be artifacts.
-         */
         Rend_AddMaskedPoly(rvertices, rcolors, *p->wall.segLength, msA->material,
                            p->texOffset, p->blendMode, p->lightListIdx, p->glowing);
 
@@ -1925,185 +1920,80 @@ static void Rend_RenderPolyobjHEdge(HEdge* hedge)
     Sector* frontSec = leaf->sector;
     Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
     SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
+    LineDef* line = hedge->lineDef;
+    Surface* surface;
 
-    if(!frontSideDef) return;
+    if(!frontSideDef) return; // Huh?
 
-    // Only a "middle" section.
-    if(frontSideDef->SW_middleinflags & SUIF_PVIS)
+    // We are only interested in the middle section.
+    surface = &frontSideDef->SW_surface(SS_MIDDLE);
+    if(surface->inFlags & SUIF_PVIS)
     {
+        const int rhFlags = RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO;
         walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
-        boolean opaque = false;
+        boolean opaque;
 
         if(!R_WallSectionEdges(hedge, SS_MIDDLE, frontSec, backSec,
                                &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset)) return;
 
         matOffset[0] += (float)(hedge->offset);
-        Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
-        opaque = rendHEdgeSection(hedge, SS_MIDDLE, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
+        Rend_RadioUpdateLinedef(line, hedge->side);
+        opaque = rendHEdgeSection(hedge, SS_MIDDLE, rhFlags,
                                   bottomLeft, topLeft, bottomRight, topRight,
                                   frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
 
-        // When the viewer is in the void do not range-occlude.
-        if(opaque && !P_IsInVoid(viewPlayer))
+        // Mark this half-edge as potentially occluding?
+        if(opaque)
         {
-            C_AddRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin);
+            hedge->frameFlags |= HEDGEINF_OCCLUDE;
         }
 
-        reportLineDefDrawn(hedge->lineDef);
+        reportLineDefDrawn(line);
     }
 }
 
-/**
- * Render wall sections for a HEdge belonging to a two-sided LineDef.
- */
-static void Rend_RenderHEdgeTwosided(HEdge* hedge)
+static void Rend_RenderTwoSidedMiddle(HEdge* hedge)
 {
     BspLeaf* leaf = currentBspLeaf;
-    Sector* frontSec, *backSec;
-    SideDef* frontSide, *backSide;
-    Plane* ffloor, *fceil, *bfloor, *bceil;
-    LineDef* line;
-    int opaque = false;
+    Sector* frontSec = leaf->sector;
+    Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
+    SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
+    LineDef* line = hedge->lineDef;
+    Surface* surface;
 
-    line = hedge->lineDef;
-    if(!line) return;
+    if(!frontSideDef) return; // Huh?
 
-    frontSide = HEDGE_SIDEDEF(hedge);
-    backSide = HEDGE_SIDEDEF(hedge->twin);
-    frontSec = line->L_sector(hedge->side);
-    backSec  = line->L_sector(hedge->side^1);
-
-    reportLineDefDrawn(line);
-
-    if(backSec == frontSec &&
-       !frontSide->SW_topmaterial && !frontSide->SW_bottommaterial &&
-       !frontSide->SW_middlematerial)
-       return; // Ugh... an obvious wall hedge hack. Best take no chances...
-
-    ffloor = leaf->sector->SP_floor;
-    fceil  = leaf->sector->SP_ceil;
-    bfloor = backSec->SP_floor;
-    bceil  = backSec->SP_ceil;
-
-    /**
-     * Create the wall sections.
-     *
-     * We may need multiple wall sections.
-     * Determine which parts of the segment are really visible.
-     */
-
-    // Middle section.
-    if(frontSide->SW_middleinflags & SUIF_PVIS)
+    // We are only interested in the middle section.
+    surface = &frontSideDef->SW_surface(SS_MIDDLE);
+    if(surface->inFlags & SUIF_PVIS)
     {
+        int rhFlags = RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO;
+
         walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
+        boolean opaque;
 
-        if(R_WallSectionEdges(hedge, SS_MIDDLE, leaf->sector, HEDGE_BACK_SECTOR(hedge),
-                              &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset))
+        if(!R_WallSectionEdges(hedge, SS_MIDDLE, frontSec, backSec,
+                               &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset)) return;
+
+        if((viewPlayer->shared.flags & (DDPF_NOCLIP|DDPF_CAMERA)) ||
+           !(line->flags & DDLF_BLOCKING))
+            rhFlags |= RHF_VIEWER_NEAR_BLEND;
+
+        matOffset[0] += (float)(hedge->offset);
+        Rend_RadioUpdateLinedef(line, hedge->side);
+        opaque = rendHEdgeSection(hedge, SS_MIDDLE, rhFlags,
+                                  bottomLeft, topLeft, bottomRight, topRight,
+                                  frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
+
+        // Mark this half-edge as potentially occluding?
+        if(opaque && LineDef_MiddleMaterialCoversOpening(line, hedge->side, false/*do not ignore alpha*/))
         {
-            int rhFlags = RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO;
-
-            if((viewPlayer->shared.flags & (DDPF_NOCLIP|DDPF_CAMERA)) ||
-               !(line->flags & DDLF_BLOCKING))
-                rhFlags |= RHF_VIEWER_NEAR_BLEND;
-
-            matOffset[0] += (float)(hedge->offset);
-            Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
-            opaque = rendHEdgeSection(hedge, SS_MIDDLE, rhFlags,
-                                      bottomLeft, topLeft, bottomRight, topRight,
-                                      frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
-            if(opaque)
-            {
-                opaque = LineDef_MiddleMaterialCoversOpening(hedge->lineDef, hedge->side,
-                                                             false/*do not ignore material alpha*/);
-            }
+            hedge->frameFlags |= HEDGEINF_OCCLUDE;
         }
-    }
 
-    // Upper section.
-    if(frontSide->SW_topinflags & SUIF_PVIS)
-    {
-        walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
-        float matOffset[2];
-
-        if(R_WallSectionEdges(hedge, SS_TOP, leaf->sector, HEDGE_BACK_SECTOR(hedge),
-                              &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset))
-        {
-            matOffset[0] += (float)(hedge->offset);
-            Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
-            rendHEdgeSection(hedge, SS_TOP, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
-                             bottomLeft, topLeft, bottomRight, topRight,
-                             frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
-        }
-    }
-
-    // Lower section.
-    if(frontSide->SW_bottominflags & SUIF_PVIS)
-    {
-        walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
-        float matOffset[2];
-
-        if(R_WallSectionEdges(hedge, SS_BOTTOM, leaf->sector, HEDGE_BACK_SECTOR(hedge),
-                              &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset))
-        {
-            matOffset[0] += (float)(hedge->offset);
-            Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
-            rendHEdgeSection(hedge, SS_BOTTOM, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
-                             bottomLeft, topLeft, bottomRight, topRight,
-                             frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
-        }
-    }
-
-    // Can we make this a solid segment in the clipper?
-    if(line->L_frontsector == line->L_backsector)
-       return; // NEVER.
-
-    if(!opaque) // We'll have to determine whether we can...
-    {
-        if(backSec == frontSec)
-        {
-            // An obvious hack, what to do though??
-        }
-        else if((bceil->visHeight <= ffloor->visHeight &&
-                    ((frontSide->SW_topmaterial /* && !(frontSide->flags & SDF_MIDTEXUPPER)*/) ||
-                     (frontSide->SW_middlematerial))) ||
-                (bfloor->visHeight >= fceil->visHeight &&
-                    (frontSide->SW_bottommaterial || frontSide->SW_middlematerial)))
-        {
-            // A closed gap?
-            if(FEQUAL(fceil->visHeight, bfloor->visHeight))
-            {
-                opaque = (bceil->visHeight <= bfloor->visHeight) ||
-                          !(Surface_IsSkyMasked(&fceil->surface) &&
-                            Surface_IsSkyMasked(&bceil->surface));
-            }
-            else if(FEQUAL(ffloor->visHeight, bceil->visHeight))
-            {
-                opaque = (bfloor->visHeight >= bceil->visHeight) ||
-                          !(Surface_IsSkyMasked(&ffloor->surface) &&
-                            Surface_IsSkyMasked(&bfloor->surface));
-            }
-            else
-            {
-                opaque = true;
-            }
-        }
-        /// @todo Is this still necessary?
-        else if(bceil->visHeight <= bfloor->visHeight ||
-                (!(bceil->visHeight - bfloor->visHeight > 0) && bfloor->visHeight > ffloor->visHeight && bceil->visHeight < fceil->visHeight &&
-                (frontSide->SW_topmaterial /*&& !(frontSide->flags & SDF_MIDTEXUPPER)*/) &&
-                (frontSide->SW_bottommaterial)))
-        {
-            // A zero height back segment
-            opaque = true;
-        }
-    }
-
-    // Mark this half-edge as potentially occluding by the angle clipper.
-    if(opaque)
-    {
-        hedge->frameFlags |= HEDGEINF_OCCLUDE;
+        reportLineDefDrawn(line);
     }
 }
 
@@ -2983,15 +2873,18 @@ static __inline void Rend_BuildBspLeafWallStripEdge(coord_t const vXY[2],
 
 static void wallEdgeLightLevelDeltas(HEdge* hedge, SideDefSection section, float* deltaL, float* deltaR)
 {
+    BspLeaf* leaf = currentBspLeaf;
+    Sector* frontSec = leaf->sector;
+    Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
+    const boolean oneSided = isOneSided(hedge, frontSec, backSec);
     SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
     Surface* surface = &frontSideDef->SW_surface(section);
-    boolean isTwoSided = (hedge->lineDef && hedge->lineDef->L_frontsidedef && hedge->lineDef->L_backsidedef)? true:false;
     float left = 0, right = 0, diff;
 
     // Do not apply an angle based lighting delta if this surface's material
     // has been chosen as a HOM fix (we must remain consistent with the lighting
     // applied to the back plane (on this half-edge's back side)).
-    if(!(frontSideDef && isTwoSided && section != SS_MIDDLE && (surface->inFlags & SUIF_FIX_MISSING_MATERIAL)))
+    if(!(frontSideDef && !oneSided && section != SS_MIDDLE && (surface->inFlags & SUIF_FIX_MISSING_MATERIAL)))
     {
         LineDef_LightLevelDelta(hedge->lineDef, hedge->side, &left, &right);
     }
@@ -3003,6 +2896,88 @@ static void wallEdgeLightLevelDeltas(HEdge* hedge, SideDefSection section, float
 
     if(deltaL) *deltaL = left;
     if(deltaR) *deltaR = right;
+}
+
+static boolean wallSectionGeometryCoversOpening(HEdge* hedge, SideDefSection section)
+{
+    BspLeaf* leaf = currentBspLeaf;
+    Sector* frontSec = leaf->sector;
+    Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
+    const boolean oneSided = isOneSided(hedge, frontSec, backSec);
+    SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
+    Plane* ffloor, *fceil, *bfloor, *bceil;
+    LineDef* line = hedge->lineDef;
+    boolean opaque = false;
+
+    if(!line) return false;
+
+    if(oneSided)
+    {
+        return true; // Always.
+    }
+
+    if(section == SS_MIDDLE)
+    {
+        return LineDef_MiddleMaterialCoversOpening(hedge->lineDef, hedge->side,
+                                                   false/*do not ignore material alpha*/);
+    }
+
+    if(backSec == frontSec &&
+       !frontSideDef->SW_topmaterial && !frontSideDef->SW_bottommaterial &&
+       !frontSideDef->SW_middlematerial)
+       return false; // Ugh... an obvious wall hedge hack. Best take no chances...
+
+    ffloor = leaf->sector->SP_floor;
+    fceil  = leaf->sector->SP_ceil;
+    bfloor = backSec->SP_floor;
+    bceil  = backSec->SP_ceil;
+
+    // Can we make this a solid segment in the clipper?
+    if(line->L_frontsector == line->L_backsector)
+        return false; // Never.
+
+    if(!opaque) // We'll have to determine whether we can...
+    {
+        if(backSec == frontSec)
+        {
+            // An obvious hack, what to do though??
+        }
+        else if((bceil->visHeight <= ffloor->visHeight &&
+                    ((frontSideDef->SW_topmaterial /* && !(frontSide->flags & SDF_MIDTEXUPPER)*/) ||
+                     (frontSideDef->SW_middlematerial))) ||
+                (bfloor->visHeight >= fceil->visHeight &&
+                    (frontSideDef->SW_bottommaterial || frontSideDef->SW_middlematerial)))
+        {
+            // A closed gap?
+            if(FEQUAL(fceil->visHeight, bfloor->visHeight))
+            {
+                return (bceil->visHeight <= bfloor->visHeight) ||
+                        !(Surface_IsSkyMasked(&fceil->surface) &&
+                          Surface_IsSkyMasked(&bceil->surface));
+            }
+
+            if(FEQUAL(ffloor->visHeight, bceil->visHeight))
+            {
+                return (bfloor->visHeight >= bceil->visHeight) ||
+                        !(Surface_IsSkyMasked(&ffloor->surface) &&
+                          Surface_IsSkyMasked(&bfloor->surface));
+            }
+
+            return true;
+        }
+
+        /// @todo Is this still necessary?
+        if(bceil->visHeight <= bfloor->visHeight ||
+           (!(bceil->visHeight - bfloor->visHeight > 0) && bfloor->visHeight > ffloor->visHeight && bceil->visHeight < fceil->visHeight &&
+           (frontSideDef->SW_topmaterial /*&& !(frontSide->flags & SDF_MIDTEXUPPER)*/) &&
+           (frontSideDef->SW_bottommaterial)))
+        {
+            // A zero height back segment
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -3076,14 +3051,14 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
         Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
         walldivnode_t* bottom, *top;
 
-        R_WallSectionEdge(hedge, SS_MIDDLE, 0/*left edge */, frontSec, backSec,
+        R_WallSectionEdge(hedge, section, 0/*left edge */, frontSec, backSec,
                           &bottom, &top, NULL);
 
         assert(WallDivNode_Height(bottom) < WallDivNode_Height(top));
 
         // kludge: Does not belong here.
         // Mark this half-edge as potentially occluding by the angle clipper.
-        //if(opaque)
+        if(wallSectionGeometryCoversOpening(hedge, section))
         {
             hedge->frameFlags |= HEDGEINF_OCCLUDE;
         }
@@ -3171,20 +3146,10 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
     HEdge* startNode, HEdge* endNode, boolean antiClockwise,
     int surfaceFlags, material_t* material, float matOffset[2])
 {
-    walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
-    boolean opaque = false;
     HEdge* hedge = startNode;
     Sector* frontSec = leaf->sector;
-    Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
     SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
     Surface* surface = &frontSideDef->SW_surface(section);
-
-#if 0
-    Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
-    opaque = rendHEdgeSection(hedge, SS_MIDDLE, RHF_ADD_DYNLIGHTS|RHF_ADD_DYNSHADOWS|RHF_ADD_RADIO,
-                              bottomLeft, topLeft, bottomRight, topRight,
-                              frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
-#endif
 
     const int rendPolyFlags = RPF_DEFAULT;// | (!devRendSkyMode? RPF_SKYMASK : 0);
     const float* sectorLightColor = R_GetSectorLightColor(frontSec);
@@ -3253,9 +3218,8 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
     R_FreeRendColors(shinyColors);
 }
 
-static void Rend_RenderWallsOneSided(void)
+static void Rend_RenderWallStrips(SideDefSection section, boolean oneSided)
 {
-    const SideDefSection section = SS_MIDDLE;
     BspLeaf* leaf = currentBspLeaf;
     const boolean antiClockwise = false;
     HEdge* baseNode, *startNode, *node;
@@ -3284,7 +3248,7 @@ static void Rend_RenderWallsOneSided(void)
 
         if((hedge->frameFlags & HEDGEINF_FACINGFRONT) &&
            HEdge_HasDrawableSurfaces(hedge) &&
-           isOneSided(hedge, hedge->sector, HEDGE_BACK_SECTOR(hedge)))
+           oneSided == isOneSided(hedge, hedge->sector, HEDGE_BACK_SECTOR(hedge)))
         {
             Sector* frontSec = leaf->sector;
             Sector* backSec  = HEDGE_BACK_SECTOR(hedge);
@@ -3294,7 +3258,6 @@ static void Rend_RenderWallsOneSided(void)
             material_t* material = 0;
             float matOffset[2], llDeltaL, llDeltaR;
 
-            // Only a "middle" section.
             if((surface->inFlags & SUIF_PVIS) &&
                R_WallSectionEdge(hedge, section, 0/*left edge */, frontSec, backSec,
                                  &bottom, &top, matOffset))
@@ -3381,36 +3344,33 @@ static void Rend_RenderWallsOneSided(void)
     }
 }
 
-static void Rend_RenderWallsTwoSided(void)
-{
-    BspLeaf* leaf = currentBspLeaf;
-    HEdge* hedge;
-
-    if(!leaf || !leaf->hedge) return;
-
-    hedge = leaf->hedge;
-    do
-    {
-        if((hedge->frameFlags & HEDGEINF_FACINGFRONT) &&
-           HEdge_HasDrawableSurfaces(hedge) &&
-           !isOneSided(hedge, hedge->sector, HEDGE_BACK_SECTOR(hedge)))
-        {
-            Rend_RenderHEdgeTwosided(hedge);
-        }
-    } while((hedge = hedge->next) != leaf->hedge);
-}
-
 static void Rend_RenderWalls(void)
 {
     BspLeaf* leaf = currentBspLeaf;
 
     if(!leaf || !leaf->hedge) return;
 
-    // First the "one-sided" wall sections.
-    Rend_RenderWallsOneSided();
+    Rend_RenderWallStrips(SS_MIDDLE, true  /* "one-sided" walls */);
+    Rend_RenderWallStrips(SS_TOP,    false /* "two-sided" walls */);
+    Rend_RenderWallStrips(SS_BOTTOM, false /* "two-sided" walls */);
 
-    // Then the "two-sided" wall sections.
-    Rend_RenderWallsTwoSided();
+    /**
+     * Finally the masked/translucent "two-sided" middle wall sections,
+     * for which we generate vissprites (so that they may be sorted along
+     * with other non-opaque objects, like sprites).
+     */
+    {
+        HEdge* hedge = leaf->hedge;
+        do
+        {
+            if((hedge->frameFlags & HEDGEINF_FACINGFRONT) &&
+               HEdge_HasDrawableSurfaces(hedge) &&
+               !isOneSided(hedge, hedge->sector, HEDGE_BACK_SECTOR(hedge)))
+            {
+                Rend_RenderTwoSidedMiddle(hedge);
+            }
+        } while((hedge = hedge->next) != leaf->hedge);
+    }
 
     // Add occludable ranges to the angle clipper.
     // (Except when the viewer is in the void).

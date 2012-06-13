@@ -1276,6 +1276,9 @@ boolean R_WallSectionEdge(HEdge* hedge, SideDefSection section, int edge,
     int side;
     assert(VALID_SIDEDEFSECTION(section) && VALID_WALLEDGE(edge));
 
+    if(lowDiv) *lowDiv = 0;
+    if(hiDiv)  *hiDiv  = 0;
+
     if(!hedge) return false;
 
     line = hedge->lineDef;
