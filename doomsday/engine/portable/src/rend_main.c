@@ -3072,8 +3072,8 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
             // Add the first edge.
             rvertex_t* v1 = &(*verts)[n + antiClockwise^0];
             rvertex_t* v2 = &(*verts)[n + antiClockwise^1];
-            ColorRawf* c1 = &(*colors)[n + antiClockwise^0];
-            ColorRawf* c2 = &(*colors)[n + antiClockwise^1];
+            ColorRawf* c1 = colors? &(*colors)[n + antiClockwise^0] : NULL;
+            ColorRawf* c2 = colors? &(*colors)[n + antiClockwise^1] : NULL;
             rtexcoord_t* t1 = coords? &(*coords)[n + antiClockwise^0] : NULL;
             rtexcoord_t* t2 = coords? &(*coords)[n + antiClockwise^1] : NULL;
             rtexcoord_t* tb1 = interCoords? &(*interCoords)[n + antiClockwise^0] : NULL;
@@ -3102,8 +3102,8 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
         {
             rvertex_t* v1 = &(*verts)[n + antiClockwise^0];
             rvertex_t* v2 = &(*verts)[n + antiClockwise^1];
-            ColorRawf* c1 = &(*colors)[n + antiClockwise^0];
-            ColorRawf* c2 = &(*colors)[n + antiClockwise^1];
+            ColorRawf* c1 = colors? &(*colors)[n + antiClockwise^0] : NULL;
+            ColorRawf* c2 = colors? &(*colors)[n + antiClockwise^1] : NULL;
             rtexcoord_t* t1 = coords? &(*coords)[n + antiClockwise^0] : NULL;
             rtexcoord_t* t2 = coords? &(*coords)[n + antiClockwise^1] : NULL;
             rtexcoord_t* tb1 = interCoords? &(*interCoords)[n + antiClockwise^0] : NULL;
@@ -3151,13 +3151,13 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
     SideDef* frontSideDef = HEDGE_SIDEDEF(hedge);
     Surface* surface = &frontSideDef->SW_surface(section);
 
-    const int rendPolyFlags = RPF_DEFAULT;// | (!devRendSkyMode? RPF_SKYMASK : 0);
+    int rpFlags = RPF_DEFAULT;
     const float* sectorLightColor = R_GetSectorLightColor(frontSec);
     float sectorLightLevel = frontSec->lightLevel;
     float alpha = (section == SS_MIDDLE? surface->rgba[3] : 1.0f);
     const float* surfaceColor = 0, *surfaceColor2 = 0;
 
-    boolean skyMaskedMaterial, drawAsVisSprite = false;
+    boolean skyMaskedMaterial;
     rtexcoord_t* coords = 0, *interCoords = 0, *shinyCoords = 0;
     ColorRawf* colors = 0, *shinyColors = 0;
     rvertex_t* verts;
@@ -3175,14 +3175,28 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
     if(smoothTexAnim)
         blended = true;
 
-    if(!(rendPolyFlags & RPF_SKYMASK))
+    if(Material_IsSkyMasked(material))
+    {
+        if(!devRendSkyMode)
+        {
+            // We'll mask this.
+            rpFlags |= RPF_SKYMASK;
+        }
+        else
+        {
+            // In dev sky mode we render all would-be skymask geometry
+            // as if it were non-skymask.
+            //flags |= RHF_FORCE_OPAQUE;
+        }
+    }
+    skyMaskedMaterial = !!(rpFlags & RPF_SKYMASK);
+
+    if(!(rpFlags & RPF_SKYMASK))
     {
         inter = getSnapshots(&msA, blended? &msB : NULL, material);
 
         selectSurfaceColors(&surfaceColor, &surfaceColor2, frontSideDef, section);
     }
-
-    skyMaskedMaterial = ((rendPolyFlags & RPF_SKYMASK) || (msA && Material_IsSkyMasked(MaterialVariant_GeneralCase(msA->material))));
 
     glowing = msA? msA->glowing : 0;
 
@@ -3191,24 +3205,27 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
                                        surfaceColor, surfaceColor2, matOffset,
                                        &vertsSize, &verts,
                                        (!skyMaskedMaterial)? &colors : 0,
-                                       &coords,
-                                       (!drawAsVisSprite && !skyMaskedMaterial && msB && Rtu_HasTexture(&MSU(msB, MTU_PRIMARY)))? &interCoords : 0,
-                                       (!drawAsVisSprite && !skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? &shinyColors : 0,
-                                       (!drawAsVisSprite && !skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? &shinyCoords : 0);
+                                       (!skyMaskedMaterial)? &coords : 0,
+                                       (!skyMaskedMaterial && msB && Rtu_HasTexture(&MSU(msB, MTU_PRIMARY)))? &interCoords : 0,
+                                       (!skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? &shinyColors : 0,
+                                       (!skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? &shinyCoords : 0);
 
+    // Map RTU configuration from prepared MaterialSnapshot(s).
+    RL_LoadDefaultRtus();
+    if(!skyMaskedMaterial)
     {
-        // Map RTU configuration from prepared MaterialSnapshot(s).
-        RL_LoadDefaultRtus();
         mapRTUStateFromMaterialSnapshots(msA, inter, msB, NULL/*no offset; already applied to coords*/, matScale);
-        RL_AddPolyWithCoordsModulationReflection(PT_TRIANGLE_STRIP, rendPolyFlags, vertsSize, verts,
-                                                 (!skyMaskedMaterial)? colors : 0,
-                                                 coords,
-                                                 (!drawAsVisSprite && !skyMaskedMaterial && msB && Rtu_HasTexture(&MSU(msB, MTU_PRIMARY)))? interCoords : 0,
-                                                 0, NULL, NULL,
-                                                 (!drawAsVisSprite && !skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? shinyColors : 0,
-                                                 (!drawAsVisSprite && !skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? shinyCoords : 0,
-                                                 coords);
     }
+
+    RL_AddPolyWithCoordsModulationReflection(PT_TRIANGLE_STRIP, rpFlags,
+                                             vertsSize, verts,
+                                             (!skyMaskedMaterial)? colors : 0,
+                                             (!skyMaskedMaterial)? coords : 0,
+                                             (!skyMaskedMaterial && msB && Rtu_HasTexture(&MSU(msB, MTU_PRIMARY)))? interCoords : 0,
+                                             0, 0, 0,
+                                             (!skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? shinyColors : 0,
+                                             (!skyMaskedMaterial && useShinySurfaces && Rtu_HasTexture(&MSU(msA, MTU_REFLECTION)))? shinyCoords : 0,
+                                             coords);
 
     R_FreeRendVertices(verts);
     R_FreeRendColors(colors);
