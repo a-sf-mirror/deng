@@ -77,7 +77,6 @@ internal
 
 // HEdge frame flags
 #define HEDGEINF_FACINGFRONT      0x0001
-#define HEDGEINF_OCCLUDE          0x0002
 
 typedef struct hedgeedge_s {
     walldivs_t wallDivs;

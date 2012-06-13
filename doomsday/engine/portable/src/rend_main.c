@@ -1943,10 +1943,9 @@ static void Rend_RenderPolyobjHEdge(HEdge* hedge)
                                   bottomLeft, topLeft, bottomRight, topRight,
                                   frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
 
-        // Mark this half-edge as potentially occluding?
         if(opaque)
         {
-            hedge->frameFlags |= HEDGEINF_OCCLUDE;
+            C_AddRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin);
         }
 
         reportLineDefDrawn(line);
@@ -1972,7 +1971,6 @@ static void Rend_RenderTwoSidedMiddle(HEdge* hedge)
 
         walldivnode_t* bottomLeft, *topLeft, *bottomRight, *topRight;
         float matOffset[2];
-        boolean opaque;
 
         if(!R_WallSectionEdges(hedge, SS_MIDDLE, frontSec, backSec,
                                &bottomLeft, &topLeft, &bottomRight, &topRight, matOffset)) return;
@@ -1983,17 +1981,11 @@ static void Rend_RenderTwoSidedMiddle(HEdge* hedge)
 
         matOffset[0] += (float)(hedge->offset);
         Rend_RadioUpdateLinedef(line, hedge->side);
-        opaque = rendHEdgeSection(hedge, SS_MIDDLE, rhFlags,
-                                  bottomLeft, topLeft, bottomRight, topRight,
-                                  frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
+        rendHEdgeSection(hedge, SS_MIDDLE, rhFlags,
+                         bottomLeft, topLeft, bottomRight, topRight,
+                         frontSec->lightLevel, R_GetSectorLightColor(frontSec), matOffset);
 
-        // Mark this half-edge as potentially occluding?
-        if(opaque && LineDef_MiddleMaterialCoversOpening(line, hedge->side, false/*do not ignore alpha*/))
-        {
-            hedge->frameFlags |= HEDGEINF_OCCLUDE;
-        }
-
-        reportLineDefDrawn(line);
+        reportLineDefDrawn(hedge->lineDef);
     }
 }
 
@@ -2006,7 +1998,7 @@ static void Rend_ClearFrameFlagsForBspLeaf(BspLeaf* leaf)
         HEdge* hedge = leaf->hedge;
         do
         {
-            hedge->frameFlags &= ~(HEDGEINF_FACINGFRONT|HEDGEINF_OCCLUDE);
+            hedge->frameFlags &= ~HEDGEINF_FACINGFRONT;
         } while((hedge = hedge->next) != leaf->hedge);
     }
 
@@ -2019,7 +2011,7 @@ static void Rend_ClearFrameFlagsForBspLeaf(BspLeaf* leaf)
             LineDef* line = *lineIt;
             HEdge* hedge = line->L_frontside.hedgeLeft;
 
-            hedge->frameFlags &= ~(HEDGEINF_FACINGFRONT|HEDGEINF_OCCLUDE);
+            hedge->frameFlags &= ~HEDGEINF_FACINGFRONT;
         }
     }
 }
@@ -2898,7 +2890,7 @@ static void wallEdgeLightLevelDeltas(HEdge* hedge, SideDefSection section, float
     if(deltaR) *deltaR = right;
 }
 
-static boolean wallSectionGeometryCoversOpening(HEdge* hedge, SideDefSection section)
+static boolean wallGeometryCoversOpening(HEdge* hedge)
 {
     BspLeaf* leaf = currentBspLeaf;
     Sector* frontSec = leaf->sector;
@@ -2916,10 +2908,10 @@ static boolean wallSectionGeometryCoversOpening(HEdge* hedge, SideDefSection sec
         return true; // Always.
     }
 
-    if(section == SS_MIDDLE)
+    if(LineDef_MiddleMaterialCoversOpening(hedge->lineDef, hedge->side,
+                                           false/*do not ignore material alpha*/))
     {
-        return LineDef_MiddleMaterialCoversOpening(hedge->lineDef, hedge->side,
-                                                   false/*do not ignore material alpha*/);
+        return true;
     }
 
     if(backSec == frontSec &&
@@ -3042,7 +3034,7 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
     }
 
     node = startNode;
-    texS = matOffset[0];
+    texS = matOffset[0] + (float)(node->offset);
     n = 0;
     do
     {
@@ -3056,16 +3048,7 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
 
         assert(WallDivNode_Height(bottom) < WallDivNode_Height(top));
 
-        // kludge: Does not belong here.
-        // Mark this half-edge as potentially occluding by the angle clipper.
-        if(wallSectionGeometryCoversOpening(hedge, section))
-        {
-            hedge->frameFlags |= HEDGEINF_OCCLUDE;
-        }
         reportLineDefDrawn(hedge->lineDef);
-        // kludge end.
-
-        texS += (float)(hedge->offset);
 
         if(n == 0)
         {
@@ -3396,7 +3379,9 @@ static void Rend_RenderWalls(void)
         HEdge* hedge = leaf->hedge;
         do
         {
-            if(hedge->frameFlags & HEDGEINF_OCCLUDE)
+            if((hedge->frameFlags & HEDGEINF_FACINGFRONT) &&
+               HEdge_HasDrawableSurfaces(hedge) &&
+               wallGeometryCoversOpening(hedge))
             {
                 C_AddRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin);
             }
