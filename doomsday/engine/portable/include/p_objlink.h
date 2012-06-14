@@ -82,7 +82,7 @@ void R_LinkObjs(void);
  * Spread object => BspLeaf links for the given @a BspLeaf. Note that
  * all object types will be spread at this time.
  */
-void R_InitForBspLeaf(BspLeaf* bspLeaf);
+void R_SpreadObjlinksForBspLeaf(BspLeaf* bspLeaf);
 
 typedef struct {
     void* obj;

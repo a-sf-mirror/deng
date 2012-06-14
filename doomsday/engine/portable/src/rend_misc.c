@@ -944,6 +944,13 @@ void Rend_RenderBoundingBoxes(void)
     glEnable(GL_DEPTH_TEST);
 }
 
+const materialvariantspecification_t* Rend_MapSurfaceMaterialSpec(int wrapS, int wrapT)
+{
+    return Materials_VariantSpecificationForContext(MC_MAPSURFACE, 0, 0, 0, 0,
+                                                    wrapS, wrapT, -1, -1, -1,
+                                                    true, true, false, false);
+}
+
 void Rend_LightVertex(ColorRawf* color, const rvertex_t* vtx, float lightLevel,
     const float* ambientColor)
 {

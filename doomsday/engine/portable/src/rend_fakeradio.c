@@ -1331,8 +1331,8 @@ static void processEdgeShadow(const BspLeaf* bspLeaf, const LineDef* lineDef,
     // Glowing surfaces or missing textures shouldn't have shadows.
     if((suf->inFlags & SUIF_NO_RADIO) || !suf->material || Surface_IsSkyMasked(suf)) return;
 
-    spec = Materials_VariantSpecificationForContext(MC_MAPSURFACE, 0, 0, 0, 0, GL_REPEAT, GL_REPEAT,
-        -1, -1, -1, true, true, false, false);
+
+    spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
     ms = Materials_Prepare(pln->PS_material, spec, true);
     if(ms->glowing > 0) return;
 

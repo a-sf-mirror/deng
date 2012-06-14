@@ -500,8 +500,7 @@ static void updateSurfaceDecorations2(Surface* suf, float offsetS, float offsetT
         delta[VX] * delta[VZ] != 0 ||
         delta[VY] * delta[VZ] != 0))
     {
-        const materialvariantspecification_t* spec = Materials_VariantSpecificationForContext(
-            MC_MAPSURFACE, 0, 0, 0, 0, GL_REPEAT, GL_REPEAT, -1, -1, -1, true, true, false, false);
+        const materialvariantspecification_t* spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
         material_t* mat = MaterialVariant_GeneralCase(Materials_ChooseVariant(suf->material, spec, true, true));
         const ded_decor_t* def = Materials_DecorationDef(mat);
         if(def)

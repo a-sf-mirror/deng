@@ -543,7 +543,7 @@ static __inline const float maxRadius(objtype_t type)
     return loMaxRadius;
 }
 
-void R_InitForBspLeaf(BspLeaf* bspLeaf)
+void R_SpreadObjlinksForBspLeaf(BspLeaf* bspLeaf)
 {
     int i;
 BEGIN_PROF( PROF_OBJLINK_SPREAD );

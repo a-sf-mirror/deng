@@ -37,6 +37,7 @@
 #include "de_filesys.h"
 #include "de_network.h"
 #include "de_refresh.h"
+#include "de_render.h"
 #include "de_graphics.h"
 #include "de_misc.h"
 #include "de_audio.h" // For texture, environmental audio properties.
@@ -2658,8 +2659,7 @@ void R_PrecacheForMap(void)
 
     if(precacheMapMaterials)
     {
-        const materialvariantspecification_t* spec = Materials_VariantSpecificationForContext(
-            MC_MAPSURFACE, 0, 0, 0, 0, GL_REPEAT, GL_REPEAT, -1, -1, -1, true, true, false, false);
+        const materialvariantspecification_t* spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
         uint i, j;
 
         for(i = 0; i < NUM_SIDEDEFS; ++i)

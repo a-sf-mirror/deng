@@ -978,8 +978,7 @@ static boolean createGlowLightForSurface(Surface* suf, void* paramaters)
             return true; // Continue iteration.
 
         // Are we glowing at this moment in time?
-        spec = Materials_VariantSpecificationForContext(MC_MAPSURFACE, 0, 0, 0, 0,
-            GL_REPEAT, GL_REPEAT, -1, -1, -1, true, true, false, false);
+        spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
         ms = Materials_Prepare(suf->material, spec, true);
         if(!(ms->glowing > .001f)) return true; // Continue iteration.
 

@@ -29,6 +29,8 @@
 extern "C" {
 #endif
 
+struct materialvariantspecification_s;
+
 /**
  * Draws a textured triangle using the currently bound gl texture.
  * Used to draw mobj angle direction arrow.
@@ -89,6 +91,8 @@ void Rend_RenderVertexes(void);
  * Draw the debugging aids for visualizing sound origins.
  */
 void Rend_RenderSoundOrigins(void);
+
+const struct materialvariantspecification_s* Rend_MapSurfaceMaterialSpec(int wrapS, int wrapT);
 
 void Rend_LightVertex(ColorRawf* color, const rvertex_t* vertex, float lightLevel,
     const float* ambientColor);

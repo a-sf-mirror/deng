@@ -295,8 +295,7 @@ boolean LineDef_MiddleMaterialCoversOpening(LineDef *line, int side,
         if(sideDef->SW_middlematerial)
         {
             // Ensure we have up to date info.
-            const materialvariantspecification_t* spec = Materials_VariantSpecificationForContext(
-                MC_MAPSURFACE, 0, 0, 0, 0, GL_REPEAT, GL_REPEAT, -1, -1, -1, true, true, false, false);
+            const materialvariantspecification_t* spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
             material_t* mat = sideDef->SW_middlematerial;
             const materialsnapshot_t* ms = Materials_Prepare(mat, spec, true);
 

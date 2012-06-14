@@ -1,26 +1,24 @@
-/**\file rend_main.c
- *\section License
- * License: GPL
- * Online License Link: http://www.gnu.org/licenses/gpl.html
+/**
+ * @file rend_main.c
+ * Core of the rendering subsystem. @ingroup render
  *
- *\author Copyright © 2003-2012 Jaakko Keränen <jaakko.keranen@iki.fi>
- *\author Copyright © 2006-2012 Daniel Swanson <danij@dengine.net>
- *\author Copyright © 2006 Jamie Jones <jamie_jones_au@yahoo.com.au>
+ * @authors Copyright &copy; 2003-2012 Jaakko Ker�nen <jaakko.keranen@iki.fi>
+ * @authors Copyright &copy; 2006-2012 Daniel Swanson <danij@dengine.net>
+ * @authors Copyright &copy; 2006 Jamie Jones <jamie_jones_au@yahoo.com.au>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * @par License
+ * GPL: http://www.gnu.org/licenses/gpl.html
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA  02110-1301  USA
+ * <small>This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version. This program is distributed in the hope that it
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details. You should have received a copy of the GNU
+ * General Public License along with this program; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA</small>
  */
 
 #include <stdio.h>
@@ -33,22 +31,11 @@
 #include "de_render.h"
 #include "de_refresh.h"
 #include "de_play.h"
-#include "de_graphics.h"
 #include "de_misc.h"
-#include "de_ui.h"
-#include "de_system.h"
 
-#include "net_main.h"
-#include "texturevariant.h"
 #include "materialvariant.h"
 #include "blockmapvisual.h"
 
-void Rend_RenderBoundingBox(coord_t const pos[3], coord_t w, coord_t l, coord_t h, float a,
-    float const color[3], float alpha, float br, boolean alignToBase);
-
-void Rend_RenderArrow(coord_t const pos[3], float a, float s, float const color3f[3], float alpha);
-
-static DGLuint constructBBox(DGLuint name, float br);
 static material_t* chooseHEdgeMaterial(HEdge* hedge, SideDefSection section);
 static void wallEdgeLightLevelDeltas(HEdge* hedge, SideDefSection section, float* deltaL, float* deltaR);
 static uint Rend_BuildBspLeafPlaneGeometry(BspLeaf* leaf, boolean antiClockwise,
@@ -237,6 +224,15 @@ static __inline double viewFacingDot(coord_t v1[2], coord_t v2[2])
     return (v1[VY] - v2[VY]) * (v1[VX] - vOrigin[VX]) + (v2[VX] - v1[VX]) * (v1[VY] - vOrigin[VZ]);
 }
 
+static __inline boolean leafHasZeroVolume(BspLeaf* leaf)
+{
+    Sector* sec = leaf? leaf->sector : NULL;
+    if(leaf->hedgeCount < 3) return true;
+    if(!sec) return true; // An orphan leaf?
+    if(sec->SP_ceilvisheight - sec->SP_floorvisheight <= 0) return true;
+    return false;
+}
+
 static __inline boolean isOneSided(HEdge* hedge, Sector* frontSec, Sector* backSec)
 {
     return !frontSec || !backSec || (hedge->twin && !HEDGE_SIDEDEF(hedge->twin)) /* front side of a "window" */;
@@ -301,19 +297,11 @@ static void Rend_MarkSideDefSectionsPVisible(HEdge* hedge)
         markSideDefSectionsPVisible(hedge->twin);
 }
 
-int RIT_FirstDynlightIterator(const dynlight_t* dyn, void* paramaters)
+int RIT_FirstDynlightIterator(const dynlight_t* dyn, void* parameters)
 {
-    const dynlight_t** ptr = (const dynlight_t**)paramaters;
+    const dynlight_t** ptr = (const dynlight_t**)parameters;
     *ptr = dyn;
-    return 1; // Stop iteration.
-}
-
-static __inline const materialvariantspecification_t*
-mapSurfaceMaterialSpec(int wrapS, int wrapT)
-{
-    return Materials_VariantSpecificationForContext(MC_MAPSURFACE, 0, 0, 0, 0,
-                                                    wrapS, wrapT, -1, -1, -1,
-                                                    true, true, false, false);
+    return true; // Stop iteration.
 }
 
 /**
@@ -379,7 +367,7 @@ static void Rend_WriteMaskedPoly(const rvertex_t* rvertices, const ColorRawf* rc
         /// @todo Can result in multiple variants being prepared.
         ///       This decision should be made earlier (in rendHEdgeSection()).
         material = Materials_ChooseVariant(MaterialVariant_GeneralCase(material),
-                                           mapSurfaceMaterialSpec(wrapS, wrapT), true, true);
+                                           Rend_MapSurfaceMaterialSpec(wrapS, wrapT), true, true);
     }
 
     VS_WALL(vis)->material = material;
@@ -427,7 +415,7 @@ static void Rend_WriteMaskedPoly(const rvertex_t* rvertices, const ColorRawf* rc
 static float getMaterialSnapshots(const materialsnapshot_t** msA,
     const materialsnapshot_t** msB, material_t* mat)
 {
-    const materialvariantspecification_t* spec = mapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
+    const materialvariantspecification_t* spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
     float interPos = 0;
     assert(msA);
 
@@ -1047,7 +1035,7 @@ static boolean renderWorldPoly(rvertex_t* rvertices, uint numVertices,
         assert(p->isWall);
 
         Rend_WriteMaskedPoly(rvertices, rcolors, *p->wall.segLength, msA->material,
-                           p->texOffset, p->blendMode, p->lightListIdx, p->glowing);
+                             p->texOffset, p->blendMode, p->lightListIdx, p->glowing);
 
         R_FreeRendTexCoords(primaryCoords);
         R_FreeRendColors(rcolors);
@@ -1289,8 +1277,7 @@ static void renderPlane(BspLeaf* bspLeaf, planetype_t type, coord_t height,
         else
         {
             Surface* suf = &bspLeaf->sector->planes[subelementIndex]->surface;
-            const materialvariantspecification_t* spec = Materials_VariantSpecificationForContext(
-                MC_MAPSURFACE, 0, 0, 0, 0, GL_REPEAT, GL_REPEAT, -1, -1, -1, true, true, false, false);
+            const materialvariantspecification_t* spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
             const materialsnapshot_t* ms = Materials_Prepare(suf->material, spec, true);
             params.glowing = ms->glowing;
         }
@@ -1762,8 +1749,11 @@ static void Rend_ClearFrameFlagsForBspLeaf(BspLeaf* leaf)
     }
 }
 
-static void Rend_MarkHEdgesFacingFront(BspLeaf* leaf)
+static void Rend_MarkHEdgesFacingFront(void)
 {
+    BspLeaf* leaf = currentBspLeaf;
+    if(!leaf) return;
+
     if(leaf->hedge)
     {
         HEdge* hedge = leaf->hedge;
@@ -1795,44 +1785,6 @@ static void Rend_MarkHEdgesFacingFront(BspLeaf* leaf)
                 hedge->frameFlags |= HEDGEINF_FACINGFRONT;
 
             Rend_MarkSideDefSectionsPVisible(hedge);
-        }
-    }
-}
-
-static void occludeFrontFacingSegsInBspLeaf(const BspLeaf* bspLeaf)
-{
-    if(bspLeaf->hedge)
-    {
-        HEdge* hedge = bspLeaf->hedge;
-        do
-        {
-            if(!hedge->lineDef || !(hedge->frameFlags & HEDGEINF_FACINGFRONT)) continue;
-
-            if(!C_CheckRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin))
-            {
-                hedge->frameFlags &= ~HEDGEINF_FACINGFRONT;
-            }
-        } while((hedge = hedge->next) != bspLeaf->hedge);
-    }
-
-    if(bspLeaf->polyObj)
-    {
-        Polyobj* po = bspLeaf->polyObj;
-        LineDef* line;
-        HEdge* hedge;
-        uint i;
-
-        for(i = 0; i < po->lineCount; ++i)
-        {
-            line = po->lines[i];
-            hedge = line->L_frontside.hedgeLeft;
-
-            if(!(hedge->frameFlags & HEDGEINF_FACINGFRONT)) continue;
-
-            if(!C_CheckRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin))
-            {
-                hedge->frameFlags &= ~HEDGEINF_FACINGFRONT;
-            }
         }
     }
 }
@@ -2116,7 +2068,7 @@ static void Rend_WriteBspLeafSkyFixStripGeometry(BspLeaf* leaf, HEdge* startNode
     else
     {
         // Map RTU configuration from prepared MaterialSnapshot(s).
-        const materialvariantspecification_t* spec = mapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
+        const materialvariantspecification_t* spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
         const materialsnapshot_t* ms = Materials_Prepare(material, spec, true);
 
         RL_LoadDefaultRtus();
@@ -3210,18 +3162,20 @@ static void Rend_RenderPlanes(void)
 
 /**
  * Creates new occlusion planes from the BspLeaf's edges.
- * Before testing, occlude the BspLeaf's backfaces. After testing occlude
- * the remaining faces, i.e. the forward facing edges. This is done before
- * rendering edges, so solid segments cut out all unnecessary oranges.
  */
-static void occludeBspLeaf(const BspLeaf* bspLeaf, boolean forwardFacing)
+static void occludeBspLeaf(boolean forwardFacing)
 {
+    const BspLeaf* bspLeaf = currentBspLeaf;
     coord_t fFloor, fCeil, bFloor, bCeil;
     const coord_t* startv, *endv;
     Sector* front, *back;
     HEdge* hedge;
 
-    if(devNoCulling || !bspLeaf || !bspLeaf->hedge || P_IsInVoid(viewPlayer)) return;
+    // Disabled?
+    if(devNoCulling) return;
+
+    // Applicable?
+    if(!bspLeaf || !bspLeaf->hedge || P_IsInVoid(viewPlayer)) return;
 
     front = bspLeaf->sector;
     fFloor = front->SP_floorheight;
@@ -3279,75 +3233,148 @@ static void occludeBspLeaf(const BspLeaf* bspLeaf, boolean forwardFacing)
     } while((hedge = hedge->next) != bspLeaf->hedge);
 }
 
-static __inline boolean leafHasZeroVolume(BspLeaf* leaf)
+static void occludeFrontFacingHEdgesInBspLeaf(void)
 {
-    Sector* sec = leaf? leaf->sector : NULL;
-    if(!sec) return true; // An orphan leaf?
-    if(sec->SP_ceilvisheight - sec->SP_floorvisheight <= 0) return true;
-    if(leaf->hedgeCount < 3) return true;
-    return false;
-}
+    const BspLeaf* bspLeaf = currentBspLeaf;
+    if(!bspLeaf) return;
 
-static void renderBspLeaf(BspLeaf* leaf)
-{
-    uint bspLeafIdx;
-    Sector* sec;
-
-    if(leafHasZeroVolume(leaf))
+    // Wall edges:
+    if(bspLeaf->hedge)
     {
-        // Skip this, neighbors handle adding the solid clipper segments.
-        return;
+        HEdge* hedge = bspLeaf->hedge;
+        do
+        {
+            if(!hedge->lineDef || !(hedge->frameFlags & HEDGEINF_FACINGFRONT)) continue;
+
+            if(!C_CheckRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin))
+            {
+                hedge->frameFlags &= ~HEDGEINF_FACINGFRONT;
+            }
+        } while((hedge = hedge->next) != bspLeaf->hedge);
     }
 
+    // Polyobj edges:
+    if(bspLeaf->polyObj)
+    {
+        Polyobj* po = bspLeaf->polyObj;
+        LineDef** lineIt;
+        uint i;
+
+        for(i = 0, lineIt = po->lines; i < po->lineCount; ++i, lineIt++)
+        {
+            LineDef* line = *lineIt;
+            HEdge* hedge = line->L_frontside.hedgeLeft;
+
+            if(!(hedge->frameFlags & HEDGEINF_FACINGFRONT)) continue;
+
+            if(!C_CheckRangeFromViewRelPoints(hedge->HE_v1origin, hedge->HE_v2origin))
+            {
+                hedge->frameFlags &= ~HEDGEINF_FACINGFRONT;
+            }
+        }
+    }
+}
+
+/**
+ * Initialize the map renderer for drawing surfaces of BspLeaf @a leaf.
+ *
+ * @param leaf  BspLeaf to setup for.
+ */
+static void Rend_InitForBspLeaf(BspLeaf* leaf)
+{
     // This is now the current leaf.
     currentBspLeaf = leaf;
 
-    if(!firstBspLeaf)
-    {
-        if(!C_CheckBspLeaf(leaf))
-            return; // This isn't visible.
-    }
-    else
+    // This is no longer the first visible leaf.
+    if(firstBspLeaf)
     {
         firstBspLeaf = false;
     }
 
+    if(!leaf) return;
+
     // Mark the sector visible for this frame.
-    sec = leaf->sector;
-    sec->frameFlags |= SIF_VISIBLE;
+    if(leaf->sector)
+    {
+        leaf->sector->frameFlags |= SIF_VISIBLE;
+    }
 
     Rend_ClearFrameFlagsForBspLeaf(leaf);
-    Rend_MarkHEdgesFacingFront(leaf);
+}
 
-    R_InitForBspLeaf(leaf);
+static __inline void Rend_RenderRadioEdges(void)
+{
+    BspLeaf* leaf = currentBspLeaf;
     Rend_RadioBspLeafEdges(leaf);
+}
 
-    bspLeafIdx = GET_BSPLEAF_IDX(leaf);
-    occludeBspLeaf(leaf, false);
-    LO_ClipInBspLeaf(bspLeafIdx);
-    occludeBspLeaf(leaf, true);
+static __inline void clipLumobjsInBspLeaf(void)
+{
+    BspLeaf* leaf = currentBspLeaf;
+    LO_ClipInBspLeaf(GET_BSPLEAF_IDX(leaf));
+}
 
-    occludeFrontFacingSegsInBspLeaf(leaf);
+static __inline void addSpritesForBspLeaf(void)
+{
+    BspLeaf* leaf = currentBspLeaf;
+    R_AddSprites(leaf);
+}
 
-    if(leaf->polyObj)
+static __inline void spreadObjlinksForBspLeaf(void)
+{
+    BspLeaf* leaf = currentBspLeaf;
+    R_SpreadObjlinksForBspLeaf(leaf);
+}
+
+static void renderBspLeaf(BspLeaf* leaf)
+{
+    const boolean backFacingHEdges  = false;
+    const boolean frontFacingHEdges = true;
+
+    // Skip zero-volume leafs, neighbors handle adding the solid clipper segments.
+    if(leafHasZeroVolume(leaf)) return;
+
+    // Is this leaf visible (skip the test for first leaf)?
+    if(!firstBspLeaf && !C_CheckBspLeaf(leaf)) return;
+
+    Rend_InitForBspLeaf(leaf);
+    Rend_MarkHEdgesFacingFront();
+
+    // Spread links to objects contacting (touching) this leaf.
+    spreadObjlinksForBspLeaf();
+
+    // Write fakeradio geometry for planes.
+    Rend_RenderRadioEdges();
+
+    /**
+     * Before clip-testing, occlude the BspLeaf's backfaces. After testing occlude
+     * the remaining faces, i.e. the forward facing edges. This is done before
+     * rendering edges, so solid segments cut out all unnecessary oranges.
+     */
+    occludeBspLeaf(backFacingHEdges);
+    clipLumobjsInBspLeaf();
+    occludeBspLeaf(frontFacingHEdges);
+
+    occludeFrontFacingHEdgesInBspLeaf();
+
+    if(currentBspLeaf->polyObj)
     {
         // Polyobjs don't obstruct, do clip lights with another algorithm.
-        LO_ClipInBspLeafBySight(bspLeafIdx);
+        LO_ClipInBspLeafBySight(GET_BSPLEAF_IDX(currentBspLeaf));
     }
 
     // Mark the particle generators in the sector visible.
-    Rend_ParticleMarkInSectorVisible(sec);
+    Rend_ParticleMarkInSectorVisible(currentBspLeaf->sector);
 
     /**
-     * Sprites for this BSP leaf have to be drawn.
+     * Sprites touching/within this BSP leaf have to be drawn.
      * @note
-     * Must be done BEFORE the segments of this BspLeaf are added to the
-     * clipper. Otherwise the sprites would get clipped by them, and that
-     * wouldn't be right.
+     * Must be done BEFORE the wall surfaces for the current BspLeaf are added to
+     * the angle clipper. (Otherwise the sprites would be clipped by them).
      * Must be done AFTER the lumobjs have been clipped as this affects the
      * projection of flares.
      */
-    R_AddSprites(leaf);
+    addSpritesForBspLeaf();
 
     // Write sky-surface geometry.
     Rend_RenderSkySurfaces(SKYCAP_LOWER|SKYCAP_UPPER);

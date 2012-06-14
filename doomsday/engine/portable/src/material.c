@@ -24,6 +24,7 @@
 #include "de_base.h"
 #include "de_console.h"
 #include "de_play.h"
+#include "de_render.h"
 #include "de_refresh.h"
 #include "m_misc.h"
 
@@ -214,8 +215,7 @@ boolean Material_HasGlow(material_t* mat)
 
     {
     /// @todo We should not need to prepare to determine this.
-    const materialvariantspecification_t* spec = Materials_VariantSpecificationForContext(
-        MC_MAPSURFACE, 0, 0, 0, 0, GL_REPEAT, GL_REPEAT, -1, -1, -1, true, true, false, false);
+    const materialvariantspecification_t* spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
     const materialsnapshot_t* ms = Materials_Prepare(mat, spec, true);
 
     return (ms->glowing > .0001f);

@@ -1381,8 +1381,7 @@ const ded_decor_t* Materials_DecorationDef(material_t* mat)
     if(!mat) return NULL;
     if(!Material_Prepared(mat))
     {
-        const materialvariantspecification_t* spec = Materials_VariantSpecificationForContext(
-            MC_MAPSURFACE, 0, 0, 0, 0, GL_REPEAT, GL_REPEAT, -1, -1, -1, true, true, false, false);
+        const materialvariantspecification_t* spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
         Materials_Prepare(mat, spec, false);
     }
     return MaterialBind_DecorationDef(getMaterialBindForId(Material_PrimaryBind(mat)));
@@ -1393,8 +1392,7 @@ const ded_ptcgen_t* Materials_PtcGenDef(material_t* mat)
     if(!mat || isDedicated) return NULL;
     if(!Material_Prepared(mat))
     {
-        const materialvariantspecification_t* spec = Materials_VariantSpecificationForContext(
-            MC_MAPSURFACE, 0, 0, 0, 0, GL_REPEAT, GL_REPEAT, -1, -1, -1, true, true, false, false);
+        const materialvariantspecification_t* spec = Rend_MapSurfaceMaterialSpec(GL_REPEAT, GL_REPEAT);
         Materials_Prepare(mat, spec, false);
     }
     return MaterialBind_PtcGenDef(getMaterialBindForId(Material_PrimaryBind(mat)));
