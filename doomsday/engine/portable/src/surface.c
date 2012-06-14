@@ -52,6 +52,14 @@ boolean Surface_AttachedToMap(Surface* suf)
     return true;
 }
 
+void Surface_MaterialScale(Surface* suf, float scale[])
+{
+    assert(suf);
+    if(!scale) return;
+    scale[0] = ((suf->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
+    scale[1] = ((suf->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
+}
+
 boolean Surface_SetMaterial(Surface* suf, material_t* mat)
 {
     assert(suf);

@@ -461,7 +461,7 @@ static void quadTexCoords(rtexcoord_t* tc, const rvertex_t* rverts,
     tc[0].st[1] = tc[3].st[1] + (rverts[3].pos[VZ] - rverts[2].pos[VZ]);
 }
 
-static void quadLightCoords(rtexcoord_t* tc, float const s[2], float const t[2])
+static void quadModCoords(rtexcoord_t* tc, float const s[2], float const t[2])
 {
     tc[1].st[0] = tc[0].st[0] = s[0];
     tc[1].st[1] = tc[3].st[1] = t[0];
@@ -474,9 +474,11 @@ static float shinyVertical(float dy, float dx)
     return ((atan(dy/dx) / (PI/2)) + 1) / 2;
 }
 
-static void quadShinyTexCoords(rtexcoord_t* tc, const rvertex_t* topLeft,
-    const rvertex_t* bottomRight, coord_t wallLength)
+static void quadShinyTexCoords(rtexcoord_t* tc, const rvertex_t* verts,
+    coord_t wallLength)
 {
+    const rvertex_t* topLeft = &verts[1];
+    const rvertex_t* bottomRight = &verts[2];
     vec2f_t surface, normal, projected, s, reflected, view;
     float distance, angle, prevAngle = 0;
     uint i;
@@ -579,13 +581,13 @@ static void buildWallSectionCoords(rtexcoord_t* primaryCoords, rtexcoord_t* inte
     // Modulation texture coordinates.
     if(modCoords)
     {
-        quadLightCoords(modCoords, modTexTC[0], modTexTC[1]);
+        quadModCoords(modCoords, modTexTC[0], modTexTC[1]);
     }
 
     // Shiny texture coordinates.
     if(shinyCoords)
     {
-        quadShinyTexCoords(shinyCoords, &verts[1], &verts[2], hedgeLength);
+        quadShinyTexCoords(shinyCoords, verts, hedgeLength);
     }
 }
 
@@ -1303,47 +1305,6 @@ static void renderPlane(BspLeaf* bspLeaf, planetype_t type, coord_t height,
     R_FreeRendVertices(rvertices);
 }
 
-static void Rend_RenderPlane(planetype_t type, coord_t height,
-    const_pvec3f_t _tangent, const_pvec3f_t _bitangent, const_pvec3f_t _normal,
-    material_t* inMat, float const sufColor[4], blendmode_t blendMode,
-    float const texOffset[2], float const texScale[2],
-    boolean skyMasked, boolean addDLights, boolean addMobjShadows,
-    uint subelementIndex,
-    int texMode /*tmp*/, boolean clipBackFacing)
-{
-    BspLeaf* bspLeaf = currentBspLeaf;
-    vec3f_t vec, tangent, bitangent, normal;
-
-    // Must have a visible surface.
-    if(!inMat || !Material_IsDrawable(inMat)) return;
-
-    V3f_Set(vec, vOrigin[VX] - bspLeaf->midPoint[VX], vOrigin[VZ] - bspLeaf->midPoint[VY], vOrigin[VY] - height);
-
-    /**
-     * Flip surface tangent space vectors according to the z positon of the viewer relative
-     * to the plane height so that the plane is always visible.
-     */
-    V3f_Copy(tangent, _tangent);
-    V3f_Copy(bitangent, _bitangent);
-    V3f_Copy(normal, _normal);
-
-    // Don't bother with planes facing away from the camera.
-    if(!(clipBackFacing && !(V3f_DotProduct(vec, normal) < 0)))
-    {
-        coord_t texTL[3], texBR[3];
-
-        // Set the texture origin, Y is flipped for the ceiling.
-        V3d_Set(texTL, bspLeaf->aaBox.minX,
-                       bspLeaf->aaBox.arvec2[type == PLN_FLOOR? 1 : 0][VY], height);
-        V3d_Set(texBR, bspLeaf->aaBox.maxX,
-                       bspLeaf->aaBox.arvec2[type == PLN_FLOOR? 0 : 1][VY], height);
-
-        renderPlane(bspLeaf, type, height, tangent, bitangent, normal, inMat,
-                    sufColor, blendMode, texTL, texBR, texOffset, texScale,
-                    skyMasked, addDLights, addMobjShadows, subelementIndex, texMode);
-    }
-}
-
 static void nearBlend(float* alpha, HEdge* hedge,
     walldivnode_t* bottomLeft, walldivnode_t* topLeft, walldivnode_t* bottomRight, walldivnode_t* topRight,
     const coord_t* nearOrigin, coord_t nearRadius)
@@ -1393,6 +1354,8 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section, int flags,
     walldivnode_t* bottomLeft, walldivnode_t* topLeft, walldivnode_t* bottomRight, walldivnode_t* topRight,
     float lightLevel, const float* lightColor, float const matOffset[2])
 {
+    walldivs_t* leftWallDivs  = WallDivNode_WallDivs(bottomLeft);
+    walldivs_t* rightWallDivs = WallDivNode_WallDivs(bottomRight);
     SideDef* frontSide = HEDGE_SIDEDEF(hedge);
     Surface* surface = &frontSide->SW_surface(section);
     boolean opaque = true;
@@ -1435,8 +1398,7 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section, int flags,
         const float* color = NULL, *color2 = NULL;
         const materialsnapshot_t* msA = NULL, *msB = NULL;
 
-        texScale[0] = ((surface->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
-        texScale[1] = ((surface->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
+        Surface_MaterialScale(surface, texScale);
 
         V2d_Copy(texTL,  hedge->HE_v1origin);
         texTL[VZ] =  WallDivNode_Height(topLeft);
@@ -1470,8 +1432,12 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section, int flags,
                 if((flags & RHF_ADD_DYNLIGHTS) &&
                    msA->glowing < 1 && !(!useDynLights && !useWallGlow))
                 {
-                    lightListIdx = LO_ProjectToSurface(((section == SS_MIDDLE && isTwoSided)? PLF_SORT_LUMINOSITY_DESC : 0), currentBspLeaf, 1,
-                        texTL, texBR, HEDGE_SIDEDEF(hedge)->SW_middletangent, HEDGE_SIDEDEF(hedge)->SW_middlebitangent, HEDGE_SIDEDEF(hedge)->SW_middlenormal);
+                    int plFlags = ((section == SS_MIDDLE && isTwoSided)? PLF_SORT_LUMINOSITY_DESC : 0);
+                    lightListIdx = LO_ProjectToSurface(plFlags, currentBspLeaf, 1,
+                                                       texTL, texBR,
+                                                       frontSide->SW_middletangent,
+                                                       frontSide->SW_middlebitangent,
+                                                       frontSide->SW_middlenormal);
                 }
 
                 // Dynamic shadows?
@@ -1479,14 +1445,18 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section, int flags,
                    msA->glowing < 1 && Rend_MobjShadowsEnabled())
                 {
                     // Glowing planes inversely diminish shadow strength.
-                    shadowListIdx = R_ProjectShadowsToSurface(currentBspLeaf, 1 - msA->glowing, texTL, texBR,
-                        HEDGE_SIDEDEF(hedge)->SW_middletangent, HEDGE_SIDEDEF(hedge)->SW_middlebitangent, HEDGE_SIDEDEF(hedge)->SW_middlenormal);
+                    float blendFactor = 1 - msA->glowing;
+                    shadowListIdx = R_ProjectShadowsToSurface(currentBspLeaf, blendFactor,
+                                                              texTL, texBR,
+                                                              frontSide->SW_middletangent,
+                                                              frontSide->SW_middlebitangent,
+                                                              frontSide->SW_middlenormal);
                 }
 
                 if(msA->glowing > 0)
                     flags &= ~RHF_ADD_RADIO;
 
-                SideDef_SurfaceColors(HEDGE_SIDEDEF(hedge), section, &color2, &color);
+                SideDef_SurfaceColors(frontSide, section, &color2, &color);
             }
         }
 
@@ -1495,12 +1465,9 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section, int flags,
         {
             const boolean skyMask = !!(rpFlags & RPF_SKYMASK);
             const boolean addFakeRadio = !!(flags & RHF_ADD_RADIO);
-            boolean isTwosidedMiddle = (section == SS_MIDDLE && isTwoSided);
-            rendworldpoly_params_t params;
-            SideDef* side = (hedge->lineDef? HEDGE_SIDEDEF(hedge) : NULL);
+            const boolean isTwosidedMiddle = (section == SS_MIDDLE && isTwoSided);
             rvertex_t* rvertices;
-            walldivs_t* leftWallDivs = WallDivNode_WallDivs(bottomLeft);
-            walldivs_t* rightWallDivs = WallDivNode_WallDivs(bottomRight);
+            rendworldpoly_params_t params;
 
             // Init the params.
             memset(&params, 0, sizeof(params));
@@ -1572,10 +1539,10 @@ static boolean rendHEdgeSection(HEdge* hedge, SideDefSection section, int flags,
                     Rend_RadioUpdateLinedef(hedge->lineDef, hedge->side);
 
                     radioParams.linedefLength = &hedge->lineDef->length;
-                    radioParams.botCn = side->bottomCorners;
-                    radioParams.topCn = side->topCorners;
-                    radioParams.sideCn = side->sideCorners;
-                    radioParams.spans = side->spans;
+                    radioParams.botCn  = frontSide->bottomCorners;
+                    radioParams.topCn  = frontSide->topCorners;
+                    radioParams.sideCn = frontSide->sideCorners;
+                    radioParams.spans  = frontSide->spans;
                     radioParams.segOffset = &hedge->offset;
                     radioParams.segLength = &hedge->length;
                     radioParams.frontSec = hedge->sector;
@@ -2820,7 +2787,7 @@ static void Rend_BuildBspLeafWallStripGeometry(BspLeaf* leaf, HEdge* startNode,
 
 static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection section,
     HEdge* startNode, HEdge* endNode, boolean antiClockwise,
-    int surfaceFlags, material_t* material, float matOffset[2])
+    material_t* material, float matOffset[2])
 {
     HEdge* hedge = startNode;
     Sector* frontSec = leaf->sector;
@@ -2844,8 +2811,7 @@ static void Rend_WriteBspLeafWallStripGeometry(BspLeaf* leaf, SideDefSection sec
     float matScale[2];
     float glowing;
 
-    matScale[0] = ((surfaceFlags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
-    matScale[1] = ((surfaceFlags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
+    Surface_MaterialScale(surface, matScale);
 
     // Smooth Texture Animation?
     if(smoothTexAnim)
@@ -3004,7 +2970,7 @@ static void Rend_RenderWallStrips(SideDefSection section, boolean oneSided)
         {
             // We have complete strip; build and write it.
             Rend_WriteBspLeafWallStripGeometry(leaf, section, startNode, node, antiClockwise,
-                                               stripSurfaceFlags, stripMaterial, stripMaterialOffset);
+                                               stripMaterial, stripMaterialOffset);
 
             // End the current strip.
             startNode = 0;
@@ -3024,7 +2990,7 @@ static void Rend_RenderWallStrips(SideDefSection section, boolean oneSided)
     if(startNode)
     {
         Rend_WriteBspLeafWallStripGeometry(leaf, section, startNode, baseNode, antiClockwise,
-                                           stripSurfaceFlags, stripMaterial, stripMaterialOffset);
+                                           stripMaterial, stripMaterialOffset);
     }
 }
 
@@ -3076,43 +3042,46 @@ static void Rend_RenderWalls(void)
 static void Rend_RenderPolyobjs(void)
 {
     BspLeaf* leaf = currentBspLeaf;
-    LineDef* line;
-    HEdge* hedge;
-    uint i;
+    Polyobj* po;
 
     if(!leaf || !leaf->polyObj) return;
+    po = leaf->polyObj;
 
-    for(i = 0; i < leaf->polyObj->lineCount; ++i)
+    { uint i;
+    LineDef** lineIt;
+    for(i = 0, lineIt = po->lines; i < po->lineCount; ++i, lineIt++)
     {
-        line = leaf->polyObj->lines[i];
-        hedge = line->L_frontside.hedgeLeft;
+        LineDef* line = *lineIt;
+        HEdge* hedge = line->L_frontside.hedgeLeft;
 
         // Let's first check which way this hedge is facing.
         if(!(hedge->frameFlags & HEDGEINF_FACINGFRONT)) continue;
 
         Rend_RenderPolyobjHEdge(hedge);
-    }
+    }}
 }
 
 static void Rend_RenderPlanes(void)
 {
     BspLeaf* leaf = currentBspLeaf;
-    Sector* sect;
-    uint i;
+    Sector* sec;
 
-    if(!leaf || !leaf->sector) return; // An orphan BSP leaf?
-    sect = leaf->sector;
+    if(!leaf) return;
+
+    sec = leaf->sector;
+    assert(sec);
 
     // Render all planes of this sector.
-    for(i = 0; i < sect->planeCount; ++i)
+    { uint i;
+    Plane** planeIt;
+    for(i = 0, planeIt = sec->planes; i < sec->planeCount; ++i, planeIt++)
     {
-        const Plane* plane = sect->planes[i];
-        const Surface* suf = &plane->surface;
+        Plane* plane = *planeIt;
+        Surface* suf = &plane->surface;
         boolean isSkyMasked = false;
         boolean addDynLights = !devRendSkyMode;
-        boolean clipBackFacing = false;
-        float texOffset[2];
-        float texScale[2];
+        float matOffset[2], matScale[2];
+        coord_t texTL[3], texBR[3];
         material_t* mat;
         int texMode;
 
@@ -3140,24 +3109,32 @@ static void Rend_RenderPlanes(void)
             // For lighting debug, render all solid surfaces using the gray texture.
             mat = Materials_ToMaterial(Materials_ResolveUriCString(MN_SYSTEM_NAME":gray"));
 
-        V2f_Copy(texOffset, suf->visOffset);
+        // Must have a visible surface.
+        if(!mat || !Material_IsDrawable(mat)) continue;
+
+        V2f_Copy(matOffset, suf->visOffset);
         // Add the Y offset to orient the Y flipped texture.
         if(plane->type == PLN_CEILING)
-            texOffset[VY] -= leaf->aaBox.maxY - leaf->aaBox.minY;
+            matOffset[VY] -= leaf->aaBox.maxY - leaf->aaBox.minY;
         // Add the additional offset to align with the worldwide grid.
-        texOffset[VX] += (float)leaf->worldGridOffset[VX];
-        texOffset[VY] += (float)leaf->worldGridOffset[VY];
+        matOffset[VX] += (float)leaf->worldGridOffset[VX];
+        matOffset[VY] += (float)leaf->worldGridOffset[VY];
         // Inverted.
-        texOffset[VY] = -texOffset[VY];
+        matOffset[VY] = -matOffset[VY];
 
-        texScale[VX] = ((suf->flags & DDSUF_MATERIAL_FLIPH)? -1 : 1);
-        texScale[VY] = ((suf->flags & DDSUF_MATERIAL_FLIPV)? -1 : 1);
+        Surface_MaterialScale(suf, matScale);
 
-        Rend_RenderPlane(plane->type, plane->visHeight, suf->tangent, suf->bitangent, suf->normal,
-            mat, suf->rgba, suf->blendMode, texOffset, texScale,
-            isSkyMasked, addDynLights, (!devRendSkyMode && i == PLN_FLOOR), plane->planeID,
-            texMode, clipBackFacing);
-    }
+        // Set the texture origin, Y is flipped for the ceiling.
+        V3d_Set(texTL, leaf->aaBox.minX,
+                       leaf->aaBox.arvec2[plane->type == PLN_FLOOR? 1 : 0][VY], plane->visHeight);
+        V3d_Set(texBR, leaf->aaBox.maxX,
+                       leaf->aaBox.arvec2[plane->type == PLN_FLOOR? 0 : 1][VY], plane->visHeight);
+
+        renderPlane(leaf, plane->type, plane->visHeight, suf->tangent, suf->bitangent, suf->normal,
+                    mat, suf->rgba, suf->blendMode, texTL, texBR, matOffset, matScale,
+                    isSkyMasked, addDynLights, (!devRendSkyMode && i == PLN_FLOOR),
+                    plane->planeID, texMode);
+    }}
 }
 
 /**

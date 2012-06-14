@@ -64,6 +64,13 @@ boolean Surface_IsSkyMasked(const Surface* suf);
 boolean Surface_AttachedToMap(Surface* surface);
 
 /**
+ * Retrieve the surface material scale factors.
+ * @param surface  Surface instance.
+ * @param scale  Scale factors for right and up axes are written here.
+ */
+void Surface_MaterialScale(Surface* surface, float scale[2]);
+
+/**
  * Change Material bound to this surface.
  *
  * @param surface  Surface instance.
