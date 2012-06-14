@@ -43,5 +43,6 @@
 #include "rend_bias.h"
 #include "rend_decor.h"
 #include "rend_console.h"
+#include "rend_misc.h"
 
 #endif /* LIBDENG_RENDERER */

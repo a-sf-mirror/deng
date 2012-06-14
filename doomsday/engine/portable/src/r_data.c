@@ -3287,6 +3287,13 @@ rvertex_t* RVertex_Copy(rvertex_t* v, const rvertex_t* other)
     return v;
 }
 
+ColorRawf* ColorRawf_SetUniformColor(ColorRawf* c, float grey)
+{
+    assert(c);
+    c->red = c->green = c->blue = grey;
+    return c;
+}
+
 ColorRawf* ColorRawf_Copy(ColorRawf* c, const ColorRawf* other)
 {
     assert(c);

@@ -43,16 +43,35 @@ extern "C" {
 
 #define SHADOW_SURFACE_LUMINOSITY_ATTRIBUTION_MIN (.05f)
 
+/**
+ * @defgroup surfaceVectorFlags  Surface (tangent-space) Vector Flags.
+ */
+///@{
+#define SVF_TANGENT             0x01
+#define SVF_BITANGENT           0x02
+#define SVF_NORMAL              0x04
+///@}
+
+/**
+ * @defgroup soundOriginFlags  Sound Origin Flags
+ * Flags for use with the sound origin debug display.
+ */
+///@{
+#define SOF_SECTOR              0x01
+#define SOF_PLANE               0x02
+#define SOF_SIDEDEF             0x04
+///@}
+
 extern coord_t vOrigin[3];
 extern float vang, vpitch, fieldOfView, yfov;
 extern byte smoothTexAnim, devMobjVLights;
 extern float viewsidex, viewsidey;
 extern boolean usingFog;
 extern float fogColor[4];
-extern int rAmbient;
+extern int rAmbient, ambientLight;
 extern float rendLightDistanceAttentuation;
+extern float lightRangeCompression;
 extern float lightModRange[255];
-extern int devRendSkyMode;
 
 extern int useDynLights;
 extern float dynlightFactor, dynlightFogBright;
@@ -68,6 +87,16 @@ extern int shadowMaxDistance;
 
 extern int useShinySurfaces;
 
+extern byte devLightModRange;
+extern byte devMobjBBox;
+extern byte devMobjVLights;
+extern byte devPolyobjBBox;
+extern byte devRendSkyMode;
+extern byte devSoundOrigins;
+extern byte devSurfaceVectors;
+extern byte devVertexBars;
+extern byte devVertexIndices;
+
 void Rend_Register(void);
 
 void Rend_Init(void);
@@ -80,8 +109,6 @@ void Rend_ModelViewMatrix(boolean use_angles);
 #define Rend_PointDist2D(c) (fabs((vOrigin[VZ]-c[VY])*viewsidex - (vOrigin[VX]-c[VX])*viewsidey))
 
 coord_t Rend_PointDist3D(coord_t const point[3]);
-
-void Rend_ApplyTorchLight(float* color, float distance);
 
 /**
  * Apply range compression delta to @a lightValue.

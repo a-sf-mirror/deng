@@ -175,7 +175,8 @@ typedef struct ColorRawf_s {
     };
 } ColorRawf;
 
-ColorRawf* ColorRawf_Copy(ColorRawf* c, const ColorRawf* other);
+ColorRawf* ColorRawf_SetUniformColor(ColorRawf* color, float grey);
+ColorRawf* ColorRawf_Copy(ColorRawf* color, const ColorRawf* other);
 float ColorRawf_AverageColor(ColorRawf* color);
 float ColorRawf_AverageColorMulAlpha(ColorRawf* color);
 

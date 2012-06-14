@@ -315,6 +315,7 @@ DENG_HEADERS += \
     portable/include/rend_halo.h \
     portable/include/rend_list.h \
     portable/include/rend_main.h \
+    portable/include/rend_misc.h \
     portable/include/rend_model.h \
     portable/include/rend_particle.h \
     portable/include/rend_shadow.h \
@@ -604,6 +605,7 @@ SOURCES += \
     portable/src/rend_halo.c \
     portable/src/rend_list.c \
     portable/src/rend_main.c \
+    portable/src/rend_misc.c \
     portable/src/rend_model.c \
     portable/src/rend_particle.c \
     portable/src/rend_shadow.c \
