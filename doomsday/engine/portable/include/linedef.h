@@ -156,6 +156,16 @@ void LineDef_LightLevelDelta(LineDef* lineDef, int side, float* deltaL, float* d
 boolean LineDef_MiddleMaterialCoversOpening(LineDef* lineDef, int side, boolean ignoreAlpha);
 
 /**
+ * Mark and report this linedef as having been drawn for player @a pnum.
+ * Upon the first call a status update is sent to all listeners via the public
+ * API export HandleMapObjectStatusReport() while subsequent calls are N-OP.
+ *
+ * @param lineDef  LineDef instance.
+ * @param pnum  Local player number.
+ */
+void LineDef_ReportDrawn(LineDef* line, int pnum);
+
+/**
  * Get a property value, selected by DMU_* name.
  *
  * @param lineDef  LineDef instance.

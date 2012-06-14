@@ -23,6 +23,7 @@
 #include "de_base.h"
 #include "de_console.h"
 #include "de_refresh.h"
+#include "de_render.h"
 #include "de_play.h"
 
 void SideDef_UpdateBaseOrigins(SideDef* side)
@@ -57,6 +58,77 @@ void SideDef_UpdateSurfaceTangents(SideDef* side)
     memcpy(side->SW_bottomtangent, surface->tangent, sizeof(surface->tangent));
     memcpy(side->SW_bottombitangent, surface->bitangent, sizeof(surface->bitangent));
     memcpy(side->SW_bottomnormal, surface->normal, sizeof(surface->normal));
+}
+
+blendmode_t SideDef_SurfaceBlendMode(SideDef* side, SideDefSection section)
+{
+    Surface* surface;
+    assert(side && VALID_SIDEDEFSECTION(section));
+
+    surface = &side->SW_surface(section);
+    // "no translucency" mode?
+    if(surface->blendMode == BM_NORMAL && noSpriteTrans)
+        return BM_ZEROALPHA;
+
+    return surface->blendMode;
+}
+
+void SideDef_SurfaceColors(SideDef* side, SideDefSection section,
+    const float** bottomColor, const float** topColor)
+{
+    assert(side);
+    if(!bottomColor && !topColor) return;
+
+    switch(section)
+    {
+    case SS_MIDDLE:
+        if(side->flags & SDF_BLENDMIDTOTOP)
+        {
+            if(bottomColor) *bottomColor = side->SW_middlergba;
+            if(topColor)    *topColor    = side->SW_toprgba;
+        }
+        else if(side->flags & SDF_BLENDMIDTOBOTTOM)
+        {
+            if(bottomColor) *bottomColor = side->SW_bottomrgba;
+            if(topColor)    *topColor    = side->SW_middlergba;
+        }
+        else
+        {
+            if(bottomColor) *bottomColor = NULL;
+            if(topColor)    *topColor    = side->SW_middlergba;
+        }
+        break;
+
+    case SS_TOP:
+        if(side->flags & SDF_BLENDTOPTOMID)
+        {
+            if(bottomColor) *bottomColor = side->SW_middlergba;
+            if(topColor)    *topColor    = side->SW_toprgba;
+        }
+        else
+        {
+            if(bottomColor) *bottomColor = NULL;
+            if(topColor)    *topColor    = side->SW_toprgba;
+        }
+        break;
+
+    case SS_BOTTOM:
+        if(side->flags & SDF_BLENDBOTTOMTOMID)
+        {
+            if(bottomColor) *bottomColor = side->SW_bottomrgba;
+            if(topColor)    *topColor    = side->SW_middlergba;
+        }
+        else
+        {
+            if(bottomColor) *bottomColor = NULL;
+            if(topColor)    *topColor    = side->SW_bottomrgba;
+        }
+        break;
+
+    default:
+        Con_Error("SideDef_SurfaceColors: Internal error, invalid section %i.", (int)section);
+        exit(1); // Unreachable.
+    }
 }
 
 int SideDef_SetProperty(SideDef* side, const setargs_t* args)

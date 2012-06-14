@@ -376,6 +376,26 @@ Plane* LineDef_CeilingMax(const LineDef* line)
                line->L_backsector->SP_ceil : line->L_frontsector->SP_ceil;
 }
 
+void LineDef_ReportDrawn(LineDef* line, int pnum)
+{
+    assert(line);
+
+    if(pnum < 0 || pnum >= DDMAXPLAYERS) return;
+
+    // Already reported?
+    if(line->mapped[pnum]) return;
+
+    // Mark as drawn for this player.
+    line->mapped[pnum] = true;
+
+    // Send a status report.
+    if(gx.HandleMapObjectStatusReport)
+    {
+        int tmp = pnum;
+        gx.HandleMapObjectStatusReport(DMUSC_LINE_FIRSTRENDERED, GET_LINE_IDX(line), DMU_LINEDEF, &tmp);
+    }
+}
+
 int LineDef_SetProperty(LineDef* line, const setargs_t* args)
 {
     switch(args->prop)

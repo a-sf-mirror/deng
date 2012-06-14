@@ -74,13 +74,14 @@ void Rend_Init(void);
 void Rend_Shutdown(void);
 void Rend_Reset(void);
 
-void            Rend_RenderMap(void);
-void            Rend_ModelViewMatrix(boolean use_angles);
+void Rend_RenderMap(void);
+void Rend_ModelViewMatrix(boolean use_angles);
 
 #define Rend_PointDist2D(c) (fabs((vOrigin[VZ]-c[VY])*viewsidex - (vOrigin[VX]-c[VX])*viewsidey))
 
-coord_t         Rend_PointDist3D(coord_t const point[3]);
-void            Rend_ApplyTorchLight(float* color, float distance);
+coord_t Rend_PointDist3D(coord_t const point[3]);
+
+void Rend_ApplyTorchLight(float* color, float distance);
 
 /**
  * Apply range compression delta to @a lightValue.
@@ -91,7 +92,7 @@ void Rend_ApplyLightAdaptation(float* lightValue);
 /// Same as Rend_ApplyLightAdaptation except the delta is returned.
 float Rend_LightAdaptationDelta(float lightvalue);
 
-void            Rend_CalcLightModRange(void);
+void Rend_CalcLightModRange(void);
 
 /**
  * Number of vertices needed for this leaf's trifan.

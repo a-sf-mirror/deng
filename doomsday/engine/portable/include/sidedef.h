@@ -33,7 +33,7 @@
  *
  * @param sideDef  SideDef instance.
  */
-void SideDef_UpdateBaseOrigins(SideDef* side);
+void SideDef_UpdateBaseOrigins(SideDef* sideDef);
 
 /**
  * Update the SideDef's map space surface tangents according to the points
@@ -43,6 +43,30 @@ void SideDef_UpdateBaseOrigins(SideDef* side);
  * @param sideDef  SideDef instance.
  */
 void SideDef_UpdateSurfaceTangents(SideDef* sideDef);
+
+/**
+ * Return the active blending mode for the specified @a section of this sidedef.
+ *
+ * @param sideDef  SideDef instance.
+ * @param section  Section of the sidedef caller is interested in.
+ * @return  Blendmode to use for this section.
+ */
+blendmode_t SideDef_SurfaceBlendMode(SideDef* side, SideDefSection section);
+
+/**
+ * Retrieve surface color(s) for the specified @a section of this sidedef
+ * according to the current blending flags.
+ *
+ * @note Depending on the blend flags one or other color may be disabled, in
+ *       which case @c NULL is written to the relevant specified address.
+ *
+ * @param sideDef  SideDef instance.
+ * @param section  Section of the sidedef caller is interested in.
+ * @param bottomColor  If not @c NULL, the bottom color will be written here.
+ * @param topColor  If not @c NULL, the top color will be written here.
+ */
+void SideDef_SurfaceColors(SideDef* sideDef, SideDefSection section,
+    const float** bottomColor, const float** topColor);
 
 /**
  * Get a property value, selected by DMU_* name.
