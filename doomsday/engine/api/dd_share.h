@@ -1048,6 +1048,7 @@ typedef struct aaboxd_s {
 #ifdef __cplusplus
     aaboxd_s() : minX(DDMAXFLOAT), minY(DDMAXFLOAT), maxX(DDMINFLOAT), maxY(DDMINFLOAT) {}
     aaboxd_s(double _minX, double _minY, double _maxX, double _maxY) : minX(_minX), minY(_minY), maxX(_maxX), maxY(_maxY) {}
+    aaboxd_s(double const _min[2], double const _max[2]) : minX(_min[0]), minY(_min[1]), maxX(_max[0]), maxY(_max[1]) {}
 
     aaboxd_s& operator = (aaboxd_s const& other)
     {
