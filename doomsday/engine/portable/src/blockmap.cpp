@@ -1,9 +1,9 @@
 /**
- * @file blockmap.c
+ * @file blockmap.cpp
  * Blockmap. @ingroup map
  *
- * @authors Copyright © 2003-2012 Jaakko Keränen <jaakko.keranen@iki.fi>
- * @authors Copyright © 2006-2012 Daniel Swanson <danij@dengine.net>
+ * @authors Copyright &copy; 2003-2012 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * @authors Copyright &copy; 2006-2012 Daniel Swanson <danij@dengine.net>
  *
  * @par License
  * GPL: http://www.gnu.org/licenses/gpl.html
@@ -20,29 +20,35 @@
  * 02110-1301 USA</small>
  */
 
-#include <math.h>
+#include <cmath>
 
 #include "de_base.h"
-#include "de_console.h"
-
 #include "m_vector.h"
 #include "gridmap.h"
+
+#include <de/LegacyCore>
+#include <de/Log>
+#include <de/String>
+
 #include "blockmap.h"
 
-typedef struct blockmap_ringnode_s {
+struct BlockmapRingNode
+{
     void* object;
-    struct blockmap_ringnode_s* prev;
-    struct blockmap_ringnode_s* next;
-} BlockmapRingNode;
+    BlockmapRingNode* prev;
+    BlockmapRingNode* next;
+};
 
-typedef struct {
+struct BlockmapCellData
+{
     BlockmapRingNode* ringNodes;
 
     /// Running total of the number of objects linked in this cell.
     uint objectCount;
-} BlockmapCellData;
+};
 
-struct blockmap_s {
+struct blockmap_s
+{
     /// Minimal and Maximal points in map space coordinates.
     AABoxd bounds;
 
@@ -55,43 +61,46 @@ struct blockmap_s {
 
 Blockmap* Blockmap_New(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
 {
-    Blockmap* bm = Z_Calloc(sizeof *bm, PU_MAPSTATIC, 0);
-    uint width, height;
-    if(!bm) Con_Error("Blockmap::New: Failed on allocation of %lu bytes for new Blockmap.", (unsigned long) sizeof *bm);
+    Blockmap* bm = (Blockmap*)Z_Calloc(sizeof *bm, PU_MAPSTATIC, 0);
+    if(!bm)
+    {
+        QString msg = QString("Blockmap::New: Failed on allocation of %1 bytes for new Blockmap").arg((unsigned long) sizeof *bm);
+        LegacyCore_FatalError(msg.toUtf8().constData());
+    }
 
     V2d_Copy(bm->bounds.min, min);
     V2d_Copy(bm->bounds.max, max);
     bm->cellSize[VX] = cellWidth;
     bm->cellSize[VY] = cellHeight;
 
-    width  = (uint)ceil((max[0] - min[0]) / (coord_t)cellWidth);
-    height = (uint)ceil((max[1] - min[1]) / (coord_t)cellHeight);
+    uint width  = uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) );
+    uint height = uint( ceil((max[1] - min[1]) / coord_t(cellHeight)) );
     bm->gridmap = Gridmap_New(width, height, sizeof(BlockmapCellData), PU_MAPSTATIC);
 
-    VERBOSE( Con_Message("Blockmap::New: Width:%u Height:%u\n", width, height) )
+    LOG_INFO("Blockmap::New: Width:%u Height:%u") << width << height;
     return bm;
 }
 
 BlockmapCoord Blockmap_CellX(Blockmap* bm, coord_t x)
 {
+    DENG2_ASSERT(bm);
     uint result;
-    assert(bm);
     Blockmap_ClipCellX(bm, &result, x);
     return result;
 }
 
 BlockmapCoord Blockmap_CellY(Blockmap* bm, coord_t y)
 {
+    DENG2_ASSERT(bm);
     uint result;
-    assert(bm);
     Blockmap_ClipCellY(bm, &result, y);
     return result;
 }
 
 boolean Blockmap_ClipCellX(Blockmap* bm, BlockmapCoord* outX, coord_t x)
 {
+    DENG2_ASSERT(bm);
     boolean adjusted = false;
-    assert(bm);
     if(x < bm->bounds.minX)
     {
         x = bm->bounds.minX;
@@ -104,15 +113,15 @@ boolean Blockmap_ClipCellX(Blockmap* bm, BlockmapCoord* outX, coord_t x)
     }
     if(outX)
     {
-        *outX = (uint)((x - bm->bounds.minX) / bm->cellSize[VX]);
+        *outX = uint((x - bm->bounds.minX) / bm->cellSize[VX]);
     }
     return adjusted;
 }
 
 boolean Blockmap_ClipCellY(Blockmap* bm, BlockmapCoord* outY, coord_t y)
 {
+    DENG2_ASSERT(bm);
     boolean adjusted = false;
-    assert(bm);
     if(y < bm->bounds.minY)
     {
         y = bm->bounds.minY;
@@ -125,14 +134,14 @@ boolean Blockmap_ClipCellY(Blockmap* bm, BlockmapCoord* outY, coord_t y)
     }
     if(outY)
     {
-        *outY = (uint)((y - bm->bounds.minY) / bm->cellSize[VY]);
+        *outY = uint((y - bm->bounds.minY) / bm->cellSize[VY]);
     }
     return adjusted;
 }
 
 boolean Blockmap_Cell(Blockmap* bm, BlockmapCell cell, coord_t const pos[2])
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     if(cell && pos)
     {
         // Deliberate bitwise OR - we need to clip both X and Y.
@@ -144,7 +153,7 @@ boolean Blockmap_Cell(Blockmap* bm, BlockmapCell cell, coord_t const pos[2])
 
 boolean Blockmap_CellBlock(Blockmap* bm, BlockmapCellBlock* cellBlock, const AABoxd* box)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     if(cellBlock && box)
     {
         // Deliberate bitwise OR - we need to clip both Min and Max.
@@ -156,61 +165,61 @@ boolean Blockmap_CellBlock(Blockmap* bm, BlockmapCellBlock* cellBlock, const AAB
 
 const pvec2d_t Blockmap_Origin(Blockmap* bm)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     return bm->bounds.min;
 }
 
 const AABoxd* Blockmap_Bounds(Blockmap* bm)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     return &bm->bounds;
 }
 
 BlockmapCoord Blockmap_Width(Blockmap* bm)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     return Gridmap_Width(bm->gridmap);
 }
 
 BlockmapCoord Blockmap_Height(Blockmap* bm)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     return Gridmap_Height(bm->gridmap);
 }
 
 void Blockmap_Size(Blockmap* bm, BlockmapCoord v[])
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     Gridmap_Size(bm->gridmap, v);
 }
 
 coord_t Blockmap_CellWidth(Blockmap* bm)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     return bm->cellSize[VX];
 }
 
 coord_t Blockmap_CellHeight(Blockmap* bm)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     return bm->cellSize[VY];
 }
 
 const pvec2d_t Blockmap_CellSize(Blockmap* bm)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     return bm->cellSize;
 }
 
 static void linkObjectToRing(void* object, BlockmapCellData* data)
 {
+    DENG2_ASSERT(object && data);
     BlockmapRingNode* node;
-    assert(object && data);
 
     if(!data->ringNodes)
     {
         // Create a new root node.
-        node = Z_Malloc(sizeof(*node), PU_MAP, 0);
+        node = (BlockmapRingNode*)Z_Malloc(sizeof(*node), PU_MAP, 0);
         node->next = NULL;
         node->prev = NULL;
         node->object = object;
@@ -230,7 +239,7 @@ static void linkObjectToRing(void* object, BlockmapCellData* data)
     }
 
     // Add a new node to the ring.
-    node->next = Z_Malloc(sizeof(*node), PU_MAP, 0);
+    node->next = (BlockmapRingNode*)Z_Malloc(sizeof(*node), PU_MAP, 0);
     node->next->next = NULL;
     node->next->prev = node;
     node->next->object = object;
@@ -241,10 +250,9 @@ static void linkObjectToRing(void* object, BlockmapCellData* data)
  */
 static BlockmapRingNode* BlockmapCellData_Node(BlockmapCellData* data, void* object)
 {
-    BlockmapRingNode* node;
-    assert(data);
+    DENG2_ASSERT(data);
     if(!object) return NULL;
-    for(node = data->ringNodes; node; node = node->next)
+    for(BlockmapRingNode* node = data->ringNodes; node; node = node->next)
     {
         if(node->object == object) return node;
     }
@@ -269,7 +277,7 @@ static boolean unlinkObjectFromRing(void* object, BlockmapCellData* data)
 
 static int unlinkObjectInCell(void* ptr, void* parameters)
 {
-    BlockmapCellData* data = (BlockmapCellData*) ptr;
+    BlockmapCellData* data = reinterpret_cast<BlockmapCellData*>(ptr);
     if(unlinkObjectFromRing(parameters/*object ptr*/, data))
     {
         // There is now one fewer object in the cell.
@@ -280,7 +288,7 @@ static int unlinkObjectInCell(void* ptr, void* parameters)
 
 static int linkObjectInCell(void* ptr, void* parameters)
 {
-    BlockmapCellData* data = (BlockmapCellData*) ptr;
+    BlockmapCellData* data = reinterpret_cast<BlockmapCellData*>(ptr);
     linkObjectToRing(parameters/*object ptr*/, data);
 
     // There is now one more object in the cell.
@@ -290,9 +298,8 @@ static int linkObjectInCell(void* ptr, void* parameters)
 
 boolean Blockmap_CreateCellAndLinkObjectXY(Blockmap* bm, BlockmapCoord x, BlockmapCoord y, void* object)
 {
-    BlockmapCellData* data;
-    assert(bm && object);
-    data = (BlockmapCellData*) Gridmap_CellXY(bm->gridmap, x, y, true);
+    DENG2_ASSERT(bm && object);
+    BlockmapCellData* data = reinterpret_cast<BlockmapCellData*>(Gridmap_CellXY(bm->gridmap, x, y, true));
     if(!data) return false; // Outside the blockmap?
     linkObjectInCell((void*)data, object);
     return true; // Link added.
@@ -300,17 +307,16 @@ boolean Blockmap_CreateCellAndLinkObjectXY(Blockmap* bm, BlockmapCoord x, Blockm
 
 boolean Blockmap_CreateCellAndLinkObject(Blockmap* bm, const_BlockmapCell cell, void* object)
 {
-    assert(cell);
+    DENG2_ASSERT(cell);
     return Blockmap_CreateCellAndLinkObjectXY(bm, cell[VX], cell[VY], object);
 }
 
 boolean Blockmap_UnlinkObjectInCell(Blockmap* bm, const_BlockmapCell cell, void* object)
 {
-    boolean unlinked = false;
-    BlockmapCellData* data;
-    assert(bm);
+    DENG2_ASSERT(bm);
 
-    data = (BlockmapCellData*) Gridmap_Cell(bm->gridmap, cell, false);
+    boolean unlinked = false;
+    BlockmapCellData* data = reinterpret_cast<BlockmapCellData*>(Gridmap_Cell(bm->gridmap, cell, false));
     if(data)
     {
         unlinked = unlinkObjectInCell((void*)data, (void*)object);
@@ -320,15 +326,13 @@ boolean Blockmap_UnlinkObjectInCell(Blockmap* bm, const_BlockmapCell cell, void*
 
 boolean Blockmap_UnlinkObjectInCellXY(Blockmap* bm, BlockmapCoord x, BlockmapCoord y, void* object)
 {
-    BlockmapCell cell;
-    cell[VX] = x;
-    cell[VY] = y;
+    BlockmapCell cell = { x, y };
     return Blockmap_UnlinkObjectInCell(bm, cell, object);
 }
 
 void Blockmap_UnlinkObjectInCellBlock(Blockmap* bm, const BlockmapCellBlock* cellBlock, void* object)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     if(!cellBlock) return;
 
     Gridmap_BlockIterate2(bm->gridmap, cellBlock, unlinkObjectInCell, object);
@@ -336,36 +340,31 @@ void Blockmap_UnlinkObjectInCellBlock(Blockmap* bm, const BlockmapCellBlock* cel
 
 uint Blockmap_CellObjectCount(Blockmap* bm, const_BlockmapCell cell)
 {
-    BlockmapCellData* data;
-    assert(bm);
+    DENG2_ASSERT(bm);
 
-    data = (BlockmapCellData*) Gridmap_Cell(bm->gridmap, cell, false);
+    BlockmapCellData* data = reinterpret_cast<BlockmapCellData*>(Gridmap_Cell(bm->gridmap, cell, false));
     if(!data) return 0;
     return data->objectCount;
 }
 
 uint Blockmap_CellXYObjectCount(Blockmap* bm, BlockmapCoord x, BlockmapCoord y)
 {
-    BlockmapCell cell;
-    cell[VX] = x;
-    cell[VY] = y;
+    BlockmapCell cell = { x, y };
     return Blockmap_CellObjectCount(bm, cell);
 }
 
 int BlockmapCellData_IterateObjects(BlockmapCellData* data,
-    int (*callback) (void* object, void* context), void* context)
+    int (*callback) (void* object, void* parameters), void* parameters)
 {
-    BlockmapRingNode* next, *link;
-    assert(data);
-
-    link = data->ringNodes;
+    DENG2_ASSERT(data);
+    BlockmapRingNode* link = data->ringNodes;
     while(link)
     {
-        next = link->next;
+        BlockmapRingNode* next = link->next;
 
         if(link->object)
         {
-            int result = callback(link->object, context);
+            int result = callback(link->object, parameters);
             if(result) return result; // Stop iteration.
         }
 
@@ -375,47 +374,44 @@ int BlockmapCellData_IterateObjects(BlockmapCellData* data,
 }
 
 int Blockmap_IterateCellObjects(Blockmap* bm, const_BlockmapCell cell,
-    int (*callback) (void* object, void* context), void* context)
+    int (*callback) (void* object, void* parameters), void* parameters)
 {
-    BlockmapCellData* data;
-    assert(bm);
-
-    data = Gridmap_Cell(bm->gridmap, cell, false);
+    DENG2_ASSERT(bm);
+    BlockmapCellData* data = reinterpret_cast<BlockmapCellData*>(Gridmap_Cell(bm->gridmap, cell, false));
     if(data)
     {
-        return BlockmapCellData_IterateObjects(data, callback, context);
+        return BlockmapCellData_IterateObjects(data, callback, parameters);
     }
     return false; // Continue iteration.
 }
 
 typedef struct {
-    int (*callback)(void* userData, void* context);
-    void* context;
+    int (*callback)(void* userData, void* parameters);
+    void* parameters;
 } cellobjectiterator_params_t;
 
-static int cellObjectIterator(void* userData, void* context)
+static int cellObjectIterator(void* userData, void* parameters)
 {
-    BlockmapCellData* data = (BlockmapCellData*)userData;
-    cellobjectiterator_params_t* args = (cellobjectiterator_params_t*)context;
-    assert(args);
+    BlockmapCellData* data = reinterpret_cast<BlockmapCellData*>(userData);
+    cellobjectiterator_params_t* args = static_cast<cellobjectiterator_params_t*>(parameters);
+    DENG2_ASSERT(args);
 
-    return BlockmapCellData_IterateObjects(data, args->callback, args->context);
+    return BlockmapCellData_IterateObjects(data, args->callback, args->parameters);
 }
 
 int Blockmap_IterateCellBlockObjects(Blockmap* bm, const BlockmapCellBlock* cellBlock,
-    int (*callback) (void* object, void* context), void* context)
+    int (*callback) (void* object, void* parameters), void* parameters)
 {
+    DENG2_ASSERT(bm);
+
     cellobjectiterator_params_t args;
-    assert(bm);
-
-    args.callback = callback;
-    args.context = context;
-
+    args.callback   = callback;
+    args.parameters = parameters;
     return Gridmap_BlockIterate2(bm->gridmap, cellBlock, cellObjectIterator, (void*)&args);
 }
 
 const Gridmap* Blockmap_Gridmap(Blockmap* bm)
 {
-    assert(bm);
+    DENG2_ASSERT(bm);
     return bm->gridmap;
 }

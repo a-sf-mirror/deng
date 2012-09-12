@@ -29,6 +29,10 @@
 /// @todo It should not be necessary to expose the Gridmap implementation.
 #include "gridmap.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct blockmap_s; // The Blockmap instance (opaque).
 typedef struct blockmap_s Blockmap;
 
@@ -180,15 +184,19 @@ boolean Blockmap_UnlinkObjectInCellXY(Blockmap* blockmap, BlockmapCoord x, Block
 void Blockmap_UnlinkObjectInCellBlock(Blockmap* blockmap, const BlockmapCellBlock* blockCoords, void* object);
 
 int Blockmap_IterateCellObjects(Blockmap* blockmap, const_BlockmapCell cell,
-    int (*callback) (void* object, void* context), void* context);
+    int (*callback) (void* object, void* parameters), void* parameters);
 
 int Blockmap_IterateCellBlockObjects(Blockmap* blockmap, const BlockmapCellBlock* blockCoords,
-    int (*callback) (void* object, void* context), void* context);
+    int (*callback) (void* object, void* parameters), void* parameters);
 
 /**
  * Retrieve an immutable pointer to the underlying Gridmap instance (mainly for
  * for debug purposes).
  */
 const Gridmap* Blockmap_Gridmap(Blockmap* blockmap);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /// LIBDENG_MAP_BLOCKMAP_H
