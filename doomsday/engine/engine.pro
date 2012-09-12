@@ -549,7 +549,7 @@ SOURCES += \
     portable/src/p_intercept.c \
     portable/src/p_maputil.c \
     portable/src/p_mobj.c \
-    portable/src/p_objlink.c \
+    portable/src/p_objlink.cpp \
     portable/src/p_particle.c \
     portable/src/p_players.c \
     portable/src/p_polyobjs.c \
