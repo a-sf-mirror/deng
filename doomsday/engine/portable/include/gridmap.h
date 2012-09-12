@@ -32,6 +32,10 @@
 
 #include "dd_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef uint GridmapCoord;
 typedef GridmapCoord GridmapCell[2];
 typedef const GridmapCoord const_GridmapCell[2];
@@ -56,14 +60,50 @@ typedef struct gridmapcellblock_s {
             GridmapCell box[2];
         };
     };
+#ifdef __cplusplus
+    gridmapcellblock_s(GridmapCoord _minX = 0, GridmapCoord _minY = 0, GridmapCoord _maxX = 0, GridmapCoord _maxY = 0)
+        : minX(_minX), minY(_minY), maxX(_maxX), maxY(_maxY) {}
+
+    gridmapcellblock_s& operator = (const gridmapcellblock_s& other)
+    {
+        minX = other.minX;
+        minY = other.minY;
+        maxX = other.maxX;
+        maxY = other.maxY;
+        return *this;
+    }
+
+    gridmapcellblock_s& setCoords(const_GridmapCell newMin, const_GridmapCell newMax)
+    {
+        if(newMin)
+        {
+            minX = newMin[0];
+            minY = newMin[1];
+        }
+        if(newMax)
+        {
+            maxX = newMax[0];
+            maxY = newMax[1];
+        }
+        return *this;
+    }
+
+    gridmapcellblock_s& setCoords(GridmapCoord newMinX, GridmapCoord newMinY, GridmapCoord newMaxX, GridmapCoord newMaxY)
+    {
+        minX = newMinX;
+        minY = newMinY;
+        maxX = newMaxX;
+        maxY = newMaxY;
+        return *this;
+    }
+#endif
 } GridmapCellBlock;
 
 /**
  * Initialize @a block using the specified coordinates.
  */
-void GridmapBlock_SetCoords(GridmapCellBlock* block, const_GridmapCell min, const_GridmapCell max);
-void GridmapBlock_SetCoordsXY(GridmapCellBlock* block, GridmapCoord minX, GridmapCoord minY,
-    GridmapCoord maxX, GridmapCoord maxY);
+GridmapCellBlock* GridmapBlock_SetCoords(GridmapCellBlock* block, const_GridmapCell min, const_GridmapCell max);
+GridmapCellBlock* GridmapBlock_SetCoordsXY(GridmapCellBlock* block, GridmapCoord minX, GridmapCoord minY, GridmapCoord maxX, GridmapCoord maxY);
 
 struct gridmap_s; // The Gridmap instance (opaque).
 
@@ -196,6 +236,10 @@ boolean Gridmap_ClipBlock(Gridmap* gridmap, GridmapCellBlock* block);
  *
  * @param gridmap         Gridmap instance.
  */
-void Gridmap_DebugDrawer(const Gridmap* gridmap);
+void Gridmap_DebugDrawer(Gridmap* gridmap);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /// LIBDENG_DATA_GRIDMAP_H
