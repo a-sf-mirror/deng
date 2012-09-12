@@ -41,8 +41,8 @@ typedef GridmapCoord GridmapCell[2];
 typedef const GridmapCoord const_GridmapCell[2];
 
 /**
- * GridmapCellBlock. Handy POD structure for representing a rectangular range of cells
- * (a "cell block").
+ * GridmapCellBlock. Handy POD structure for representing a rectangular range
+ * of cells (a "cell block").
  */
 typedef struct gridmapcellblock_s {
     union {
@@ -105,11 +105,62 @@ typedef struct gridmapcellblock_s {
 GridmapCellBlock* GridmapBlock_SetCoords(GridmapCellBlock* block, const_GridmapCell min, const_GridmapCell max);
 GridmapCellBlock* GridmapBlock_SetCoordsXY(GridmapCellBlock* block, GridmapCoord minX, GridmapCoord minY, GridmapCoord maxX, GridmapCoord maxY);
 
-struct gridmap_s; // The Gridmap instance (opaque).
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#ifdef __cplusplus
+
+namespace de {
+
+class TreeCell;
+
+class Gridmap
+{
+public:
+    /**
+     * @param width          X dimension in cells.
+     * @param height         Y dimension in cells.
+     * @param sizeOfCell     Amount of memory to be allocated for the user data associated with each cell.
+     * @param zoneTag        Zone memory tag for the allocated user data.
+     */
+    Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
+    ~Gridmap();
+
+    operator TreeCell&() { return root(); }
+
+    TreeCell& root();
+
+    GridmapCoord width() const;
+    GridmapCoord height() const;
+    const GridmapCoord (&widthHeight() const)[2];
+
+    bool clipBlock(GridmapCellBlock& block) const;
+
+    TreeCell* findLeaf(GridmapCoord x, GridmapCoord y, bool alloc);
+
+    void* cell(const_GridmapCell cell, bool alloc);
+    inline void* cell(GridmapCoord x, GridmapCoord y, bool alloc)
+    {
+        GridmapCell mcell = { x, y };
+        return cell(mcell, alloc);
+    }
+
+private:
+    struct Instance;
+    Instance* d;
+};
+
+} // namespace de
+
+extern "C" {
+#endif // __cplusplus
 
 /**
- * Gridmap instance. Constructed with Gridmap_New()
+ * C wrapper API:
  */
+
+struct gridmap_s; // The Gridmap instance (opaque).
 typedef struct gridmap_s Gridmap;
 
 /**

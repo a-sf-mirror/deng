@@ -411,7 +411,7 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
     glPushMatrix();
     glScaled(cellSize[VX], cellSize[VY], 1);
 
-    Gridmap_DebugDrawer(Blockmap_Gridmap(blockmap));
+    Gridmap_DebugDrawer((Gridmap*)Blockmap_Gridmap(blockmap));
 
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
