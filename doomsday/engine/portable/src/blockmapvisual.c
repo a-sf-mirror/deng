@@ -31,6 +31,7 @@
 #include "de_ui.h"
 
 #include <de/concurrency.h>
+#include "gridmap.h"
 #include "blockmap.h"
 
 byte bmapShowDebug = 0; // 1 = mobjs, 2 = linedefs, 3 = BSP leafs, 4 = polyobjs.
@@ -411,7 +412,7 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
     glPushMatrix();
     glScaled(cellSize[VX], cellSize[VY], 1);
 
-    Gridmap_DebugDrawer((Gridmap*)Blockmap_Gridmap(blockmap));
+    Gridmap_DebugDrawer((struct gridmap_s*)Blockmap_Gridmap(blockmap));
 
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();

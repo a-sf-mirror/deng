@@ -38,7 +38,6 @@
 #include "m_linkedlist.h"
 #include "m_stack.h"
 #include "binarytree.h"
-#include "gridmap.h"
 #include "m_decomp64.h"
 #include "stringarray.h"
 #include <de/smoother.h>

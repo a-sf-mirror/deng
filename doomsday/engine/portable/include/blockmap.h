@@ -26,8 +26,7 @@
 #include "dd_types.h"
 #include "m_vector.h"
 
-/// @todo It should not be necessary to expose the Gridmap implementation.
-#include "gridmap.h"
+#include "gridmapcellblock.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -230,7 +229,7 @@ boolean Blockmap_UnlinkObjectInCellXY(Blockmap* blockmap, BlockmapCoord x, Block
 
 void Blockmap_UnlinkObjectInCellBlock(Blockmap* blockmap, const BlockmapCellBlock* blockCoords, void* object);
 
-const Gridmap* Blockmap_Gridmap(Blockmap* blockmap);
+const struct gridmap_s* Blockmap_Gridmap(Blockmap* blockmap);
 
 int Blockmap_IterateCellObjects(Blockmap* blockmap, const_BlockmapCell cell,
     int (*callback) (void* object, void* parameters), void* parameters);
