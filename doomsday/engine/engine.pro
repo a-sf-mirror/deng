@@ -447,7 +447,7 @@ SOURCES += \
     portable/src/b_util.c \
     portable/src/binarytree.cpp \
     portable/src/bitmapfont.c \
-    portable/src/blockmap.c \
+    portable/src/blockmap.cpp \
     portable/src/blockmapvisual.c \
     portable/src/blockset.c \
     portable/src/busymode.cpp \
