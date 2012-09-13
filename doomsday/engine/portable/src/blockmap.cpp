@@ -312,19 +312,13 @@ bool de::Blockmap::cellBlock(BlockmapCellBlock& cellBlock, AABoxd const& box) co
            cell(cellBlock.max, box.max);
 }
 
-bool de::Blockmap::createCellAndLinkObjectXY(BlockmapCoord x, BlockmapCoord y, void* object)
+bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell, void* object)
 {
     DENG2_ASSERT(object);
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(x, y, true));
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell, true));
     if(!cell) return false; // Outside the blockmap?
     cell->linkObject(object);
     return true; // Link added.
-}
-
-bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell, void* object)
-{
-    DENG2_ASSERT(mcell);
-    return createCellAndLinkObjectXY(mcell[VX], mcell[VY], object);
 }
 
 bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
@@ -336,12 +330,6 @@ bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
         cell->unlinkObject(object, &unlinked);
     }
     return unlinked;
-}
-
-bool de::Blockmap::unlinkObjectInCellXY(BlockmapCoord x, BlockmapCoord y, void* object)
-{
-    BlockmapCell mcell = { x, y };
-    return unlinkObjectInCell(mcell, object);
 }
 
 static int unlinkObjectInCellWorker(void* ptr, void* parameters)
@@ -363,9 +351,9 @@ uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const
     return cell->size();
 }
 
-Gridmap* de::Blockmap::gridmap()
+Gridmap const& de::Blockmap::gridmap()
 {
-    return &d->gridmap;
+    return d->gridmap;
 }
 
 int de::Blockmap::iterateCellObjects(const_BlockmapCell mcell,
@@ -524,7 +512,7 @@ const pvec2d_t Blockmap_CellSize(Blockmap const* bm)
 boolean Blockmap_CreateCellAndLinkObjectXY(Blockmap* bm, BlockmapCoord x, BlockmapCoord y, void* object)
 {
     SELF(bm);
-    return CPP_BOOL(self->createCellAndLinkObjectXY(x, y, object));
+    return CPP_BOOL(self->createCellAndLinkObject(x, y, object));
 }
 
 boolean Blockmap_CreateCellAndLinkObject(Blockmap* bm, const_BlockmapCell mcell, void* object)
@@ -542,7 +530,7 @@ boolean Blockmap_UnlinkObjectInCell(Blockmap* bm, const_BlockmapCell mcell, void
 boolean Blockmap_UnlinkObjectInCellXY(Blockmap* bm, BlockmapCoord x, BlockmapCoord y, void* object)
 {
     SELF(bm);
-    return CPP_BOOL(self->unlinkObjectInCellXY(x, y, object));
+    return CPP_BOOL(self->unlinkObjectInCell(x, y, object));
 }
 
 void Blockmap_UnlinkObjectInCellBlock(Blockmap* bm, const BlockmapCellBlock* cellBlock, void* object)

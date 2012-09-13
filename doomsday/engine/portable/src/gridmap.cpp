@@ -136,8 +136,9 @@ private:
  * @return  Zero iff iteration completed wholly, else the value returned by the
  *          last callback made.
  */
-static int iterateCell(TreeCell& tree, bool leafOnly,
-    int (*callback) (TreeCell& tree, void* parameters), void* parameters = 0)
+template <typename T>
+static int iterateCell(T& tree, bool leafOnly,
+    int (*callback) (T& tree, void* parameters), void* parameters = 0)
 {
     DENG2_ASSERT(callback);
 
@@ -146,22 +147,22 @@ static int iterateCell(TreeCell& tree, bool leafOnly,
     {
         if(tree.topLeft())
         {
-            result = iterateCell(*tree.topLeft(), leafOnly, callback, parameters);
+            result = iterateCell<T>(*tree.topLeft(), leafOnly, callback, parameters);
             if(result) return result;
         }
         if(tree.topRight())
         {
-            result = iterateCell(*tree.topRight(), leafOnly, callback, parameters);
+            result = iterateCell<T>(*tree.topRight(), leafOnly, callback, parameters);
             if(result) return result;
         }
         if(tree.bottomLeft())
         {
-            result = iterateCell(*tree.bottomLeft(), leafOnly, callback, parameters);
+            result = iterateCell<T>(*tree.bottomLeft(), leafOnly, callback, parameters);
             if(result) return result;
         }
         if(tree.bottomRight())
         {
-            result = iterateCell(*tree.bottomRight(), leafOnly, callback, parameters);
+            result = iterateCell<T>(*tree.bottomRight(), leafOnly, callback, parameters);
             if(result) return result;
         }
     }
@@ -337,6 +338,11 @@ TreeCell& Gridmap::root()
     return d->root;
 }
 
+TreeCell const& Gridmap::root() const
+{
+    return d->root;
+}
+
 GridmapCoord Gridmap::width() const
 {
     return d->dimensions[X];
@@ -473,7 +479,7 @@ int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallbac
 #define UNIT_WIDTH                     1
 #define UNIT_HEIGHT                    1
 
-static int drawCell(TreeCell& tree, void* /*parameters*/)
+static int drawCell(TreeCell const& tree, void* /*parameters*/)
 {
     vec2f_t topLeft, bottomRight;
 
@@ -490,7 +496,7 @@ static int drawCell(TreeCell& tree, void* /*parameters*/)
     return 0; // Continue iteration.
 }
 
-void Gridmap_DebugDrawer(Gridmap* gm)
+void Gridmap_DebugDrawer(Gridmap const& gm)
 {
     // We'll be changing the color, so query the current and restore later.
     GLfloat oldColor[4];
@@ -499,7 +505,7 @@ void Gridmap_DebugDrawer(Gridmap* gm)
     /**
      * Draw our Quadtree.
      */
-    TreeCell& root = *gm;
+    TreeCell const& root = gm;
     glColor4f(1.f, 1.f, 1.f, 1.f / root.size());
     iterateCell(root, false/*all cells*/, drawCell);
 
@@ -508,7 +514,7 @@ void Gridmap_DebugDrawer(Gridmap* gm)
      */
     vec2f_t start, end;
     V2f_Set(start, 0, 0);
-    V2f_Set(end, UNIT_WIDTH * gm->width(), UNIT_HEIGHT * gm->height());
+    V2f_Set(end, UNIT_WIDTH * gm.width(), UNIT_HEIGHT * gm.height());
 
     glColor3f(1, .5f, .5f);
     glBegin(GL_LINES);

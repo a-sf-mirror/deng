@@ -75,7 +75,7 @@ public:
     /// @return  Height of a Blockmap cell in map space units.
     coord_t cellHeight() const;
 
-    /// @return  Size [width,height] of a Blockmap cell in map space units.
+    /// @return  Size [width, height] of a Blockmap cell in map space units.
     const pvec2d_t cellSize() const;
 
     /**
@@ -156,12 +156,18 @@ public:
     }
 
     bool createCellAndLinkObject(const_BlockmapCell cell, void* object);
-
-    bool createCellAndLinkObjectXY(BlockmapCoord x, BlockmapCoord y, void* object);
+    inline bool createCellAndLinkObject(BlockmapCoord x, BlockmapCoord y, void* object)
+    {
+        BlockmapCell mcell = { x, y };
+        return createCellAndLinkObject(mcell, object);
+    }
 
     bool unlinkObjectInCell(const_BlockmapCell cell, void* object);
-
-    bool unlinkObjectInCellXY(BlockmapCoord x, BlockmapCoord y, void* object);
+    inline bool unlinkObjectInCell(BlockmapCoord x, BlockmapCoord y, void* object)
+    {
+        BlockmapCell mcell = { x, y };
+        return unlinkObjectInCell(mcell, object);
+    }
 
     void unlinkObjectInCellBlock(BlockmapCellBlock const& blockCoords, void* object);
 
@@ -169,7 +175,7 @@ public:
      * Retrieve an immutable pointer to the underlying Gridmap instance (mainly for
      * for debug purposes).
      */
-    Gridmap* gridmap();
+    Gridmap const& gridmap();
 
     int iterateCellObjects(const_BlockmapCell mcell, int (*callback) (void* object, void* parameters), void* parameters = 0);
 

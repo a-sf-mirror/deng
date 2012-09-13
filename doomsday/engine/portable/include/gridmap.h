@@ -51,8 +51,10 @@ public:
     ~Gridmap();
 
     operator TreeCell&() { return root(); }
+    operator TreeCell const&() const { return root(); }
 
     TreeCell& root();
+    TreeCell const& root() const;
 
     /// @return  Width of the Gridmap in cells.
     GridmapCoord width() const;
@@ -143,6 +145,6 @@ private:
  *
  * @param gridmap         Gridmap instance.
  */
-void Gridmap_DebugDrawer(Gridmap* gridmap);
+void Gridmap_DebugDrawer(Gridmap const& gridmap);
 
 #endif /// LIBDENG_DATA_GRIDMAP_H
