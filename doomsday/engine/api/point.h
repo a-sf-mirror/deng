@@ -40,6 +40,16 @@ typedef struct Point2Raw_s {
     };
 #ifdef __cplusplus
     Point2Raw_s(int x_ = 0, int y_ = 0) : x(x_), y(y_) {}
+
+    Point2Raw_s& operator= (const Point2Raw_s& other)
+    {
+        if(this != &other)
+        {
+            x = other.x;
+            y = other.y;
+        }
+        return *this;
+    }
 #endif
 } Point2Raw;
 
