@@ -183,6 +183,7 @@ de::Blockmap::Blockmap(coord_t const min[2], coord_t const max[2], uint cellWidt
 
 de::Blockmap::~Blockmap()
 {
+    Gridmap::destroy(d->gridmap);
     Z_Free(d);
 }
 
@@ -404,6 +405,16 @@ Blockmap* Blockmap_New(coord_t const min[2], coord_t const max[2], uint cellWidt
 
     LOG_INFO("Blockmap::New: Width:%u Height:%u") << bm->width() << bm->height();
     return reinterpret_cast<Blockmap*>(bm);
+}
+
+void Blockmap_Delete(Blockmap* bm)
+{
+    if(bm)
+    {
+        SELF(bm);
+        self->~Blockmap();
+        Z_Free(bm);
+    }
 }
 
 BlockmapCoord Blockmap_CellX(Blockmap* bm, coord_t x)

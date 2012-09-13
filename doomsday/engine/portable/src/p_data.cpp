@@ -33,6 +33,7 @@
 #include "game.h"
 #include "rend_bias.h"
 #include "m_bams.h"
+#include "blockmap.h"
 
 #include <de/Error>
 #include <de/LegacyCore>
@@ -81,22 +82,25 @@ const char* P_GenerateUniqueMapId(const char* mapID)
 
 void P_SetCurrentMap(GameMap* map)
 {
-    if(!map)
+    // @todo: Merge in explicit map unload from branch beta6-mapcache.
+    if(theMap)
     {
-        // @todo: Merge in explicit map unload from branch beta6-mapcache.
+        Uri_Delete(theMap->uri);
+        Blockmap_Delete(theMap->mobjBlockmap);
+        Blockmap_Delete(theMap->polyobjBlockmap);
+        Blockmap_Delete(theMap->lineDefBlockmap);
+        Blockmap_Delete(theMap->bspLeafBlockmap);
 
         // Most memory is allocated from the zone.
         Z_FreeTags(PU_MAP, PU_PURGELEVEL-1);
+    }
 
-        if(mapUri)
-        {
-            Uri_Delete(mapUri);
-            mapUri = NULL;
-        }
-
+    if(!map)
+    {
+        mapUri   = 0;
         vertexes = 0;
-        hedges = 0;
-        sectors = 0;
+        hedges   = 0;
+        sectors  = 0;
         bspLeafs = 0;
         bspNodes = 0;
         lineDefs = 0;
@@ -107,7 +111,7 @@ void P_SetCurrentMap(GameMap* map)
         return;
     }
 
-    mapUri = map->uri;
+    mapUri   = map->uri;
 
     vertexes = map->vertexes;
     sideDefs = map->sideDefs;

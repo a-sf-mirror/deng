@@ -334,6 +334,7 @@ Gridmap::Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int
 
 Gridmap::~Gridmap()
 {
+    d->~Instance();
     Z_Free(d);
 }
 

@@ -278,7 +278,8 @@ boolean DAM_AttemptMapLoad(const Uri* uri)
         GameMap* map = NULL;
         ded_mapinfo_t* mapInfo;
 
-        Z_FreeTags(PU_MAP, PU_PURGELEVEL - 1);
+        P_SetCurrentMap(0);
+        //Z_FreeTags(PU_MAP, PU_PURGELEVEL - 1);
 
         if(mapCache && dam->cachedMapFound)
         {

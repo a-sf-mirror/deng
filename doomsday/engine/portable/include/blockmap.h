@@ -189,6 +189,8 @@ typedef struct blockmap_s Blockmap;
 
 Blockmap* Blockmap_New(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight);
 
+void Blockmap_Delete(Blockmap* blockmap);
+
 const pvec2d_t Blockmap_Origin(Blockmap* blockmap);
 
 const AABoxd* Blockmap_Bounds(Blockmap* blockmap);
