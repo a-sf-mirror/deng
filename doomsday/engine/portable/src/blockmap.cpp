@@ -148,6 +148,9 @@ private:
     uint objectCount;
 };
 
+static int BlockmapCellData_IterateObjects(BlockmapCellData* cell,
+    int (*callback) (void* object, void* parameters), void* parameters = 0);
+
 struct de::Blockmap::Instance
 {
     /// Minimal and Maximal points in map space coordinates.
@@ -256,43 +259,42 @@ bool de::Blockmap::cellBlock(BlockmapCellBlock* cellBlock, const AABoxd* box)
     return false;
 }
 
-const pvec2d_t de::Blockmap::origin()
+const pvec2d_t de::Blockmap::origin() const
 {
     return d->bounds.min;
 }
 
-const AABoxd* de::Blockmap::bounds()
+const AABoxd* de::Blockmap::bounds() const
 {
     return &d->bounds;
 }
 
-BlockmapCoord de::Blockmap::width()
+BlockmapCoord de::Blockmap::width() const
 {
     return d->gridmap.width();
 }
 
-BlockmapCoord de::Blockmap::height()
+BlockmapCoord de::Blockmap::height() const
 {
     return d->gridmap.height();
 }
 
-void de::Blockmap::size(BlockmapCoord v[])
+BlockmapCell const& de::Blockmap::widthHeight() const
 {
-    v[0] = d->gridmap.width();
-    v[1] = d->gridmap.height();
+    return d->gridmap.widthHeight();
 }
 
-coord_t de::Blockmap::cellWidth()
+coord_t de::Blockmap::cellWidth() const
 {
     return d->cellSize[VX];
 }
 
-coord_t de::Blockmap::cellHeight()
+coord_t de::Blockmap::cellHeight() const
 {
     return d->cellSize[VY];
 }
 
-const pvec2d_t de::Blockmap::cellSize()
+const pvec2d_t de::Blockmap::cellSize() const
 {
     return d->cellSize;
 }
@@ -348,15 +350,20 @@ uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell)
     return cell->size();
 }
 
-uint de::Blockmap::cellXYObjectCount(BlockmapCoord x, BlockmapCoord y)
-{
-    BlockmapCell mcell = { x, y };
-    return cellObjectCount(mcell);
-}
-
 Gridmap* de::Blockmap::gridmap()
 {
     return &d->gridmap;
+}
+
+int de::Blockmap::iterateCellObjects(const_BlockmapCell mcell,
+    int (*callback) (void* object, void* parameters), void* parameters)
+{
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell, false));
+    if(cell)
+    {
+        return BlockmapCellData_IterateObjects(cell, callback, parameters);
+    }
+    return false; // Continue iteration.
 }
 
 /**
@@ -451,10 +458,12 @@ BlockmapCoord Blockmap_Height(Blockmap* bm)
     return self->height();
 }
 
-void Blockmap_Size(Blockmap* bm, BlockmapCoord v[])
+void Blockmap_WidthHeight(Blockmap* bm, BlockmapCell v)
 {
     SELF(bm);
-    self->size(v);
+    DENG2_ASSERT(v);
+    v[0] = self->width();
+    v[1] = self->height();
 }
 
 coord_t Blockmap_CellWidth(Blockmap* bm)
@@ -515,16 +524,10 @@ uint Blockmap_CellObjectCount(Blockmap* bm, const_BlockmapCell mcell)
 uint Blockmap_CellXYObjectCount(Blockmap* bm, BlockmapCoord x, BlockmapCoord y)
 {
     SELF(bm);
-    return self->cellXYObjectCount(x, y);
+    return self->cellObjectCount(x, y);
 }
 
-/*const Gridmap* Blockmap_Gridmap(Blockmap* bm)
-{
-    SELF(bm);
-    return self->gridmap();
-}*/
-
-int BlockmapCellData_IterateObjects(BlockmapCellData* cell,
+static int BlockmapCellData_IterateObjects(BlockmapCellData* cell,
     int (*callback) (void* object, void* parameters), void* parameters)
 {
     DENG2_ASSERT(cell);
@@ -548,12 +551,7 @@ int Blockmap_IterateCellObjects(Blockmap* bm, const_BlockmapCell mcell,
     int (*callback) (void* object, void* parameters), void* parameters)
 {
     SELF(bm);
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(self->gridmap()->cell(mcell, false));
-    if(cell)
-    {
-        return BlockmapCellData_IterateObjects(cell, callback, parameters);
-    }
-    return false; // Continue iteration.
+    return self->iterateCellObjects(mcell, callback, parameters);
 }
 
 typedef struct {

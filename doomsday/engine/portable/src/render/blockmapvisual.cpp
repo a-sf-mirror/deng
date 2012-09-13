@@ -1,9 +1,9 @@
 /**
- * @file blockmapvisual.c
- * Graphical Blockmap Visual. @ingroup map
+ * @file blockmapvisual.cpp
+ * Graphical Blockmap Visual. @ingroup render
  *
- * @authors Copyright © 2003-2012 Jaakko Keränen <jaakko.keranen@iki.fi>
- * @authors Copyright © 2006-2012 Daniel Swanson <danij@dengine.net>
+ * @author Copyright &copy; 2003-2012 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * @author Copyright &copy; 2006-2012 Daniel Swanson <danij@dengine.net>
  *
  * @par License
  * GPL: http://www.gnu.org/licenses/gpl.html
@@ -20,7 +20,7 @@
  * 02110-1301 USA</small>
  */
 
-#include <math.h>
+#include <cmath>
 
 #include "de_base.h"
 #include "de_console.h"
@@ -31,13 +31,13 @@
 #include "de_ui.h"
 
 #include <de/concurrency.h>
-//#include "gridmap.h"
+#include "gridmap.h"
 #include "blockmap.h"
 
 byte bmapShowDebug = 0; // 1 = mobjs, 2 = linedefs, 3 = BSP leafs, 4 = polyobjs.
 float bmapDebugSize = 1.5f;
 
-static int rendMobj(mobj_t* mo, void* parameters)
+static int rendMobj(mobj_t* mo, void* /*parameters*/)
 {
     if(mo->validCount != validCount)
     {
@@ -54,7 +54,7 @@ static int rendMobj(mobj_t* mo, void* parameters)
     return false; // Continue iteration.
 }
 
-static int rendLineDef(LineDef* line, void* parameters)
+static int rendLineDef(LineDef* line, void* /*parameters*/)
 {
     if(line->validCount != validCount)
     {
@@ -66,7 +66,7 @@ static int rendLineDef(LineDef* line, void* parameters)
     return false; // Continue iteration.
 }
 
-static int rendBspLeaf(BspLeaf* bspLeaf, void* parameters)
+static int rendBspLeaf(BspLeaf* bspLeaf, void* /*parameters*/)
 {
     if(bspLeaf->validCount != validCount)
     {
@@ -144,10 +144,10 @@ static int rendBspLeaf(BspLeaf* bspLeaf, void* parameters)
     return false; // Continue iteration.
 }
 
-int rendCellLineDefs(Blockmap* blockmap, uint const coords[2], void* parameters)
+int rendCellLineDefs(de::Blockmap* blockmap, uint const coords[2], void* parameters)
 {
     glBegin(GL_LINES);
-        Blockmap_IterateCellObjects(blockmap, coords, (int (*)(void*,void*)) rendLineDef, parameters);
+        blockmap->iterateCellObjects(coords, (int (*)(void*,void*)) rendLineDef, parameters);
     glEnd();
     return false; // Continue iteration.
 }
@@ -157,45 +157,44 @@ int rendCellPolyobjLineDefs(void* object, void* parameters)
     return Polyobj_LineIterator((Polyobj*)object, rendLineDef, parameters);
 }
 
-int rendCellPolyobjs(Blockmap* blockmap, uint const coords[2], void* parameters)
+int rendCellPolyobjs(de::Blockmap* blockmap, uint const coords[2], void* parameters)
 {
     glBegin(GL_LINES);
-        Blockmap_IterateCellObjects(blockmap, coords, (int (*)(void*,void*)) rendCellPolyobjLineDefs, parameters);
+        blockmap->iterateCellObjects(coords, (int (*)(void*,void*)) rendCellPolyobjLineDefs, parameters);
     glEnd();
     return false; // Continue iteration.
 }
 
-int rendCellMobjs(Blockmap* blockmap, uint const coords[2], void* parameters)
+int rendCellMobjs(de::Blockmap* blockmap, uint const coords[2], void* parameters)
 {
     glBegin(GL_QUADS);
-        Blockmap_IterateCellObjects(blockmap, coords, (int (*)(void*,void*)) rendMobj, parameters);
+        blockmap->iterateCellObjects(coords, (int (*)(void*,void*)) rendMobj, parameters);
     glEnd();
     return false; // Continue iteration.
 }
 
-int rendCellBspLeafs(Blockmap* blockmap, uint const coords[2], void* parameters)
+int rendCellBspLeafs(de::Blockmap* blockmap, uint const coords[2], void* parameters)
 {
-    Blockmap_IterateCellObjects(blockmap, coords, (int (*)(void*,void*)) rendBspLeaf, parameters);
+    blockmap->iterateCellObjects(coords, (int (*)(void*,void*)) rendBspLeaf, parameters);
     return false; // Continue iteration.
 }
 
-void rendBlockmapBackground(Blockmap* blockmap)
+void rendBlockmapBackground(de::Blockmap* blockmap)
 {
-    vec2f_t start, end;
-    uint x, y, bmapSize[2];
-    assert(blockmap);
+    DENG2_ASSERT(blockmap);
 
-    Blockmap_Size(blockmap, bmapSize);
+    const BlockmapCell& bmapSize = blockmap->widthHeight();
 
     // Scale modelview matrix so we can express cell geometry
     // using a cell-sized unit coordinate space.
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glScalef(Blockmap_CellWidth(blockmap), Blockmap_CellHeight(blockmap), 1);
+    glScalef(blockmap->cellWidth(), blockmap->cellHeight(), 1);
 
     /**
      * Draw the translucent quad which represents the "used" cells.
      */
+    vec2f_t start, end;
     V2f_Set(start, 0, 0);
     V2f_Set(end, bmapSize[VX], bmapSize[VY]);
     glColor4f(.25f, .25f, .25f, .66f);
@@ -210,10 +209,11 @@ void rendBlockmapBackground(Blockmap* blockmap)
      * Draw the "null cells" over the top.
      */
     glColor4f(0, 0, 0, .95f);
+    BlockmapCoord x, y;
     for(y = 0; y < bmapSize[VY]; ++y)
     for(x = 0; x < bmapSize[VX]; ++x)
     {
-        if(Blockmap_CellXYObjectCount(blockmap, x, y)) continue;
+        if(blockmap->cellObjectCount(x, y)) continue;
 
         glBegin(GL_QUADS);
             glVertex2f(x,   y);
@@ -230,9 +230,7 @@ void rendBlockmapBackground(Blockmap* blockmap)
 
 static void drawCellInfo(const Point2Raw* _origin, const char* info)
 {
-    Point2Raw origin;
-    Size2Raw size;
-    assert(_origin);
+    DENG2_ASSERT(_origin);
 
     glEnable(GL_TEXTURE_2D);
 
@@ -240,13 +238,12 @@ static void drawCellInfo(const Point2Raw* _origin, const char* info)
     FR_LoadDefaultAttrib();
     FR_SetShadowOffset(UI_SHADOW_OFFSET, UI_SHADOW_OFFSET);
     FR_SetShadowStrength(UI_SHADOW_STRENGTH);
-    size.width  = FR_TextWidth(info)  + 16;
-    size.height = FR_SingleLineHeight(info) + 16;
 
-    origin.x = _origin->x;
-    origin.y = _origin->y;
+    Size2Raw size = Size2Raw(FR_TextWidth(info)  + 16, FR_SingleLineHeight(info) + 16);
 
+    Point2Raw origin = *_origin;
     origin.x -= size.width / 2;
+
     UI_GradientEx(&origin, &size, 6, UI_Color(UIC_BG_MEDIUM), UI_Color(UIC_BG_LIGHT), .5f, .5f);
     UI_DrawRectEx(&origin, &size, 6, false, UI_Color(UIC_BRD_HI), NULL, .5f, -1);
 
@@ -258,30 +255,24 @@ static void drawCellInfo(const Point2Raw* _origin, const char* info)
     glDisable(GL_TEXTURE_2D);
 }
 
-static void drawBlockmapInfo(const Point2Raw* _origin, Blockmap* blockmap)
+static void drawBlockmapInfo(const Point2Raw* _origin, de::Blockmap* blockmap)
 {
-    uint bmapSize[2];
-    Point2Raw origin;
-    Size2Raw size;
-    char buf[80];
-    int th;
-    assert(blockmap);
+    DENG2_ASSERT(blockmap);
 
     glEnable(GL_TEXTURE_2D);
-
-    origin.x = _origin->x;
-    origin.y = _origin->y;
 
     FR_SetFont(fontFixed);
     FR_LoadDefaultAttrib();
     FR_SetShadowOffset(UI_SHADOW_OFFSET, UI_SHADOW_OFFSET);
     FR_SetShadowStrength(UI_SHADOW_STRENGTH);
-    size.width = 16 + FR_TextWidth("(+000.0,+000.0)(+000.0,+000.0)");
-    th = FR_SingleLineHeight("Info");
-    size.height = th * 4 + 16;
 
+    int th = FR_SingleLineHeight("Info");
+    Size2Raw size = Size2Raw(16 + FR_TextWidth("(+000.0,+000.0)(+000.0,+000.0)"), th * 4 + 16);
+
+    Point2Raw origin = *_origin;
     origin.x -= size.width;
     origin.y -= size.height;
+
     UI_GradientEx(&origin, &size, 6, UI_Color(UIC_BG_MEDIUM), UI_Color(UIC_BG_LIGHT), .5f, .5f);
     UI_DrawRectEx(&origin, &size, 6, false, UI_Color(UIC_BRD_HI), NULL, .5f, -1);
 
@@ -291,28 +282,29 @@ static void drawBlockmapInfo(const Point2Raw* _origin, Blockmap* blockmap)
     UI_TextOutEx2("Blockmap", &origin, UI_Color(UIC_TITLE), 1, ALIGN_LEFT, DTF_ONLY_SHADOW);
     origin.y += th;
 
-    Blockmap_Size(blockmap, bmapSize);
+    BlockmapCell const& bmapSize = blockmap->widthHeight();
+    char buf[80];
     dd_snprintf(buf, 80, "Dimensions:[%u,%u] #%li", bmapSize[VX], bmapSize[VY],
-        (long) bmapSize[VY] * bmapSize[VX]);
+               (long) bmapSize[VY] * bmapSize[VX]);
     UI_TextOutEx2(buf, &origin, UI_Color(UIC_TEXT), 1, ALIGN_LEFT, DTF_ONLY_SHADOW);
     origin.y += th;
 
-    dd_snprintf(buf, 80, "Cellsize:[%.3f,%.3f]", Blockmap_CellWidth(blockmap), Blockmap_CellHeight(blockmap));
+    dd_snprintf(buf, 80, "Cellsize:[%.3f,%.3f]", blockmap->cellWidth(), blockmap->cellHeight());
     UI_TextOutEx2(buf, &origin, UI_Color(UIC_TEXT), 1, ALIGN_LEFT, DTF_ONLY_SHADOW);
     origin.y += th;
 
     dd_snprintf(buf, 80, "(%+06.0f,%+06.0f)(%+06.0f,%+06.0f)",
-        Blockmap_Bounds(blockmap)->minX, Blockmap_Bounds(blockmap)->minY,
-        Blockmap_Bounds(blockmap)->maxX, Blockmap_Bounds(blockmap)->maxY);
+                blockmap->bounds()->minX, blockmap->bounds()->minY,
+                blockmap->bounds()->maxX, blockmap->bounds()->maxY);
     UI_TextOutEx2(buf, &origin, UI_Color(UIC_TEXT), 1, ALIGN_LEFT, DTF_ONLY_SHADOW);
 
     glDisable(GL_TEXTURE_2D);
 }
 
-static void drawCellInfoBox(Blockmap* blockmap, const Point2Raw* origin,
+static void drawCellInfoBox(de::Blockmap* blockmap, const Point2Raw* origin,
     const char* objectTypeName, const_BlockmapCell cell)
 {
-    uint count = Blockmap_CellObjectCount(blockmap, cell);
+    uint count = blockmap->cellObjectCount(cell);
     char info[160];
 
     dd_snprintf(info, 160, "Cell:[%u,%u] %s:#%u", cell[VX], cell[VY], objectTypeName, count);
@@ -324,21 +316,21 @@ static void drawCellInfoBox(Blockmap* blockmap, const Point2Raw* origin,
  * @param followMobj  Mobj to center/focus the visual on. Can be @c NULL.
  * @param cellDrawer  Blockmap cell content drawing callback. Can be @a NULL.
  */
-static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
-    int (*cellDrawer) (Blockmap* blockmap, const_BlockmapCell cell, void* parameters))
+static void rendBlockmap(de::Blockmap* blockmap, mobj_t* followMobj,
+    int (*cellDrawer) (de::Blockmap* blockmap, const_BlockmapCell cell, void* parameters))
 {
     BlockmapCellBlock vCellBlock;
     BlockmapCell vCell, cell;
-    BlockmapCoord dimensions[2];
-    vec2d_t start, end, cellSize;
+    vec2d_t start, end;
 
-    Blockmap_Size(blockmap, dimensions);
-    V2d_Copy(cellSize, Blockmap_CellSize(blockmap));
+    BlockmapCell const& dimensions = blockmap->widthHeight();
+    vec2d_t cellSize;
+    V2d_Copy(cellSize, blockmap->cellSize());
 
     if(followMobj)
     {
         // Determine the followed Mobj's blockmap coords.
-        if(Blockmap_Cell(blockmap, vCell, followMobj->origin))
+        if(blockmap->cell(vCell, followMobj->origin))
             followMobj = NULL; // Outside the blockmap.
 
         if(followMobj)
@@ -351,7 +343,7 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
             V2d_Set(end,   followMobj->origin[VX] + radius, followMobj->origin[VY] + radius);
             V2d_InitBox(aaBox.arvec2, start);
             V2d_AddToBox(aaBox.arvec2, end);
-            Blockmap_CellBlock(blockmap, &vCellBlock, &aaBox);
+            blockmap->cellBlock(&vCellBlock, &aaBox);
         }
     }
 
@@ -412,7 +404,7 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
     glPushMatrix();
     glScaled(cellSize[VX], cellSize[VY], 1);
 
-    //Gridmap_DebugDrawer((Gridmap*)Blockmap_Gridmap(blockmap));
+    Gridmap_DebugDrawer(blockmap->gridmap());
 
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
@@ -424,7 +416,7 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
      */
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glTranslated(-Blockmap_Origin(blockmap)[VX], -Blockmap_Origin(blockmap)[VY], 0);
+    glTranslated(-blockmap->origin()[VX], -blockmap->origin()[VY], 0);
 
     if(cellDrawer)
     {
@@ -443,7 +435,7 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
             {
                 if(cell[VX] >= vCellBlock.minX && cell[VX] <= vCellBlock.maxX &&
                    cell[VY] >= vCellBlock.minY && cell[VY] <= vCellBlock.maxY) continue;
-                if(!Blockmap_CellObjectCount(blockmap, cell)) continue;
+                if(!blockmap->cellObjectCount(cell)) continue;
 
                 cellDrawer(blockmap, cell, NULL/*no params*/);
             }
@@ -455,7 +447,7 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
             for(cell[VX] = vCellBlock.minX; cell[VX] <= vCellBlock.maxX; ++cell[VX])
             {
                 if(cell[VX] == vCell[VX] && cell[VY] == vCell[VY]) continue;
-                if(!Blockmap_CellObjectCount(blockmap, cell)) continue;
+                if(!blockmap->cellObjectCount(cell)) continue;
 
                 cellDrawer(blockmap, cell, NULL/*no params*/);
             }
@@ -463,7 +455,7 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
             // Lastly, the cell the followed Mobj is in (yellow).
             validCount++;
             glColor3f(1, 1, 0);
-            if(Blockmap_CellObjectCount(blockmap, vCell))
+            if(blockmap->cellObjectCount(vCell))
             {
                 cellDrawer(blockmap, vCell, NULL/*no params*/);
             }
@@ -476,7 +468,7 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
             for(cell[VY] = 0; cell[VY] < dimensions[VY]; ++cell[VY])
             for(cell[VX] = 0; cell[VX] < dimensions[VX]; ++cell[VX])
             {
-                if(!Blockmap_CellObjectCount(blockmap, cell)) continue;
+                if(!blockmap->cellObjectCount(cell)) continue;
 
                 cellDrawer(blockmap, cell, NULL/*no params*/);
             }
@@ -502,10 +494,10 @@ static void rendBlockmap(Blockmap* blockmap, mobj_t* followMobj,
 
 void Rend_BlockmapDebug(void)
 {
-    int (*cellDrawer) (Blockmap* blockmap, uint const coords[2], void* parameters);
+    int (*cellDrawer) (de::Blockmap* blockmap, uint const coords[2], void* parameters);
     const char* objectTypeName;
     mobj_t* followMobj = NULL;
-    Blockmap* blockmap;
+    de::Blockmap* blockmap;
     Point2Raw origin;
     GameMap* map;
     float scale;
@@ -521,7 +513,7 @@ void Rend_BlockmapDebug(void)
     default: // MobjLinks.
         if(!map->mobjBlockmap) return;
 
-        blockmap = map->mobjBlockmap;
+        blockmap = reinterpret_cast<de::Blockmap*>(map->mobjBlockmap);
         cellDrawer = rendCellMobjs;
         objectTypeName = "Mobj";
         break;
@@ -529,7 +521,7 @@ void Rend_BlockmapDebug(void)
     case 2: // LineDefs.
         if(!map->lineDefBlockmap) return;
 
-        blockmap = map->lineDefBlockmap;
+        blockmap = reinterpret_cast<de::Blockmap*>(map->lineDefBlockmap);
         cellDrawer = rendCellLineDefs;
         objectTypeName = "LineDef";
         break;
@@ -537,7 +529,7 @@ void Rend_BlockmapDebug(void)
     case 3: // BspLeafs.
         if(!map->bspLeafBlockmap) return;
 
-        blockmap = map->bspLeafBlockmap;
+        blockmap = reinterpret_cast<de::Blockmap*>(map->bspLeafBlockmap);
         cellDrawer = rendCellBspLeafs;
         objectTypeName = "BspLeaf";
         break;
@@ -545,7 +537,7 @@ void Rend_BlockmapDebug(void)
     case 4: // PolyobjLinks.
         if(!map->polyobjBlockmap) return;
 
-        blockmap = map->polyobjBlockmap;
+        blockmap = reinterpret_cast<de::Blockmap*>(map->polyobjBlockmap);
         cellDrawer = rendCellPolyobjs;
         objectTypeName = "Polyobj";
         break;
@@ -589,12 +581,12 @@ void Rend_BlockmapDebug(void)
     if(followMobj)
     {
         // About the cell the followed Mobj is in.
-        BlockmapCell cell;
-        if(!Blockmap_Cell(blockmap, cell, followMobj->origin))
+        BlockmapCell mcell;
+        if(!blockmap->cell(mcell, followMobj->origin))
         {
             origin.x = Window_Width(theWindow) / 2;
             origin.y = 30;
-            drawCellInfoBox(blockmap, &origin, objectTypeName, cell);
+            drawCellInfoBox(blockmap, &origin, objectTypeName, mcell);
         }
     }
 

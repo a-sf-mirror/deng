@@ -1,9 +1,9 @@
 /**
  * @file blockmapvisual.h
- * Graphical Blockmap Visual. @ingroup map
+ * Graphical Blockmap Visual. @ingroup render
  *
- * @authors Copyright © 2003-2012 Jaakko Keränen <jaakko.keranen@iki.fi>
- * @authors Copyright © 2006-2012 Daniel Swanson <danij@dengine.net>
+ * @author Copyright &copy; 2003-2012 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * @author Copyright &copy; 2006-2012 Daniel Swanson <danij@dengine.net>
  *
  * @par License
  * GPL: http://www.gnu.org/licenses/gpl.html
@@ -23,6 +23,10 @@
 #ifndef LIBDENG_MAP_BLOCKMAP_VISUAL_H
 #define LIBDENG_MAP_BLOCKMAP_VISUAL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 byte bmapShowDebug; ///< cvar
 float bmapDebugSize; ///< cvar
 
@@ -30,5 +34,9 @@ float bmapDebugSize; ///< cvar
  * Render the Blockmap debugging visual.
  */
 void Rend_BlockmapDebug(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /// LIBDENG_MAP_BLOCKMAP_VISUAL_H

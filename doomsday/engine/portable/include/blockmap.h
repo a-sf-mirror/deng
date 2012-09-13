@@ -2,8 +2,8 @@
  * @file blockmap.h
  * Blockmap. @ingroup map
  *
- * @authors Copyright © 2003-2012 Jaakko Keränen <jaakko.keranen@iki.fi>
- * @authors Copyright © 2006-2012 Daniel Swanson <danij@dengine.net>
+ * @author Copyright &copy; 2003-2012 Jaakko Keränen <jaakko.keranen@iki.fi>
+ * @author Copyright &copy; 2006-2012 Daniel Swanson <danij@dengine.net>
  *
  * @par License
  * GPL: http://www.gnu.org/licenses/gpl.html
@@ -55,32 +55,28 @@ public:
     ~Blockmap();
 
     /// @return  "Origin" map space point for the Blockmap (minimal [x,y]).
-    const pvec2d_t origin();
+    const pvec2d_t origin() const;
 
     /// @return Extremal map space points covered by the Blockmap.
-    const AABoxd* bounds();
+    const AABoxd* bounds() const;
 
     /// @return  Width of the Blockmap in cells.
-    BlockmapCoord width();
+    BlockmapCoord width() const;
 
     /// @return  Height of the Blockmap in cells.
-    BlockmapCoord height();
+    BlockmapCoord height() const;
 
-    /**
-     * Retrieve the size of the Blockmap in cells.
-     *
-     * @param widthHeight  Size of the Blockmap [width,height] written here.
-     */
-    void size(BlockmapCoord widthHeight[2]);
+    /// @return  [width, height] of the Blockmap in cells.
+    BlockmapCell const& widthHeight() const;
 
     /// @return  Width of a Blockmap cell in map space units.
-    coord_t cellWidth();
+    coord_t cellWidth() const;
 
     /// @return  Height of a Blockmap cell in map space units.
-    coord_t cellHeight();
+    coord_t cellHeight() const;
 
     /// @return  Size [width,height] of a Blockmap cell in map space units.
-    const pvec2d_t cellSize();
+    const pvec2d_t cellSize() const;
 
     /**
      * Given map space X coordinate @a x, return the corresponding cell coordinate.
@@ -153,7 +149,11 @@ public:
      * @return  Number of unique objects linked into the cell, or @c 0 if invalid.
      */
     uint cellObjectCount(const_BlockmapCell cell);
-    uint cellXYObjectCount(BlockmapCoord x, BlockmapCoord y);
+    inline uint cellObjectCount(BlockmapCoord x, BlockmapCoord y)
+    {
+        BlockmapCell mcell = { x, y };
+        return cellObjectCount(mcell);
+    }
 
     bool createCellAndLinkObject(const_BlockmapCell cell, void* object);
 
@@ -171,7 +171,9 @@ public:
      */
     Gridmap* gridmap();
 
-private:
+    int iterateCellObjects(const_BlockmapCell mcell, int (*callback) (void* object, void* parameters), void* parameters = 0);
+
+    private:
     struct Instance;
     Instance* d;
 };
@@ -199,7 +201,7 @@ BlockmapCoord Blockmap_Width(Blockmap* blockmap);
 
 BlockmapCoord Blockmap_Height(Blockmap* blockmap);
 
-void Blockmap_Size(Blockmap* blockmap, BlockmapCoord widthHeight[2]);
+void Blockmap_WidthHeight(Blockmap* blockmap, BlockmapCell widthHeight);
 
 coord_t Blockmap_CellWidth(Blockmap* blockmap);
 
@@ -232,8 +234,6 @@ boolean Blockmap_UnlinkObjectInCell(Blockmap* blockmap, const_BlockmapCell cell,
 boolean Blockmap_UnlinkObjectInCellXY(Blockmap* blockmap, BlockmapCoord x, BlockmapCoord y, void* object);
 
 void Blockmap_UnlinkObjectInCellBlock(Blockmap* blockmap, const BlockmapCellBlock* blockCoords, void* object);
-
-const struct gridmap_s* Blockmap_Gridmap(Blockmap* blockmap);
 
 int Blockmap_IterateCellObjects(Blockmap* blockmap, const_BlockmapCell cell,
     int (*callback) (void* object, void* parameters), void* parameters);
