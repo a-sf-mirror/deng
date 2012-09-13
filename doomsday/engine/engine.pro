@@ -140,7 +140,6 @@ DENG_HEADERS += \
     portable/include/binarytree.h \
     portable/include/bitmapfont.h \
     portable/include/blockmap.h \
-    portable/include/blockmapvisual.h \
     portable/include/blockset.h \
     portable/include/busymode.h \
     portable/include/map/bspbuilder.h \
@@ -288,6 +287,7 @@ DENG_HEADERS += \
     portable/include/r_things.h \
     portable/include/r_util.h \
     portable/include/r_world.h \
+    portable/include/render/blockmapvisual.h \
     portable/include/render/busyvisual.h \
     portable/include/render/rend_bias.h \
     portable/include/render/rend_clip.h \
@@ -449,7 +449,6 @@ SOURCES += \
     portable/src/binarytree.cpp \
     portable/src/bitmapfont.c \
     portable/src/blockmap.cpp \
-    portable/src/blockmapvisual.c \
     portable/src/blockset.c \
     portable/src/busymode.cpp \
     portable/src/map/bspbuilder.cpp \
@@ -577,6 +576,7 @@ SOURCES += \
     portable/src/r_util.c \
     portable/src/r_world.c \
     portable/src/rect.c \
+    portable/src/render/blockmapvisual.cpp \
     portable/src/render/busyvisual.c \
     portable/src/render/rend_bias.c \
     portable/src/render/rend_clip.cpp \
