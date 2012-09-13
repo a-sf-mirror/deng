@@ -157,39 +157,27 @@ struct de::Blockmap::Instance
     vec2d_t cellSize;
 
     /// Gridmap which implements the blockmap itself.
-    Gridmap* gridmap;
+    Gridmap gridmap;
 
     Instance(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
-        : bounds(min, max), gridmap(0)
+        : bounds(min, max),
+          gridmap(uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
+                  uint( ceil((max[1] - min[1]) / coord_t(cellHeight))),
+                  sizeof(BlockmapCellData), PU_MAPSTATIC)
     {
         cellSize[VX] = cellWidth;
         cellSize[VY] = cellHeight;
-
-        uint width  = uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) );
-        uint height = uint( ceil((max[1] - min[1]) / coord_t(cellHeight)) );
-        gridmap = new Gridmap(width, height, sizeof(BlockmapCellData), PU_MAPSTATIC);
-    }
-
-    ~Instance()
-    {
-        delete gridmap;
     }
 };
 
 de::Blockmap::Blockmap(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
 {
-    void* region = Z_Calloc(sizeof Instance, PU_MAP, 0);
-    if(!region)
-    {
-        throw de::Error("Blockmap::Blockmap", QString("Failed allocating %1 bytes for private Instance").arg((unsigned long) sizeof Instance));
-    }
-    d = new (region) Instance(min, max, cellWidth, cellHeight);
+    d = new Instance(min, max, cellWidth, cellHeight);
 }
 
 de::Blockmap::~Blockmap()
 {
-    d->~Instance();
-    Z_Free(d);
+    delete d;
 }
 
 BlockmapCoord de::Blockmap::cellX(coord_t x)
@@ -280,18 +268,18 @@ const AABoxd* de::Blockmap::bounds()
 
 BlockmapCoord de::Blockmap::width()
 {
-    return d->gridmap->width();
+    return d->gridmap.width();
 }
 
 BlockmapCoord de::Blockmap::height()
 {
-    return d->gridmap->height();
+    return d->gridmap.height();
 }
 
 void de::Blockmap::size(BlockmapCoord v[])
 {
-    v[0] = d->gridmap->width();
-    v[1] = d->gridmap->height();
+    v[0] = d->gridmap.width();
+    v[1] = d->gridmap.height();
 }
 
 coord_t de::Blockmap::cellWidth()
@@ -312,7 +300,7 @@ const pvec2d_t de::Blockmap::cellSize()
 bool de::Blockmap::createCellAndLinkObjectXY(BlockmapCoord x, BlockmapCoord y, void* object)
 {
     DENG2_ASSERT(object);
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap->cell(x, y, true));
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(x, y, true));
     if(!cell) return false; // Outside the blockmap?
     cell->linkObject(object);
     return true; // Link added.
@@ -327,7 +315,7 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell, void* objec
 bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
 {
     bool unlinked = false;
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap->cell(mcell, false));
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell, false));
     if(cell)
     {
         cell->unlinkObject(object, &unlinked);
@@ -350,12 +338,12 @@ static int unlinkObjectInCellWorker(void* ptr, void* parameters)
 
 void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, void* object)
 {
-    d->gridmap->blockIterate(cellBlock, unlinkObjectInCellWorker, object);
+    d->gridmap.blockIterate(cellBlock, unlinkObjectInCellWorker, object);
 }
 
 uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell)
 {
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap->cell(mcell, false));
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell, false));
     if(!cell) return 0;
     return cell->size();
 }
@@ -368,7 +356,7 @@ uint de::Blockmap::cellXYObjectCount(BlockmapCoord x, BlockmapCoord y)
 
 Gridmap* de::Blockmap::gridmap()
 {
-    return d->gridmap;
+    return &d->gridmap;
 }
 
 /**
