@@ -163,7 +163,7 @@ public:
 
     bool unlinkObjectInCellXY(BlockmapCoord x, BlockmapCoord y, void* object);
 
-    void unlinkObjectInCellBlock(const BlockmapCellBlock* blockCoords, void* object);
+    void unlinkObjectInCellBlock(BlockmapCellBlock const& blockCoords, void* object);
 
     /**
      * Retrieve an immutable pointer to the underlying Gridmap instance (mainly for

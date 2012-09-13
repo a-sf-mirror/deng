@@ -167,7 +167,7 @@ struct de::Blockmap::Instance
 
         uint width  = uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) );
         uint height = uint( ceil((max[1] - min[1]) / coord_t(cellHeight)) );
-        gridmap = Gridmap_New(width, height, sizeof(BlockmapCellData), PU_MAPSTATIC);
+        gridmap = Gridmap::create(width, height, sizeof(BlockmapCellData), PU_MAPSTATIC);
     }
 };
 
@@ -342,10 +342,9 @@ static int unlinkObjectInCellWorker(void* ptr, void* parameters)
     return false; // Continue iteration.
 }
 
-void de::Blockmap::unlinkObjectInCellBlock(const BlockmapCellBlock* cellBlock, void* object)
+void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, void* object)
 {
-    if(!cellBlock) return;
-    Gridmap_BlockIterate(d->gridmap, cellBlock, unlinkObjectInCellWorker, object);
+    d->gridmap->blockIterate(cellBlock, unlinkObjectInCellWorker, object);
 }
 
 uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell)
@@ -518,7 +517,8 @@ boolean Blockmap_UnlinkObjectInCellXY(Blockmap* bm, BlockmapCoord x, BlockmapCoo
 void Blockmap_UnlinkObjectInCellBlock(Blockmap* bm, const BlockmapCellBlock* cellBlock, void* object)
 {
     SELF(bm);
-    self->unlinkObjectInCellBlock(cellBlock, object);
+    if(!cellBlock) return;
+    self->unlinkObjectInCellBlock(*cellBlock, object);
 }
 
 uint Blockmap_CellObjectCount(Blockmap* bm, const_BlockmapCell mcell)
@@ -589,8 +589,9 @@ int Blockmap_IterateCellBlockObjects(Blockmap* bm, const BlockmapCellBlock* cell
     int (*callback) (void* object, void* parameters), void* parameters)
 {
     SELF(bm);
+    if(!cellBlock) return false;
     cellobjectiterator_params_t args;
     args.callback   = callback;
     args.parameters = parameters;
-    return Gridmap_BlockIterate(self->gridmap(), cellBlock, cellObjectIterator, (void*)&args);
+    return self->gridmap()->blockIterate(*cellBlock, cellObjectIterator, (void*)&args);
 }

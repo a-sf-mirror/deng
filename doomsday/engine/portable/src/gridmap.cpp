@@ -324,7 +324,7 @@ struct Gridmap::Instance
 
 Gridmap::Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag)
 {
-    void* region = (void*) Z_Calloc(sizeof Instance, zoneTag, 0);
+    void* region = Z_Calloc(sizeof Instance, zoneTag, 0);
     if(!region)
     {
         throw de::Error("Gridmap::Gridmap", QString("Failed allocating %1 bytes for private Instance").arg((unsigned long) sizeof Instance));
@@ -415,12 +415,12 @@ static GridmapCoord ceilPow2(GridmapCoord unit)
     return cumul;
 }
 
-Gridmap* Gridmap_New(GridmapCoord width, GridmapCoord height, size_t cellSize, int zoneTag)
+Gridmap* Gridmap::create(GridmapCoord width, GridmapCoord height, size_t cellSize, int zoneTag)
 {
     Gridmap* gm = 0;
     try
     {
-        void* region = (void*) Z_Calloc(sizeof Gridmap, zoneTag, 0);
+        void* region = Z_Calloc(sizeof Gridmap, zoneTag, 0);
         if(!region)
         {
             throw de::Error("Gridmap_New", QString("Failed on allocation of %1 bytes for new de::Gridmap.").arg((unsigned long) sizeof Gridmap));
@@ -435,7 +435,7 @@ Gridmap* Gridmap_New(GridmapCoord width, GridmapCoord height, size_t cellSize, i
     return reinterpret_cast<Gridmap*>(gm);
 }
 
-void Gridmap_Delete(Gridmap* gm)
+void Gridmap::destroy(Gridmap* gm)
 {
     if(gm)
     {
@@ -445,8 +445,8 @@ void Gridmap_Delete(Gridmap* gm)
 }
 
 typedef struct {
-    Gridmap_IterateCallback callback;
-    void* callbackParamaters;
+    Gridmap::Gridmap_IterateCallback callback;
+    void* callbackParameters;
 } actioncallback_paramaters_t;
 
 /**
@@ -458,28 +458,25 @@ static int actionCallback(TreeCell& tree, void* parameters)
     actioncallback_paramaters_t* p = (actioncallback_paramaters_t*) parameters;
     DENG2_ASSERT(p);
     if(tree.userData())
-        return p->callback(tree.userData(), p->callbackParamaters);
+        return p->callback(tree.userData(), p->callbackParameters);
     return 0; // Continue traversal.
 }
 
-int Gridmap_Iterate(Gridmap* gm, Gridmap_IterateCallback callback, void* parameters)
+int Gridmap::iterate(Gridmap_IterateCallback callback, void* parameters)
 {
     actioncallback_paramaters_t p;
     p.callback = callback;
-    p.callbackParamaters = parameters;
-    return iterateCell(*gm, true/*only leaves*/, actionCallback, (void*)&p);
+    p.callbackParameters = parameters;
+    return iterateCell(d->root, true/*only leaves*/, actionCallback, (void*)&p);
 }
 
-int Gridmap_BlockIterate(Gridmap* gm, const GridmapCellBlock* block_,
-    Gridmap_IterateCallback callback, void* parameters)
+int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallback callback, void* parameters)
 {
-    DENG2_ASSERT(block_);
-
     // Clip coordinates to our boundary dimensions (the underlying
     // Quadtree is normally larger than this so we cannot use the
     // dimensions of the root cell here).
-    GridmapCellBlock block = *block_;
-    gm->clipBlock(block);
+    GridmapCellBlock block = block_;
+    clipBlock(block);
 
     // Traverse cells in the block.
     /// @optimize: We could avoid repeatedly descending the tree...
@@ -489,7 +486,7 @@ int Gridmap_BlockIterate(Gridmap* gm, const GridmapCellBlock* block_,
     for(y = block.minY; y <= block.maxY; ++y)
     for(x = block.minX; x <= block.maxX; ++x)
     {
-        tree = gm->findLeaf(x, y, false);
+        tree = findLeaf(x, y, false);
         if(!tree || !tree->userData()) continue;
 
         result = callback(tree->userData(), parameters);

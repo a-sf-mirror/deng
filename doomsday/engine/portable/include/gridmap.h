@@ -38,15 +38,9 @@ class TreeCell;
 class Gridmap
 {
 public:
-    /**
-     * @param width          X dimension in cells.
-     * @param height         Y dimension in cells.
-     * @param sizeOfCell     Amount of memory to be allocated for the user data associated with each cell.
-     * @param zoneTag        Zone memory tag for the allocated user data.
-     */
-    Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
-    ~Gridmap();
+    typedef int (*Gridmap_IterateCallback) (void* cellData, void* parameters);
 
+public:
     operator TreeCell&() { return root(); }
 
     TreeCell& root();
@@ -89,62 +83,66 @@ public:
         return cell(mcell, alloc);
     }
 
+    /**
+     * Iterate over populated cells in the Gridmap making a callback for each. Iteration ends
+     * when all cells have been visited or @a callback returns non-zero.
+     *
+     * @param parameters     Passed to the callback.
+     *
+     * @return  @c 0 iff iteration completed wholly.
+     */
+    int iterate(Gridmap_IterateCallback callback, void* parameters = 0);
+
+    /**
+     * Iterate over a block of populated cells in the Gridmap making a callback for each.
+     * Iteration ends when all selected cells have been visited or @a callback returns non-zero.
+     *
+     * @param min            Minimal coordinates for the top left cell.
+     * @param max            Maximal coordinates for the bottom right cell.
+     * @param callback       Callback function ptr.
+     * @param parameters     Passed to the callback.
+     *
+     * @return  @c 0 iff iteration completed wholly.
+     */
+    int blockIterate(GridmapCellBlock const& block, Gridmap_IterateCallback callback, void* parameters = 0);
+
+    /**
+     * Same as Gridmap::BlockIterate except cell block coordinates are expressed with
+     * independent X and Y coordinate arguments. For convenience.
+     */
+    inline int blockIterate(GridmapCoord minX, GridmapCoord minY, GridmapCoord maxX, GridmapCoord maxY,
+                            Gridmap_IterateCallback callback, void* parameters = 0)
+    {
+        GridmapCellBlock block = GridmapCellBlock(minX, minY, maxX, maxY);
+        return blockIterate(block, callback, parameters);
+    }
+
+    /**
+     * Create a new (empty) Gridmap. Must be destroyed with Gridmap_Delete().
+     *
+     * @param width          X dimension in cells.
+     * @param height         Y dimension in cells.
+     * @param sizeOfCell     Amount of memory to be allocated for the user data associated with each cell.
+     * @param zoneTag        Zone memory tag for the allocated user data.
+     */
+    static Gridmap* create(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
+
+    static void destroy(Gridmap* gridmap);
+
+private:
+    /**
+     * @param width          X dimension in cells.
+     * @param height         Y dimension in cells.
+     * @param sizeOfCell     Amount of memory to be allocated for the user data associated with each cell.
+     * @param zoneTag        Zone memory tag for the allocated user data.
+     */
+    Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
+    ~Gridmap();
+
 private:
     struct Instance;
     Instance* d;
 };
-
-/**
- * Create a new (empty) Gridmap. Must be destroyed with Gridmap_Delete().
- *
- * @param width          X dimension in cells.
- * @param height         Y dimension in cells.
- * @param sizeOfCell     Amount of memory to be allocated for the user data associated with each cell.
- * @param zoneTag        Zone memory tag for the allocated user data.
- */
-Gridmap* Gridmap_New(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
-
-void Gridmap_Delete(Gridmap* gridmap);
-
-/**
- * Iteration.
- */
-
-typedef int (*Gridmap_IterateCallback) (void* cellData, void* parameters);
-
-/**
- * Iterate over populated cells in the Gridmap making a callback for each. Iteration ends
- * when all cells have been visited or @a callback returns non-zero.
- *
- * @param gridmap        Gridmap instance.
- * @param callback       Callback function ptr.
- * @param parameters     Passed to the callback.
- *
- * @return  @c 0 iff iteration completed wholly.
- */
-int Gridmap_Iterate(Gridmap* gridmap, Gridmap_IterateCallback callback, void* parameters = 0);
-
-/**
- * Iterate over a block of populated cells in the Gridmap making a callback for each.
- * Iteration ends when all selected cells have been visited or @a callback returns non-zero.
- *
- * @param gridmap        Gridmap instance.
- * @param min            Minimal coordinates for the top left cell.
- * @param max            Maximal coordinates for the bottom right cell.
- * @param callback       Callback function ptr.
- * @param parameters     Passed to the callback.
- *
- * @return  @c 0 iff iteration completed wholly.
- */
-int Gridmap_BlockIterate(Gridmap* gridmap, const GridmapCellBlock* block,
-    Gridmap_IterateCallback callback, void* parameters = 0);
-
-/**
- * Same as Gridmap::BlockIterate except cell block coordinates are expressed with
- * independent X and Y coordinate arguments. For convenience.
- */
-int Gridmap_BlockXYIterate(Gridmap* gridmap, GridmapCoord minX, GridmapCoord minY,
-    GridmapCoord maxX, GridmapCoord maxY, Gridmap_IterateCallback callback, void* parameters = 0);
 
 /**
  * Render a visual for this Gridmap to assist in debugging (etc...).
