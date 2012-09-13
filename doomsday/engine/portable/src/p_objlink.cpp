@@ -127,11 +127,9 @@ static bool toObjlinkBlockmapCell(objlinkblockmap_t* obm, uint coords[2], coord_
 {
     DENG2_ASSERT(obm);
 
-    coord_t max[2];
-    uint size[2];
-    Gridmap_Size(obm->gridmap, size);
-    max[0] = obm->origin[0] + size[0] * BLOCK_WIDTH;
-    max[1] = obm->origin[1] + size[1] * BLOCK_HEIGHT;
+    const GridmapCell& size = obm->gridmap->widthHeight();
+    coord_t max[2] = { obm->origin[0] + size[0] * BLOCK_WIDTH,
+                       obm->origin[1] + size[1] * BLOCK_HEIGHT};
 
     bool adjusted = false;
     if(x < obm->origin[0])
@@ -518,7 +516,7 @@ void R_ObjlinkBlockmapSpreadInBspLeaf(objlinkblockmap_t* obm, const BspLeaf* bsp
     {
         for(x = minBlock[0]; x <= maxBlock[0]; ++x)
         {
-            objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(Gridmap_CellXY(obm->gridmap, x, y, true/*can allocate a block*/));
+            objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(obm->gridmap->cell(x, y, true/*can allocate a block*/));
             if(block->doneSpread) continue;
 
             iter = block->head;
@@ -558,7 +556,7 @@ static void linkObjlinkInBlockmap(objlinkblockmap_t* obm, objlink_t* link, uint 
 {
     if(!obm || !link || !blockXY) return; // Wha?
 
-    objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(Gridmap_CellXY(obm->gridmap, blockXY[0], blockXY[1], true/*can allocate a block*/));
+    objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(obm->gridmap->cell(blockXY[0], blockXY[1], true/*can allocate a block*/));
     link->nextInBlock = block->head;
     block->head = link;
 }

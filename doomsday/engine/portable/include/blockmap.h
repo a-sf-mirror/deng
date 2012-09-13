@@ -44,6 +44,8 @@ typedef GridmapCellBlock BlockmapCellBlock;
 
 #ifdef __cplusplus
 
+#include "gridmap.h"
+
 namespace de {
 
 class Blockmap
@@ -167,7 +169,7 @@ public:
      * Retrieve an immutable pointer to the underlying Gridmap instance (mainly for
      * for debug purposes).
      */
-    struct gridmap_s* gridmap();
+    Gridmap* gridmap();
 
 private:
     struct Instance;
