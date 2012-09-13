@@ -173,7 +173,9 @@ public:
 
     int iterateCellObjects(const_BlockmapCell mcell, int (*callback) (void* object, void* parameters), void* parameters = 0);
 
-    private:
+    int iterateCellBlockObjects(BlockmapCellBlock const& cellBlock, int (*callback) (void* object, void* parameters), void* parameters = 0);
+
+private:
     struct Instance;
     Instance* d;
 };

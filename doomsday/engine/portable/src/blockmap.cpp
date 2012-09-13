@@ -149,7 +149,24 @@ private:
 };
 
 static int BlockmapCellData_IterateObjects(BlockmapCellData* cell,
-    int (*callback) (void* object, void* parameters), void* parameters = 0);
+    int (*callback) (void* object, void* parameters), void* parameters = 0)
+{
+    DENG2_ASSERT(cell);
+    BlockmapRingNode* link = cell->objects();
+    while(link)
+    {
+        BlockmapRingNode* next = link->next;
+
+        if(link->object)
+        {
+            int result = callback(link->object, parameters);
+            if(result) return result; // Stop iteration.
+        }
+
+        link = next;
+    }
+    return false; // Continue iteration.
+}
 
 struct de::Blockmap::Instance
 {
@@ -362,6 +379,29 @@ int de::Blockmap::iterateCellObjects(const_BlockmapCell mcell,
     return false; // Continue iteration.
 }
 
+typedef struct {
+    int (*callback)(void* userData, void* parameters);
+    void* parameters;
+} cellobjectiterator_params_t;
+
+static int cellObjectIterator(void* userData, void* parameters)
+{
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(userData);
+    cellobjectiterator_params_t* args = static_cast<cellobjectiterator_params_t*>(parameters);
+    DENG2_ASSERT(args);
+
+    return BlockmapCellData_IterateObjects(cell, args->callback, args->parameters);
+}
+
+int de::Blockmap::iterateCellBlockObjects(BlockmapCellBlock const& cellBlock,
+    int (*callback) (void* object, void* parameters), void* parameters)
+{
+    cellobjectiterator_params_t args;
+    args.callback   = callback;
+    args.parameters = parameters;
+    return d->gridmap.blockIterate(cellBlock, cellObjectIterator, (void*)&args);
+}
+
 /**
  * C Wrapper API:
  */
@@ -524,26 +564,6 @@ uint Blockmap_CellXYObjectCount(Blockmap const* bm, BlockmapCoord x, BlockmapCoo
     return self->cellObjectCount(x, y);
 }
 
-static int BlockmapCellData_IterateObjects(BlockmapCellData* cell,
-    int (*callback) (void* object, void* parameters), void* parameters)
-{
-    DENG2_ASSERT(cell);
-    BlockmapRingNode* link = cell->objects();
-    while(link)
-    {
-        BlockmapRingNode* next = link->next;
-
-        if(link->object)
-        {
-            int result = callback(link->object, parameters);
-            if(result) return result; // Stop iteration.
-        }
-
-        link = next;
-    }
-    return false; // Continue iteration.
-}
-
 int Blockmap_IterateCellObjects(Blockmap* bm, const_BlockmapCell mcell,
     int (*callback) (void* object, void* parameters), void* parameters)
 {
@@ -551,27 +571,10 @@ int Blockmap_IterateCellObjects(Blockmap* bm, const_BlockmapCell mcell,
     return self->iterateCellObjects(mcell, callback, parameters);
 }
 
-typedef struct {
-    int (*callback)(void* userData, void* parameters);
-    void* parameters;
-} cellobjectiterator_params_t;
-
-static int cellObjectIterator(void* userData, void* parameters)
-{
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(userData);
-    cellobjectiterator_params_t* args = static_cast<cellobjectiterator_params_t*>(parameters);
-    DENG2_ASSERT(args);
-
-    return BlockmapCellData_IterateObjects(cell, args->callback, args->parameters);
-}
-
 int Blockmap_IterateCellBlockObjects(Blockmap* bm, const BlockmapCellBlock* cellBlock,
     int (*callback) (void* object, void* parameters), void* parameters)
 {
     SELF(bm);
     if(!cellBlock) return false;
-    cellobjectiterator_params_t args;
-    args.callback   = callback;
-    args.parameters = parameters;
-    return self->gridmap()->blockIterate(*cellBlock, cellObjectIterator, (void*)&args);
+    return self->iterateCellBlockObjects(*cellBlock, callback, parameters);
 }
