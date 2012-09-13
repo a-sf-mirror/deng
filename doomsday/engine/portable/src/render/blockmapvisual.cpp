@@ -294,8 +294,8 @@ static void drawBlockmapInfo(const Point2Raw* _origin, de::Blockmap* blockmap)
     origin.y += th;
 
     dd_snprintf(buf, 80, "(%+06.0f,%+06.0f)(%+06.0f,%+06.0f)",
-                blockmap->bounds()->minX, blockmap->bounds()->minY,
-                blockmap->bounds()->maxX, blockmap->bounds()->maxY);
+                blockmap->bounds().minX, blockmap->bounds().minY,
+                blockmap->bounds().maxX, blockmap->bounds().maxY);
     UI_TextOutEx2(buf, &origin, UI_Color(UIC_TEXT), 1, ALIGN_LEFT, DTF_ONLY_SHADOW);
 
     glDisable(GL_TEXTURE_2D);
@@ -343,7 +343,7 @@ static void rendBlockmap(de::Blockmap* blockmap, mobj_t* followMobj,
             V2d_Set(end,   followMobj->origin[VX] + radius, followMobj->origin[VY] + radius);
             V2d_InitBox(aaBox.arvec2, start);
             V2d_AddToBox(aaBox.arvec2, end);
-            blockmap->cellBlock(&vCellBlock, &aaBox);
+            blockmap->cellBlock(vCellBlock, aaBox);
         }
     }
 

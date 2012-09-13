@@ -58,7 +58,7 @@ public:
     const pvec2d_t origin() const;
 
     /// @return Extremal map space points covered by the Blockmap.
-    const AABoxd* bounds() const;
+    const AABoxd& bounds() const;
 
     /// @return  Width of the Blockmap in cells.
     BlockmapCoord width() const;
@@ -87,7 +87,7 @@ public:
      *
      * @return  Translated Blockmap cell X coordinate.
      */
-    BlockmapCoord cellX(coord_t x);
+    BlockmapCoord cellX(coord_t x) const;
 
     /**
      * Given map space Y coordinate @a y, return the corresponding cell coordinate.
@@ -98,13 +98,13 @@ public:
      *
      * @return  Translated Blockmap cell Y coordinate.
      */
-    BlockmapCoord cellY(coord_t y);
+    BlockmapCoord cellY(coord_t y) const;
 
     /**
      * Same as @a CellX() with alternative semantics for when the caller
      * needs to know if the coordinate specified was inside/outside the Blockmap.
      */
-    bool clipCellX(BlockmapCoord* outX, coord_t x);
+    bool clipCellX(BlockmapCoord* outX, coord_t x) const;
 
     /**
      * Same as @ref CellY() with alternative semantics for when the caller
@@ -115,7 +115,7 @@ public:
      *
      * @return  @c true iff clamping was necessary.
      */
-    bool clipCellY(BlockmapCoord* outY, coord_t y);
+    bool clipCellY(BlockmapCoord* outY, coord_t y) const;
 
     /**
      * Given map space XY coordinates @a pos, output the Blockmap cell[x, y] it
@@ -127,7 +127,7 @@ public:
      *
      * @return  @c true iff clamping was necessary.
      */
-    bool cell(BlockmapCell cell, coord_t const pos[2]);
+    bool cell(BlockmapCell cell, coord_t const pos[2]) const;
 
     /**
      * Given map space box XY coordinates @a box, output the blockmap cells[x, y]
@@ -139,7 +139,7 @@ public:
      *
      * @return  @c true iff Clamping was necessary.
      */
-    bool cellBlock(BlockmapCellBlock* cellBlock, const AABoxd* box);
+    bool cellBlock(BlockmapCellBlock& cellBlock, AABoxd const& box) const;
 
     /**
      * Retrieve the number objects linked in the specified @a cell.
@@ -148,8 +148,8 @@ public:
      *
      * @return  Number of unique objects linked into the cell, or @c 0 if invalid.
      */
-    uint cellObjectCount(const_BlockmapCell cell);
-    inline uint cellObjectCount(BlockmapCoord x, BlockmapCoord y)
+    uint cellObjectCount(const_BlockmapCell cell) const;
+    inline uint cellObjectCount(BlockmapCoord x, BlockmapCoord y) const
     {
         BlockmapCell mcell = { x, y };
         return cellObjectCount(mcell);
@@ -193,37 +193,37 @@ Blockmap* Blockmap_New(coord_t const min[2], coord_t const max[2], uint cellWidt
 
 void Blockmap_Delete(Blockmap* blockmap);
 
-const pvec2d_t Blockmap_Origin(Blockmap* blockmap);
+const pvec2d_t Blockmap_Origin(Blockmap const* blockmap);
 
-const AABoxd* Blockmap_Bounds(Blockmap* blockmap);
+const AABoxd* Blockmap_Bounds(Blockmap const* blockmap);
 
-BlockmapCoord Blockmap_Width(Blockmap* blockmap);
+BlockmapCoord Blockmap_Width(Blockmap const* blockmap);
 
-BlockmapCoord Blockmap_Height(Blockmap* blockmap);
+BlockmapCoord Blockmap_Height(Blockmap const* blockmap);
 
-void Blockmap_WidthHeight(Blockmap* blockmap, BlockmapCell widthHeight);
+void Blockmap_WidthHeight(Blockmap const* blockmap, BlockmapCell widthHeight);
 
-coord_t Blockmap_CellWidth(Blockmap* blockmap);
+coord_t Blockmap_CellWidth(Blockmap const* blockmap);
 
-coord_t Blockmap_CellHeight(Blockmap* blockmap);
+coord_t Blockmap_CellHeight(Blockmap const* blockmap);
 
-const pvec2d_t Blockmap_CellSize(Blockmap* blockmap);
+const pvec2d_t Blockmap_CellSize(Blockmap const* blockmap);
 
-BlockmapCoord Blockmap_CellX(Blockmap* blockmap, coord_t x);
+BlockmapCoord Blockmap_CellX(Blockmap const* blockmap, coord_t x);
 
-BlockmapCoord Blockmap_CellY(Blockmap* blockmap, coord_t y);
+BlockmapCoord Blockmap_CellY(Blockmap const* blockmap, coord_t y);
 
-boolean Blockmap_ClipCellX(Blockmap* blockmap, BlockmapCoord* outX, coord_t x);
+boolean Blockmap_ClipCellX(Blockmap const* blockmap, BlockmapCoord* outX, coord_t x);
 
-boolean Blockmap_ClipCellY(Blockmap* blockmap, BlockmapCoord* outY, coord_t y);
+boolean Blockmap_ClipCellY(Blockmap const* blockmap, BlockmapCoord* outY, coord_t y);
 
-boolean Blockmap_Cell(Blockmap* blockmap, BlockmapCell cell, coord_t const pos[2]);
+boolean Blockmap_Cell(Blockmap const* blockmap, BlockmapCell cell, coord_t const pos[2]);
 
-boolean Blockmap_CellBlock(Blockmap* blockmap, BlockmapCellBlock* cellBlock, const AABoxd* box);
+boolean Blockmap_CellBlock(Blockmap const* blockmap, BlockmapCellBlock* cellBlock, const AABoxd* box);
 
-uint Blockmap_CellObjectCount(Blockmap* blockmap, const_BlockmapCell cell);
+uint Blockmap_CellObjectCount(Blockmap const* blockmap, const_BlockmapCell cell);
 
-uint Blockmap_CellXYObjectCount(Blockmap* blockmap, BlockmapCoord x, BlockmapCoord y);
+uint Blockmap_CellXYObjectCount(Blockmap const* blockmap, BlockmapCoord x, BlockmapCoord y);
 
 boolean Blockmap_CreateCellAndLinkObject(Blockmap* blockmap, const_BlockmapCell cell, void* object);
 

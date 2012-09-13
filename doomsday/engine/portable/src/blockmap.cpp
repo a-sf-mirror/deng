@@ -183,90 +183,14 @@ de::Blockmap::~Blockmap()
     delete d;
 }
 
-BlockmapCoord de::Blockmap::cellX(coord_t x)
-{
-    uint result;
-    clipCellX(&result, x);
-    return result;
-}
-
-BlockmapCoord de::Blockmap::cellY(coord_t y)
-{
-    uint result;
-    clipCellY(&result, y);
-    return result;
-}
-
-bool de::Blockmap::clipCellX(BlockmapCoord* outX, coord_t x)
-{
-    bool adjusted = false;
-    if(x < d->bounds.minX)
-    {
-        x = d->bounds.minX;
-        adjusted = true;
-    }
-    else if(x >= d->bounds.maxX)
-    {
-        x = d->bounds.maxX - 1;
-        adjusted = true;
-    }
-    if(outX)
-    {
-        *outX = uint((x - d->bounds.minX) / d->cellSize[VX]);
-    }
-    return adjusted;
-}
-
-bool de::Blockmap::clipCellY(BlockmapCoord* outY, coord_t y)
-{
-    bool adjusted = false;
-    if(y < d->bounds.minY)
-    {
-        y = d->bounds.minY;
-        adjusted = true;
-    }
-    else if(y >= d->bounds.maxY)
-    {
-        y = d->bounds.maxY - 1;
-        adjusted = true;
-    }
-    if(outY)
-    {
-        *outY = uint((y - d->bounds.minY) / d->cellSize[VY]);
-    }
-    return adjusted;
-}
-
-bool de::Blockmap::cell(BlockmapCell cell, coord_t const pos[2])
-{
-    if(cell && pos)
-    {
-        // Deliberate bitwise OR - we need to clip both X and Y.
-        return clipCellX(&cell[0], pos[VX]) |
-               clipCellY(&cell[1], pos[VY]);
-    }
-    return false;
-}
-
-bool de::Blockmap::cellBlock(BlockmapCellBlock* cellBlock, const AABoxd* box)
-{
-    if(cellBlock && box)
-    {
-        // Deliberate bitwise OR - we need to clip both Min and Max.
-        return cell(cellBlock->min, box->min) |
-               cell(cellBlock->max, box->max);
-    }
-    return false;
-}
-
 const pvec2d_t de::Blockmap::origin() const
 {
     return d->bounds.min;
 }
 
-const AABoxd* de::Blockmap::bounds() const
+const AABoxd& de::Blockmap::bounds() const
 {
-    return &d->bounds;
+    return d->bounds;
 }
 
 BlockmapCoord de::Blockmap::width() const
@@ -297,6 +221,78 @@ coord_t de::Blockmap::cellHeight() const
 const pvec2d_t de::Blockmap::cellSize() const
 {
     return d->cellSize;
+}
+
+BlockmapCoord de::Blockmap::cellX(coord_t x) const
+{
+    uint result;
+    clipCellX(&result, x);
+    return result;
+}
+
+BlockmapCoord de::Blockmap::cellY(coord_t y) const
+{
+    uint result;
+    clipCellY(&result, y);
+    return result;
+}
+
+bool de::Blockmap::clipCellX(BlockmapCoord* outX, coord_t x) const
+{
+    bool adjusted = false;
+    if(x < d->bounds.minX)
+    {
+        x = d->bounds.minX;
+        adjusted = true;
+    }
+    else if(x >= d->bounds.maxX)
+    {
+        x = d->bounds.maxX - 1;
+        adjusted = true;
+    }
+    if(outX)
+    {
+        *outX = uint((x - d->bounds.minX) / d->cellSize[VX]);
+    }
+    return adjusted;
+}
+
+bool de::Blockmap::clipCellY(BlockmapCoord* outY, coord_t y) const
+{
+    bool adjusted = false;
+    if(y < d->bounds.minY)
+    {
+        y = d->bounds.minY;
+        adjusted = true;
+    }
+    else if(y >= d->bounds.maxY)
+    {
+        y = d->bounds.maxY - 1;
+        adjusted = true;
+    }
+    if(outY)
+    {
+        *outY = uint((y - d->bounds.minY) / d->cellSize[VY]);
+    }
+    return adjusted;
+}
+
+bool de::Blockmap::cell(BlockmapCell mcell, coord_t const pos[2]) const
+{
+    if(mcell && pos)
+    {
+        // Deliberate bitwise OR - we need to clip both X and Y.
+        return clipCellX(&mcell[0], pos[VX]) |
+               clipCellY(&mcell[1], pos[VY]);
+    }
+    return false;
+}
+
+bool de::Blockmap::cellBlock(BlockmapCellBlock& cellBlock, AABoxd const& box) const
+{
+    // Deliberate bitwise OR - we need to clip both Min and Max.
+    return cell(cellBlock.min, box.min) |
+           cell(cellBlock.max, box.max);
 }
 
 bool de::Blockmap::createCellAndLinkObjectXY(BlockmapCoord x, BlockmapCoord y, void* object)
@@ -343,7 +339,7 @@ void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, v
     d->gridmap.blockIterate(cellBlock, unlinkObjectInCellWorker, object);
 }
 
-uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell)
+uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const
 {
     BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell, false));
     if(!cell) return 0;
@@ -398,89 +394,90 @@ void Blockmap_Delete(Blockmap* bm)
     }
 }
 
-BlockmapCoord Blockmap_CellX(Blockmap* bm, coord_t x)
+BlockmapCoord Blockmap_CellX(Blockmap const* bm, coord_t x)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->cellX(x);
 }
 
-BlockmapCoord Blockmap_CellY(Blockmap* bm, coord_t y)
+BlockmapCoord Blockmap_CellY(Blockmap const* bm, coord_t y)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->cellY(y);
 }
 
-boolean Blockmap_ClipCellX(Blockmap* bm, BlockmapCoord* outX, coord_t x)
+boolean Blockmap_ClipCellX(Blockmap const* bm, BlockmapCoord* outX, coord_t x)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return CPP_BOOL(self->clipCellX(outX, x));
 }
 
-boolean Blockmap_ClipCellY(Blockmap* bm, BlockmapCoord* outY, coord_t y)
+boolean Blockmap_ClipCellY(Blockmap const* bm, BlockmapCoord* outY, coord_t y)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return CPP_BOOL(self->clipCellY(outY, y));
 }
 
-boolean Blockmap_Cell(Blockmap* bm, BlockmapCell mcell, coord_t const pos[2])
+boolean Blockmap_Cell(Blockmap const* bm, BlockmapCell mcell, coord_t const pos[2])
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return CPP_BOOL(self->cell(mcell, pos));
 }
 
-boolean Blockmap_CellBlock(Blockmap* bm, BlockmapCellBlock* cellBlock, const AABoxd* box)
+boolean Blockmap_CellBlock(Blockmap const* bm, BlockmapCellBlock* cellBlock, const AABoxd* box)
 {
-    SELF(bm);
-    return CPP_BOOL(self->cellBlock(cellBlock, box));
+    SELF_CONST(bm);
+    DENG2_ASSERT(cellBlock && box);
+    return CPP_BOOL(self->cellBlock(*cellBlock, *box));
 }
 
-const pvec2d_t Blockmap_Origin(Blockmap* bm)
+const pvec2d_t Blockmap_Origin(Blockmap const* bm)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->origin();
 }
 
-const AABoxd* Blockmap_Bounds(Blockmap* bm)
+const AABoxd* Blockmap_Bounds(Blockmap const* bm)
 {
-    SELF(bm);
-    return self->bounds();
+    SELF_CONST(bm);
+    return &self->bounds();
 }
 
-BlockmapCoord Blockmap_Width(Blockmap* bm)
+BlockmapCoord Blockmap_Width(Blockmap const* bm)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->width();
 }
 
-BlockmapCoord Blockmap_Height(Blockmap* bm)
+BlockmapCoord Blockmap_Height(Blockmap const* bm)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->height();
 }
 
-void Blockmap_WidthHeight(Blockmap* bm, BlockmapCell v)
+void Blockmap_WidthHeight(Blockmap const* bm, BlockmapCell v)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     DENG2_ASSERT(v);
     v[0] = self->width();
     v[1] = self->height();
 }
 
-coord_t Blockmap_CellWidth(Blockmap* bm)
+coord_t Blockmap_CellWidth(Blockmap const* bm)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->cellWidth();
 }
 
-coord_t Blockmap_CellHeight(Blockmap* bm)
+coord_t Blockmap_CellHeight(Blockmap const* bm)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->cellHeight();
 }
 
-const pvec2d_t Blockmap_CellSize(Blockmap* bm)
+const pvec2d_t Blockmap_CellSize(Blockmap const* bm)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->cellSize();
 }
 
@@ -515,15 +512,15 @@ void Blockmap_UnlinkObjectInCellBlock(Blockmap* bm, const BlockmapCellBlock* cel
     self->unlinkObjectInCellBlock(*cellBlock, object);
 }
 
-uint Blockmap_CellObjectCount(Blockmap* bm, const_BlockmapCell mcell)
+uint Blockmap_CellObjectCount(Blockmap const* bm, const_BlockmapCell mcell)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->cellObjectCount(mcell);
 }
 
-uint Blockmap_CellXYObjectCount(Blockmap* bm, BlockmapCoord x, BlockmapCoord y)
+uint Blockmap_CellXYObjectCount(Blockmap const* bm, BlockmapCoord x, BlockmapCoord y)
 {
-    SELF(bm);
+    SELF_CONST(bm);
     return self->cellObjectCount(x, y);
 }
 

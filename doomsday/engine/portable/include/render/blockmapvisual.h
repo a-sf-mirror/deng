@@ -20,8 +20,8 @@
  * 02110-1301 USA</small>
  */
 
-#ifndef LIBDENG_MAP_BLOCKMAP_VISUAL_H
-#define LIBDENG_MAP_BLOCKMAP_VISUAL_H
+#ifndef LIBDENG_RENDER_BLOCKMAP_VISUAL_H
+#define LIBDENG_RENDER_BLOCKMAP_VISUAL_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,4 +39,4 @@ void Rend_BlockmapDebug(void);
 } // extern "C"
 #endif
 
-#endif /// LIBDENG_MAP_BLOCKMAP_VISUAL_H
+#endif /// LIBDENG_RENDER_BLOCKMAP_VISUAL_H
