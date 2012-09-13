@@ -493,6 +493,8 @@ void GameMap_InitLineDefBlockmap(GameMap* map, const_pvec2d_t min_, const_pvec2d
                  max_[VY] + BLOCKMAP_MARGIN);
 
     map->lineDefBlockmap = Blockmap_New(min, max, CELL_SIZE, CELL_SIZE);
+    LegacyCore_PrintfLogFragmentAtLevel(DE2_LOG_INFO, "LineDef Blockmap Width:%u Height:%u",
+                                        Blockmap_Width(map->lineDefBlockmap), Blockmap_Height(map->lineDefBlockmap));
 
 #undef CELL_SIZE
 #undef BLOCKMAP_MARGIN
@@ -514,6 +516,8 @@ void GameMap_InitMobjBlockmap(GameMap* map, const_pvec2d_t min_, const_pvec2d_t 
                  max_[VY] + BLOCKMAP_MARGIN);
 
     map->mobjBlockmap = Blockmap_New(min, max, CELL_SIZE, CELL_SIZE);
+    LegacyCore_PrintfLogFragmentAtLevel(DE2_LOG_INFO, "Mobj Blockmap Width:%u Height:%u",
+                                        Blockmap_Width(map->mobjBlockmap), Blockmap_Height(map->mobjBlockmap));
 
 #undef CELL_SIZE
 #undef BLOCKMAP_MARGIN
@@ -535,6 +539,8 @@ void GameMap_InitPolyobjBlockmap(GameMap* map, const_pvec2d_t min_, const_pvec2d
                  max_[VY] + BLOCKMAP_MARGIN);
 
     map->polyobjBlockmap = Blockmap_New(min, max, CELL_SIZE, CELL_SIZE);
+    LegacyCore_PrintfLogFragmentAtLevel(DE2_LOG_INFO, "Polyobj Blockmap Width:%u Height:%u",
+                                        Blockmap_Width(map->polyobjBlockmap), Blockmap_Height(map->polyobjBlockmap));
 
 #undef CELL_SIZE
 #undef BLOCKMAP_MARGIN
@@ -556,6 +562,8 @@ void GameMap_InitBspLeafBlockmap(GameMap* map, const_pvec2d_t min_, const_pvec2d
                  max_[VY] + BLOCKMAP_MARGIN);
 
     map->bspLeafBlockmap = Blockmap_New(min, max, CELL_SIZE, CELL_SIZE);
+    LegacyCore_PrintfLogFragmentAtLevel(DE2_LOG_INFO, "BspLeaf Blockmap Width:%u Height:%u",
+                                        Blockmap_Width(map->bspLeafBlockmap), Blockmap_Height(map->bspLeafBlockmap));
 
 #undef CELL_SIZE
 #undef BLOCKMAP_MARGIN

@@ -379,25 +379,7 @@ Gridmap* de::Blockmap::gridmap()
 
 Blockmap* Blockmap_New(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
 {
-    de::Blockmap* bm = 0;
-    try
-    {
-        void* region = Z_Calloc(sizeof de::Blockmap, PU_MAP, 0);
-        if(!region)
-        {
-            throw de::Error("Blockmap_New", QString("Failed on allocation of %1 bytes for new de::Blockmap.").arg((unsigned long) sizeof de::Blockmap));
-        }
-        bm = new (region) de::Blockmap(min, max, cellWidth, cellHeight);
-    }
-    catch(de::Error& er)
-    {
-        QString msg = er.asText();
-        LegacyCore_FatalError(msg.toUtf8().constData());
-        return 0;
-    }
-
-    LOG_INFO("Blockmap::New: Width:%u Height:%u") << bm->width() << bm->height();
-    return reinterpret_cast<Blockmap*>(bm);
+    return reinterpret_cast<Blockmap*>(new de::Blockmap(min, max,cellWidth, cellHeight));
 }
 
 void Blockmap_Delete(Blockmap* bm)
@@ -405,8 +387,7 @@ void Blockmap_Delete(Blockmap* bm)
     if(bm)
     {
         SELF(bm);
-        self->~Blockmap();
-        Z_Free(bm);
+        delete self;
     }
 }
 
