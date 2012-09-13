@@ -241,7 +241,7 @@ void R_InitObjlinkBlockmapForMap(void)
         objlinkblockmap_t* obm = chooseObjlinkBlockmap(objtype_t(i));
         obm->origin[0] = min[VX];
         obm->origin[1] = min[VY];
-        obm->gridmap = Gridmap::create(width, height, sizeof(objlinkblock_t), PU_MAPSTATIC);
+        obm->gridmap = new Gridmap(width, height, sizeof(objlinkblock_t), PU_MAPSTATIC);
     }
 
     // Initialize obj => BspLeaf contact lists.
@@ -254,7 +254,7 @@ void R_DestroyObjlinkBlockmap(void)
     {
         objlinkblockmap_t* obm = chooseObjlinkBlockmap(objtype_t(i));
         if(!obm->gridmap) continue;
-        Gridmap::destroy(obm->gridmap);
+        delete obm->gridmap;
         obm->gridmap = 0;
     }
     if(bspLeafContacts)

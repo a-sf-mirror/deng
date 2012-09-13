@@ -41,6 +41,15 @@ public:
     typedef int (*Gridmap_IterateCallback) (void* cellData, void* parameters);
 
 public:
+    /**
+     * @param width          X dimension in cells.
+     * @param height         Y dimension in cells.
+     * @param sizeOfCell     Amount of memory to be allocated for the user data associated with each cell.
+     * @param zoneTag        Zone memory tag for the allocated user data.
+     */
+    Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
+    ~Gridmap();
+
     operator TreeCell&() { return root(); }
 
     TreeCell& root();
@@ -116,28 +125,6 @@ public:
         GridmapCellBlock block = GridmapCellBlock(minX, minY, maxX, maxY);
         return blockIterate(block, callback, parameters);
     }
-
-    /**
-     * Create a new (empty) Gridmap. Must be destroyed with Gridmap_Delete().
-     *
-     * @param width          X dimension in cells.
-     * @param height         Y dimension in cells.
-     * @param sizeOfCell     Amount of memory to be allocated for the user data associated with each cell.
-     * @param zoneTag        Zone memory tag for the allocated user data.
-     */
-    static Gridmap* create(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
-
-    static void destroy(Gridmap* gridmap);
-
-private:
-    /**
-     * @param width          X dimension in cells.
-     * @param height         Y dimension in cells.
-     * @param sizeOfCell     Amount of memory to be allocated for the user data associated with each cell.
-     * @param zoneTag        Zone memory tag for the allocated user data.
-     */
-    Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
-    ~Gridmap();
 
 private:
     struct Instance;

@@ -324,18 +324,12 @@ struct Gridmap::Instance
 
 Gridmap::Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag)
 {
-    void* region = Z_Calloc(sizeof Instance, zoneTag, 0);
-    if(!region)
-    {
-        throw de::Error("Gridmap::Gridmap", QString("Failed allocating %1 bytes for private Instance").arg((unsigned long) sizeof Instance));
-    }
-    d = new (region) Instance(width, height, sizeOfCell, zoneTag);
+    d = new Instance(width, height, sizeOfCell, zoneTag);
 }
 
 Gridmap::~Gridmap()
 {
-    d->~Instance();
-    Z_Free(d);
+    delete d;
 }
 
 TreeCell& Gridmap::root()
@@ -414,35 +408,6 @@ static GridmapCoord ceilPow2(GridmapCoord unit)
     GridmapCoord cumul;
     for(cumul = 1; unit > cumul; cumul <<= 1);
     return cumul;
-}
-
-Gridmap* Gridmap::create(GridmapCoord width, GridmapCoord height, size_t cellSize, int zoneTag)
-{
-    Gridmap* gm = 0;
-    try
-    {
-        void* region = Z_Calloc(sizeof Gridmap, zoneTag, 0);
-        if(!region)
-        {
-            throw de::Error("Gridmap_New", QString("Failed on allocation of %1 bytes for new de::Gridmap.").arg((unsigned long) sizeof Gridmap));
-        }
-        gm = new (region) Gridmap(width, height, cellSize, zoneTag);
-    }
-    catch(de::Error& er)
-    {
-        QString msg = er.asText();
-        LegacyCore_FatalError(msg.toUtf8().constData());
-    }
-    return reinterpret_cast<Gridmap*>(gm);
-}
-
-void Gridmap::destroy(Gridmap* gm)
-{
-    if(gm)
-    {
-        gm->~Gridmap();
-        Z_Free(gm);
-    }
 }
 
 typedef struct {

@@ -167,7 +167,12 @@ struct de::Blockmap::Instance
 
         uint width  = uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) );
         uint height = uint( ceil((max[1] - min[1]) / coord_t(cellHeight)) );
-        gridmap = Gridmap::create(width, height, sizeof(BlockmapCellData), PU_MAPSTATIC);
+        gridmap = new Gridmap(width, height, sizeof(BlockmapCellData), PU_MAPSTATIC);
+    }
+
+    ~Instance()
+    {
+        delete gridmap;
     }
 };
 
@@ -183,7 +188,7 @@ de::Blockmap::Blockmap(coord_t const min[2], coord_t const max[2], uint cellWidt
 
 de::Blockmap::~Blockmap()
 {
-    Gridmap::destroy(d->gridmap);
+    d->~Instance();
     Z_Free(d);
 }
 
