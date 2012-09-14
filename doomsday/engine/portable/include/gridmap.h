@@ -33,8 +33,6 @@
 #include "dd_types.h"
 #include "gridmapcellblock.h"
 
-class TreeCell;
-
 class Gridmap
 {
 public:
@@ -49,12 +47,6 @@ public:
      */
     Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
     ~Gridmap();
-
-    operator TreeCell&() { return root(); }
-    operator TreeCell const&() const { return root(); }
-
-    TreeCell& root();
-    TreeCell const& root() const;
 
     /// @return  Width of the Gridmap in cells.
     GridmapCoord width() const;
@@ -74,8 +66,6 @@ public:
      * @return  @c true iff the block coordinates were changed.
      */
     bool clipBlock(GridmapCellBlock& block) const;
-
-    TreeCell* findLeaf(GridmapCoord x, GridmapCoord y, bool alloc);
 
     /**
      * Retrieve the user data associated with the identified cell.
@@ -127,6 +117,8 @@ public:
         GridmapCellBlock block = GridmapCellBlock(minX, minY, maxX, maxY);
         return blockIterate(block, callback, parameters);
     }
+
+    friend void Gridmap_DebugDrawer(Gridmap const& gridmap);
 
 private:
     struct Instance;

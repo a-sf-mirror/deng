@@ -19,10 +19,6 @@
  * 02110-1301 USA</small>
  */
 
-#include <cmath>
-
-#include "de_base.h"
-
 #include <de/Error>
 #include <de/LegacyCore>
 #include <de/String>
@@ -33,10 +29,64 @@
 /// Space dimension ordinals.
 enum { X = 0, Y };
 
+class TreeBase
+{
+public:
+    explicit TreeBase(GridmapCoord x = 0, GridmapCoord y = 0)
+    {
+        origin[X] = x;
+        origin[Y] = y;
+    }
+
+    virtual ~TreeBase() {}
+
+    inline GridmapCoord x() const { return origin[X]; }
+    inline GridmapCoord y() const { return origin[Y]; }
+    inline const GridmapCell& xy() const { return origin; }
+
+    virtual GridmapCoord size() const =0;
+
+protected:
+    /// Origin of this node in Gridmap space [x, y].
+    GridmapCell origin;
+};
+
+class TreeLeaf : public TreeBase
+{
+public:
+    explicit TreeLeaf(GridmapCoord x = 0, GridmapCoord y = 0, void* userData = 0)
+        : TreeBase(x, y), userData_(userData)
+    {}
+
+    explicit TreeLeaf(const_GridmapCell mcell, void* userData = 0)
+        : TreeBase(mcell[X], mcell[Y]), userData_(userData)
+    {}
+
+    ~TreeLeaf()
+    {
+        if(userData_) Z_Free(userData_);
+    }
+
+    inline GridmapCoord size() const { return 1; }
+
+    inline void* userData() const { return userData_; }
+
+    TreeLeaf& setUserData(void* newUserData)
+    {
+        userData_ = newUserData;
+        return *this;
+    }
+
+private:
+    /// User data associated with the cell. Note that only leafs can have
+    /// associated user data.
+    void* userData_;
+};
+
 /**
  * TreeCell. Used to represent a subquadrant within the owning Gridmap.
  */
-class TreeCell
+class TreeNode : public TreeBase
 {
 public:
     /// Child quadrant identifiers.
@@ -49,37 +99,35 @@ public:
     };
 
 public:
-    explicit TreeCell(GridmapCoord x = 0, GridmapCoord y = 0, GridmapCoord size = 0)
-        : userData_(0), size_(size)
+    explicit TreeNode(GridmapCoord x = 0, GridmapCoord y = 0, GridmapCoord size = 0)
+        : TreeBase(x, y), size_(size)
     {
-        origin[X] = x;
-        origin[Y] = y;
         children[TopLeft] = children[TopRight] = children[BottomLeft] = children[BottomRight] = 0;
     }
 
-    TreeCell(const_GridmapCell origin_, GridmapCoord size = 0)
-        : userData_(0), size_(size)
+    TreeNode(const_GridmapCell origin, GridmapCoord size = 0)
+        : TreeBase(origin[X], origin[Y]), size_(size)
     {
-        origin[X] = origin_[X];
-        origin[Y] = origin_[Y];
         children[TopLeft] = children[TopRight] = children[BottomLeft] = children[BottomRight] = 0;
     }
 
-    /// @return  @c true= @a tree is a a leaf (i.e., equal to a unit in Gridmap space).
-    inline bool isLeaf() const { return size_ == 1; }
-
-    inline GridmapCoord x() const { return origin[X]; }
-    inline GridmapCoord y() const { return origin[Y]; }
-    inline const GridmapCell& xy() const { return origin; }
+    ~TreeNode()
+    {
+        // Deletion is a depth-first traversal.
+        if(children[TopLeft])     delete children[TopLeft];
+        if(children[TopRight])    delete children[TopRight];
+        if(children[BottomLeft])  delete children[BottomLeft];
+        if(children[BottomRight]) delete children[BottomRight];
+    }
 
     inline GridmapCoord size() const { return size_; }
 
-    inline TreeCell* topLeft() const { return children[TopLeft]; }
-    inline TreeCell* topRight() const { return children[TopRight]; }
-    inline TreeCell* bottomLeft() const { return children[BottomLeft]; }
-    inline TreeCell* bottomRight() const { return children[BottomRight]; }
+    inline TreeBase* topLeft() const { return children[TopLeft]; }
+    inline TreeBase* topRight() const { return children[TopRight]; }
+    inline TreeBase* bottomLeft() const { return children[BottomLeft]; }
+    inline TreeBase* bottomRight() const { return children[BottomRight]; }
 
-    inline TreeCell* child(Quadrant q) const
+    inline TreeBase* child(Quadrant q) const
     {
         switch(q)
         {
@@ -88,39 +136,36 @@ public:
         case BottomLeft:    return bottomLeft();
         case BottomRight:   return bottomRight();
         default:
-            throw de::Error("Gridmap::TreeCell::child", QString("Invalid Quadrant %1").arg(int(q)));
+            throw de::Error("Gridmap::TreeNode::child", QString("Invalid Quadrant %1").arg(int(q)));
         }
     }
 
     /// @note Does nothing about any existing child tree. Caller must ensure that this
     ///       is logical and does not result in memory leakage.
-    TreeCell& setChild(Quadrant q, TreeCell* newChild)
+    TreeNode& setChild(Quadrant q, TreeBase* newChild)
     {
         children[q] = newChild;
         return *this;
     }
 
-    inline void* userData() const { return userData_; }
-
-    TreeCell& setUserData(void* newUserData)
-    {
-        userData_ = newUserData;
-        return *this;
-    }
-
 private:
-    /// User data associated with the cell. Note that only leafs can have
-    /// associated user data.
-    void* userData_;
-
-    /// Origin of this cell in Gridmap space [x,y].
-    GridmapCell origin;
-
     /// Size of this cell in Gridmap space (width=height).
     GridmapCoord size_;
 
     /// Child cells of this, one for each subquadrant.
-    TreeCell* children[4];
+    TreeBase* children[4];
+};
+
+static inline bool isLeaf(TreeBase& tree)
+{
+    return tree.size() == 1;
+}
+
+struct traversetree_parameters_t
+{
+    bool leafOnly;
+    int (*callback) (TreeBase* node, void* parameters);
+    void* callbackParameters;
 };
 
 /**
@@ -128,52 +173,55 @@ private:
  * for each cell. Iteration ends when all selected cells have been visited
  * or a callback returns a non-zero value.
  *
- * @param tree          TreeCell to traverse.
- * @param leafOnly      Caller is only interested in leaves.
+ * @param tree          Tree to traverse.
+ * @param leafOnly      @c true= Caller is only interested in leaves.
  * @param callback      Callback function.
  * @param parameters    Passed to the callback.
  *
  * @return  Zero iff iteration completed wholly, else the value returned by the
  *          last callback made.
  */
-template <typename T>
-static int iterateCell(T& tree, bool leafOnly,
-    int (*callback) (T& tree, void* parameters), void* parameters = 0)
+static int traverseTree(TreeBase* tree, traversetree_parameters_t const& p)
 {
-    DENG2_ASSERT(callback);
-
-    int result = false; // Continue traversal.
-    if(!tree.isLeaf())
+    int result;
+    if(!isLeaf(*tree))
     {
-        if(tree.topLeft())
+        TreeNode* node = static_cast<TreeNode*>(tree);
+        if(node->topLeft())
         {
-            result = iterateCell<T>(*tree.topLeft(), leafOnly, callback, parameters);
+            result = traverseTree(node->topLeft(), p);
             if(result) return result;
         }
-        if(tree.topRight())
+        if(node->topRight())
         {
-            result = iterateCell<T>(*tree.topRight(), leafOnly, callback, parameters);
+            result = traverseTree(node->topRight(), p);
             if(result) return result;
         }
-        if(tree.bottomLeft())
+        if(node->bottomLeft())
         {
-            result = iterateCell<T>(*tree.bottomLeft(), leafOnly, callback, parameters);
+            result = traverseTree(node->bottomLeft(), p);
             if(result) return result;
         }
-        if(tree.bottomRight())
+        if(node->bottomRight())
         {
-            result = iterateCell<T>(*tree.bottomRight(), leafOnly, callback, parameters);
+            result = traverseTree(node->bottomRight(), p);
             if(result) return result;
         }
     }
-    if(!leafOnly || tree.isLeaf())
+    if(!p.leafOnly || isLeaf(*tree))
     {
-        result = callback(tree, parameters);
+        result = p.callback(tree, p.callbackParameters);
+        if(result) return result;
     }
-    return result;
+    return false; // Continue iteration.
 }
 
-static GridmapCoord ceilPow2(GridmapCoord unit);
+static GridmapCoord ceilPow2(GridmapCoord unit)
+{
+    GridmapCoord cumul;
+    for(cumul = 1; unit > cumul; cumul <<= 1);
+    return cumul;
+}
 
 /**
  * Gridmap implementation. Designed around that of a Region Quadtree
@@ -184,14 +232,14 @@ struct Gridmap::Instance
     /// Dimensions of the space we are indexing (in cells).
     GridmapCell dimensions;
 
-    /// Zone memory tag used for both the Gridmap and user data.
+    /// Zone memory tag used for the user data.
     int zoneTag;
 
-    /// Size of the memory block to be allocated for each leaf.
+    /// Size of the memory region to be allocated for the user data of each leaf.
     size_t sizeOfCell;
 
-    /// Root tree for our Quadtree. Allocated along with the Gridmap instance.
-    TreeCell root;
+    /// Root of the Quadtree. Allocated along with *this* instance.
+    TreeNode root;
 
     Instance(GridmapCoord width, GridmapCoord height, size_t _sizeOfCell, int _zoneTag)
         : zoneTag(_zoneTag), sizeOfCell(_sizeOfCell),
@@ -202,124 +250,83 @@ struct Gridmap::Instance
         dimensions[Y] = height;
     }
 
-    ~Instance()
-    {
-        deleteTree();
-    }
-
     /**
-     * Construct and initialize a new TreeCell.
+     * Construct and initialize a new (sub)tree.
      *
-     * @param x            X coordinate in Gridmap space.
-     * @param y            Y coordinate in Gridmap space.
+     * @param mcell        Cell coordinates in Gridmap space.
      * @param size         Size in Gridmap space units.
-     * @param zoneTag      Zone memory tag to associate with the new TreeCell.
      *
-     * @return  Newly allocated and initialized TreeCell instance.
+     * @return  Newly allocated and initialized (sub)tree.
      */
-    TreeCell* newCell(const_GridmapCell mcell, GridmapCoord size, int zoneTag)
+    static TreeBase* newTree(const_GridmapCell mcell, GridmapCoord size)
     {
-        void* region = Z_Malloc(sizeof TreeCell, zoneTag, NULL);
-        if(!region) throw de::Error("Gridmap::newCell", QString("Failed on allocation of %1 bytes for new Cell").arg((unsigned long) sizeof TreeCell));
-        return new (region) TreeCell(mcell, size);
+        if(size != 1)
+        {
+            return new TreeNode(mcell, size);
+        }
+        // Its a leaf.
+        return new TreeLeaf(mcell);
     }
 
-    inline TreeCell* newCell(GridmapCoord x, GridmapCoord y, GridmapCoord size, int zoneTag)
+    static TreeLeaf* findLeafDescend(TreeBase& tree, const_GridmapCell mcell, bool alloc)
     {
-        GridmapCoord mcell[2] = { x, y };
-        return newCell(mcell, size, zoneTag);
-    }
-
-    static void deleteCell(TreeCell* tree)
-    {
-        DENG2_ASSERT(tree);
-        // Deletion is a depth-first traversal.
-        if(tree->topLeft())     deleteCell(tree->topLeft());
-        if(tree->topRight())    deleteCell(tree->topRight());
-        if(tree->bottomLeft())  deleteCell(tree->bottomLeft());
-        if(tree->bottomRight()) deleteCell(tree->bottomRight());
-        if(tree->userData())
+        // Have we reached a leaf?
+        if(!isLeaf(tree))
         {
-            Z_Free(tree->userData());
-        }
-        tree->~TreeCell();
-        Z_Free(tree);
-    }
+            TreeNode& node = static_cast<TreeNode&>(tree);
 
-    void deleteTree()
-    {
-        // The root tree is allocated along with Gridmap.
-        if(root.topLeft())     deleteCell(root.topLeft());
-        if(root.topRight())    deleteCell(root.topRight());
-        if(root.bottomLeft())  deleteCell(root.bottomLeft());
-        if(root.bottomRight()) deleteCell(root.bottomRight());
-
-        if(root.userData())
-        {
-            Z_Free(root.userData());
-        }
-    }
-
-    TreeCell* findLeafDescend(TreeCell* tree, GridmapCoord x, GridmapCoord y, bool alloc)
-    {
-        DENG2_ASSERT(tree);
-
-        if(tree->isLeaf())
-        {
-            return tree;
-        }
-
-        // Into which quadrant do we need to descend?
-        TreeCell::Quadrant q;
-        if(x < tree->x() + (tree->size() >> 1))
-        {
-            q = (y < tree->y() + (tree->size() >> 1))? TreeCell::TopLeft  : TreeCell::BottomLeft;
-        }
-        else
-        {
-            q = (y < tree->y() + (tree->size() >> 1))? TreeCell::TopRight : TreeCell::BottomRight;
-        }
-
-        // Has this quadrant been initialized yet?
-        if(!tree->child(q))
-        {
-            GridmapCoord subOrigin[2], subSize;
-
-            // Are we allocating cells?
-            if(!alloc) return NULL;
-
-            // Subdivide this tree and construct the new.
-            subSize = tree->size() >> 1;
-            switch(q)
+            // Into which quadrant do we need to descend?
+            GridmapCoord subSize = node.size() >> 1;
+            TreeNode::Quadrant q;
+            if(mcell[X] < node.x() + subSize)
             {
-            case TreeCell::TopLeft:
-                subOrigin[X] = tree->x();
-                subOrigin[Y] = tree->y();
-                break;
-            case TreeCell::TopRight:
-                subOrigin[X] = tree->x() + subSize;
-                subOrigin[Y] = tree->y();
-                break;
-            case TreeCell::BottomLeft:
-                subOrigin[X] = tree->x();
-                subOrigin[Y] = tree->y() + subSize;
-                break;
-            case TreeCell::BottomRight:
-                subOrigin[X] = tree->x() + subSize;
-                subOrigin[Y] = tree->y() + subSize;
-                break;
-            default:
-                throw de::Error("Gridmap::findLeafDescend", QString("Invalid quadrant %1").arg(int(q)));
+                q = (mcell[Y] < node.y() + subSize)? TreeNode::TopLeft  : TreeNode::BottomLeft;
             }
-            tree->setChild(q, newCell(subOrigin, subSize, zoneTag));
+            else
+            {
+                q = (mcell[Y] < node.y() + subSize)? TreeNode::TopRight : TreeNode::BottomRight;
+            }
+
+            // Has this quadrant been initialized yet?
+            TreeBase* child = node.child(q);
+            if(!child)
+            {
+                // Are we allocating subtrees?
+                if(!alloc) return 0;
+
+                // Subdivide this tree and construct the new.
+                GridmapCoord subOrigin[2];
+                switch(q)
+                {
+                case TreeNode::TopLeft:
+                    subOrigin[X] = node.x();
+                    subOrigin[Y] = node.y();
+                    break;
+                case TreeNode::TopRight:
+                    subOrigin[X] = node.x() + subSize;
+                    subOrigin[Y] = node.y();
+                    break;
+                case TreeNode::BottomLeft:
+                    subOrigin[X] = node.x();
+                    subOrigin[Y] = node.y() + subSize;
+                    break;
+                case TreeNode::BottomRight:
+                    subOrigin[X] = node.x() + subSize;
+                    subOrigin[Y] = node.y() + subSize;
+                    break;
+                default:
+                    throw de::Error("Gridmap::findLeafDescend", QString("Invalid quadrant %1").arg(int(q)));
+                }
+
+                child = newTree(subOrigin, subSize);
+                node.setChild(q, child);
+            }
+
+            return findLeafDescend(*child, mcell, alloc);
         }
 
-        return findLeafDescend(tree->child(q), x, y, alloc);
-    }
-
-    TreeCell* findLeaf(GridmapCoord x, GridmapCoord y, bool alloc)
-    {
-        return findLeafDescend(&root, x, y, alloc);
+        // Found a leaf.
+        return static_cast<TreeLeaf*>(&tree);
     }
 };
 
@@ -331,16 +338,6 @@ Gridmap::Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int
 Gridmap::~Gridmap()
 {
     delete d;
-}
-
-TreeCell& Gridmap::root()
-{
-    return d->root;
-}
-
-TreeCell const& Gridmap::root() const
-{
-    return d->root;
 }
 
 GridmapCoord Gridmap::width() const
@@ -384,11 +381,6 @@ bool Gridmap::clipBlock(GridmapCellBlock& block) const
     return adjusted;
 }
 
-TreeCell* Gridmap::findLeaf(GridmapCoord x, GridmapCoord y, bool alloc)
-{
-    return d->findLeafDescend(&d->root, x, y, alloc);
-}
-
 void* Gridmap::cell(const_GridmapCell mcell, bool alloc)
 {
     // Outside our boundary?
@@ -396,41 +388,37 @@ void* Gridmap::cell(const_GridmapCell mcell, bool alloc)
 
     // Try to locate this leaf (may fail if not present and we are
     // not allocating user data (there will be no corresponding cell)).
-    TreeCell* tree = findLeaf(mcell[X], mcell[Y], alloc);
-    if(!tree) return 0;
+    TreeLeaf* leaf = d->findLeafDescend(d->root, mcell, alloc);
+    if(!leaf) return 0;
 
-    // Exisiting user data for this cell?
-    if(tree->userData()) return tree->userData();
+    // Exisiting user data for this leaf?
+    if(leaf->userData()) return leaf->userData();
 
     // Allocate new user data?
     if(!alloc) return 0;
 
-    tree->setUserData(Z_Calloc(d->sizeOfCell, d->zoneTag, 0));
-    return tree->userData();
+    leaf->setUserData(Z_Calloc(d->sizeOfCell, d->zoneTag, 0));
+    return leaf->userData();
 }
 
-static GridmapCoord ceilPow2(GridmapCoord unit)
+struct actioncallback_paramaters_t
 {
-    GridmapCoord cumul;
-    for(cumul = 1; unit > cumul; cumul <<= 1);
-    return cumul;
-}
-
-typedef struct {
     Gridmap::Gridmap_IterateCallback callback;
     void* callbackParameters;
-} actioncallback_paramaters_t;
+};
 
 /**
  * Callback actioner. Executes the callback and then returns the result
  * to the current iteration to determine if it should continue.
  */
-static int actionCallback(TreeCell& tree, void* parameters)
+static int actionCallback(TreeBase* node, void* parameters)
 {
+    TreeLeaf* leaf = static_cast<TreeLeaf*>(node);
     actioncallback_paramaters_t* p = (actioncallback_paramaters_t*) parameters;
-    DENG2_ASSERT(p);
-    if(tree.userData())
-        return p->callback(tree.userData(), p->callbackParameters);
+    if(leaf->userData())
+    {
+        return p->callback(leaf->userData(), p->callbackParameters);
+    }
     return 0; // Continue traversal.
 }
 
@@ -439,7 +427,12 @@ int Gridmap::iterate(Gridmap_IterateCallback callback, void* parameters)
     actioncallback_paramaters_t p;
     p.callback = callback;
     p.callbackParameters = parameters;
-    return iterateCell(d->root, true/*only leaves*/, actionCallback, (void*)&p);
+
+    traversetree_parameters_t travParms;
+    travParms.leafOnly = true;
+    travParms.callback = actionCallback;
+    travParms.callbackParameters = (void*)&p;
+    return traverseTree(&d->root, travParms);
 }
 
 int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallback callback, void* parameters)
@@ -450,18 +443,18 @@ int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallbac
     GridmapCellBlock block = block_;
     clipBlock(block);
 
-    // Traverse cells in the block.
+    // Process all leafs in the block.
     /// @optimize: We could avoid repeatedly descending the tree...
-    GridmapCoord x, y;
-    TreeCell* tree;
+    GridmapCell mcell;
+    TreeLeaf* leaf;
     int result;
-    for(y = block.minY; y <= block.maxY; ++y)
-    for(x = block.minX; x <= block.maxX; ++x)
+    for(mcell[Y] = block.minY; mcell[Y] <= block.maxY; ++mcell[Y])
+    for(mcell[X] = block.minX; mcell[X] <= block.maxX; ++mcell[X])
     {
-        tree = findLeaf(x, y, false);
-        if(!tree || !tree->userData()) continue;
+        leaf = d->findLeafDescend(d->root, mcell, false);
+        if(!leaf || !leaf->userData()) continue;
 
-        result = callback(tree->userData(), parameters);
+        result = callback(leaf->userData(), parameters);
         if(result) return result;
     }
     return false;
@@ -471,6 +464,7 @@ int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallbac
  * Gridmap Visual - for debugging
  */
 
+#include "de_base.h"
 #include "de_graphics.h"
 #include "de_refresh.h"
 #include "de_render.h"
@@ -479,13 +473,13 @@ int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallbac
 #define UNIT_WIDTH                     1
 #define UNIT_HEIGHT                    1
 
-static int drawCell(TreeCell const& tree, void* /*parameters*/)
+static int drawCell(TreeBase* node, void* /*parameters*/)
 {
     vec2f_t topLeft, bottomRight;
 
-    V2f_Set(topLeft, UNIT_WIDTH * tree.x(), UNIT_HEIGHT * tree.y());
-    V2f_Set(bottomRight, UNIT_WIDTH  * (tree.x() + tree.size()),
-                         UNIT_HEIGHT * (tree.y() + tree.size()));
+    V2f_Set(topLeft, UNIT_WIDTH * node->x(), UNIT_HEIGHT * node->y());
+    V2f_Set(bottomRight, UNIT_WIDTH  * (node->x() + node->size()),
+                         UNIT_HEIGHT * (node->y() + node->size()));
 
     glBegin(GL_LINE_LOOP);
         glVertex2fv((GLfloat*)topLeft);
@@ -505,9 +499,14 @@ void Gridmap_DebugDrawer(Gridmap const& gm)
     /**
      * Draw our Quadtree.
      */
-    TreeCell const& root = gm;
+    TreeNode& root = const_cast<TreeNode&>(gm.d->root);
     glColor4f(1.f, 1.f, 1.f, 1.f / root.size());
-    iterateCell(root, false/*all cells*/, drawCell);
+
+    traversetree_parameters_t travParms;
+    travParms.leafOnly = false;
+    travParms.callback = drawCell;
+    travParms.callbackParameters = 0;
+    traverseTree(&root, travParms);
 
     /**
      * Draw our bounds.
