@@ -94,6 +94,7 @@ else {
 # Source Files ---------------------------------------------------------------
 
 DENG_API_HEADERS = \
+    api/aabox.h \
     api/busytask.h \
     api/dd_animator.h \
     api/dd_api.h \
