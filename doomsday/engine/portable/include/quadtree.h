@@ -74,19 +74,6 @@ public:
     class TreeLeaf : public TreeBase
     {
     public:
-        explicit TreeLeaf(QuadtreeCoord x = 0, QuadtreeCoord y = 0, void* value = 0)
-            : TreeBase(x, y), value_(value)
-        {}
-
-        explicit TreeLeaf(const_QuadtreeCell mcell, void* value = 0)
-            : TreeBase(mcell[X], mcell[Y]), value_(value)
-        {}
-
-        ~TreeLeaf()
-        {
-            if(value_) Z_Free(value_);
-        }
-
         inline QuadtreeCoord size() const { return 1; }
 
         inline void* value() const { return value_; }
@@ -102,6 +89,22 @@ public:
             return *this;
         }
 
+        friend class Quadtree;
+
+    private:
+        explicit TreeLeaf(QuadtreeCoord x = 0, QuadtreeCoord y = 0, void* value = 0)
+            : TreeBase(x, y), value_(value)
+        {}
+
+        explicit TreeLeaf(const_QuadtreeCell mcell, void* value = 0)
+            : TreeBase(mcell[X], mcell[Y]), value_(value)
+        {}
+
+        ~TreeLeaf()
+        {
+            if(value_) Z_Free(value_);
+        }
+
     private:
         /// Data value at this tree leaf.
         void* value_;
@@ -111,6 +114,37 @@ public:
     class TreeNode : public TreeBase
     {
     public:
+        inline QuadtreeCoord size() const { return size_; }
+
+        inline TreeBase* topLeft() const { return children[TopLeft]; }
+        inline TreeBase* topRight() const { return children[TopRight]; }
+        inline TreeBase* bottomLeft() const { return children[BottomLeft]; }
+        inline TreeBase* bottomRight() const { return children[BottomRight]; }
+
+        inline TreeBase* child(Quadrant q) const
+        {
+            switch(q)
+            {
+            case TopLeft:       return topLeft();
+            case TopRight:      return topRight();
+            case BottomLeft:    return bottomLeft();
+            case BottomRight:   return bottomRight();
+            default:
+                throw de::Error("Quadtree::TreeNode::child", QString("Invalid Quadrant %1").arg(int(q)));
+            }
+        }
+
+        /// @note Does nothing about any existing child tree. Caller must ensure that this
+        ///       is logical and does not result in memory leakage.
+        TreeNode& setChild(Quadrant q, TreeBase* newChild)
+        {
+            children[q] = newChild;
+            return *this;
+        }
+
+        friend class Quadtree;
+
+    private:
         explicit TreeNode(QuadtreeCoord x = 0, QuadtreeCoord y = 0, QuadtreeCoord size = 0)
             : TreeBase(x, y), size_(size)
         {
@@ -132,34 +166,6 @@ public:
             if(children[BottomRight]) delete children[BottomRight];
         }
 
-        inline QuadtreeCoord size() const { return size_; }
-
-        inline TreeBase* topLeft() const { return children[TopLeft]; }
-        inline TreeBase* topRight() const { return children[TopRight]; }
-        inline TreeBase* bottomLeft() const { return children[BottomLeft]; }
-        inline TreeBase* bottomRight() const { return children[BottomRight]; }
-
-        inline TreeBase* child(Quadrant q) const
-        {
-            switch(q)
-            {
-            case TopLeft:       return topLeft();
-            case TopRight:      return topRight();
-            case BottomLeft:    return bottomLeft();
-            case BottomRight:   return bottomRight();
-            default:
-                throw de::Error("Gridmap::TreeNode::child", QString("Invalid Quadrant %1").arg(int(q)));
-            }
-        }
-
-        /// @note Does nothing about any existing child tree. Caller must ensure that this
-        ///       is logical and does not result in memory leakage.
-        TreeNode& setChild(Quadrant q, TreeBase* newChild)
-        {
-            children[q] = newChild;
-            return *this;
-        }
-
     private:
         /// Size of this cell in Gridmap space (width=height).
         QuadtreeCoord size_;
@@ -168,9 +174,9 @@ public:
         TreeBase* children[4];
     };
 
-    /// Parameters for the traverseTree() method.
+    /// Parameters for the traverse() method.
     /// @todo Refactor me away.
-    struct traversetree_parameters_t
+    struct traverse_parameters_t
     {
         bool leafOnly;
         int (*callback) (TreeBase* node, void* parameters);
@@ -253,7 +259,7 @@ public:
     void* cell(const_QuadtreeCell mcell)
     {
         // Outside our boundary?
-        if(mcell[X] >= dimensions[X] || mcell[Y] >= dimensions[Y]) return NULL;
+        DENG2_ASSERT(mcell[X] < dimensions[X] && mcell[Y] < dimensions[Y]);
 
         // Exisiting data for this leaf?
         TreeLeaf* leaf = findLeafDescend(root_, mcell, false);
@@ -265,7 +271,7 @@ public:
     Quadtree& setCell(const_QuadtreeCell mcell, void* newValue)
     {
         // Outside our boundary?
-        if(mcell[X] >= dimensions[X] || mcell[Y] >= dimensions[Y]) return *this;
+        DENG2_ASSERT(mcell[X] < dimensions[X] && mcell[Y] < dimensions[Y]);
 
         TreeLeaf* leaf = findLeafDescend(root_, mcell, true);
         DENG2_ASSERT(leaf);
@@ -278,6 +284,60 @@ public:
         return findLeafDescend(root_, mcell, alloc);
     }
 
+    static inline bool isLeaf(TreeBase& tree)
+    {
+        return tree.size() == 1;
+    }
+
+    /**
+     * Depth-first traversal of the children of this tree, making a callback
+     * for each cell. Iteration ends when all selected cells have been visited
+     * or a callback returns a non-zero value.
+     *
+     * @param tree          Tree to traverse.
+     * @param leafOnly      @c true= Caller is only interested in leaves.
+     * @param callback      Callback function.
+     * @param parameters    Passed to the callback.
+     *
+     * @return  Zero iff iteration completed wholly, else the value returned by the
+     *          last callback made.
+     */
+    static int traverse(TreeBase* tree, traverse_parameters_t const& p)
+    {
+        int result;
+        if(!isLeaf(*tree))
+        {
+            TreeNode* node = static_cast<TreeNode*>(tree);
+            if(node->topLeft())
+            {
+                result = traverse(node->topLeft(), p);
+                if(result) return result;
+            }
+            if(node->topRight())
+            {
+                result = traverse(node->topRight(), p);
+                if(result) return result;
+            }
+            if(node->bottomLeft())
+            {
+                result = traverse(node->bottomLeft(), p);
+                if(result) return result;
+            }
+            if(node->bottomRight())
+            {
+                result = traverse(node->bottomRight(), p);
+                if(result) return result;
+            }
+        }
+        if(!p.leafOnly || isLeaf(*tree))
+        {
+            result = p.callback(tree, p.callbackParameters);
+            if(result) return result;
+        }
+        return false; // Continue iteration.
+    }
+
+private:
     /**
      * Construct and initialize a new (sub)tree.
      *
@@ -355,59 +415,6 @@ public:
 
         // Found a leaf.
         return static_cast<TreeLeaf*>(&tree);
-    }
-
-    /**
-     * Depth-first traversal of the children of this tree, making a callback
-     * for each cell. Iteration ends when all selected cells have been visited
-     * or a callback returns a non-zero value.
-     *
-     * @param tree          Tree to traverse.
-     * @param leafOnly      @c true= Caller is only interested in leaves.
-     * @param callback      Callback function.
-     * @param parameters    Passed to the callback.
-     *
-     * @return  Zero iff iteration completed wholly, else the value returned by the
-     *          last callback made.
-     */
-    static int traverseTree(TreeBase* tree, traversetree_parameters_t const& p)
-    {
-        int result;
-        if(!isLeaf(*tree))
-        {
-            TreeNode* node = static_cast<TreeNode*>(tree);
-            if(node->topLeft())
-            {
-                result = traverseTree(node->topLeft(), p);
-                if(result) return result;
-            }
-            if(node->topRight())
-            {
-                result = traverseTree(node->topRight(), p);
-                if(result) return result;
-            }
-            if(node->bottomLeft())
-            {
-                result = traverseTree(node->bottomLeft(), p);
-                if(result) return result;
-            }
-            if(node->bottomRight())
-            {
-                result = traverseTree(node->bottomRight(), p);
-                if(result) return result;
-            }
-        }
-        if(!p.leafOnly || isLeaf(*tree))
-        {
-            result = p.callback(tree, p.callbackParameters);
-            if(result) return result;
-        }
-        return false; // Continue iteration.
-    }
-
-    static inline bool isLeaf(TreeBase& tree)
-    {
-        return tree.size() == 1;
     }
 
     static QuadtreeCoord ceilPow2(QuadtreeCoord unit)

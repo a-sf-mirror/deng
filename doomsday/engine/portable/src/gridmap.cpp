@@ -117,12 +117,12 @@ int Gridmap::iterate(Gridmap_IterateCallback callback, void* parameters)
     p.callback = callback;
     p.callbackParameters = parameters;
 
-    DataGrid::traversetree_parameters_t travParms;
+    DataGrid::traverse_parameters_t travParms;
     travParms.leafOnly = true;
     travParms.callback = actionCallback;
     travParms.callbackParameters = (void*)&p;
     DataGrid::TreeBase& root = d->grid;
-    return DataGrid::traverseTree(&root, travParms);
+    return DataGrid::traverse(&root, travParms);
 }
 
 int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallback callback, void* parameters)
@@ -192,11 +192,11 @@ void Gridmap_DebugDrawer(Gridmap const& gm)
     DataGrid::TreeBase const& root = gm.d->grid;
     glColor4f(1.f, 1.f, 1.f, 1.f / root.size());
 
-    DataGrid::traversetree_parameters_t travParms;
+    DataGrid::traverse_parameters_t travParms;
     travParms.leafOnly = false;
     travParms.callback = drawCell;
     travParms.callbackParameters = 0;
-    DataGrid::traverseTree(&const_cast<DataGrid::TreeBase&>(root), travParms);
+    DataGrid::traverse(&const_cast<DataGrid::TreeBase&>(root), travParms);
 
     /**
      * Draw our bounds.
