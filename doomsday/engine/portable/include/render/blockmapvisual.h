@@ -27,8 +27,8 @@
 extern "C" {
 #endif
 
-byte bmapShowDebug; ///< cvar
-float bmapDebugSize; ///< cvar
+extern byte bmapShowDebug; ///< cvar
+extern float bmapDebugSize; ///< cvar
 
 /**
  * Render the Blockmap debugging visual.
