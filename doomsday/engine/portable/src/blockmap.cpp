@@ -316,8 +316,13 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* obje
     DENG2_ASSERT(object);
     BlockmapCell mcell = { mcell_[0], mcell_[1] };
     d->gridmap.clipCell(mcell);
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
-    if(!cell)
+    BlockmapCellData* cell;
+    if(d->gridmap.leafAtCell(mcell))
+    {
+        cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
+        DENG2_ASSERT(cell);
+    }
+    else
     {
         cell = (BlockmapCellData*) Z_Calloc(sizeof(BlockmapCellData), PU_MAPSTATIC, 0);
         d->gridmap.setCell(mcell, cell);
@@ -329,9 +334,10 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* obje
 bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
 {
     bool unlinked = false;
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
-    if(cell)
+    if(d->gridmap.leafAtCell(mcell))
     {
+        BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
+        DENG2_ASSERT(cell);
         cell->unlinkObject(object, &unlinked);
     }
     return unlinked;
@@ -351,8 +357,9 @@ void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, v
 
 uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const
 {
+    if(!d->gridmap.leafAtCell(mcell)) return 0;
     BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
-    if(!cell) return 0;
+    DENG2_ASSERT(cell);
     return cell->size();
 }
 
@@ -364,12 +371,10 @@ Gridmap const& de::Blockmap::gridmap()
 int de::Blockmap::iterateCellObjects(const_BlockmapCell mcell,
     int (*callback) (void* object, void* parameters), void* parameters)
 {
+    if(!d->gridmap.leafAtCell(mcell)) return false; // Continue iteration.
     BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
-    if(cell)
-    {
-        return BlockmapCellData_IterateObjects(cell, callback, parameters);
-    }
-    return false; // Continue iteration.
+    DENG2_ASSERT(cell);
+    return BlockmapCellData_IterateObjects(cell, callback, parameters);
 }
 
 typedef struct {

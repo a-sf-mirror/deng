@@ -74,38 +74,37 @@ public:
     class TreeLeaf : public TreeBase
     {
     public:
-        explicit TreeLeaf(QuadtreeCoord x = 0, QuadtreeCoord y = 0, void* userData = 0)
-            : TreeBase(x, y), userData_(userData)
+        explicit TreeLeaf(QuadtreeCoord x = 0, QuadtreeCoord y = 0, void* value = 0)
+            : TreeBase(x, y), value_(value)
         {}
 
-        explicit TreeLeaf(const_QuadtreeCell mcell, void* userData = 0)
-            : TreeBase(mcell[X], mcell[Y]), userData_(userData)
+        explicit TreeLeaf(const_QuadtreeCell mcell, void* value = 0)
+            : TreeBase(mcell[X], mcell[Y]), value_(value)
         {}
 
         ~TreeLeaf()
         {
-            if(userData_) Z_Free(userData_);
+            if(value_) Z_Free(value_);
         }
 
         inline QuadtreeCoord size() const { return 1; }
 
-        inline void* userData() const { return userData_; }
+        inline void* value() const { return value_; }
 
-        TreeLeaf& setUserData(void* newUserData)
+        TreeLeaf& setValue(void* newValue)
         {
-            // Exisiting user data for this leaf?
-            if(userData_)
+            // Exisiting data value for this leaf?
+            if(value_)
             {
-                Z_Free(userData_);
+                Z_Free(value_);
             }
-            userData_ = newUserData;
+            value_ = newValue;
             return *this;
         }
 
     private:
-        /// User data associated with the cell. Note that only leafs can have
-        /// associated user data.
-        void* userData_;
+        /// Data value at this tree leaf.
+        void* value_;
     };
 
     /// TreeNode. Represents a subspace node within the quadtree.
@@ -174,7 +173,7 @@ public:
     struct traversetree_parameters_t
     {
         bool leafOnly;
-        int (*callback) (Quadtree::TreeBase* node, void* parameters);
+        int (*callback) (TreeBase* node, void* parameters);
         void* callbackParameters;
     };
 
@@ -241,26 +240,36 @@ public:
         return adjusted;
     }
 
+    bool leafAtCell(const_QuadtreeCell mcell)
+    {
+        // Outside our boundary?
+        if(mcell[X] >= dimensions[X] || mcell[Y] >= dimensions[Y]) return false;
+
+        // A leaf with an exisiting data value?
+        TreeLeaf* leaf = findLeafDescend(root_, mcell, false);
+        return (leaf && leaf->value());
+    }
+
     void* cell(const_QuadtreeCell mcell)
     {
         // Outside our boundary?
         if(mcell[X] >= dimensions[X] || mcell[Y] >= dimensions[Y]) return NULL;
 
-        // Exisiting user data for this leaf?
+        // Exisiting data for this leaf?
         TreeLeaf* leaf = findLeafDescend(root_, mcell, false);
-        if(!leaf || !leaf->userData()) return 0;
+        if(!leaf || !leaf->value()) return 0;
 
-        return leaf->userData();
+        return leaf->value();
     }
 
-    Quadtree& setCell(const_QuadtreeCell mcell, void* userData)
+    Quadtree& setCell(const_QuadtreeCell mcell, void* newValue)
     {
         // Outside our boundary?
         if(mcell[X] >= dimensions[X] || mcell[Y] >= dimensions[Y]) return *this;
 
         TreeLeaf* leaf = findLeafDescend(root_, mcell, true);
         DENG2_ASSERT(leaf);
-        leaf->setUserData(userData);
+        leaf->setValue(newValue);
         return *this;
     }
 
@@ -334,7 +343,7 @@ public:
                     subOrigin[Y] = node.y() + subSize;
                     break;
                 default:
-                    throw de::Error("Gridmap::findLeafDescend", QString("Invalid quadrant %1").arg(int(q)));
+                    throw de::Error("Quadtree::findLeafDescend", QString("Invalid quadrant %1").arg(int(q)));
                 }
 
                 child = newTree(subOrigin, subSize);
@@ -361,7 +370,7 @@ public:
      * @return  Zero iff iteration completed wholly, else the value returned by the
      *          last callback made.
      */
-    static int traverseTree(Quadtree::TreeBase* tree, traversetree_parameters_t const& p)
+    static int traverseTree(TreeBase* tree, traversetree_parameters_t const& p)
     {
         int result;
         if(!isLeaf(*tree))

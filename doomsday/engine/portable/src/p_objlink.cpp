@@ -516,8 +516,11 @@ void R_ObjlinkBlockmapSpreadInBspLeaf(objlinkblockmap_t* obm, const BspLeaf* bsp
     for(mcell[1] = minBlock[1]; mcell[1] <= maxBlock[1]; ++mcell[1])
     for(mcell[0] = minBlock[0]; mcell[0] <= maxBlock[0]; ++mcell[0])
     {
+        if(!obm->gridmap->leafAtCell(mcell)) continue;
+
         objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(obm->gridmap->cell(mcell));
-        if(!block || block->doneSpread) continue;
+        DENG2_ASSERT(block);
+        if(block->doneSpread) continue;
 
         iter = block->head;
         while(iter)
@@ -554,8 +557,13 @@ END_PROF( PROF_OBJLINK_SPREAD );
 static void linkObjlinkInBlockmap(objlinkblockmap_t* obm, objlink_t* link, GridmapCell& mcell)
 {
     DENG2_ASSERT(obm && link);
-    objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(obm->gridmap->cell(mcell));
-    if(!block)
+    objlinkblock_t* block;
+    if(obm->gridmap->leafAtCell(mcell))
+    {
+        block = reinterpret_cast<objlinkblock_t*>(obm->gridmap->cell(mcell));
+        DENG2_ASSERT(block);
+    }
+    else
     {
         block = (objlinkblock_t*)Z_Calloc(sizeof(*block), PU_MAPSTATIC, 0);
         obm->gridmap->setCell(mcell, block);

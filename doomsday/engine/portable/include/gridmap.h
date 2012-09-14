@@ -72,15 +72,22 @@ public:
      */
     bool clipBlock(GridmapCellBlock& block) const;
 
+    bool leafAtCell(const_GridmapCell mcell) const;
+    inline bool leafAtCell(GridmapCoord x, GridmapCoord y) const
+    {
+        GridmapCell mcell = { x, y };
+        return leafAtCell(mcell);
+    }
+
     /**
      * Retrieve the user data associated with the identified cell.
      *
      * @param mcells         XY coordinates of the cell whose data to retrieve.
      *
-     * @return  User data for the identified cell else @c NULL if an invalid reference.
+     * @return  User data for the identified cell.
      */
-    void* cell(const_GridmapCell mcell);
-    inline void* cell(GridmapCoord x, GridmapCoord y)
+    void* cell(const_GridmapCell mcell) const;
+    inline void* cell(GridmapCoord x, GridmapCoord y) const
     {
         GridmapCell mcell = { x, y };
         return cell(mcell);
