@@ -226,7 +226,6 @@ DENG_HEADERS += \
     portable/include/gl_texmanager.h \
     portable/include/gl_tga.h \
     portable/include/gridmap.h \
-    portable/include/gridmapcellblock.h \
     portable/include/hedge.h \
     portable/include/image.h \
     portable/include/joystick.h \

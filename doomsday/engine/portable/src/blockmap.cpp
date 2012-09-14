@@ -179,17 +179,17 @@ struct de::Blockmap::Instance
     /// Gridmap which implements the blockmap itself.
     Gridmap gridmap;
 
-    Instance(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
+    Instance(coord_t const min[2], coord_t const max[2], BlockmapCoord cellWidth, BlockmapCoord cellHeight)
         : bounds(min, max),
-          gridmap(uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
-                  uint( ceil((max[1] - min[1]) / coord_t(cellHeight))))
+          gridmap(BlockmapCoord( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
+                  BlockmapCoord( ceil((max[1] - min[1]) / coord_t(cellHeight))))
     {
         cellSize[VX] = cellWidth;
         cellSize[VY] = cellHeight;
     }
 };
 
-de::Blockmap::Blockmap(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
+de::Blockmap::Blockmap(coord_t const min[2], coord_t const max[2], BlockmapCoord cellWidth, BlockmapCoord cellHeight)
 {
     d = new Instance(min, max, cellWidth, cellHeight);
 }

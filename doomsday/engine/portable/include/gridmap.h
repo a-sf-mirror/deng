@@ -31,7 +31,12 @@
 #define LIBDENG_DATA_GRIDMAP_H
 
 #include "dd_types.h"
-#include "gridmapcellblock.h"
+#include "api/aabox.h"
+
+typedef uint GridmapCoord;
+typedef GridmapCoord GridmapCell[2];
+typedef const GridmapCoord const_GridmapCell[2];
+typedef AABoxu GridmapCellBlock;
 
 class Gridmap
 {

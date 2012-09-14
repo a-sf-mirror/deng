@@ -25,7 +25,12 @@
 #define LIBDENG_DATA_QUADTREE_H
 
 #include "dd_types.h"
-#include "gridmapcellblock.h"
+#include "api/aabox.h"
+
+typedef uint QuadtreeCoord;
+typedef QuadtreeCoord QuadtreeCell[2];
+typedef const QuadtreeCoord const_QuadtreeCell[2];
+typedef AABoxu QuadtreeCellBlock;
 
 class Quadtree
 {
@@ -46,7 +51,7 @@ public:
     class TreeBase
     {
     public:
-        explicit TreeBase(GridmapCoord x = 0, GridmapCoord y = 0)
+        explicit TreeBase(QuadtreeCoord x = 0, QuadtreeCoord y = 0)
         {
             origin[X] = x;
             origin[Y] = y;
@@ -54,26 +59,26 @@ public:
 
         virtual ~TreeBase() {}
 
-        inline GridmapCoord x() const { return origin[X]; }
-        inline GridmapCoord y() const { return origin[Y]; }
-        inline const GridmapCell& xy() const { return origin; }
+        inline QuadtreeCoord x() const { return origin[X]; }
+        inline QuadtreeCoord y() const { return origin[Y]; }
+        inline const QuadtreeCell& xy() const { return origin; }
 
-        virtual GridmapCoord size() const =0;
+        virtual QuadtreeCoord size() const =0;
 
     protected:
         /// Origin of this node in Gridmap space [x, y].
-        GridmapCell origin;
+        QuadtreeCell origin;
     };
 
     /// TreeLeaf. Represents a subspace leaf within the quadtree.
     class TreeLeaf : public TreeBase
     {
     public:
-        explicit TreeLeaf(GridmapCoord x = 0, GridmapCoord y = 0, void* userData = 0)
+        explicit TreeLeaf(QuadtreeCoord x = 0, QuadtreeCoord y = 0, void* userData = 0)
             : TreeBase(x, y), userData_(userData)
         {}
 
-        explicit TreeLeaf(const_GridmapCell mcell, void* userData = 0)
+        explicit TreeLeaf(const_QuadtreeCell mcell, void* userData = 0)
             : TreeBase(mcell[X], mcell[Y]), userData_(userData)
         {}
 
@@ -82,7 +87,7 @@ public:
             if(userData_) Z_Free(userData_);
         }
 
-        inline GridmapCoord size() const { return 1; }
+        inline QuadtreeCoord size() const { return 1; }
 
         inline void* userData() const { return userData_; }
 
@@ -107,13 +112,13 @@ public:
     class TreeNode : public TreeBase
     {
     public:
-        explicit TreeNode(GridmapCoord x = 0, GridmapCoord y = 0, GridmapCoord size = 0)
+        explicit TreeNode(QuadtreeCoord x = 0, QuadtreeCoord y = 0, QuadtreeCoord size = 0)
             : TreeBase(x, y), size_(size)
         {
             children[TopLeft] = children[TopRight] = children[BottomLeft] = children[BottomRight] = 0;
         }
 
-        TreeNode(const_GridmapCell origin, GridmapCoord size = 0)
+        TreeNode(const_QuadtreeCell origin, QuadtreeCoord size = 0)
             : TreeBase(origin[X], origin[Y]), size_(size)
         {
             children[TopLeft] = children[TopRight] = children[BottomLeft] = children[BottomRight] = 0;
@@ -128,7 +133,7 @@ public:
             if(children[BottomRight]) delete children[BottomRight];
         }
 
-        inline GridmapCoord size() const { return size_; }
+        inline QuadtreeCoord size() const { return size_; }
 
         inline TreeBase* topLeft() const { return children[TopLeft]; }
         inline TreeBase* topRight() const { return children[TopRight]; }
@@ -158,7 +163,7 @@ public:
 
     private:
         /// Size of this cell in Gridmap space (width=height).
-        GridmapCoord size_;
+        QuadtreeCoord size_;
 
         /// Child cells of this, one for each subquadrant.
         TreeBase* children[4];
@@ -174,7 +179,7 @@ public:
     };
 
 public:
-    Quadtree(GridmapCoord width, GridmapCoord height)
+    Quadtree(QuadtreeCoord width, QuadtreeCoord height)
         : // Quadtree must subdivide the space equally into 1x1 unit cells.
           root_(0, 0, ceilPow2(MAX_OF(width, height)))
     {
@@ -188,13 +193,13 @@ public:
     TreeBase& root() { return root_; }
     TreeBase const& root() const { return root_; }
 
-    GridmapCoord width() const { return dimensions[X]; }
+    QuadtreeCoord width() const { return dimensions[X]; }
 
-    GridmapCoord height() const { return dimensions[Y]; }
+    QuadtreeCoord height() const { return dimensions[Y]; }
 
-    const GridmapCell& widthHeight() const { return dimensions; }
+    const QuadtreeCell& widthHeight() const { return dimensions; }
 
-    bool clipCell(GridmapCell& cell) const
+    bool clipCell(QuadtreeCell& cell) const
     {
         bool adjusted = false;
         if(cell[X] >= dimensions[X])
@@ -210,7 +215,7 @@ public:
         return adjusted;
     }
 
-    bool clipBlock(GridmapCellBlock& block) const
+    bool clipBlock(QuadtreeCellBlock& block) const
     {
         bool adjusted = false;
         if(block.minX >= dimensions[X])
@@ -236,7 +241,7 @@ public:
         return adjusted;
     }
 
-    void* cell(const_GridmapCell mcell)
+    void* cell(const_QuadtreeCell mcell)
     {
         // Outside our boundary?
         if(mcell[X] >= dimensions[X] || mcell[Y] >= dimensions[Y]) return NULL;
@@ -248,7 +253,7 @@ public:
         return leaf->userData();
     }
 
-    Quadtree& setCell(const_GridmapCell mcell, void* userData)
+    Quadtree& setCell(const_QuadtreeCell mcell, void* userData)
     {
         // Outside our boundary?
         if(mcell[X] >= dimensions[X] || mcell[Y] >= dimensions[Y]) return *this;
@@ -259,7 +264,7 @@ public:
         return *this;
     }
 
-    TreeLeaf* findLeaf(const_GridmapCell mcell, bool alloc)
+    TreeLeaf* findLeaf(const_QuadtreeCell mcell, bool alloc)
     {
         return findLeafDescend(root_, mcell, alloc);
     }
@@ -272,7 +277,7 @@ public:
      *
      * @return  Newly allocated and initialized (sub)tree.
      */
-    static TreeBase* newTree(const_GridmapCell mcell, GridmapCoord size)
+    static TreeBase* newTree(const_QuadtreeCell mcell, QuadtreeCoord size)
     {
         if(size != 1)
         {
@@ -282,7 +287,7 @@ public:
         return new TreeLeaf(mcell);
     }
 
-    static TreeLeaf* findLeafDescend(TreeBase& tree, const_GridmapCell mcell, bool alloc)
+    static TreeLeaf* findLeafDescend(TreeBase& tree, const_QuadtreeCell mcell, bool alloc)
     {
         // Have we reached a leaf?
         if(!isLeaf(tree))
@@ -290,7 +295,7 @@ public:
             TreeNode& node = static_cast<TreeNode&>(tree);
 
             // Into which quadrant do we need to descend?
-            GridmapCoord subSize = node.size() >> 1;
+            QuadtreeCoord subSize = node.size() >> 1;
             Quadrant q;
             if(mcell[X] < node.x() + subSize)
             {
@@ -309,7 +314,7 @@ public:
                 if(!alloc) return 0;
 
                 // Subdivide this tree and construct the new.
-                GridmapCoord subOrigin[2];
+                QuadtreeCoord subOrigin[2];
                 switch(q)
                 {
                 case TopLeft:
@@ -396,9 +401,9 @@ public:
         return tree.size() == 1;
     }
 
-    static GridmapCoord ceilPow2(GridmapCoord unit)
+    static QuadtreeCoord ceilPow2(QuadtreeCoord unit)
     {
-        GridmapCoord cumul;
+        QuadtreeCoord cumul;
         for(cumul = 1; unit > cumul; cumul <<= 1);
         return cumul;
     }
@@ -408,7 +413,7 @@ private:
     TreeNode root_;
 
     /// Dimensions of the space we are indexing (in cells).
-    GridmapCell dimensions;
+    QuadtreeCell dimensions;
 };
 
 #endif /// LIBDENG_DATA_QUADTREE_H

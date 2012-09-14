@@ -24,23 +24,13 @@
 #define LIBDENG_MAP_BLOCKMAP_H
 
 #include "dd_types.h"
+#include "api/aabox.h"
 #include "m_vector.h"
 
-#include "gridmapcellblock.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef GridmapCoord BlockmapCoord;
-typedef GridmapCell BlockmapCell;
-typedef const_GridmapCell const_BlockmapCell;
-
-typedef GridmapCellBlock BlockmapCellBlock;
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
+typedef uint BlockmapCoord;
+typedef BlockmapCoord BlockmapCell[2];
+typedef const BlockmapCoord const_BlockmapCell[2];
+typedef AABoxu BlockmapCellBlock;
 
 #ifdef __cplusplus
 
@@ -51,7 +41,7 @@ namespace de {
 class Blockmap
 {
 public:
-    Blockmap(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight);
+    Blockmap(coord_t const min[2], coord_t const max[2], BlockmapCoord cellWidth, BlockmapCoord cellHeight);
     ~Blockmap();
 
     /// @return  "Origin" map space point for the Blockmap (minimal [x,y]).
@@ -197,7 +187,7 @@ extern "C" {
 struct blockmap_s; // The Blockmap instance (opaque).
 typedef struct blockmap_s Blockmap;
 
-Blockmap* Blockmap_New(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight);
+Blockmap* Blockmap_New(coord_t const min[2], coord_t const max[2], BlockmapCoord cellWidth, BlockmapCoord cellHeight);
 
 void Blockmap_Delete(Blockmap* blockmap);
 
