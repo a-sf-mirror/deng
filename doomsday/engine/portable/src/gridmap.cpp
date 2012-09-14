@@ -73,6 +73,11 @@ public:
 
     TreeLeaf& setUserData(void* newUserData)
     {
+        // Exisiting user data for this leaf?
+        if(userData_)
+        {
+            Z_Free(userData_);
+        }
         userData_ = newUserData;
         return *this;
     }
@@ -232,18 +237,11 @@ struct Gridmap::Instance
     /// Dimensions of the space we are indexing (in cells).
     GridmapCell dimensions;
 
-    /// Zone memory tag used for the user data.
-    int zoneTag;
-
-    /// Size of the memory region to be allocated for the user data of each leaf.
-    size_t sizeOfCell;
-
     /// Root of the Quadtree. Allocated along with *this* instance.
     TreeNode root;
 
-    Instance(GridmapCoord width, GridmapCoord height, size_t _sizeOfCell, int _zoneTag)
-        : zoneTag(_zoneTag), sizeOfCell(_sizeOfCell),
-          // Quadtree must subdivide the space equally into 1x1 unit cells.
+    Instance(GridmapCoord width, GridmapCoord height)
+        : // Quadtree must subdivide the space equally into 1x1 unit cells.
           root(0, 0, ceilPow2(MAX_OF(width, height)))
     {
         dimensions[X] = width;
@@ -330,9 +328,9 @@ struct Gridmap::Instance
     }
 };
 
-Gridmap::Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag)
+Gridmap::Gridmap(GridmapCoord width, GridmapCoord height)
 {
-    d = new Instance(width, height, sizeOfCell, zoneTag);
+    d = new Instance(width, height);
 }
 
 Gridmap::~Gridmap()
@@ -353,6 +351,22 @@ GridmapCoord Gridmap::height() const
 const GridmapCell& Gridmap::widthHeight() const
 {
     return d->dimensions;
+}
+
+bool Gridmap::clipCell(GridmapCell& cell) const
+{
+    bool adjusted = false;
+    if(cell[X] >= d->dimensions[X])
+    {
+        cell[X] = d->dimensions[X]-1;
+        adjusted = true;
+    }
+    if(cell[Y] >= d->dimensions[Y])
+    {
+        cell[Y] = d->dimensions[Y]-1;
+        adjusted = true;
+    }
+    return adjusted;
 }
 
 bool Gridmap::clipBlock(GridmapCellBlock& block) const
@@ -381,26 +395,28 @@ bool Gridmap::clipBlock(GridmapCellBlock& block) const
     return adjusted;
 }
 
-void* Gridmap::cell(const_GridmapCell mcell, bool alloc)
+void* Gridmap::cell(const_GridmapCell mcell)
 {
     // Outside our boundary?
     if(mcell[X] >= d->dimensions[X] || mcell[Y] >= d->dimensions[Y]) return NULL;
 
-    // Try to locate this leaf (may fail if not present and we are
-    // not allocating user data (there will be no corresponding cell)).
-    TreeLeaf* leaf = d->findLeafDescend(d->root, mcell, alloc);
-    if(!leaf) return 0;
-
     // Exisiting user data for this leaf?
-    if(leaf->userData()) return leaf->userData();
+    TreeLeaf* leaf = d->findLeafDescend(d->root, mcell, false);
+    if(!leaf || !leaf->userData()) return 0;
 
-    // Allocate new user data?
-    if(!alloc) return 0;
-
-    leaf->setUserData(Z_Calloc(d->sizeOfCell, d->zoneTag, 0));
     return leaf->userData();
 }
 
+Gridmap& Gridmap::setCell(const_GridmapCell mcell, void* userData)
+{
+    // Outside our boundary?
+    if(mcell[X] >= d->dimensions[X] || mcell[Y] >= d->dimensions[Y]) return *this;
+
+    TreeLeaf* leaf = d->findLeafDescend(d->root, mcell, true);
+    DENG2_ASSERT(leaf);
+    leaf->setUserData(userData);
+    return *this;
+}
 struct actioncallback_paramaters_t
 {
     Gridmap::Gridmap_IterateCallback callback;

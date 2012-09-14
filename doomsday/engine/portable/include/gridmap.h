@@ -42,10 +42,8 @@ public:
     /**
      * @param width          X dimension in cells.
      * @param height         Y dimension in cells.
-     * @param sizeOfCell     Amount of memory to be allocated for the user data associated with each cell.
-     * @param zoneTag        Zone memory tag for the allocated user data.
      */
-    Gridmap(GridmapCoord width, GridmapCoord height, size_t sizeOfCell, int zoneTag);
+    Gridmap(GridmapCoord width, GridmapCoord height);
     ~Gridmap();
 
     /// @return  Width of the Gridmap in cells.
@@ -56,6 +54,8 @@ public:
 
     /// @return  [width, height] of the Gridmap in cells.
     const GridmapCell& widthHeight() const;
+
+    bool Gridmap::clipCell(GridmapCell& cell) const;
 
     /**
      * Clip the cell coordinates in @a block vs the dimensions of this Gridmap so that they
@@ -71,17 +71,21 @@ public:
      * Retrieve the user data associated with the identified cell.
      *
      * @param mcells         XY coordinates of the cell whose data to retrieve.
-     * @param alloc          @c true= we should allocate new user data if not already present
-     *                       for the selected cell.
      *
-     * @return  User data for the identified cell else @c NULL if an invalid reference or no
-     *          there is no data present (and not allocating).
+     * @return  User data for the identified cell else @c NULL if an invalid reference.
      */
-    void* cell(const_GridmapCell mcell, bool alloc);
-    inline void* cell(GridmapCoord x, GridmapCoord y, bool alloc)
+    void* cell(const_GridmapCell mcell);
+    inline void* cell(GridmapCoord x, GridmapCoord y)
     {
         GridmapCell mcell = { x, y };
-        return cell(mcell, alloc);
+        return cell(mcell);
+    }
+
+    Gridmap& setCell(const_GridmapCell mcell, void* userData);
+    inline Gridmap& setCell(GridmapCoord x, GridmapCoord y, void* userData)
+    {
+        GridmapCell mcell = { x, y };
+        return setCell(mcell, userData);
     }
 
     /**

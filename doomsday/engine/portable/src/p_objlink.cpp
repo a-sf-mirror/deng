@@ -104,13 +104,13 @@ static inline objlinkblockmap_t* chooseObjlinkBlockmap(objtype_t type)
     return blockmaps + (int)type;
 }
 
-static inline uint toObjlinkBlockmapX(objlinkblockmap_t* obm, coord_t x)
+static inline GridmapCoord toObjlinkBlockmapX(objlinkblockmap_t* obm, coord_t x)
 {
     DENG2_ASSERT(obm && x >= obm->origin[0]);
     return uint((x - obm->origin[0]) / coord_t(BLOCK_WIDTH));
 }
 
-static inline uint toObjlinkBlockmapY(objlinkblockmap_t* obm, coord_t y)
+static inline GridmapCoord toObjlinkBlockmapY(objlinkblockmap_t* obm, coord_t y)
 {
     DENG2_ASSERT(obm && y >= obm->origin[1]);
     return uint((y - obm->origin[1]) / coord_t(BLOCK_HEIGHT));
@@ -123,7 +123,7 @@ static inline uint toObjlinkBlockmapY(objlinkblockmap_t* obm, coord_t y)
  *
  * @return  @c true if the coordinates specified had to be adjusted.
  */
-static bool toObjlinkBlockmapCell(objlinkblockmap_t* obm, uint coords[2], coord_t x, coord_t y)
+static bool toObjlinkBlockmapCell(objlinkblockmap_t* obm, GridmapCell& mcell, coord_t x, coord_t y)
 {
     DENG2_ASSERT(obm);
 
@@ -134,32 +134,32 @@ static bool toObjlinkBlockmapCell(objlinkblockmap_t* obm, uint coords[2], coord_
     bool adjusted = false;
     if(x < obm->origin[0])
     {
-        coords[VX] = 0;
+        mcell[0] = 0;
         adjusted = true;
     }
     else if(x >= max[0])
     {
-        coords[VX] = size[0]-1;
+        mcell[0] = size[0]-1;
         adjusted = true;
     }
     else
     {
-        coords[VX] = toObjlinkBlockmapX(obm, x);
+        mcell[0] = toObjlinkBlockmapX(obm, x);
     }
 
     if(y < obm->origin[1])
     {
-        coords[VY] = 0;
+        mcell[1] = 0;
         adjusted = true;
     }
     else if(y >= max[1])
     {
-        coords[VY] = size[1]-1;
+        mcell[1] = size[1]-1;
         adjusted = true;
     }
     else
     {
-        coords[VY] = toObjlinkBlockmapY(obm, y);
+        mcell[1] = toObjlinkBlockmapY(obm, y);
     }
     return adjusted;
 }
@@ -241,7 +241,7 @@ void R_InitObjlinkBlockmapForMap(void)
         objlinkblockmap_t* obm = chooseObjlinkBlockmap(objtype_t(i));
         obm->origin[0] = min[VX];
         obm->origin[1] = min[VY];
-        obm->gridmap = new Gridmap(width, height, sizeof(objlinkblock_t), PU_MAPSTATIC);
+        obm->gridmap = new Gridmap(width, height);
     }
 
     // Initialize obj => BspLeaf contact lists.
@@ -503,31 +503,29 @@ void R_ObjlinkBlockmapSpreadInBspLeaf(objlinkblockmap_t* obm, const BspLeaf* bsp
     DENG2_ASSERT(obm);
     if(!bspLeaf) return; // Wha?
 
-    uint minBlock[2];
+    GridmapCell minBlock;
     toObjlinkBlockmapCell(obm, minBlock, bspLeaf->aaBox.minX - maxRadius,
                                          bspLeaf->aaBox.minY - maxRadius);
 
-    uint maxBlock[2];
+    GridmapCell maxBlock;
     toObjlinkBlockmapCell(obm, maxBlock, bspLeaf->aaBox.maxX + maxRadius,
                                          bspLeaf->aaBox.maxY + maxRadius);
 
-    uint x, y;
+    GridmapCell mcell;
     objlink_t* iter;
-    for(y = minBlock[1]; y <= maxBlock[1]; ++y)
+    for(mcell[1] = minBlock[1]; mcell[1] <= maxBlock[1]; ++mcell[1])
+    for(mcell[0] = minBlock[0]; mcell[0] <= maxBlock[0]; ++mcell[0])
     {
-        for(x = minBlock[0]; x <= maxBlock[0]; ++x)
-        {
-            objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(obm->gridmap->cell(x, y, true/*can allocate a block*/));
-            if(block->doneSpread) continue;
+        objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(obm->gridmap->cell(mcell));
+        if(!block || block->doneSpread) continue;
 
-            iter = block->head;
-            while(iter)
-            {
-                findContacts(iter);
-                iter = iter->nextInBlock;
-            }
-            block->doneSpread = true;
+        iter = block->head;
+        while(iter)
+        {
+            findContacts(iter);
+            iter = iter->nextInBlock;
         }
+        block->doneSpread = true;
     }
 }
 
@@ -553,11 +551,15 @@ END_PROF( PROF_OBJLINK_SPREAD );
 }
 
 /// @pre  Coordinates held by @a blockXY are within valid range.
-static void linkObjlinkInBlockmap(objlinkblockmap_t* obm, objlink_t* link, uint blockXY[2])
+static void linkObjlinkInBlockmap(objlinkblockmap_t* obm, objlink_t* link, GridmapCell& mcell)
 {
-    if(!obm || !link || !blockXY) return; // Wha?
-
-    objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(obm->gridmap->cell(blockXY[0], blockXY[1], true/*can allocate a block*/));
+    DENG2_ASSERT(obm && link);
+    objlinkblock_t* block = reinterpret_cast<objlinkblock_t*>(obm->gridmap->cell(mcell));
+    if(!block)
+    {
+        block = (objlinkblock_t*)Z_Calloc(sizeof(*block), PU_MAPSTATIC, 0);
+        obm->gridmap->setCell(mcell, block);
+    }
     link->nextInBlock = block->head;
     block->head = link;
 }
@@ -566,7 +568,7 @@ void R_LinkObjs(void)
 {
     objlinkblockmap_t* obm;
     objlink_t* link;
-    uint block[2];
+    GridmapCell mcell;
     pvec3d_t origin;
 
 BEGIN_PROF( PROF_OBJLINK_LINK );
@@ -585,9 +587,9 @@ BEGIN_PROF( PROF_OBJLINK_LINK );
         }
 
         obm = chooseObjlinkBlockmap(link->type);
-        if(!toObjlinkBlockmapCell(obm, block, origin[VX], origin[VY]))
+        if(!toObjlinkBlockmapCell(obm, mcell, origin[VX], origin[VY]))
         {
-            linkObjlinkInBlockmap(obm, link, block);
+            linkObjlinkInBlockmap(obm, link, mcell);
         }
         link = link->next;
     }

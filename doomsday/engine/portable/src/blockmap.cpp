@@ -182,8 +182,7 @@ struct de::Blockmap::Instance
     Instance(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
         : bounds(min, max),
           gridmap(uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
-                  uint( ceil((max[1] - min[1]) / coord_t(cellHeight))),
-                  sizeof(BlockmapCellData), PU_MAPSTATIC)
+                  uint( ceil((max[1] - min[1]) / coord_t(cellHeight))))
     {
         cellSize[VX] = cellWidth;
         cellSize[VY] = cellHeight;
@@ -312,11 +311,17 @@ bool de::Blockmap::cellBlock(BlockmapCellBlock& cellBlock, AABoxd const& box) co
            cell(cellBlock.max, box.max);
 }
 
-bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell, void* object)
+bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* object)
 {
     DENG2_ASSERT(object);
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell, true));
-    if(!cell) return false; // Outside the blockmap?
+    BlockmapCell mcell = { mcell_[0], mcell_[1] };
+    d->gridmap.clipCell(mcell);
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
+    if(!cell)
+    {
+        cell = (BlockmapCellData*) Z_Calloc(sizeof(BlockmapCellData), PU_MAPSTATIC, 0);
+        d->gridmap.setCell(mcell, cell);
+    }
     cell->linkObject(object);
     return true; // Link added.
 }
@@ -324,7 +329,7 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell, void* objec
 bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
 {
     bool unlinked = false;
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell, false));
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
     if(cell)
     {
         cell->unlinkObject(object, &unlinked);
@@ -346,7 +351,7 @@ void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, v
 
 uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const
 {
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell, false));
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
     if(!cell) return 0;
     return cell->size();
 }
@@ -359,7 +364,7 @@ Gridmap const& de::Blockmap::gridmap()
 int de::Blockmap::iterateCellObjects(const_BlockmapCell mcell,
     int (*callback) (void* object, void* parameters), void* parameters)
 {
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell, false));
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
     if(cell)
     {
         return BlockmapCellData_IterateObjects(cell, callback, parameters);
