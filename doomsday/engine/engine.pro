@@ -275,6 +275,7 @@ DENG_HEADERS += \
     portable/include/plane.h \
     portable/include/polyobj.h \
     portable/include/protocol.h \
+    portable/include/quadtree.h \
     portable/include/r_data.h \
     portable/include/r_draw.h \
     portable/include/r_fakeradio.h \
