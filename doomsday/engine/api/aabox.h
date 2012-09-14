@@ -55,6 +55,7 @@ typedef struct aabox_s {
 #ifdef __cplusplus
     aabox_s() : minX(DDMAXINT), minY(DDMAXINT), maxX(DDMININT), maxY(DDMININT) {}
     aabox_s(int _minX, int _minY, int _maxX, int _maxY) : minX(_minX), minY(_minY), maxX(_maxX), maxY(_maxY) {}
+    aabox_s(int const _min[2], int const _max[2]) : minX(_min[0]), minY(_min[1]), maxX(_max[0]), maxY(_max[1]) {}
 
     aabox_s& operator = (aabox_s const& other)
     {
@@ -73,6 +74,52 @@ typedef struct aabox_s {
     }
 #endif
 } AABox;
+
+/**
+ * Axis-aligned bounding box with integer precision for unsigned value ranges.
+ * Handy POD structure for manipulation of bounding boxes.
+ */
+typedef struct aaboxu_s {
+    union {
+        struct {
+            uint vec4[4];
+        };
+        struct {
+            uint arvec2[2][2];
+        };
+        struct {
+            uint min[2];
+            uint max[2];
+        };
+        struct {
+            uint minX;
+            uint minY;
+            uint maxX;
+            uint maxY;
+        };
+    };
+#ifdef __cplusplus
+    aaboxu_s() : minX(DDMAXUINT), minY(DDMAXUINT), maxX(0), maxY(0) {}
+    aaboxu_s(uint _minX, uint _minY, uint _maxX, uint _maxY) : minX(_minX), minY(_minY), maxX(_maxX), maxY(_maxY) {}
+    aaboxu_s(uint const _min[2], uint const _max[2]) : minX(_min[0]), minY(_min[1]), maxX(_max[0]), maxY(_max[1]) {}
+
+    aaboxu_s& operator = (aaboxu_s const& other)
+    {
+        minX = other.minX;
+        minY = other.minY;
+        maxX = other.maxX;
+        maxY = other.maxY;
+        return *this;
+    }
+
+    aaboxu_s& clear()
+    {
+        minX = minY = DDMAXUINT;
+        maxX = maxY = 0;
+        return *this;
+    }
+#endif
+} AABoxu;
 
 /**
  * Axis-aligned bounding box with floating-point precision.
@@ -100,6 +147,7 @@ typedef struct aaboxf_s {
 #ifdef __cplusplus
     aaboxf_s() : minX(DDMAXFLOAT), minY(DDMAXFLOAT), maxX(DDMINFLOAT), maxY(DDMINFLOAT) {}
     aaboxf_s(float _minX, float _minY, float _maxX, float _maxY) : minX(_minX), minY(_minY), maxX(_maxX), maxY(_maxY) {}
+    aaboxf_s(float const _min[2], float const _max[2]) : minX(_min[0]), minY(_min[1]), maxX(_max[0]), maxY(_max[1]) {}
 
     aaboxf_s& operator = (aaboxf_s const& other)
     {
