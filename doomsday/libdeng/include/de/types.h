@@ -134,6 +134,7 @@ typedef int32_t         int_from_pointer_t;
 #define DDMAXSHORT  ((int16_t)0x7fff)
 #define DDMAXUSHORT ((uint16_t)0xffff)
 #define DDMAXINT    ((int32_t)0x7fffffff)   ///< Max positive 32-bit int
+#define DDMAXUINT   ((uint32_t)0xffffffff)  ///< Max positive 32-bit unsigned int
 #define DDMAXLONG   ((int32_t)0x7fffffff)
 #define DDMAXFLOAT  ((float)1E+37)
 
