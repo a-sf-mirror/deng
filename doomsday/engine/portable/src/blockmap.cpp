@@ -33,155 +33,144 @@
 
 #include "blockmap.h"
 
-struct BlockmapRingNode
+struct ObjLink
 {
+    ObjLink* nextInCell; /// Next in the same blockmap cell (if any).
+    ObjLink* prevInCell; /// Prev in the same blockmap cell (if any).
     void* object;
-    BlockmapRingNode* prev;
-    BlockmapRingNode* next;
+
+    ObjLink(ObjLink* _nextInCell = 0, ObjLink* _prevInCell = 0, void* _object = 0)
+        : nextInCell(_nextInCell), prevInCell(_prevInCell), object(_object)
+    {}
 };
 
-/// @todo optimize: BlockmapRingNodes should be pooled!!
+/// @todo optimize: ObjLinks should be pooled!!
 struct BlockmapCellData
 {
-    BlockmapCellData() : ringNodes(0), objectCount(0) {}
+    BlockmapCellData() : head(&tail), tail(0, &head), objectCount(0) {}
+
+    class iterator
+    {
+    public:
+        inline iterator() : i(0) {}
+        inline iterator(ObjLink* ol) : i(ol) {}
+        inline iterator(const iterator &other): i(other.i) {}
+
+        inline ObjLink& operator*() const { return *i; }
+        inline ObjLink* operator->() const { return i; }
+        inline bool operator!=(const iterator &other) const { return i != other.i; }
+        inline bool operator==(const iterator &other) const { return *this != other; }
+        inline iterator &operator++() { i = i->nextInCell; return *this; }
+
+    private:
+        ObjLink* i; // ith
+    };
+
+    inline iterator begin() const { return head.nextInCell? head.nextInCell : const_cast<ObjLink*>(&tail); }
+    inline iterator end() const { return const_cast<ObjLink*>(&tail); }
+    inline bool empty() const { return !size(); }
 
     uint size() const { return objectCount; }
 
     /**
-     * Lookup an object in this cell by memory address.
+     * Find the objlink for @a object in this cell.
+     *
+     * @return  Link for the found object, else @c 0= not linked.
      */
-    BlockmapRingNode* node(void* object)
+    ObjLink* find(void* object)
     {
         if(object)
         {
-            for(BlockmapRingNode* node = ringNodes; node; node = node->next)
+            DENG2_FOR_EACH(i, *this, iterator)
             {
-                if(node->object == object) return node;
+                if(i->object == object) return &*i;
             }
         }
         return 0; // Not found.
     }
 
-    BlockmapCellData& unlinkObject(void* object, bool* unlinked = 0)
+    /**
+     * @param object        Object to be linked.
+     *
+     * @pre Assumes that @a object is not already linked in this cell!
+     */
+    BlockmapCellData& link(void* object)
     {
-        if(unlinkObjectFromRing(object))
+        DENG2_ASSERT(object);
+
+        // Is there an available link we can reuse?
+        ObjLink* ol = nextUsedLink();
+        if(!ol)
         {
-            // There is now one fewer object in the cell.
-            objectCount--;
-            if(unlinked) *unlinked = true;
+            // Allocate another link and link it onto the end of the list.
+            void* region = (ObjLink*)Z_Malloc(sizeof(*ol), PU_MAP, 0);
+            ol = new (region) ObjLink(&tail, tail.prevInCell);
+            ol->prevInCell->nextInCell = tail.prevInCell = ol;
         }
-        else
-        {
-            if(unlinked) *unlinked = false;
-        }
+
+        ol->object = object;
+        // There is now one more object in the cell.
+        objectCount++;
+
         return *this;
     }
 
-    BlockmapCellData& unlinkAllObjects()
+    /**
+     * Unlink @a object from this cell (if indeed linked).
+     *
+     * @param object        Object to be unlinked.
+     * @param retWasLinked  If not @c NULL, this will be set to @c true if
+     *                      @a object was successfully unlinked.
+     */
+    BlockmapCellData& unlink(void* object, bool* retWasLinked = 0)
     {
-        for(BlockmapRingNode* node = ringNodes; node; node = node->next)
+        ObjLink* found = find(object);
+        if(found)
         {
-            if(node->object)
+            // Unlink from the list (the link will be reused).
+            found->object = 0;
+
+            // There is now one fewer object in the cell.
+            objectCount--;
+        }
+        if(retWasLinked) *retWasLinked = !!found;
+        return *this;
+    }
+
+    /**
+     * Unlink all presently linked objects in this cell.
+     */
+    BlockmapCellData& unlinkAll()
+    {
+        DENG2_FOR_EACH(i, *this, iterator)
+        {
+            if(i->object)
             {
-                // Unlink from the ring (the node will be reused).
-                node->object = NULL;
+                // Unlink from the list (the link will be reused).
+                i->object = NULL;
             }
         }
         objectCount = 0;
         return *this;
     }
 
-    BlockmapCellData& linkObject(void* object)
-    {
-        if(linkObjectToRing(object))
-        {
-            // There is now one more object in the cell.
-            objectCount++;
-        }
-        return *this;
-    }
-
-    BlockmapRingNode* objects() { return ringNodes; }
-
 private:
-    bool linkObjectToRing(void* object)
+    // Is there an used link we can reuse?
+    ObjLink* nextUsedLink() const
     {
-        if(!object) return false;
-
-        BlockmapRingNode* node;
-
-        if(!ringNodes)
+        DENG2_FOR_EACH(i, *this, iterator)
         {
-            // Create a new root node.
-            node = (BlockmapRingNode*)Z_Malloc(sizeof(*node), PU_MAP, 0);
-            node->next = NULL;
-            node->prev = NULL;
-            node->object = object;
-            ringNodes = node;
-            return true;
+            if(!i->object) return &*i; // This will do.
         }
-
-        // Is there an available node in the ring we can reuse?
-        for(node = ringNodes; node->next && node->object; node = node->next)
-        {}
-
-        if(!node->object)
-        {
-            // This will do nicely.
-            node->object = object;
-            return true;
-        }
-
-        // Add a new node to the ring.
-        node->next = (BlockmapRingNode*)Z_Malloc(sizeof(*node), PU_MAP, 0);
-        node->next->next = NULL;
-        node->next->prev = node;
-        node->next->object = object;
-        return true;
-    }
-
-    /**
-     * Unlink the given object from the specified cell ring (if indeed linked).
-     *
-     * @param object  Object to be unlinked.
-     * @return  @c true iff the object was linked to the ring and was unlinked.
-     */
-    bool unlinkObjectFromRing(void* object)
-    {
-        BlockmapRingNode* found = node(object);
-        if(!found) return false; // Object was not linked.
-
-        // Unlink from the ring (the node will be reused).
-        found->object = NULL;
-        return true; // Object was unlinked.
+        return 0;
     }
 
 private:
-    BlockmapRingNode* ringNodes;
+    ObjLink head, tail;
 
     /// Running total of the number of objects linked in this cell.
     uint objectCount;
 };
-
-static int BlockmapCellData_IterateObjects(BlockmapCellData* cell,
-    int (*callback) (void* object, void* parameters), void* parameters = 0)
-{
-    DENG2_ASSERT(cell);
-    BlockmapRingNode* link = cell->objects();
-    while(link)
-    {
-        BlockmapRingNode* next = link->next;
-
-        if(link->object)
-        {
-            int result = callback(link->object, parameters);
-            if(result) return result; // Stop iteration.
-        }
-
-        link = next;
-    }
-    return false; // Continue iteration.
-}
 
 struct de::Blockmap::Instance
 {
@@ -339,10 +328,11 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* obje
     }
     else
     {
-        cell = (BlockmapCellData*) Z_Calloc(sizeof(BlockmapCellData), PU_MAPSTATIC, 0);
+        void* region = Z_Malloc(sizeof(BlockmapCellData), PU_MAPSTATIC, 0);
+        cell = new (region) BlockmapCellData();
         d->gridmap.setCell(mcell, cell);
     }
-    cell->linkObject(object);
+    cell->link(object);
     return true; // Link added.
 }
 
@@ -351,7 +341,7 @@ void de::Blockmap::unlinkAllObjectsInCell(const_BlockmapCell mcell)
     if(!d->gridmap.leafAtCell(mcell)) return;
     BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
     DENG2_ASSERT(cell);
-    cell->unlinkAllObjects();
+    cell->unlinkAll();
 }
 
 bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
@@ -361,7 +351,7 @@ bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
     {
         BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
         DENG2_ASSERT(cell);
-        cell->unlinkObject(object, &unlinked);
+        cell->unlink(object, &unlinked);
     }
     return unlinked;
 }
@@ -369,7 +359,7 @@ bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
 static int unlinkObjectInCellWorker(void* ptr, void* parameters)
 {
     BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(ptr);
-    cell->unlinkObject(parameters/*object ptr*/);
+    cell->unlink(parameters/*object ptr*/);
     return false; // Continue iteration.
 }
 
@@ -381,7 +371,7 @@ void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, v
 static int unlinkAllObjectsInCellWorker(void* ptr, void* /*parameters*/)
 {
     BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(ptr);
-    cell->unlinkAllObjects();
+    cell->unlinkAll();
     return false; // Continue iteration.
 }
 
@@ -409,7 +399,19 @@ int de::Blockmap::iterateCellObjects(const_BlockmapCell mcell,
     if(!d->gridmap.leafAtCell(mcell)) return false; // Continue iteration.
     BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
     DENG2_ASSERT(cell);
-    return BlockmapCellData_IterateObjects(cell, callback, parameters);
+    for(BlockmapCellData::iterator i = cell->begin(); i != cell->end(); )
+    {
+        BlockmapCellData::iterator next = i; ++next;
+
+        if(i->object)
+        {
+            int result = callback(i->object, parameters);
+            if(result) return result; // Stop iteration.
+        }
+
+        i = next;
+    }
+    return false; // Continue iteration.
 }
 
 typedef struct {
@@ -422,8 +424,19 @@ static int cellObjectIterator(void* userData, void* parameters)
     BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(userData);
     cellobjectiterator_params_t* args = static_cast<cellobjectiterator_params_t*>(parameters);
     DENG2_ASSERT(args);
+    for(BlockmapCellData::iterator i = cell->begin(); i != cell->end(); )
+    {
+        BlockmapCellData::iterator next = i; ++next;
 
-    return BlockmapCellData_IterateObjects(cell, args->callback, args->parameters);
+        if(i->object)
+        {
+            int result = args->callback(i->object, args->parameters);
+            if(result) return result; // Stop iteration.
+        }
+
+        i = next;
+    }
+    return false; // Continue iteration.
 }
 
 int de::Blockmap::iterateCellBlockObjects(BlockmapCellBlock const& cellBlock,

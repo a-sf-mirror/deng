@@ -76,7 +76,7 @@ struct ObjLinkTypeData
 
 struct ObjLink
 {
-    ObjLink* nextInBlock; /// Next in the same obj block, or NULL.
+    ObjLink* nextInCell; /// Next in the same blockmap cell (if any).
     ObjLink* nextUsed;
     ObjLink* next; /// Next in list of ALL objlinks.
 
@@ -87,7 +87,7 @@ struct ObjLink
     ObjLink& clear()
     {
         tdata.clear();
-        nextInBlock = 0;
+        nextInCell = 0;
         return *this;
     }
 };
@@ -120,9 +120,9 @@ struct ContactLink
     void* obj;
 };
 
-struct ContactList
+struct Contacts
 {
-    ContactLink* head[NUM_OBJ_TYPES];
+    ContactLink* lists[NUM_OBJ_TYPES];
 };
 
 struct contactfinderparams_t
@@ -142,8 +142,8 @@ static ObjlinkBlockmap* blockmaps[NUM_OBJ_TYPES];
 // List of unused and used contacts.
 static ContactLink* contFirst, *contCursor;
 
-// List of contacts for each BSP leaf.
-static ContactList* bspLeafContacts;
+// Lists of contacts for each BSP leaf.
+static Contacts* bspLeafContacts;
 
 static void spreadOverHEdge(HEdge* hedge, contactfinderparams_t* params);
 
@@ -213,15 +213,15 @@ static bool toObjlinkBlockmapCell(ObjlinkBlockmap* bm, GridmapCell& mcell, coord
     return adjusted;
 }
 
-static inline void linkContact(ContactLink* con, ContactLink** list, uint index)
+static inline void linkContact(ContactLink* con, ContactLink** list)
 {
-    con->next = list[index];
-    list[index] = con;
+    con->next = *list;
+    *list = con;
 }
 
 static void linkContactToBspLeaf(ContactLink* node, objtype_t type, uint index)
 {
-    linkContact(node, &bspLeafContacts[index].head[type], 0);
+    linkContact(node, &bspLeafContacts[index].lists[type]);
 }
 
 /**
@@ -290,7 +290,7 @@ void R_InitObjlinkBlockmapForMap(void)
     }
 
     // Initialize obj => BspLeaf contact lists.
-    bspLeafContacts = (ContactList*)Z_Calloc(sizeof *bspLeafContacts * NUM_BSPLEAFS, PU_MAPSTATIC, 0);
+    bspLeafContacts = (Contacts*)Z_Calloc(sizeof *bspLeafContacts * NUM_BSPLEAFS, PU_MAPSTATIC, 0);
 }
 
 void R_DestroyObjlinkBlockmaps(void)
@@ -576,7 +576,7 @@ static void ObjlinkCellData_FindContacts(ObjlinkCellData* cell)
     // Already been here?
     if(cell->doneSpread) return;
 
-    for(ObjLink* ol = cell->head; ol; ol = ol->nextInBlock)
+    for(ObjLink* ol = cell->head; ol; ol = ol->nextInCell)
     {
         findContacts(ol);
     }
@@ -653,7 +653,7 @@ static void linkObjlinkInBlockmap(ObjlinkBlockmap* bm, ObjLink* link, GridmapCel
         cell = (ObjlinkCellData*)Z_Calloc(sizeof(*cell), PU_MAPSTATIC, 0);
         bm->gridmap.setCell(mcell, cell);
     }
-    link->nextInBlock = cell->head;
+    link->nextInCell = cell->head;
     cell->head = link;
 }
 
@@ -713,7 +713,7 @@ int R_IterateBspLeafContacts2(BspLeaf* bspLeaf, objtype_t type,
 
     if(!bspLeaf) return false; // Continue iteration.
 
-    ContactLink* con = bspLeafContacts[GET_BSPLEAF_IDX(bspLeaf)].head[type];
+    ContactLink* con = bspLeafContacts[GET_BSPLEAF_IDX(bspLeaf)].lists[type];
     int result;
     while(con)
     {
