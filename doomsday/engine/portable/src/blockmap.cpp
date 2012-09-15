@@ -418,7 +418,7 @@ int de::Blockmap::iterateCellBlockObjects(BlockmapCellBlock const& cellBlock,
     DENG2_ASSERT(inst); \
     const de::Blockmap* self = TOINTERNAL_CONST(inst)
 
-Blockmap* Blockmap_New(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
+Blockmap* Blockmap_New(coord_t const min[2], coord_t const max[2], BlockmapCoord cellWidth, BlockmapCoord cellHeight)
 {
     return reinterpret_cast<Blockmap*>(new de::Blockmap(min, max,cellWidth, cellHeight));
 }

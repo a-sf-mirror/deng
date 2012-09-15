@@ -1136,7 +1136,6 @@ boolean DD_ChangeGame2(Game* game, boolean allowReload)
         Con_SaveDefaults();
 
         LO_Clear();
-        R_DestroyObjlinkBlockmap();
         R_ClearAnimGroups();
 
         P_ControlShutdown();

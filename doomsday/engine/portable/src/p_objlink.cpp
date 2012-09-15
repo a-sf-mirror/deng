@@ -102,7 +102,15 @@ struct ObjlinkCellData
 struct ObjlinkBlockmap
 {
     coord_t origin[2]; /// Origin of the blockmap in world coordinates [x,y].
-    Gridmap* gridmap;
+    Gridmap gridmap;
+
+    ObjlinkBlockmap(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
+        : gridmap(uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
+                  uint( ceil((max[1] - min[1]) / coord_t(cellHeight))) )
+    {
+        origin[0] = min[0];
+        origin[1] = min[1];
+    }
 };
 
 struct ContactLink
@@ -129,7 +137,7 @@ static ObjLink* objlinks;
 static ObjLink* objlinkFirst, *objlinkCursor;
 
 // Each objlink type gets its own blockmap.
-static ObjlinkBlockmap blockmaps[NUM_OBJ_TYPES];
+static ObjlinkBlockmap* blockmaps[NUM_OBJ_TYPES];
 
 // List of unused and used contacts.
 static ContactLink* contFirst, *contCursor;
@@ -142,7 +150,7 @@ static void spreadOverHEdge(HEdge* hedge, contactfinderparams_t* params);
 static inline ObjlinkBlockmap* blockmapForObjType(objtype_t type)
 {
     DENG2_ASSERT(VALID_OBJTYPE(type));
-    return blockmaps + (int)type;
+    return blockmaps[int(type)];
 }
 
 static inline GridmapCoord toObjlinkBlockmapX(ObjlinkBlockmap* obm, coord_t x)
@@ -164,16 +172,16 @@ static inline GridmapCoord toObjlinkBlockmapY(ObjlinkBlockmap* obm, coord_t y)
  *
  * @return  @c true if the coordinates specified had to be adjusted.
  */
-static bool toObjlinkBlockmapCell(ObjlinkBlockmap* obm, GridmapCell& mcell, coord_t x, coord_t y)
+static bool toObjlinkBlockmapCell(ObjlinkBlockmap* bm, GridmapCell& mcell, coord_t x, coord_t y)
 {
-    DENG2_ASSERT(obm);
+    DENG2_ASSERT(bm);
 
-    const GridmapCell& size = obm->gridmap->widthHeight();
-    coord_t max[2] = { obm->origin[0] + size[0] * BLOCK_WIDTH,
-                       obm->origin[1] + size[1] * BLOCK_HEIGHT};
+    const GridmapCell& size = bm->gridmap.widthHeight();
+    coord_t max[2] = { bm->origin[0] + size[0] * BLOCK_WIDTH,
+                       bm->origin[1] + size[1] * BLOCK_HEIGHT};
 
     bool adjusted = false;
-    if(x < obm->origin[0])
+    if(x < bm->origin[0])
     {
         mcell[0] = 0;
         adjusted = true;
@@ -185,10 +193,10 @@ static bool toObjlinkBlockmapCell(ObjlinkBlockmap* obm, GridmapCell& mcell, coor
     }
     else
     {
-        mcell[0] = toObjlinkBlockmapX(obm, x);
+        mcell[0] = toObjlinkBlockmapX(bm, x);
     }
 
-    if(y < obm->origin[1])
+    if(y < bm->origin[1])
     {
         mcell[1] = 0;
         adjusted = true;
@@ -200,7 +208,7 @@ static bool toObjlinkBlockmapCell(ObjlinkBlockmap* obm, GridmapCell& mcell, coor
     }
     else
     {
-        mcell[1] = toObjlinkBlockmapY(obm, y);
+        mcell[1] = toObjlinkBlockmapY(bm, y);
     }
     return adjusted;
 }
@@ -272,33 +280,26 @@ void R_InitObjlinkBlockmapForMap(void)
 
     if(!map) return;
 
-    // Determine the dimensions of the objlink blockmaps in blocks.
     coord_t min[2], max[2];
     GameMap_Bounds(map, min, max);
-    uint width  = uint( ceil((max[VX] - min[VX]) / coord_t(BLOCK_WIDTH)) );
-    uint height = uint( ceil((max[VY] - min[VY]) / coord_t(BLOCK_HEIGHT)) );
 
     // Create the blockmaps.
     for(int i = 0; i < NUM_OBJ_TYPES; ++i)
     {
-        ObjlinkBlockmap* obm = blockmapForObjType(objtype_t(i));
-        obm->origin[0] = min[VX];
-        obm->origin[1] = min[VY];
-        obm->gridmap = new Gridmap(width, height);
+        blockmaps[i] = new ObjlinkBlockmap(min, max, BLOCK_WIDTH, BLOCK_WIDTH);
     }
 
     // Initialize obj => BspLeaf contact lists.
     bspLeafContacts = (ContactList*)Z_Calloc(sizeof *bspLeafContacts * NUM_BSPLEAFS, PU_MAPSTATIC, 0);
 }
 
-void R_DestroyObjlinkBlockmap(void)
+void R_DestroyObjlinkBlockmaps(void)
 {
     for(int i = 0; i < NUM_OBJ_TYPES; ++i)
     {
-        ObjlinkBlockmap* obm = blockmapForObjType(objtype_t(i));
-        if(!obm->gridmap) continue;
-        delete obm->gridmap;
-        obm->gridmap = 0;
+        if(!blockmaps[i]) continue;
+        /// @note the zone-allocated ObjlinkCellData will be purged later.
+        delete blockmaps[i]; blockmaps[i] = 0;
     }
     if(bspLeafContacts)
     {
@@ -328,7 +329,7 @@ void R_ClearObjlinkBlockmap(objtype_t type)
     if(!bm) return;
 
     // Clear all the list heads and spread flags.
-    bm->gridmap->iterate(clearObjlinkCellDataWorker);
+    bm->gridmap.iterate(clearObjlinkCellDataWorker);
 }
 
 void R_ClearObjlinksForFrame(void)
@@ -336,7 +337,7 @@ void R_ClearObjlinksForFrame(void)
     for(int i = 0; i < NUM_OBJ_TYPES; ++i)
     {
         ObjlinkBlockmap* bm = blockmapForObjType(objtype_t(i));
-        if(!bm || !bm->gridmap) continue;
+        if(!bm) continue;
 
         R_ClearObjlinkBlockmap(objtype_t(i));
     }
@@ -607,9 +608,9 @@ static void R_ObjlinkBlockmapSpreadInBspLeaf(ObjlinkBlockmap* bm, const BspLeaf*
     for(mcell[1] = minBlock[1]; mcell[1] <= maxBlock[1]; ++mcell[1])
     for(mcell[0] = minBlock[0]; mcell[0] <= maxBlock[0]; ++mcell[0])
     {
-        if(!bm->gridmap->leafAtCell(mcell)) continue;
+        if(!bm->gridmap.leafAtCell(mcell)) continue;
 
-        ObjlinkCellData* cell = reinterpret_cast<ObjlinkCellData*>(bm->gridmap->cell(mcell));
+        ObjlinkCellData* cell = reinterpret_cast<ObjlinkCellData*>(bm->gridmap.cell(mcell));
         ObjlinkCellData_FindContacts(cell);
     }
 }
@@ -642,15 +643,15 @@ static void linkObjlinkInBlockmap(ObjlinkBlockmap* bm, ObjLink* link, GridmapCel
 {
     DENG2_ASSERT(bm && link);
     ObjlinkCellData* cell;
-    if(bm->gridmap->leafAtCell(mcell))
+    if(bm->gridmap.leafAtCell(mcell))
     {
-        cell = reinterpret_cast<ObjlinkCellData*>(bm->gridmap->cell(mcell));
+        cell = reinterpret_cast<ObjlinkCellData*>(bm->gridmap.cell(mcell));
         DENG2_ASSERT(cell);
     }
     else
     {
         cell = (ObjlinkCellData*)Z_Calloc(sizeof(*cell), PU_MAPSTATIC, 0);
-        bm->gridmap->setCell(mcell, cell);
+        bm->gridmap.setCell(mcell, cell);
     }
     link->nextInBlock = cell->head;
     cell->head = link;

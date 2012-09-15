@@ -41,15 +41,9 @@ typedef enum {
 #define VALID_OBJTYPE(val) ((val) >= OT_MOBJ && (val) < NUM_OBJ_TYPES)
 
 /**
- * To be called during a game change/on shutdown to destroy the objlink
- * blockmap. This is necessary because the blockmaps are allocated from
- * the Zone with a >= PU_MAP purge level and access to them is handled
- * with global pointers.
- *
- * @todo Encapsulate allocation of and access to the objlink blockmaps
- *       within de::Map
+ * To be called before a map change to destroy any existing objlink blockmaps.
  */
-void R_DestroyObjlinkBlockmap(void);
+void R_DestroyObjlinkBlockmaps(void);
 
 /**
  * Construct the objlink blockmap for the current map.

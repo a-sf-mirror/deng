@@ -90,6 +90,7 @@ void P_SetCurrentMap(GameMap* map)
         Blockmap_Delete(theMap->polyobjBlockmap);
         Blockmap_Delete(theMap->lineDefBlockmap);
         Blockmap_Delete(theMap->bspLeafBlockmap);
+        R_DestroyObjlinkBlockmaps();
 
         // Most memory is allocated from the zone.
         Z_FreeTags(PU_MAP, PU_PURGELEVEL-1);
