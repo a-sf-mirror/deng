@@ -40,6 +40,7 @@ struct BlockmapRingNode
     BlockmapRingNode* next;
 };
 
+/// @todo optimize: BlockmapRingNodes should be pooled!!
 struct BlockmapCellData
 {
     BlockmapCellData() : ringNodes(0), objectCount(0) {}
@@ -73,6 +74,20 @@ struct BlockmapCellData
         {
             if(unlinked) *unlinked = false;
         }
+        return *this;
+    }
+
+    BlockmapCellData& unlinkAllObjects()
+    {
+        for(BlockmapRingNode* node = ringNodes; node; node = node->next)
+        {
+            if(node->object)
+            {
+                // Unlink from the ring (the node will be reused).
+                node->object = NULL;
+            }
+        }
+        objectCount = 0;
         return *this;
     }
 
@@ -331,6 +346,14 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* obje
     return true; // Link added.
 }
 
+void de::Blockmap::unlinkAllObjectsInCell(const_BlockmapCell mcell)
+{
+    if(!d->gridmap.leafAtCell(mcell)) return;
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
+    DENG2_ASSERT(cell);
+    cell->unlinkAllObjects();
+}
+
 bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
 {
     bool unlinked = false;
@@ -353,6 +376,18 @@ static int unlinkObjectInCellWorker(void* ptr, void* parameters)
 void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, void* object)
 {
     d->gridmap.blockIterate(cellBlock, unlinkObjectInCellWorker, object);
+}
+
+static int unlinkAllObjectsInCellWorker(void* ptr, void* /*parameters*/)
+{
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(ptr);
+    cell->unlinkAllObjects();
+    return false; // Continue iteration.
+}
+
+void de::Blockmap::unlinkAllObjectsInCellBlock(BlockmapCellBlock const& cellBlock)
+{
+    d->gridmap.blockIterate(cellBlock, unlinkAllObjectsInCellWorker);
 }
 
 uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const

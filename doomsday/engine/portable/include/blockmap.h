@@ -152,12 +152,21 @@ public:
         return createCellAndLinkObject(mcell, object);
     }
 
+    void unlinkAllObjectsInCell(const_BlockmapCell cell);
+    inline void unlinkAllObjectsInCell(BlockmapCoord x, BlockmapCoord y)
+    {
+        BlockmapCell mcell = { x, y };
+        unlinkAllObjectsInCell(mcell);
+    }
+
     bool unlinkObjectInCell(const_BlockmapCell cell, void* object);
     inline bool unlinkObjectInCell(BlockmapCoord x, BlockmapCoord y, void* object)
     {
         BlockmapCell mcell = { x, y };
         return unlinkObjectInCell(mcell, object);
     }
+
+    void unlinkAllObjectsInCellBlock(BlockmapCellBlock const& blockCoords);
 
     void unlinkObjectInCellBlock(BlockmapCellBlock const& blockCoords, void* object);
 
@@ -227,11 +236,15 @@ boolean Blockmap_CreateCellAndLinkObject(Blockmap* blockmap, const_BlockmapCell 
 
 boolean Blockmap_CreateCellAndLinkObjectXY(Blockmap* blockmap, BlockmapCoord x, BlockmapCoord y, void* object);
 
+boolean Blockmap_UnlinkAllObjectsInCell(Blockmap* blockmap, const_BlockmapCell cell);
+
 boolean Blockmap_UnlinkObjectInCell(Blockmap* blockmap, const_BlockmapCell cell, void* object);
 
 boolean Blockmap_UnlinkObjectInCellXY(Blockmap* blockmap, BlockmapCoord x, BlockmapCoord y, void* object);
 
 void Blockmap_UnlinkObjectInCellBlock(Blockmap* blockmap, const BlockmapCellBlock* blockCoords, void* object);
+
+boolean Blockmap_UnlinkAllObjectsInCellBlock(Blockmap* blockmap, const BlockmapCellBlock* blockCoords);
 
 int Blockmap_IterateCellObjects(Blockmap* blockmap, const_BlockmapCell cell,
     int (*callback) (void* object, void* parameters), void* parameters);
