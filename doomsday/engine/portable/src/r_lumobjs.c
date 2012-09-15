@@ -147,7 +147,7 @@ static lumlistnode_t* allocListNode(void)
     return ln;
 }
 
-static void linkLumObjToSSec(lumobj_t* lum, BspLeaf* bspLeaf)
+static void linkLumobjToBspLeaf(lumobj_t* lum, BspLeaf* bspLeaf)
 {
     lumlistnode_t* ln = allocListNode();
     lumlistnode_t** root;
@@ -631,10 +631,10 @@ static lumobj_t* createLuminous(lumtype_t type, BspLeaf* bspLeaf)
 
     lum->type = type;
     lum->bspLeaf = bspLeaf;
-    linkLumObjToSSec(lum, bspLeaf);
+    linkLumobjToBspLeaf(lum, bspLeaf);
 
     if(type != LT_PLANE)
-        R_ObjlinkCreate(lum, OT_LUMOBJ); // For spreading purposes.
+        R_CreateLumobjLink(lum); // For spreading purposes.
 
     return lum;
 }
@@ -963,8 +963,9 @@ END_PROF( PROF_LUMOBJ_FRAME_SORT );
  * Generate one dynlight node for each plane glow.
  * The light is attached to the appropriate dynlight node list.
  */
-static boolean createGlowLightForSurface(Surface* suf, void* paramaters)
+static boolean createGlowLightForSurface(Surface* suf, void* parameters)
 {
+    DENG_UNUSED(parameters);
     switch(DMU_GetType(suf->owner))
     {
     case DMU_PLANE: {
@@ -973,7 +974,6 @@ static boolean createGlowLightForSurface(Surface* suf, void* paramaters)
         const averagecolor_analysis_t* avgColorAmplified;
         const materialvariantspecification_t* spec;
         const materialsnapshot_t* ms;
-        linkobjtobspleafparams_t params;
         lumobj_t* lum;
         uint i;
 
@@ -1005,13 +1005,11 @@ static boolean createGlowLightForSurface(Surface* suf, void* paramaters)
         lum->maxDistance = 0;
         lum->decorSource = 0;
 
-        params.obj = lum;
-        params.type = OT_LUMOBJ;
-        RIT_LinkObjToBspLeaf(sec->bspLeafs[0], (void*)&params);
+        R_LumobjContactBspLeaf(lum, sec->bspLeafs[0]);
         for(i = 1; i < sec->bspLeafCount; ++i)
         {
-            linkLumObjToSSec(lum, sec->bspLeafs[i]);
-            RIT_LinkObjToBspLeaf(sec->bspLeafs[i], (void*)&params);
+            linkLumobjToBspLeaf(lum, sec->bspLeafs[i]);
+            R_LumobjContactBspLeaf(lum, sec->bspLeafs[i]);
         }
         break;
       }

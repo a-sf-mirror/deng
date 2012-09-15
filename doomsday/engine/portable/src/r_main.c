@@ -774,10 +774,10 @@ void R_NewSharpWorld(void)
 
 void R_CreateMobjLinks(void)
 {
-    uint                i;
-    Sector*             seciter;
+    uint i;
+    Sector* seciter;
 #ifdef DD_PROFILE
-    static int          p;
+    static int p;
 
     if(++p > 40)
     {
@@ -790,11 +790,10 @@ BEGIN_PROF( PROF_MOBJ_INIT_ADD );
 
     for(i = 0, seciter = sectors; i < NUM_SECTORS; seciter++, ++i)
     {
-        mobj_t*             iter;
-
+        mobj_t* iter;
         for(iter = seciter->mobjList; iter; iter = iter->sNext)
         {
-            R_ObjlinkCreate(iter, OT_MOBJ); // For spreading purposes.
+            R_CreateMobjLink(iter); // For spreading purposes.
         }
     }
 

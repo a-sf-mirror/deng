@@ -26,6 +26,7 @@
 #define LIBDENG_OBJLINK_BLOCKMAP_H
 
 #include "p_mapdata.h"
+#include "r_lumobjs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,9 +69,14 @@ void R_InitForNewFrame(void);
 void R_ClearObjlinksForFrame(void);
 
 /**
- * Create a new object link of the specified @a type in the objlink blockmap.
+ * Create a new mobj object link in the objlink blockmap.
  */
-void R_ObjlinkCreate(void* object, objtype_t type);
+void R_CreateMobjLink(mobj_t* mobj);
+
+/**
+ * Create a new lumobj object link in the objlink blockmap.
+ */
+void R_CreateLumobjLink(lumobj_t* lumobj);
 
 /**
  * To be called at the beginning of a render frame to link all objects
@@ -79,24 +85,20 @@ void R_ObjlinkCreate(void* object, objtype_t type);
 void R_LinkObjs(void);
 
 /**
- * Spread object => BspLeaf links for the given @a BspLeaf. Note that
- * all object types will be spread at this time.
+ * Spread object => BSP leaf contacts for the given @a BspLeaf.
+ * @note All contacts for all object types will be spread at this time.
  */
 void R_InitForBspLeaf(BspLeaf* bspLeaf);
 
-typedef struct {
-    void* obj;
-    objtype_t type;
-} linkobjtobspleafparams_t;
+/**
+ * Create a new mobj => BSP leaf contact in the objlink blockmap.
+ */
+void R_MobjContactBspLeaf(mobj_t* mobj, BspLeaf* bspLeaf);
 
 /**
- * Create a new object => BspLeaf contact in the objlink blockmap.
- * Can be used as an iterator.
- *
- * @params parameters  @see linkobjtobspleafparams_t
- * @return  @c false (always).
+ * Create a new lumobj => BSP leaf contact in the objlink blockmap.
  */
-int RIT_LinkObjToBspLeaf(BspLeaf* bspLeaf, void* parameters);
+void R_LumobjContactBspLeaf(lumobj_t* lumobj, BspLeaf* bspLeaf);
 
 /**
  * Traverse the list of objects of the specified @a type which have been linked
