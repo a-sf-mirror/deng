@@ -116,13 +116,7 @@ int Gridmap::iterate(Gridmap_IterateCallback callback, void* parameters)
     actioncallback_paramaters_t p;
     p.callback = callback;
     p.callbackParameters = parameters;
-
-    DataGrid::traverse_parameters_t travParms;
-    travParms.leafOnly = true;
-    travParms.callback = actionCallback;
-    travParms.callbackParameters = (void*)&p;
-    DataGrid::TreeBase& root = d->grid;
-    return DataGrid::traverse(&root, travParms);
+    return d->grid.iterateLeafs(actionCallback, (void*)&p);
 }
 
 int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallback callback, void* parameters)

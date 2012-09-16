@@ -337,6 +337,26 @@ public:
         return false; // Continue iteration.
     }
 
+    /**
+     * Iterate over all leaf nodes in the quadtree, making a callback for each.
+     * Iteration ends when all leafs have been visited or a callback returns a
+     * non-zero value.
+     *
+     * @param callback      Callback function.
+     * @param parameters    Passed to the callback.
+     *
+     * @return  Zero iff iteration completed wholly, else the value returned by
+     *          the last callback made.
+     */
+    int iterateLeafs(int (*callback) (TreeBase* node, void* parameters), void* parameters)
+    {
+        traverse_parameters_t travParms;
+        travParms.leafOnly = true;
+        travParms.callback = callback;
+        travParms.callbackParameters = parameters;
+        return traverse(&root_, travParms);
+    }
+
 private:
     /**
      * Construct and initialize a new (sub)tree.

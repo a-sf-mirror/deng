@@ -66,7 +66,7 @@ struct BlockmapCellData
         ObjLink* i; // ith
     };
 
-    inline iterator begin() const { return head.nextInCell? head.nextInCell : const_cast<ObjLink*>(&tail); }
+    inline iterator begin() const { return head.nextInCell; }
     inline iterator end() const { return const_cast<ObjLink*>(&tail); }
     inline bool empty() const { return !size(); }
 
@@ -103,7 +103,7 @@ struct BlockmapCellData
         if(!ol)
         {
             // Allocate another link and link it onto the end of the list.
-            void* region = (ObjLink*)Z_Malloc(sizeof(*ol), PU_MAP, 0);
+            void* region = Z_Malloc(sizeof(*ol), PU_MAP, 0);
             ol = new (region) ObjLink(&tail, tail.prevInCell);
             ol->prevInCell->nextInCell = tail.prevInCell = ol;
         }
