@@ -32,6 +32,7 @@
 
 #include "dd_types.h"
 #include "api/aabox.h"
+#include "quadtree.h"
 
 typedef uint GridmapCoord;
 typedef GridmapCoord GridmapCell[2];
@@ -41,6 +42,14 @@ typedef AABoxu GridmapCellBlock;
 class Gridmap
 {
 public:
+    typedef Quadtree<void*> DataGrid;
+
+    /**
+     * Gridmap implementation. Implemented in terms of a Region Quadtree for its
+     * inherent sparsity and compression potential.
+     */
+    DataGrid grid;
+
     typedef int (*Gridmap_IterateCallback) (void* cellData, void* parameters);
 
 public:
@@ -49,7 +58,6 @@ public:
      * @param height         Y dimension in cells.
      */
     Gridmap(GridmapCoord width, GridmapCoord height);
-    ~Gridmap();
 
     /// @return  Width of the Gridmap in cells.
     GridmapCoord width() const;
@@ -72,8 +80,8 @@ public:
      */
     bool clipBlock(GridmapCellBlock& block) const;
 
-    bool leafAtCell(const_GridmapCell mcell) const;
-    inline bool leafAtCell(GridmapCoord x, GridmapCoord y) const
+    bool leafAtCell(const_GridmapCell mcell);
+    inline bool leafAtCell(GridmapCoord x, GridmapCoord y)
     {
         GridmapCell mcell = { x, y };
         return leafAtCell(mcell);
@@ -86,8 +94,8 @@ public:
      *
      * @return  User data for the identified cell.
      */
-    void* cell(const_GridmapCell mcell) const;
-    inline void* cell(GridmapCoord x, GridmapCoord y) const
+    void* cell(const_GridmapCell mcell);
+    inline void* cell(GridmapCoord x, GridmapCoord y)
     {
         GridmapCell mcell = { x, y };
         return cell(mcell);
@@ -135,10 +143,6 @@ public:
     }
 
     friend void Gridmap_DebugDrawer(Gridmap const& gridmap);
-
-private:
-    struct Instance;
-    Instance* d;
 };
 
 /**

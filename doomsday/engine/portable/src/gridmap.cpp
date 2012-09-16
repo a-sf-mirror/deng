@@ -25,70 +25,51 @@
 #include <de/memoryzone.h>
 
 #include "gridmap.h"
-#include "quadtree.h"
-
-typedef Quadtree<void*> DataGrid;
-
-/**
- * Gridmap implementation. Implemented in terms of a Region Quadtree for its
- * inherent sparsity and compression potential.
- */
-struct Gridmap::Instance
-{
-    DataGrid grid;
-    Instance(GridmapCoord width, GridmapCoord height) : grid(width, height) {}
-};
 
 Gridmap::Gridmap(GridmapCoord width, GridmapCoord height)
-{
-    d = new Instance(width, height);
-}
-
-Gridmap::~Gridmap()
-{
-    delete d;
-}
+    : grid(width, height)
+{}
 
 GridmapCoord Gridmap::width() const
 {
-    return d->grid.width();
+    return grid.width();
 }
 
 GridmapCoord Gridmap::height() const
 {
-    return d->grid.height();
+    return grid.height();
 }
 
 const GridmapCell& Gridmap::widthHeight() const
 {
-    return d->grid.widthHeight();
+    return grid.widthHeight();
 }
 
 bool Gridmap::clipCell(GridmapCell& cell) const
 {
-    return d->grid.clipCell(cell);
+    return grid.clipCell(cell);
 }
 
 bool Gridmap::clipBlock(GridmapCellBlock& block) const
 {
-    return d->grid.clipBlock(block);
+    return grid.clipBlock(block);
 }
 
-bool Gridmap::leafAtCell(const_GridmapCell mcell) const
+bool Gridmap::leafAtCell(const_GridmapCell mcell)
 {
-    if(!d->grid.leafAtCell(mcell)) return false;
-    return !!d->grid.cell(mcell);
+    if(!grid.leafAtCell(mcell)) return false;
+    return !!grid.cell(mcell);
 }
 
-void* Gridmap::cell(const_GridmapCell mcell) const
+void* Gridmap::cell(const_GridmapCell mcell)
 {
-    if(!d->grid.leafAtCell(mcell)) return 0;
-    return d->grid.cell(mcell);
+    if(!grid.leafAtCell(mcell)) return 0;
+    return grid.cell(mcell);
 }
 
 Gridmap& Gridmap::setCell(const_GridmapCell mcell, void* userData)
 {
-    d->grid.setCell(mcell, userData);
+    grid.setCell(mcell, userData);
     return *this;
 }
 
@@ -102,9 +83,9 @@ struct actioncallback_paramaters_t
  * Callback actioner. Executes the callback and then returns the result
  * to the current iteration to determine if it should continue.
  */
-static int actionCallback(DataGrid::TreeBase* node, void* parameters)
+static int actionCallback(Gridmap::DataGrid::TreeBase* node, void* parameters)
 {
-    DataGrid::TreeLeaf* leaf = static_cast<DataGrid::TreeLeaf*>(node);
+    Gridmap::DataGrid::TreeLeaf* leaf = static_cast<Gridmap::DataGrid::TreeLeaf*>(node);
     actioncallback_paramaters_t* p = (actioncallback_paramaters_t*) parameters;
     if(leaf->value())
     {
@@ -118,7 +99,7 @@ int Gridmap::iterate(Gridmap_IterateCallback callback, void* parameters)
     actioncallback_paramaters_t p;
     p.callback = callback;
     p.callbackParameters = parameters;
-    return d->grid.iterateLeafs(actionCallback, (void*)&p);
+    return grid.iterateLeafs(actionCallback, (void*)&p);
 }
 
 int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallback callback, void* parameters)
@@ -137,7 +118,7 @@ int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallbac
     for(mcell[1] = block.minY; mcell[1] <= block.maxY; ++mcell[1])
     for(mcell[0] = block.minX; mcell[0] <= block.maxX; ++mcell[0])
     {
-        leaf = d->grid.findLeaf(mcell, false);
+        leaf = grid.findLeaf(mcell, false);
         if(!leaf || !leaf->value()) continue;
 
         result = callback(leaf->value(), parameters);
@@ -159,7 +140,7 @@ int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallbac
 #define UNIT_WIDTH                     1
 #define UNIT_HEIGHT                    1
 
-static int drawCell(DataGrid::TreeBase* node, void* /*parameters*/)
+static int drawCell(Gridmap::DataGrid::TreeBase* node, void* /*parameters*/)
 {
     vec2f_t topLeft, bottomRight;
 
@@ -185,14 +166,14 @@ void Gridmap_DebugDrawer(Gridmap const& gm)
     /**
      * Draw our Quadtree.
      */
-    DataGrid::TreeBase const& root = gm.d->grid;
+    Gridmap::DataGrid::TreeBase const& root = gm.grid;
     glColor4f(1.f, 1.f, 1.f, 1.f / root.size());
 
-    DataGrid::traverse_parameters_t travParms;
+    Gridmap::DataGrid::traverse_parameters_t travParms;
     travParms.leafOnly = false;
     travParms.callback = drawCell;
     travParms.callbackParameters = 0;
-    DataGrid::traverse(&const_cast<DataGrid::TreeBase&>(root), travParms);
+    Gridmap::DataGrid::traverse(&const_cast<Gridmap::DataGrid::TreeBase&>(root), travParms);
 
     /**
      * Draw our bounds.
