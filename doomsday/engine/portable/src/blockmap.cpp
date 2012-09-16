@@ -24,13 +24,13 @@
 
 #include "de_base.h"
 #include "m_vector.h"
-#include "gridmap.h"
 
 #include <de/Error>
 #include <de/LegacyCore>
 #include <de/Log>
 #include <de/String>
 
+#include "quadtree.h"
 #include "blockmap.h"
 
 struct ObjLink
@@ -180,8 +180,12 @@ struct de::Blockmap::Instance
     /// Cell dimensions in map space coordinates.
     vec2d_t cellSize;
 
-    /// Gridmap which implements the blockmap itself.
-    Gridmap grid;
+    /**
+     * Implemented in terms of a region Quadtree for its inherent sparsity,
+     * spacial cohession and compression potential.
+     */
+    typedef Quadtree<void*> DataGrid;
+    DataGrid grid;
 
     Instance(coord_t const min[2], coord_t const max[2], BlockmapCoord cellWidth, BlockmapCoord cellHeight)
         : bounds(min, max),
@@ -194,12 +198,12 @@ struct de::Blockmap::Instance
 
     bool leafAtCell(const_BlockmapCell mcell)
     {
-        if(!grid.grid.leafAtCell(mcell)) return false;
-        return !!grid.grid.cell(mcell);
+        if(!grid.leafAtCell(mcell)) return false;
+        return !!grid.cell(mcell);
     }
     inline bool leafAtCell(BlockmapCoord x, BlockmapCoord y)
     {
-        GridmapCell mcell = { x, y };
+        BlockmapCell mcell = { x, y };
         return leafAtCell(mcell);
     }
 
@@ -212,8 +216,8 @@ struct de::Blockmap::Instance
      */
     void* cell(const_BlockmapCell mcell)
     {
-        if(!grid.grid.leafAtCell(mcell)) return 0;
-        return grid.grid.cell(mcell);
+        if(!grid.leafAtCell(mcell)) return 0;
+        return grid.cell(mcell);
     }
     inline void* cell(BlockmapCoord x, BlockmapCoord y)
     {
@@ -223,12 +227,100 @@ struct de::Blockmap::Instance
 
     void setCell(const_BlockmapCell mcell, void* userData)
     {
-        grid.grid.setCell(mcell, userData);
+        grid.setCell(mcell, userData);
     }
     inline void setCell(BlockmapCoord x, BlockmapCoord y, void* userData)
     {
         BlockmapCell mcell = { x, y };
         setCell(mcell, userData);
+    }
+
+    typedef int (*IterateCallback) (void* cellData, void* parameters);
+    struct actioncallback_paramaters_t
+    {
+        IterateCallback callback;
+        void* callbackParameters;
+    };
+
+    /**
+     * Callback actioner. Executes the callback and then returns the result
+     * to the current iteration to determine if it should continue.
+     */
+    static int actionCallback(DataGrid::TreeBase* node, void* parameters)
+    {
+        DataGrid::TreeLeaf* leaf = static_cast<DataGrid::TreeLeaf*>(node);
+        actioncallback_paramaters_t* p = (actioncallback_paramaters_t*) parameters;
+        if(leaf->value())
+        {
+            return p->callback(leaf->value(), p->callbackParameters);
+        }
+        return 0; // Continue traversal.
+    }
+
+    /**
+     * Iterate over populated cells in the blockmap making a callback for each.
+     * Iteration ends when all cells have been visited or @a callback returns non-zero.
+     *
+     * @param parameters     Passed to the callback.
+     *
+     * @return  @c 0 iff iteration completed wholly.
+     */
+    int iterate(IterateCallback callback, void* parameters = 0)
+    {
+        actioncallback_paramaters_t p;
+        p.callback = callback;
+        p.callbackParameters = parameters;
+        return grid.iterateLeafs(actionCallback, (void*)&p);
+    }
+
+    /**
+     * Iterate over a block of populated cells in the blockmap making a callback
+     * for each. Iteration ends when all selected cells have been visited or
+     * @a callback returns non-zero.
+     *
+     * @param min            Minimal coordinates for the top left cell.
+     * @param max            Maximal coordinates for the bottom right cell.
+     * @param callback       Callback function ptr.
+     * @param parameters     Passed to the callback.
+     *
+     * @return  @c 0 iff iteration completed wholly.
+     */
+    int blockIterate(BlockmapCellBlock const& block_, IterateCallback callback,
+                     void* parameters = 0)
+    {
+        // Clip coordinates to our boundary dimensions (the underlying Quadtree
+        // is normally larger than this so we cannot use the dimensions of the
+        // root cell here).
+        BlockmapCellBlock block = block_;
+        grid.clipBlock(block);
+
+        // Process all leafs in the block.
+        /// @optimize: We could avoid repeatedly descending the tree...
+        BlockmapCell mcell;
+        DataGrid::TreeLeaf* leaf;
+        int result;
+        for(mcell[1] = block.minY; mcell[1] <= block.maxY; ++mcell[1])
+        for(mcell[0] = block.minX; mcell[0] <= block.maxX; ++mcell[0])
+        {
+            leaf = grid.findLeaf(mcell, false);
+            if(!leaf || !leaf->value()) continue;
+
+            result = callback(leaf->value(), parameters);
+            if(result) return result;
+        }
+        return false;
+    }
+
+    /**
+     * Same as blockIterate except cell block coordinates are expressed with
+     * independent X and Y coordinate arguments. For convenience.
+     */
+    inline int blockIterate(BlockmapCoord minX, BlockmapCoord minY,
+                            BlockmapCoord maxX, BlockmapCoord maxY,
+                            IterateCallback callback, void* parameters = 0)
+    {
+        BlockmapCellBlock block = BlockmapCellBlock(minX, minY, maxX, maxY);
+        return blockIterate(block, callback, parameters);
     }
 };
 
@@ -246,7 +338,7 @@ static int clearCellDataWorker(void* cellData, void* /*parameters*/)
 
 de::Blockmap::~Blockmap()
 {
-    d->grid.iterate(clearCellDataWorker);
+    d->iterate(clearCellDataWorker);
     delete d;
 }
 
@@ -262,17 +354,17 @@ const AABoxd& de::Blockmap::bounds() const
 
 BlockmapCoord de::Blockmap::width() const
 {
-    return d->grid.grid.width();
+    return d->grid.width();
 }
 
 BlockmapCoord de::Blockmap::height() const
 {
-    return d->grid.grid.height();
+    return d->grid.height();
 }
 
 BlockmapCell const& de::Blockmap::widthHeight() const
 {
-    return d->grid.grid.widthHeight();
+    return d->grid.widthHeight();
 }
 
 coord_t de::Blockmap::cellWidth() const
@@ -366,7 +458,7 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* obje
 {
     DENG2_ASSERT(object);
     BlockmapCell mcell = { mcell_[0], mcell_[1] };
-    d->grid.grid.clipCell(mcell);
+    d->grid.clipCell(mcell);
     BlockmapCellData* cell;
     if(d->leafAtCell(mcell))
     {
@@ -412,7 +504,7 @@ static int unlinkObjectInCellWorker(void* ptr, void* parameters)
 
 void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, void* object)
 {
-    d->grid.blockIterate(cellBlock, unlinkObjectInCellWorker, object);
+    d->blockIterate(cellBlock, unlinkObjectInCellWorker, object);
 }
 
 static int unlinkAllObjectsInCellWorker(void* ptr, void* /*parameters*/)
@@ -424,7 +516,7 @@ static int unlinkAllObjectsInCellWorker(void* ptr, void* /*parameters*/)
 
 void de::Blockmap::unlinkAllObjectsInCellBlock(BlockmapCellBlock const& cellBlock)
 {
-    d->grid.blockIterate(cellBlock, unlinkAllObjectsInCellWorker);
+    d->blockIterate(cellBlock, unlinkAllObjectsInCellWorker);
 }
 
 uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const
@@ -435,7 +527,7 @@ uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const
     return cell->size();
 }
 
-Gridmap& de::Blockmap::gridmap()
+QuadtreeBase& de::Blockmap::quadtree()
 {
     return d->grid;
 }
@@ -492,7 +584,7 @@ int de::Blockmap::iterateCellBlockObjects(BlockmapCellBlock const& cellBlock,
     cellobjectiterator_params_t args;
     args.callback   = callback;
     args.parameters = parameters;
-    return d->grid.blockIterate(cellBlock, cellObjectIterator, (void*)&args);
+    return d->blockIterate(cellBlock, cellObjectIterator, (void*)&args);
 }
 
 /**

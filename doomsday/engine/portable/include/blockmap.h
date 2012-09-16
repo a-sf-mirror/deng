@@ -34,7 +34,7 @@ typedef AABoxu BlockmapCellBlock;
 
 #ifdef __cplusplus
 
-#include "gridmap.h"
+#include "quadtree.h"
 
 namespace de {
 
@@ -175,10 +175,10 @@ public:
     int iterateCellBlockObjects(BlockmapCellBlock const& cellBlock, int (*callback) (void* object, void* parameters), void* parameters = 0);
 
     /**
-     * Retrieve an immutable pointer to the underlying Gridmap instance (mainly for
+     * Retrieve an immutable pointer to the underlying Quadtree instance (mainly for
      * for debug purposes).
      */
-    Gridmap& gridmap();
+    QuadtreeBase& quadtree();
 
 private:
     struct Instance;

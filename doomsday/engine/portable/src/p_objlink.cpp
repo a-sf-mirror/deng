@@ -31,7 +31,7 @@
 #include "de_play.h"
 #include "de_defs.h"
 
-#include "gridmap.h"
+#include "quadtree.h"
 
 #define BLOCK_WIDTH                 (128)
 #define BLOCK_HEIGHT                (128)
@@ -109,7 +109,13 @@ static int clearCellDataWorker(void* cellData, void* /*parameters*/)
 struct ObjlinkBlockmap
 {
     coord_t origin[2]; /// Origin of the blockmap in world coordinates [x,y].
-    Gridmap grid;
+
+    /**
+     * Implemented in terms of a region Quadtree for its inherent sparsity,
+     * spacial cohession and compression potential.
+     */
+    typedef Quadtree<void*> DataGrid;
+    DataGrid grid;
 
     ObjlinkBlockmap(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
         : grid(uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
@@ -121,13 +127,13 @@ struct ObjlinkBlockmap
 
     ~ObjlinkBlockmap()
     {
-        grid.iterate(clearCellDataWorker);
+        iterate(clearCellDataWorker);
     }
 
     bool leafAtCell(const_QuadtreeCell mcell)
     {
-        if(!grid.grid.leafAtCell(mcell)) return false;
-        return !!grid.grid.cell(mcell);
+        if(!grid.leafAtCell(mcell)) return false;
+        return !!grid.cell(mcell);
     }
     inline bool leafAtCell(QuadtreeCoord x, QuadtreeCoord y)
     {
@@ -144,8 +150,8 @@ struct ObjlinkBlockmap
      */
     void* cell(const_QuadtreeCell mcell)
     {
-        if(!grid.grid.leafAtCell(mcell)) return 0;
-        return grid.grid.cell(mcell);
+        if(!grid.leafAtCell(mcell)) return 0;
+        return grid.cell(mcell);
     }
     inline void* cell(QuadtreeCoord x, QuadtreeCoord y)
     {
@@ -155,12 +161,50 @@ struct ObjlinkBlockmap
 
     void setCell(const_QuadtreeCell mcell, void* userData)
     {
-        grid.grid.setCell(mcell, userData);
+        grid.setCell(mcell, userData);
     }
     inline void setCell(QuadtreeCoord x, QuadtreeCoord y, void* userData)
     {
         QuadtreeCell mcell = { x, y };
         setCell(mcell, userData);
+    }
+
+    typedef int (*IterateCallback) (void* cellData, void* parameters);
+    struct actioncallback_paramaters_t
+    {
+        IterateCallback callback;
+        void* callbackParameters;
+    };
+
+    /**
+     * Callback actioner. Executes the callback and then returns the result
+     * to the current iteration to determine if it should continue.
+     */
+    static int actionCallback(DataGrid::TreeBase* node, void* parameters)
+    {
+        DataGrid::TreeLeaf* leaf = static_cast<DataGrid::TreeLeaf*>(node);
+        actioncallback_paramaters_t* p = (actioncallback_paramaters_t*) parameters;
+        if(leaf->value())
+        {
+            return p->callback(leaf->value(), p->callbackParameters);
+        }
+        return 0; // Continue traversal.
+    }
+
+    /**
+     * Iterate over populated cells in the Gridmap making a callback for each. Iteration ends
+     * when all cells have been visited or @a callback returns non-zero.
+     *
+     * @param parameters     Passed to the callback.
+     *
+     * @return  @c 0 iff iteration completed wholly.
+     */
+    int iterate(IterateCallback callback, void* parameters = 0)
+    {
+        actioncallback_paramaters_t p;
+        p.callback = callback;
+        p.callbackParameters = parameters;
+        return grid.iterateLeafs(actionCallback, (void*)&p);
     }
 };
 
@@ -204,13 +248,13 @@ static inline ObjlinkBlockmap* blockmapForObjType(objtype_t type)
     return blockmaps[int(type)];
 }
 
-static inline GridmapCoord toObjlinkBlockmapX(ObjlinkBlockmap* obm, coord_t x)
+static inline QuadtreeCoord toObjlinkBlockmapX(ObjlinkBlockmap* obm, coord_t x)
 {
     DENG2_ASSERT(obm && x >= obm->origin[0]);
     return uint((x - obm->origin[0]) / coord_t(BLOCK_WIDTH));
 }
 
-static inline GridmapCoord toObjlinkBlockmapY(ObjlinkBlockmap* obm, coord_t y)
+static inline QuadtreeCoord toObjlinkBlockmapY(ObjlinkBlockmap* obm, coord_t y)
 {
     DENG2_ASSERT(obm && y >= obm->origin[1]);
     return uint((y - obm->origin[1]) / coord_t(BLOCK_HEIGHT));
@@ -223,11 +267,11 @@ static inline GridmapCoord toObjlinkBlockmapY(ObjlinkBlockmap* obm, coord_t y)
  *
  * @return  @c true if the coordinates specified had to be adjusted.
  */
-static bool toObjlinkBlockmapCell(ObjlinkBlockmap* bm, GridmapCell& mcell, coord_t x, coord_t y)
+static bool toObjlinkBlockmapCell(ObjlinkBlockmap* bm, QuadtreeCell& mcell, coord_t x, coord_t y)
 {
     DENG2_ASSERT(bm);
 
-    const GridmapCell& size = bm->grid.grid.widthHeight();
+    const QuadtreeCell& size = bm->grid.widthHeight();
     coord_t max[2] = { bm->origin[0] + size[0] * BLOCK_WIDTH,
                        bm->origin[1] + size[1] * BLOCK_HEIGHT};
 
@@ -379,7 +423,7 @@ void R_ClearObjlinkBlockmap(objtype_t type)
     if(!bm) return;
 
     // Clear all the list heads and spread flags.
-    bm->grid.iterate(clearObjlinkCellDataWorker);
+    bm->iterate(clearObjlinkCellDataWorker);
 }
 
 void R_ClearObjlinksForFrame(void)
@@ -646,15 +690,15 @@ static void R_ObjlinkBlockmapSpreadInBspLeaf(ObjlinkBlockmap* bm, const BspLeaf*
     DENG2_ASSERT(bm);
     if(!bspLeaf) return; // Wha?
 
-    GridmapCell minBlock;
+    QuadtreeCell minBlock;
     toObjlinkBlockmapCell(bm, minBlock, bspLeaf->aaBox.minX - maxRadius,
                                         bspLeaf->aaBox.minY - maxRadius);
 
-    GridmapCell maxBlock;
+    QuadtreeCell maxBlock;
     toObjlinkBlockmapCell(bm, maxBlock, bspLeaf->aaBox.maxX + maxRadius,
                                         bspLeaf->aaBox.maxY + maxRadius);
 
-    GridmapCell mcell;
+    QuadtreeCell mcell;
     for(mcell[1] = minBlock[1]; mcell[1] <= maxBlock[1]; ++mcell[1])
     for(mcell[0] = minBlock[0]; mcell[0] <= maxBlock[0]; ++mcell[0])
     {
@@ -689,7 +733,7 @@ END_PROF( PROF_OBJLINK_SPREAD );
 }
 
 /// @pre  Coordinates held by @a blockXY are within valid range.
-static void linkObjlinkInBlockmap(ObjlinkBlockmap* bm, ObjLink* link, GridmapCell& mcell)
+static void linkObjlinkInBlockmap(ObjlinkBlockmap* bm, ObjLink* link, QuadtreeCell& mcell)
 {
     DENG2_ASSERT(bm && link);
     ObjlinkCellData* cell;
@@ -710,7 +754,7 @@ static void linkObjlinkInBlockmap(ObjlinkBlockmap* bm, ObjLink* link, GridmapCel
 void R_LinkObjs(void)
 {
     ObjlinkBlockmap* bm;
-    GridmapCell mcell;
+    QuadtreeCell mcell;
     pvec3d_t origin;
 
 BEGIN_PROF( PROF_OBJLINK_LINK );

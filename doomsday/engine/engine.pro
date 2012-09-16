@@ -225,7 +225,6 @@ DENG_HEADERS += \
     portable/include/gl_tex.h \
     portable/include/gl_texmanager.h \
     portable/include/gl_tga.h \
-    portable/include/gridmap.h \
     portable/include/hedge.h \
     portable/include/image.h \
     portable/include/joystick.h \
@@ -514,7 +513,6 @@ SOURCES += \
     portable/src/gl_tex.c \
     portable/src/gl_texmanager.c \
     portable/src/gl_tga.c \
-    portable/src/gridmap.cpp \
     portable/src/hedge.cpp \
     portable/src/image.cpp \
     portable/src/json.cpp \
