@@ -32,6 +32,7 @@ typedef QuadtreeCoord QuadtreeCell[2];
 typedef const QuadtreeCoord const_QuadtreeCell[2];
 typedef AABoxu QuadtreeCellBlock;
 
+template <typename T>
 class Quadtree
 {
 public:
@@ -76,9 +77,10 @@ public:
     public:
         inline QuadtreeCoord size() const { return 1; }
 
-        inline void* value() const { return value_; }
+        inline T& value() { return value_; }
+        inline T const& value() const { return value_; }
 
-        TreeLeaf& setValue(void* newValue)
+        TreeLeaf& setValue(T newValue)
         {
             value_ = newValue;
             return *this;
@@ -87,16 +89,16 @@ public:
         friend class Quadtree;
 
     private:
-        explicit TreeLeaf(QuadtreeCoord x = 0, QuadtreeCoord y = 0, void* value = 0)
-            : TreeBase(x, y), value_(value)
+        explicit TreeLeaf(QuadtreeCoord x = 0, QuadtreeCoord y = 0)
+            : TreeBase(x, y), value_()
         {}
-        explicit TreeLeaf(const_QuadtreeCell mcell, void* value = 0)
-            : TreeBase(mcell[X], mcell[Y]), value_(value)
+        explicit TreeLeaf(const_QuadtreeCell mcell)
+            : TreeBase(mcell[X], mcell[Y]), value_()
         {}
 
     private:
         /// Data value at this tree leaf.
-        void* value_;
+        T value_;
     };
 
     /// TreeNode. Represents a subspace node within the quadtree.
@@ -243,7 +245,7 @@ public:
         return !!findLeafDescend(root_, mcell, false);
     }
 
-    void* cell(const_QuadtreeCell mcell)
+    T& cell(const_QuadtreeCell mcell)
     {
         // Outside our boundary?
         DENG2_ASSERT(mcell[X] < dimensions[X] && mcell[Y] < dimensions[Y]);

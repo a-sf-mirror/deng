@@ -27,7 +27,7 @@
 #include "gridmap.h"
 #include "quadtree.h"
 
-typedef Quadtree DataGrid;
+typedef Quadtree<void*> DataGrid;
 
 /**
  * Gridmap implementation. Implemented in terms of a Region Quadtree for its
