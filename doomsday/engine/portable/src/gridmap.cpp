@@ -76,7 +76,7 @@ bool Gridmap::clipBlock(GridmapCellBlock& block) const
 
 bool Gridmap::leafAtCell(const_GridmapCell mcell) const
 {
-    return d->grid.leafAtCell(mcell);
+    return !!d->grid.cell(mcell);
 }
 
 void* Gridmap::cell(const_GridmapCell mcell) const

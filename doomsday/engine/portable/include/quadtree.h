@@ -251,9 +251,7 @@ public:
         // Outside our boundary?
         if(mcell[X] >= dimensions[X] || mcell[Y] >= dimensions[Y]) return false;
 
-        // A leaf with an exisiting data value?
-        TreeLeaf* leaf = findLeafDescend(root_, mcell, false);
-        return (leaf && leaf->value());
+        return !!findLeafDescend(root_, mcell, false);
     }
 
     void* cell(const_QuadtreeCell mcell)
@@ -261,9 +259,8 @@ public:
         // Outside our boundary?
         DENG2_ASSERT(mcell[X] < dimensions[X] && mcell[Y] < dimensions[Y]);
 
-        // Exisiting data for this leaf?
         TreeLeaf* leaf = findLeafDescend(root_, mcell, false);
-        if(!leaf || !leaf->value()) return 0;
+        if(!leaf) return 0;
 
         return leaf->value();
     }
