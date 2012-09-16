@@ -1,10 +1,8 @@
 /**
  * @file quadtree.h
- * Region quadtree data structure.
+ * Region quadtree data structure. @ingroup data
  *
- * @ingroup data
- *
- * @authors Copyright &copy; 2009-2012 Daniel Swanson <danij@dengine.net>
+ * @author Copyright &copy; 2009-2012 Daniel Swanson <danij@dengine.net>
  *
  * @par License
  * GPL: http://www.gnu.org/licenses/gpl.html
@@ -311,7 +309,7 @@ public:
         throw de::Error("Quadtree::cell", QString("No leaf cell exists at x:%1 y:%2").arg(mcell[X]).arg(mcell[Y]));
     }
 
-    Quadtree& setCell(const_QuadtreeCell mcell, void* newValue)
+    Quadtree& setCell(const_QuadtreeCell mcell, T newValue)
     {
         // Outside our boundary?
         DENG2_ASSERT(mcell[X] < dimensions[X] && mcell[Y] < dimensions[Y]);

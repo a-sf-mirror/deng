@@ -99,9 +99,8 @@ struct ObjlinkCellData
     bool doneSpread;
 };
 
-static int clearCellDataWorker(void* cellData, void* /*parameters*/)
+static int clearCellDataWorker(ObjlinkCellData* cell, void* /*parameters*/)
 {
-    ObjlinkCellData* cell = reinterpret_cast<ObjlinkCellData*>(cellData);
     Z_Free(cell);
     return false; // Continue iteration.
 }
@@ -114,7 +113,7 @@ struct ObjlinkBlockmap
      * Implemented in terms of a region Quadtree for its inherent sparsity,
      * spacial cohession and compression potential.
      */
-    typedef Quadtree<void*> DataGrid;
+    typedef Quadtree<ObjlinkCellData*> DataGrid;
     DataGrid grid;
 
     ObjlinkBlockmap(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
@@ -148,28 +147,28 @@ struct ObjlinkBlockmap
      *
      * @return  User data for the identified cell.
      */
-    void* cell(const_QuadtreeCell mcell)
+    ObjlinkCellData* cell(const_QuadtreeCell mcell)
     {
         if(!grid.leafAtCell(mcell)) return 0;
         return grid.cell(mcell);
     }
-    inline void* cell(QuadtreeCoord x, QuadtreeCoord y)
+    inline ObjlinkCellData* cell(QuadtreeCoord x, QuadtreeCoord y)
     {
         QuadtreeCell mcell = { x, y };
         return cell(mcell);
     }
 
-    void setCell(const_QuadtreeCell mcell, void* userData)
+    void setCell(const_QuadtreeCell mcell, ObjlinkCellData* userData)
     {
         grid.setCell(mcell, userData);
     }
-    inline void setCell(QuadtreeCoord x, QuadtreeCoord y, void* userData)
+    inline void setCell(QuadtreeCoord x, QuadtreeCoord y, ObjlinkCellData* userData)
     {
         QuadtreeCell mcell = { x, y };
         setCell(mcell, userData);
     }
 
-    typedef int (*IterateCallback) (void* cellData, void* parameters);
+    typedef int (*IterateCallback) (ObjlinkCellData* cell, void* parameters);
     struct actioncallback_paramaters_t
     {
         IterateCallback callback;
@@ -410,9 +409,8 @@ static void ObjlinkCellData_ClearLinks(ObjlinkCellData* cell)
     cell->doneSpread = false;
 }
 
-static int clearObjlinkCellDataWorker(void* cellData, void* /*parameters*/)
+static int clearObjlinkCellDataWorker(ObjlinkCellData* cell, void* /*parameters*/)
 {
-    ObjlinkCellData* cell = reinterpret_cast<ObjlinkCellData*>(cellData);
     ObjlinkCellData_ClearLinks(cell);
     return false; // Continue iteration.
 }
@@ -704,7 +702,7 @@ static void R_ObjlinkBlockmapSpreadInBspLeaf(ObjlinkBlockmap* bm, const BspLeaf*
     {
         if(!bm->leafAtCell(mcell)) continue;
 
-        ObjlinkCellData* cell = reinterpret_cast<ObjlinkCellData*>(bm->cell(mcell));
+        ObjlinkCellData* cell = bm->cell(mcell);
         ObjlinkCellData_FindContacts(cell);
     }
 }
@@ -739,7 +737,7 @@ static void linkObjlinkInBlockmap(ObjlinkBlockmap* bm, ObjLink* link, QuadtreeCe
     ObjlinkCellData* cell;
     if(bm->leafAtCell(mcell))
     {
-        cell = reinterpret_cast<ObjlinkCellData*>(bm->cell(mcell));
+        cell = bm->cell(mcell);
         DENG2_ASSERT(cell);
     }
     else

@@ -184,7 +184,7 @@ struct de::Blockmap::Instance
      * Implemented in terms of a region Quadtree for its inherent sparsity,
      * spacial cohession and compression potential.
      */
-    typedef Quadtree<void*> DataGrid;
+    typedef Quadtree<BlockmapCellData*> DataGrid;
     DataGrid grid;
 
     Instance(coord_t const min[2], coord_t const max[2], BlockmapCoord cellWidth, BlockmapCoord cellHeight)
@@ -214,28 +214,28 @@ struct de::Blockmap::Instance
      *
      * @return  User data for the identified cell.
      */
-    void* cell(const_BlockmapCell mcell)
+    BlockmapCellData* cell(const_BlockmapCell mcell)
     {
         if(!grid.leafAtCell(mcell)) return 0;
         return grid.cell(mcell);
     }
-    inline void* cell(BlockmapCoord x, BlockmapCoord y)
+    inline BlockmapCellData* cell(BlockmapCoord x, BlockmapCoord y)
     {
         BlockmapCell mcell = { x, y };
         return cell(mcell);
     }
 
-    void setCell(const_BlockmapCell mcell, void* userData)
+    void setCell(const_BlockmapCell mcell, BlockmapCellData* userData)
     {
         grid.setCell(mcell, userData);
     }
-    inline void setCell(BlockmapCoord x, BlockmapCoord y, void* userData)
+    inline void setCell(BlockmapCoord x, BlockmapCoord y, BlockmapCellData* userData)
     {
         BlockmapCell mcell = { x, y };
         setCell(mcell, userData);
     }
 
-    typedef int (*IterateCallback) (void* cellData, void* parameters);
+    typedef int (*IterateCallback) (BlockmapCellData* cell, void* parameters);
     struct actioncallback_paramaters_t
     {
         IterateCallback callback;
@@ -329,9 +329,8 @@ de::Blockmap::Blockmap(coord_t const min[2], coord_t const max[2], BlockmapCoord
     d = new Instance(min, max, cellWidth, cellHeight);
 }
 
-static int clearCellDataWorker(void* cellData, void* /*parameters*/)
+static int clearCellDataWorker(BlockmapCellData* cell, void* /*parameters*/)
 {
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(cellData);
     Z_Free(cell);
     return false; // Continue iteration.
 }
@@ -441,8 +440,8 @@ bool de::Blockmap::cell(BlockmapCell mcell, coord_t const pos[2]) const
     if(mcell && pos)
     {
         // Deliberate bitwise OR - we need to clip both X and Y.
-        return clipCellX(&mcell[0], pos[VX]) |
-               clipCellY(&mcell[1], pos[VY]);
+        return clipCellX(&mcell[0], pos[0]) |
+               clipCellY(&mcell[1], pos[1]);
     }
     return false;
 }
@@ -462,7 +461,7 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* obje
     BlockmapCellData* cell;
     if(d->leafAtCell(mcell))
     {
-        cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
+        cell = d->cell(mcell);
         DENG2_ASSERT(cell);
     }
     else
@@ -478,7 +477,7 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* obje
 void de::Blockmap::unlinkAllObjectsInCell(const_BlockmapCell mcell)
 {
     if(!d->leafAtCell(mcell)) return;
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
+    BlockmapCellData* cell = d->cell(mcell);
     DENG2_ASSERT(cell);
     cell->unlinkAll();
 }
@@ -488,16 +487,15 @@ bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
     bool unlinked = false;
     if(d->leafAtCell(mcell))
     {
-        BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
+        BlockmapCellData* cell = d->cell(mcell);
         DENG2_ASSERT(cell);
         cell->unlink(object, &unlinked);
     }
     return unlinked;
 }
 
-static int unlinkObjectInCellWorker(void* ptr, void* parameters)
+static int unlinkObjectInCellWorker(BlockmapCellData* cell, void* parameters)
 {
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(ptr);
     cell->unlink(parameters/*object ptr*/);
     return false; // Continue iteration.
 }
@@ -507,9 +505,8 @@ void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, v
     d->blockIterate(cellBlock, unlinkObjectInCellWorker, object);
 }
 
-static int unlinkAllObjectsInCellWorker(void* ptr, void* /*parameters*/)
+static int unlinkAllObjectsInCellWorker(BlockmapCellData* cell, void* /*parameters*/)
 {
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(ptr);
     cell->unlinkAll();
     return false; // Continue iteration.
 }
@@ -522,7 +519,7 @@ void de::Blockmap::unlinkAllObjectsInCellBlock(BlockmapCellBlock const& cellBloc
 uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const
 {
     if(!d->leafAtCell(mcell)) return 0;
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
+    BlockmapCellData* cell = d->cell(mcell);
     DENG2_ASSERT(cell);
     return cell->size();
 }
@@ -536,7 +533,7 @@ int de::Blockmap::iterateCellObjects(const_BlockmapCell mcell,
     int (*callback) (void* object, void* parameters), void* parameters)
 {
     if(!d->leafAtCell(mcell)) return false; // Continue iteration.
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
+    BlockmapCellData* cell = d->cell(mcell);
     DENG2_ASSERT(cell);
     for(BlockmapCellData::iterator i = cell->begin(); i != cell->end(); )
     {
@@ -554,13 +551,12 @@ int de::Blockmap::iterateCellObjects(const_BlockmapCell mcell,
 }
 
 typedef struct {
-    int (*callback)(void* userData, void* parameters);
+    int (*callback)(void* object, void* parameters);
     void* parameters;
 } cellobjectiterator_params_t;
 
-static int cellObjectIterator(void* userData, void* parameters)
+static int cellObjectIterator(BlockmapCellData* cell, void* parameters)
 {
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(userData);
     cellobjectiterator_params_t* args = static_cast<cellobjectiterator_params_t*>(parameters);
     DENG2_ASSERT(args);
     for(BlockmapCellData::iterator i = cell->begin(); i != cell->end(); )
