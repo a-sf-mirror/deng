@@ -99,6 +99,13 @@ struct ObjlinkCellData
     bool doneSpread;
 };
 
+static int clearCellDataWorker(void* cellData, void* /*parameters*/)
+{
+    ObjlinkCellData* cell = reinterpret_cast<ObjlinkCellData*>(cellData);
+    Z_Free(cell);
+    return false; // Continue iteration.
+}
+
 struct ObjlinkBlockmap
 {
     coord_t origin[2]; /// Origin of the blockmap in world coordinates [x,y].
@@ -110,6 +117,11 @@ struct ObjlinkBlockmap
     {
         origin[0] = min[0];
         origin[1] = min[1];
+    }
+
+    ~ObjlinkBlockmap()
+    {
+        gridmap.iterate(clearCellDataWorker);
     }
 };
 
@@ -298,7 +310,6 @@ void R_DestroyObjlinkBlockmaps(void)
     for(int i = 0; i < NUM_OBJ_TYPES; ++i)
     {
         if(!blockmaps[i]) continue;
-        /// @note the zone-allocated ObjlinkCellData will be purged later.
         delete blockmaps[i]; blockmaps[i] = 0;
     }
     if(bspLeafContacts)

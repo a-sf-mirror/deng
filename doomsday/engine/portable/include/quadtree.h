@@ -80,11 +80,6 @@ public:
 
         TreeLeaf& setValue(void* newValue)
         {
-            // Exisiting data value for this leaf?
-            if(value_)
-            {
-                Z_Free(value_);
-            }
             value_ = newValue;
             return *this;
         }
@@ -95,15 +90,9 @@ public:
         explicit TreeLeaf(QuadtreeCoord x = 0, QuadtreeCoord y = 0, void* value = 0)
             : TreeBase(x, y), value_(value)
         {}
-
         explicit TreeLeaf(const_QuadtreeCell mcell, void* value = 0)
             : TreeBase(mcell[X], mcell[Y]), value_(value)
         {}
-
-        ~TreeLeaf()
-        {
-            if(value_) Z_Free(value_);
-        }
 
     private:
         /// Data value at this tree leaf.

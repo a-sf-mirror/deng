@@ -198,8 +198,16 @@ de::Blockmap::Blockmap(coord_t const min[2], coord_t const max[2], BlockmapCoord
     d = new Instance(min, max, cellWidth, cellHeight);
 }
 
+static int clearCellDataWorker(void* cellData, void* /*parameters*/)
+{
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(cellData);
+    Z_Free(cell);
+    return false; // Continue iteration.
+}
+
 de::Blockmap::~Blockmap()
 {
+    d->gridmap.iterate(clearCellDataWorker);
     delete d;
 }
 
