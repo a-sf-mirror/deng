@@ -170,15 +170,15 @@ public:
 
     void unlinkObjectInCellBlock(BlockmapCellBlock const& blockCoords, void* object);
 
+    int iterateCellObjects(const_BlockmapCell mcell, int (*callback) (void* object, void* parameters), void* parameters = 0);
+
+    int iterateCellBlockObjects(BlockmapCellBlock const& cellBlock, int (*callback) (void* object, void* parameters), void* parameters = 0);
+
     /**
      * Retrieve an immutable pointer to the underlying Gridmap instance (mainly for
      * for debug purposes).
      */
     Gridmap& gridmap();
-
-    int iterateCellObjects(const_BlockmapCell mcell, int (*callback) (void* object, void* parameters), void* parameters = 0);
-
-    int iterateCellBlockObjects(BlockmapCellBlock const& cellBlock, int (*callback) (void* object, void* parameters), void* parameters = 0);
 
 private:
     struct Instance;

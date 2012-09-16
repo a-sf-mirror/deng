@@ -30,49 +30,6 @@ Gridmap::Gridmap(GridmapCoord width, GridmapCoord height)
     : grid(width, height)
 {}
 
-GridmapCoord Gridmap::width() const
-{
-    return grid.width();
-}
-
-GridmapCoord Gridmap::height() const
-{
-    return grid.height();
-}
-
-const GridmapCell& Gridmap::widthHeight() const
-{
-    return grid.widthHeight();
-}
-
-bool Gridmap::clipCell(GridmapCell& cell) const
-{
-    return grid.clipCell(cell);
-}
-
-bool Gridmap::clipBlock(GridmapCellBlock& block) const
-{
-    return grid.clipBlock(block);
-}
-
-bool Gridmap::leafAtCell(const_GridmapCell mcell)
-{
-    if(!grid.leafAtCell(mcell)) return false;
-    return !!grid.cell(mcell);
-}
-
-void* Gridmap::cell(const_GridmapCell mcell)
-{
-    if(!grid.leafAtCell(mcell)) return 0;
-    return grid.cell(mcell);
-}
-
-Gridmap& Gridmap::setCell(const_GridmapCell mcell, void* userData)
-{
-    grid.setCell(mcell, userData);
-    return *this;
-}
-
 struct actioncallback_paramaters_t
 {
     Gridmap::Gridmap_IterateCallback callback;
@@ -108,7 +65,7 @@ int Gridmap::blockIterate(GridmapCellBlock const& block_, Gridmap_IterateCallbac
     // Quadtree is normally larger than this so we cannot use the
     // dimensions of the root cell here).
     GridmapCellBlock block = block_;
-    clipBlock(block);
+    grid.clipBlock(block);
 
     // Process all leafs in the block.
     /// @optimize: We could avoid repeatedly descending the tree...

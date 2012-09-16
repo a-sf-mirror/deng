@@ -181,15 +181,54 @@ struct de::Blockmap::Instance
     vec2d_t cellSize;
 
     /// Gridmap which implements the blockmap itself.
-    Gridmap gridmap;
+    Gridmap grid;
 
     Instance(coord_t const min[2], coord_t const max[2], BlockmapCoord cellWidth, BlockmapCoord cellHeight)
         : bounds(min, max),
-          gridmap(BlockmapCoord( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
-                  BlockmapCoord( ceil((max[1] - min[1]) / coord_t(cellHeight))))
+          grid(BlockmapCoord( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
+               BlockmapCoord( ceil((max[1] - min[1]) / coord_t(cellHeight))))
     {
         cellSize[VX] = cellWidth;
         cellSize[VY] = cellHeight;
+    }
+
+    bool leafAtCell(const_BlockmapCell mcell)
+    {
+        if(!grid.grid.leafAtCell(mcell)) return false;
+        return !!grid.grid.cell(mcell);
+    }
+    inline bool leafAtCell(BlockmapCoord x, BlockmapCoord y)
+    {
+        GridmapCell mcell = { x, y };
+        return leafAtCell(mcell);
+    }
+
+    /**
+     * Retrieve the user data associated with the identified cell.
+     *
+     * @param mcells         XY coordinates of the cell whose data to retrieve.
+     *
+     * @return  User data for the identified cell.
+     */
+    void* cell(const_BlockmapCell mcell)
+    {
+        if(!grid.grid.leafAtCell(mcell)) return 0;
+        return grid.grid.cell(mcell);
+    }
+    inline void* cell(BlockmapCoord x, BlockmapCoord y)
+    {
+        BlockmapCell mcell = { x, y };
+        return cell(mcell);
+    }
+
+    void setCell(const_BlockmapCell mcell, void* userData)
+    {
+        grid.grid.setCell(mcell, userData);
+    }
+    inline void setCell(BlockmapCoord x, BlockmapCoord y, void* userData)
+    {
+        BlockmapCell mcell = { x, y };
+        setCell(mcell, userData);
     }
 };
 
@@ -207,7 +246,7 @@ static int clearCellDataWorker(void* cellData, void* /*parameters*/)
 
 de::Blockmap::~Blockmap()
 {
-    d->gridmap.iterate(clearCellDataWorker);
+    d->grid.iterate(clearCellDataWorker);
     delete d;
 }
 
@@ -223,17 +262,17 @@ const AABoxd& de::Blockmap::bounds() const
 
 BlockmapCoord de::Blockmap::width() const
 {
-    return d->gridmap.width();
+    return d->grid.grid.width();
 }
 
 BlockmapCoord de::Blockmap::height() const
 {
-    return d->gridmap.height();
+    return d->grid.grid.height();
 }
 
 BlockmapCell const& de::Blockmap::widthHeight() const
 {
-    return d->gridmap.widthHeight();
+    return d->grid.grid.widthHeight();
 }
 
 coord_t de::Blockmap::cellWidth() const
@@ -327,18 +366,18 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* obje
 {
     DENG2_ASSERT(object);
     BlockmapCell mcell = { mcell_[0], mcell_[1] };
-    d->gridmap.clipCell(mcell);
+    d->grid.grid.clipCell(mcell);
     BlockmapCellData* cell;
-    if(d->gridmap.leafAtCell(mcell))
+    if(d->leafAtCell(mcell))
     {
-        cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
+        cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
         DENG2_ASSERT(cell);
     }
     else
     {
         void* region = Z_Malloc(sizeof(BlockmapCellData), PU_MAPSTATIC, 0);
         cell = new (region) BlockmapCellData();
-        d->gridmap.setCell(mcell, cell);
+        d->setCell(mcell, cell);
     }
     cell->link(object);
     return true; // Link added.
@@ -346,8 +385,8 @@ bool de::Blockmap::createCellAndLinkObject(const_BlockmapCell mcell_, void* obje
 
 void de::Blockmap::unlinkAllObjectsInCell(const_BlockmapCell mcell)
 {
-    if(!d->gridmap.leafAtCell(mcell)) return;
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
+    if(!d->leafAtCell(mcell)) return;
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
     DENG2_ASSERT(cell);
     cell->unlinkAll();
 }
@@ -355,9 +394,9 @@ void de::Blockmap::unlinkAllObjectsInCell(const_BlockmapCell mcell)
 bool de::Blockmap::unlinkObjectInCell(const_BlockmapCell mcell, void* object)
 {
     bool unlinked = false;
-    if(d->gridmap.leafAtCell(mcell))
+    if(d->leafAtCell(mcell))
     {
-        BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
+        BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
         DENG2_ASSERT(cell);
         cell->unlink(object, &unlinked);
     }
@@ -373,7 +412,7 @@ static int unlinkObjectInCellWorker(void* ptr, void* parameters)
 
 void de::Blockmap::unlinkObjectInCellBlock(BlockmapCellBlock const& cellBlock, void* object)
 {
-    d->gridmap.blockIterate(cellBlock, unlinkObjectInCellWorker, object);
+    d->grid.blockIterate(cellBlock, unlinkObjectInCellWorker, object);
 }
 
 static int unlinkAllObjectsInCellWorker(void* ptr, void* /*parameters*/)
@@ -385,27 +424,27 @@ static int unlinkAllObjectsInCellWorker(void* ptr, void* /*parameters*/)
 
 void de::Blockmap::unlinkAllObjectsInCellBlock(BlockmapCellBlock const& cellBlock)
 {
-    d->gridmap.blockIterate(cellBlock, unlinkAllObjectsInCellWorker);
+    d->grid.blockIterate(cellBlock, unlinkAllObjectsInCellWorker);
 }
 
 uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const
 {
-    if(!d->gridmap.leafAtCell(mcell)) return 0;
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
+    if(!d->leafAtCell(mcell)) return 0;
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
     DENG2_ASSERT(cell);
     return cell->size();
 }
 
 Gridmap& de::Blockmap::gridmap()
 {
-    return d->gridmap;
+    return d->grid;
 }
 
 int de::Blockmap::iterateCellObjects(const_BlockmapCell mcell,
     int (*callback) (void* object, void* parameters), void* parameters)
 {
-    if(!d->gridmap.leafAtCell(mcell)) return false; // Continue iteration.
-    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->gridmap.cell(mcell));
+    if(!d->leafAtCell(mcell)) return false; // Continue iteration.
+    BlockmapCellData* cell = reinterpret_cast<BlockmapCellData*>(d->cell(mcell));
     DENG2_ASSERT(cell);
     for(BlockmapCellData::iterator i = cell->begin(); i != cell->end(); )
     {
@@ -453,7 +492,7 @@ int de::Blockmap::iterateCellBlockObjects(BlockmapCellBlock const& cellBlock,
     cellobjectiterator_params_t args;
     args.callback   = callback;
     args.parameters = parameters;
-    return d->gridmap.blockIterate(cellBlock, cellObjectIterator, (void*)&args);
+    return d->grid.blockIterate(cellBlock, cellObjectIterator, (void*)&args);
 }
 
 /**

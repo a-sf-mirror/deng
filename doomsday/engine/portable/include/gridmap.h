@@ -53,60 +53,7 @@ public:
     typedef int (*Gridmap_IterateCallback) (void* cellData, void* parameters);
 
 public:
-    /**
-     * @param width          X dimension in cells.
-     * @param height         Y dimension in cells.
-     */
     Gridmap(GridmapCoord width, GridmapCoord height);
-
-    /// @return  Width of the Gridmap in cells.
-    GridmapCoord width() const;
-
-    /// @return  Height of the Gridmap in cells.
-    GridmapCoord height() const;
-
-    /// @return  [width, height] of the Gridmap in cells.
-    const GridmapCell& widthHeight() const;
-
-    bool Gridmap::clipCell(GridmapCell& cell) const;
-
-    /**
-     * Clip the cell coordinates in @a block vs the dimensions of this Gridmap so that they
-     * are inside the boundary this defines.
-     *
-     * @param block           Block coordinates to be clipped.
-     *
-     * @return  @c true iff the block coordinates were changed.
-     */
-    bool clipBlock(GridmapCellBlock& block) const;
-
-    bool leafAtCell(const_GridmapCell mcell);
-    inline bool leafAtCell(GridmapCoord x, GridmapCoord y)
-    {
-        GridmapCell mcell = { x, y };
-        return leafAtCell(mcell);
-    }
-
-    /**
-     * Retrieve the user data associated with the identified cell.
-     *
-     * @param mcells         XY coordinates of the cell whose data to retrieve.
-     *
-     * @return  User data for the identified cell.
-     */
-    void* cell(const_GridmapCell mcell);
-    inline void* cell(GridmapCoord x, GridmapCoord y)
-    {
-        GridmapCell mcell = { x, y };
-        return cell(mcell);
-    }
-
-    Gridmap& setCell(const_GridmapCell mcell, void* userData);
-    inline Gridmap& setCell(GridmapCoord x, GridmapCoord y, void* userData)
-    {
-        GridmapCell mcell = { x, y };
-        return setCell(mcell, userData);
-    }
 
     /**
      * Iterate over populated cells in the Gridmap making a callback for each. Iteration ends

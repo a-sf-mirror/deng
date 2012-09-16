@@ -84,15 +84,20 @@ public:
     virtual operator TreeBase&() = 0;
     virtual operator TreeBase const&() const = 0;
 
+    /// @return  Root tree node in the quadtree.
     virtual TreeBase& root() = 0;
     virtual TreeBase const& root() const = 0;
 
+    /// @return  Width of the quadtree in cells.
     virtual QuadtreeCoord width() const = 0;
 
+    /// @return  Height of the quadtree in cells.
     virtual QuadtreeCoord height() const = 0;
 
+    /// @return  [width, height] of the quadtree in cells.
     virtual const QuadtreeCell& widthHeight() const = 0;
 
+    /// @return  @c true= the specified subtree @a tree is a leaf.
     virtual bool isLeaf(TreeBase& tree) = 0;
 
     /**
@@ -213,6 +218,10 @@ public:
     };
 
 public:
+    /**
+     * @param width          X dimension in cells.
+     * @param height         Y dimension in cells.
+     */
     Quadtree(QuadtreeCoord width, QuadtreeCoord height)
         : // Quadtree must subdivide the space equally into 1x1 unit cells.
           root_(0, 0, ceilPow2(MAX_OF(width, height)))
@@ -249,6 +258,14 @@ public:
         return adjusted;
     }
 
+    /**
+     * Clip the cell coordinates in @a block vs the dimensions of this quadtree
+     * so that they are inside the boundary it defines.
+     *
+     * @param block           Block coordinates to be clipped.
+     *
+     * @return  @c true iff the block coordinates were changed.
+     */
     bool clipBlock(QuadtreeCellBlock& block) const
     {
         bool adjusted = false;

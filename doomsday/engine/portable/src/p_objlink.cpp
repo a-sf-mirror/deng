@@ -109,11 +109,11 @@ static int clearCellDataWorker(void* cellData, void* /*parameters*/)
 struct ObjlinkBlockmap
 {
     coord_t origin[2]; /// Origin of the blockmap in world coordinates [x,y].
-    Gridmap gridmap;
+    Gridmap grid;
 
     ObjlinkBlockmap(coord_t const min[2], coord_t const max[2], uint cellWidth, uint cellHeight)
-        : gridmap(uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
-                  uint( ceil((max[1] - min[1]) / coord_t(cellHeight))) )
+        : grid(uint( ceil((max[0] - min[0]) / coord_t(cellWidth)) ),
+               uint( ceil((max[1] - min[1]) / coord_t(cellHeight))) )
     {
         origin[0] = min[0];
         origin[1] = min[1];
@@ -121,7 +121,46 @@ struct ObjlinkBlockmap
 
     ~ObjlinkBlockmap()
     {
-        gridmap.iterate(clearCellDataWorker);
+        grid.iterate(clearCellDataWorker);
+    }
+
+    bool leafAtCell(const_QuadtreeCell mcell)
+    {
+        if(!grid.grid.leafAtCell(mcell)) return false;
+        return !!grid.grid.cell(mcell);
+    }
+    inline bool leafAtCell(QuadtreeCoord x, QuadtreeCoord y)
+    {
+        QuadtreeCell mcell = { x, y };
+        return leafAtCell(mcell);
+    }
+
+    /**
+     * Retrieve the user data associated with the identified cell.
+     *
+     * @param mcells         XY coordinates of the cell whose data to retrieve.
+     *
+     * @return  User data for the identified cell.
+     */
+    void* cell(const_QuadtreeCell mcell)
+    {
+        if(!grid.grid.leafAtCell(mcell)) return 0;
+        return grid.grid.cell(mcell);
+    }
+    inline void* cell(QuadtreeCoord x, QuadtreeCoord y)
+    {
+        QuadtreeCell mcell = { x, y };
+        return cell(mcell);
+    }
+
+    void setCell(const_QuadtreeCell mcell, void* userData)
+    {
+        grid.grid.setCell(mcell, userData);
+    }
+    inline void setCell(QuadtreeCoord x, QuadtreeCoord y, void* userData)
+    {
+        QuadtreeCell mcell = { x, y };
+        setCell(mcell, userData);
     }
 };
 
@@ -188,7 +227,7 @@ static bool toObjlinkBlockmapCell(ObjlinkBlockmap* bm, GridmapCell& mcell, coord
 {
     DENG2_ASSERT(bm);
 
-    const GridmapCell& size = bm->gridmap.widthHeight();
+    const GridmapCell& size = bm->grid.grid.widthHeight();
     coord_t max[2] = { bm->origin[0] + size[0] * BLOCK_WIDTH,
                        bm->origin[1] + size[1] * BLOCK_HEIGHT};
 
@@ -340,7 +379,7 @@ void R_ClearObjlinkBlockmap(objtype_t type)
     if(!bm) return;
 
     // Clear all the list heads and spread flags.
-    bm->gridmap.iterate(clearObjlinkCellDataWorker);
+    bm->grid.iterate(clearObjlinkCellDataWorker);
 }
 
 void R_ClearObjlinksForFrame(void)
@@ -619,9 +658,9 @@ static void R_ObjlinkBlockmapSpreadInBspLeaf(ObjlinkBlockmap* bm, const BspLeaf*
     for(mcell[1] = minBlock[1]; mcell[1] <= maxBlock[1]; ++mcell[1])
     for(mcell[0] = minBlock[0]; mcell[0] <= maxBlock[0]; ++mcell[0])
     {
-        if(!bm->gridmap.leafAtCell(mcell)) continue;
+        if(!bm->leafAtCell(mcell)) continue;
 
-        ObjlinkCellData* cell = reinterpret_cast<ObjlinkCellData*>(bm->gridmap.cell(mcell));
+        ObjlinkCellData* cell = reinterpret_cast<ObjlinkCellData*>(bm->cell(mcell));
         ObjlinkCellData_FindContacts(cell);
     }
 }
@@ -654,15 +693,15 @@ static void linkObjlinkInBlockmap(ObjlinkBlockmap* bm, ObjLink* link, GridmapCel
 {
     DENG2_ASSERT(bm && link);
     ObjlinkCellData* cell;
-    if(bm->gridmap.leafAtCell(mcell))
+    if(bm->leafAtCell(mcell))
     {
-        cell = reinterpret_cast<ObjlinkCellData*>(bm->gridmap.cell(mcell));
+        cell = reinterpret_cast<ObjlinkCellData*>(bm->cell(mcell));
         DENG2_ASSERT(cell);
     }
     else
     {
         cell = (ObjlinkCellData*)Z_Calloc(sizeof(*cell), PU_MAPSTATIC, 0);
-        bm->gridmap.setCell(mcell, cell);
+        bm->setCell(mcell, cell);
     }
     link->nextInCell = cell->head;
     cell->head = link;
