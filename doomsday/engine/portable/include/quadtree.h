@@ -249,9 +249,9 @@ public:
         DENG2_ASSERT(mcell[X] < dimensions[X] && mcell[Y] < dimensions[Y]);
 
         TreeLeaf* leaf = findLeafDescend(root_, mcell, false);
-        if(!leaf) return 0;
+        if(leaf) return leaf->value();
 
-        return leaf->value();
+        throw de::Error("Quadtree::cell", QString("No leaf cell exists at x:%1 y:%2").arg(mcell[X]).arg(mcell[Y]));
     }
 
     Quadtree& setCell(const_QuadtreeCell mcell, void* newValue)
