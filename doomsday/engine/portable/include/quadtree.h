@@ -32,8 +32,8 @@ typedef QuadtreeCoord QuadtreeCell[2];
 typedef const QuadtreeCoord const_QuadtreeCell[2];
 typedef AABoxu QuadtreeCellBlock;
 
-template <typename T>
-class Quadtree
+/// Abstract class used as the base for all quadtrees.
+class QuadtreeBase
 {
 public:
     /// Space dimension ordinals.
@@ -71,6 +71,53 @@ public:
         QuadtreeCell origin;
     };
 
+    /// Parameters for the traverse() method.
+    /// @todo Refactor me away.
+    struct traverse_parameters_t
+    {
+        bool leafOnly;
+        int (*callback) (TreeBase* node, void* parameters);
+        void* callbackParameters;
+    };
+
+public:
+    virtual operator TreeBase&() = 0;
+    virtual operator TreeBase const&() const = 0;
+
+    virtual TreeBase& root() = 0;
+    virtual TreeBase const& root() const = 0;
+
+    virtual QuadtreeCoord width() const = 0;
+
+    virtual QuadtreeCoord height() const = 0;
+
+    virtual const QuadtreeCell& widthHeight() const = 0;
+
+    virtual bool isLeaf(TreeBase& tree) = 0;
+
+    /**
+     * Depth-first traversal of the children of this tree, making a callback
+     * for each cell. Iteration ends when all selected cells have been visited
+     * or a callback returns a non-zero value.
+     *
+     * @param tree          Tree to traverse.
+     * @param leafOnly      @c true= Caller is only interested in leaves.
+     * @param callback      Callback function.
+     * @param parameters    Passed to the callback.
+     *
+     * @return  Zero iff iteration completed wholly, else the value returned by the
+     *          last callback made.
+     */
+    virtual int traverse(TreeBase* tree, traverse_parameters_t const& p) = 0;
+};
+
+/**
+ * Quadtree class template.
+ */
+template <typename T>
+class Quadtree : public QuadtreeBase
+{
+public:
     /// TreeLeaf. Represents a subspace leaf within the quadtree.
     class TreeLeaf : public TreeBase
     {
@@ -163,15 +210,6 @@ public:
 
         /// Child cells of this, one for each subquadrant.
         TreeBase* children[4];
-    };
-
-    /// Parameters for the traverse() method.
-    /// @todo Refactor me away.
-    struct traverse_parameters_t
-    {
-        bool leafOnly;
-        int (*callback) (TreeBase* node, void* parameters);
-        void* callbackParameters;
     };
 
 public:
@@ -272,25 +310,12 @@ public:
         return findLeafDescend(root_, mcell, alloc);
     }
 
-    static inline bool isLeaf(TreeBase& tree)
+    inline bool isLeaf(TreeBase& tree)
     {
         return tree.size() == 1;
     }
 
-    /**
-     * Depth-first traversal of the children of this tree, making a callback
-     * for each cell. Iteration ends when all selected cells have been visited
-     * or a callback returns a non-zero value.
-     *
-     * @param tree          Tree to traverse.
-     * @param leafOnly      @c true= Caller is only interested in leaves.
-     * @param callback      Callback function.
-     * @param parameters    Passed to the callback.
-     *
-     * @return  Zero iff iteration completed wholly, else the value returned by the
-     *          last callback made.
-     */
-    static int traverse(TreeBase* tree, traverse_parameters_t const& p)
+    int traverse(TreeBase* tree, traverse_parameters_t const& p)
     {
         int result;
         if(!isLeaf(*tree))
@@ -364,7 +389,7 @@ private:
         return new TreeLeaf(mcell);
     }
 
-    static TreeLeaf* findLeafDescend(TreeBase& tree, const_QuadtreeCell mcell, bool alloc)
+    TreeLeaf* findLeafDescend(TreeBase& tree, const_QuadtreeCell mcell, bool alloc)
     {
         // Have we reached a leaf?
         if(!isLeaf(tree))

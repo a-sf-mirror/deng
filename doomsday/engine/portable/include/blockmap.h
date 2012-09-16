@@ -174,7 +174,7 @@ public:
      * Retrieve an immutable pointer to the underlying Gridmap instance (mainly for
      * for debug purposes).
      */
-    Gridmap const& gridmap();
+    Gridmap& gridmap();
 
     int iterateCellObjects(const_BlockmapCell mcell, int (*callback) (void* object, void* parameters), void* parameters = 0);
 

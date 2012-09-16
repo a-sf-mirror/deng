@@ -141,22 +141,6 @@ public:
         GridmapCellBlock block = GridmapCellBlock(minX, minY, maxX, maxY);
         return blockIterate(block, callback, parameters);
     }
-
-    friend void Gridmap_DebugDrawer(Gridmap const& gridmap);
 };
-
-/**
- * Render a visual for this Gridmap to assist in debugging (etc...).
- *
- * This visualizer assumes that the caller has already configured the GL render state
- * (projection matrices, scale, etc...) as desired prior to calling. This function
- * guarantees to restore the previous GL state if any changes are made to it.
- *
- * @note Internally this visual uses fixed unit dimensions [1x1] for cells, therefore
- *       the caller should scale the appropriate matrix to scale this visual as desired.
- *
- * @param gridmap         Gridmap instance.
- */
-void Gridmap_DebugDrawer(Gridmap const& gridmap);
 
 #endif /// LIBDENG_DATA_GRIDMAP_H

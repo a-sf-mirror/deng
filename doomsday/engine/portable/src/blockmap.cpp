@@ -396,7 +396,7 @@ uint de::Blockmap::cellObjectCount(const_BlockmapCell mcell) const
     return cell->size();
 }
 
-Gridmap const& de::Blockmap::gridmap()
+Gridmap& de::Blockmap::gridmap()
 {
     return d->gridmap;
 }

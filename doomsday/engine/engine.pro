@@ -290,6 +290,7 @@ DENG_HEADERS += \
     portable/include/r_world.h \
     portable/include/render/blockmapvisual.h \
     portable/include/render/busyvisual.h \
+    portable/include/render/quadtreevisual.h \
     portable/include/render/rend_bias.h \
     portable/include/render/rend_clip.h \
     portable/include/render/rend_console.h \
@@ -579,6 +580,7 @@ SOURCES += \
     portable/src/rect.c \
     portable/src/render/blockmapvisual.cpp \
     portable/src/render/busyvisual.c \
+    portable/src/render/quadtreevisual.cpp \
     portable/src/render/rend_bias.c \
     portable/src/render/rend_clip.cpp \
     portable/src/render/rend_console.c \

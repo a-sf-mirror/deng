@@ -33,6 +33,7 @@
 #include <de/concurrency.h>
 #include "gridmap.h"
 #include "blockmap.h"
+#include "quadtreevisual.h"
 #include "blockmapvisual.h"
 
 byte bmapShowDebug = 0; // 1 = mobjs, 2 = linedefs, 3 = BSP leafs, 4 = polyobjs.
@@ -405,7 +406,7 @@ static void rendBlockmap(de::Blockmap* blockmap, mobj_t* followMobj,
     glPushMatrix();
     glScaled(cellSize[VX], cellSize[VY], 1);
 
-    Gridmap_DebugDrawer(blockmap->gridmap());
+    Rend_QuadtreeDebug(blockmap->gridmap().grid);
 
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
