@@ -117,7 +117,12 @@ public:
      *
      * @return  @c true iff clamping was necessary.
      */
-    bool cell(BlockmapCell cell, coord_t const pos[2]) const;
+    bool cell(BlockmapCell mcell, coord_t const pos[2]) const;
+    inline bool cell(BlockmapCell mcell, coord_t x, coord_t y) const
+    {
+        coord_t pos[2] = { x, y };
+        return cell(mcell, pos);
+    }
 
     /**
      * Given map space box XY coordinates @a box, output the blockmap cells[x, y]

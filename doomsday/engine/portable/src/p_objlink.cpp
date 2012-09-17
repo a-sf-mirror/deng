@@ -92,20 +92,50 @@ struct ObjLink
     }
 };
 
+static void spreadObjLinkContacts(ObjLink* ol);
+
 struct ObjlinkCellData
 {
-    ObjLink* head;
-    /// Used to prevent repeated per-frame processing of a block.
-    bool doneSpread;
-};
+    ObjlinkCellData() : head(0), doneSpread_(false) {}
 
-/// Clear all links and the spread flag.
-static void ObjlinkCellData_ClearLinks(ObjlinkCellData* cell)
-{
-    DENG2_ASSERT(cell);
-    cell->head = NULL;
-    cell->doneSpread = false;
-}
+    bool doneSpread() const { return doneSpread_; }
+
+    ObjlinkCellData& spreadContacts()
+    {
+        // Already been here?
+        if(!doneSpread_)
+        {
+            for(ObjLink* ol = head; ol; ol = ol->nextInCell)
+            {
+                spreadObjLinkContacts(ol);
+            }
+            doneSpread_ = true;
+        }
+        return *this;
+    }
+
+    /// Clear all links and the spread flag.
+    ObjlinkCellData& clearLinks()
+    {
+        head = 0;
+        doneSpread_ = false;
+        return *this;
+    }
+
+    ObjlinkCellData& linkObject(ObjLink* link)
+    {
+        link->nextInCell = head;
+        head = link;
+        return *this;
+    }
+
+private:
+    ObjLink* head;
+
+    /// Used to prevent repeated per-frame processing of a cell.
+    /// @todo Optimize: Move this flag out of the cell and into a blockmap-level QBitArray.
+    bool doneSpread_;
+};
 
 static int clearCellDataWorker(ObjlinkCellData* cell, void* /*parameters*/)
 {
@@ -124,6 +154,9 @@ public:
 
     QuadtreeCoord cellY(coord_t y) const;
 
+    bool clipCellX(QuadtreeCoord* outX, coord_t x) const;
+    bool clipCellY(QuadtreeCoord* outY, coord_t y) const;
+
     /**
      * Given world coordinates @a x, @a y, determine the objlink blockmap block
      * [x, y] it resides in. If the coordinates are outside the blockmap they
@@ -131,12 +164,17 @@ public:
      *
      * @return  @c true if the coordinates specified had to be adjusted.
      */
-    bool cell(QuadtreeCell& mcell, coord_t x, coord_t y) const;
+    bool cell(QuadtreeCell mcell, coord_t const pos[2]) const;
+    inline bool cell(QuadtreeCell mcell, coord_t x, coord_t y) const
+    {
+        coord_t pos[2] = { x, y };
+        return cell(mcell, pos);
+    }
 
     void clearLinks();
 
     /// @pre  Coordinates held by @a blockXY are within valid range.
-    void linkObjlinkInBlockmap(ObjLink* link, QuadtreeCell& mcell);
+    bool createCellAndLinkObject(const_QuadtreeCell mcell, ObjLink* link);
 
     /**
      * Spread contacts to all other BspLeafs within distance.
@@ -316,58 +354,72 @@ ObjlinkBlockmap::~ObjlinkBlockmap()
 
 QuadtreeCoord ObjlinkBlockmap::cellX(coord_t x) const
 {
-    DENG2_ASSERT(x >= d->bounds.min[0]);
-    return QuadtreeCoord((x - d->bounds.min[0]) / d->cellSize[0]);
+    QuadtreeCoord result;
+    clipCellX(&result, x);
+    return result;
 }
 
 QuadtreeCoord ObjlinkBlockmap::cellY(coord_t y) const
 {
-    DENG2_ASSERT(y >= d->bounds.min[1]);
-    return QuadtreeCoord((y - d->bounds.min[1]) / d->cellSize[1]);
+    QuadtreeCoord result;
+    clipCellY(&result, y);
+    return result;
 }
 
-bool ObjlinkBlockmap::cell(QuadtreeCell& mcell, coord_t x, coord_t y) const
+bool ObjlinkBlockmap::clipCellX(QuadtreeCoord* outX, coord_t x) const
 {
-    const QuadtreeCell& size = d->grid.widthHeight();
-    coord_t max[2] = { d->bounds.min[0] + size[0] * BLOCK_WIDTH,
-                       d->bounds.min[1] + size[1] * BLOCK_HEIGHT};
-
     bool adjusted = false;
-    if(x < d->bounds.min[0])
+    if(x < d->bounds.minX)
     {
-        mcell[0] = 0;
+        x = d->bounds.minX;
         adjusted = true;
     }
-    else if(x >= max[0])
+    else if(x >= d->bounds.maxX)
     {
-        mcell[0] = size[0]-1;
+        x = d->bounds.maxX - 1;
         adjusted = true;
     }
-    else
+    if(outX)
     {
-        mcell[0] = cellX(x);
-    }
-
-    if(y < d->bounds.min[1])
-    {
-        mcell[1] = 0;
-        adjusted = true;
-    }
-    else if(y >= max[1])
-    {
-        mcell[1] = size[1]-1;
-        adjusted = true;
-    }
-    else
-    {
-        mcell[1] = cellY(y);
+        *outX = QuadtreeCoord((x - d->bounds.minX) / d->cellSize[VX]);
     }
     return adjusted;
 }
 
+bool ObjlinkBlockmap::clipCellY(QuadtreeCoord* outY, coord_t y) const
+{
+    bool adjusted = false;
+    if(y < d->bounds.minY)
+    {
+        y = d->bounds.minY;
+        adjusted = true;
+    }
+    else if(y >= d->bounds.maxY)
+    {
+        y = d->bounds.maxY - 1;
+        adjusted = true;
+    }
+    if(outY)
+    {
+        *outY = QuadtreeCoord((y - d->bounds.minY) / d->cellSize[VY]);
+    }
+    return adjusted;
+}
+
+bool ObjlinkBlockmap::cell(QuadtreeCell mcell, coord_t const pos[2]) const
+{
+    if(mcell && pos)
+    {
+        // Deliberate bitwise OR - we need to clip both X and Y.
+        return clipCellX(&mcell[0], pos[0]) |
+               clipCellY(&mcell[1], pos[1]);
+    }
+    return false;
+}
+
 static int clearObjlinkCellDataWorker(ObjlinkCellData* cell, void* /*parameters*/)
 {
-    ObjlinkCellData_ClearLinks(cell);
+    cell->clearLinks();
     return false; // Continue iteration.
 }
 
@@ -378,9 +430,9 @@ void ObjlinkBlockmap::clearLinks()
 }
 
 /// @pre  Coordinates held by @a blockXY are within valid range.
-void ObjlinkBlockmap::linkObjlinkInBlockmap(ObjLink* link, QuadtreeCell& mcell)
+bool ObjlinkBlockmap::createCellAndLinkObject(const_QuadtreeCell mcell, ObjLink* object)
 {
-    DENG2_ASSERT(link);
+    DENG2_ASSERT(object);
     ObjlinkCellData* cell;
     if(d->leafAtCell(mcell))
     {
@@ -389,11 +441,12 @@ void ObjlinkBlockmap::linkObjlinkInBlockmap(ObjLink* link, QuadtreeCell& mcell)
     }
     else
     {
-        cell = (ObjlinkCellData*)Z_Calloc(sizeof(*cell), PU_MAPSTATIC, 0);
+        void* region = Z_Malloc(sizeof(ObjlinkCellData), PU_MAPSTATIC, 0);
+        cell = new (region) ObjlinkCellData();
         d->setCell(mcell, cell);
     }
-    link->nextInCell = cell->head;
-    cell->head = link;
+    cell->linkObject(object);
+    return true; // Link added.
 }
 
 struct ContactLink
@@ -637,7 +690,7 @@ static void spreadOverHEdge(HEdge* hedge, contactfinderparams_t* parms)
     BspLeaf* leaf = hedge->bspLeaf;
     BspLeaf* backLeaf = hedge->twin? hedge->twin->bspLeaf : 0;
 
-    // There must be a back leaf to spread too.
+    // There must be a back leaf to spread to.
     if(!backLeaf) return;
 
     // Which way does the spread go?
@@ -692,9 +745,9 @@ static void spreadOverHEdge(HEdge* hedge, contactfinderparams_t* parms)
  * Create a contact for the objlink in all the BspLeafs the linked obj is
  * contacting (tests done on bounding boxes and the BSP leaf spread test).
  *
- * @param oLink Ptr to objlink to find BspLeaf contacts for.
+ * @param ol        ObjLink to spread contacts for.
  */
-static void findContacts(ObjLink* ol)
+static void spreadObjLinkContacts(ObjLink* ol)
 {
     DENG2_ASSERT(ol);
 
@@ -749,14 +802,7 @@ static void findContacts(ObjLink* ol)
 static int spreadContactsWorker(ObjlinkCellData* cell, void* /*parameters*/)
 {
     // Already been here?
-    if(!cell->doneSpread)
-    {
-        for(ObjLink* ol = cell->head; ol; ol = ol->nextInCell)
-        {
-            findContacts(ol);
-        }
-        cell->doneSpread = true;
-    }
+    cell->spreadContacts();
     return 0; // Continue iteration.
 }
 
@@ -818,7 +864,7 @@ BEGIN_PROF( PROF_OBJLINK_LINK );
         bm = blockmapForObjType(ol->type());
         if(!bm->cell(mcell, origin[VX], origin[VY]))
         {
-            bm->linkObjlinkInBlockmap(ol, mcell);
+            bm->createCellAndLinkObject(mcell, ol);
         }
     }
 
