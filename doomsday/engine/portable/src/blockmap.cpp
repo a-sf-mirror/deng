@@ -383,14 +383,14 @@ const pvec2d_t de::Blockmap::cellSize() const
 
 BlockmapCoord de::Blockmap::cellX(coord_t x) const
 {
-    uint result;
+    BlockmapCoord result;
     clipCellX(&result, x);
     return result;
 }
 
 BlockmapCoord de::Blockmap::cellY(coord_t y) const
 {
-    uint result;
+    BlockmapCoord result;
     clipCellY(&result, y);
     return result;
 }
@@ -410,7 +410,7 @@ bool de::Blockmap::clipCellX(BlockmapCoord* outX, coord_t x) const
     }
     if(outX)
     {
-        *outX = uint((x - d->bounds.minX) / d->cellSize[VX]);
+        *outX = BlockmapCoord((x - d->bounds.minX) / d->cellSize[VX]);
     }
     return adjusted;
 }
@@ -430,7 +430,7 @@ bool de::Blockmap::clipCellY(BlockmapCoord* outY, coord_t y) const
     }
     if(outY)
     {
-        *outY = uint((y - d->bounds.minY) / d->cellSize[VY]);
+        *outY = BlockmapCoord((y - d->bounds.minY) / d->cellSize[VY]);
     }
     return adjusted;
 }
